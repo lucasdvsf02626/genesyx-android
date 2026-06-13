@@ -7,10 +7,6 @@ import com.genesyx.app.ui.components.PlaceholderScreen
 // Main app + secondary screen stubs — built out one at a time per docs/SCREEN_LAYOUTS.md.
 
 @Composable
-fun NutritionScreen(navController: NavController) =
-    PlaceholderScreen("Your nutrition focus", "Hydration + focus foods + supplements")
-
-@Composable
 fun InsightsScreen(navController: NavController) =
     PlaceholderScreen("Your Insights", "Cycle regularity + symptoms + nutrition + pH")
 
