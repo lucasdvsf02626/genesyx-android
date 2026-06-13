@@ -1,0 +1,131 @@
+package com.genesyx.app.ui.navigation
+
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.navigation.NavHostController
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
+import androidx.navigation.navDeepLink
+import com.genesyx.app.ui.home.HomeScreen
+import com.genesyx.app.ui.onboarding.OnboardingIntroScreen
+import com.genesyx.app.ui.onboarding.OnboardingQuizScreen
+import com.genesyx.app.ui.onboarding.ReadinessSummaryScreen
+import com.genesyx.app.ui.onboarding.SplashScreen
+import com.genesyx.app.ui.onboarding.WaitlistScreen
+import com.genesyx.app.ui.screens.AuthScreen
+import com.genesyx.app.ui.screens.InsightsScreen
+import com.genesyx.app.ui.screens.InviteScreen
+import com.genesyx.app.ui.screens.LogScreen
+import com.genesyx.app.ui.screens.NutritionScreen
+import com.genesyx.app.ui.screens.PregnancyScreen
+import com.genesyx.app.ui.screens.ProfileScreen
+import com.genesyx.app.ui.screens.TrackScreen
+
+@Composable
+fun GenesyxNavGraph(
+    navController: NavHostController,
+    modifier: Modifier = Modifier,
+) {
+    NavHost(
+        navController = navController,
+        startDestination = Screen.Splash.route,
+        modifier = modifier,
+    ) {
+        // ── Onboarding flow (each step pops itself off the back stack)
+        composable(Screen.Splash.route) {
+            SplashScreen(
+                onStart = {
+                    navController.navigate(Screen.OnboardingIntro.route) {
+                        popUpTo(Screen.Splash.route) { inclusive = true }
+                    }
+                },
+                onSignIn = { navController.navigate(Screen.Auth.route) },
+            )
+        }
+        composable(Screen.OnboardingIntro.route) {
+            OnboardingIntroScreen(
+                onContinue = { navController.navigate(Screen.OnboardingQuiz.route) },
+                onBack = { navController.popBackStack() },
+            )
+        }
+        composable(Screen.OnboardingQuiz.route) {
+            OnboardingQuizScreen(
+                onComplete = {
+                    navController.navigate(Screen.ReadinessSummary.route) {
+                        popUpTo(Screen.OnboardingQuiz.route) { inclusive = true }
+                    }
+                },
+                onBack = { navController.popBackStack() },
+            )
+        }
+        composable(Screen.ReadinessSummary.route) {
+            ReadinessSummaryScreen(
+                onUnlockGuide = { navController.navigate(Screen.Waitlist.route) },
+                onContinue = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.ReadinessSummary.route) { inclusive = true }
+                    }
+                },
+                onBack = { navController.popBackStack() },
+            )
+        }
+        composable(Screen.Waitlist.route) {
+            WaitlistScreen(
+                onContinue = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.ReadinessSummary.route) { inclusive = true }
+                    }
+                },
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        // ── Main tabs
+        composable(Screen.Home.route) { HomeScreen(navController) }
+        composable(Screen.Track.route) { TrackScreen(navController) }
+        composable(Screen.Nutrition.route) { NutritionScreen(navController) }
+        composable(Screen.Insights.route) { InsightsScreen(navController) }
+        composable(Screen.Profile.route) { ProfileScreen(navController) }
+
+        // ── Secondary / modal destinations
+        composable(Screen.Log.route) {
+            LogScreen(onClose = { navController.popBackStack() })
+        }
+        composable(Screen.Pregnancy.route) {
+            PregnancyScreen(onBack = { navController.popBackStack() })
+        }
+        composable(Screen.Auth.route) {
+            AuthScreen(
+                onSignedIn = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Splash.route) { inclusive = true }
+                    }
+                },
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        // ── Partner invite deep link: genesyx://invite/{code} + https app link
+        composable(
+            route = Screen.Invite.route,
+            arguments = listOf(navArgument(Screen.Invite.ARG_CODE) { type = NavType.StringType }),
+            deepLinks = listOf(
+                navDeepLink { uriPattern = "genesyx://invite/{code}" },
+                navDeepLink { uriPattern = "https://genesis-cycle-guide.lovable.app/invite/{code}" },
+            ),
+        ) { backStackEntry ->
+            val code = backStackEntry.arguments?.getString(Screen.Invite.ARG_CODE).orEmpty()
+            InviteScreen(
+                code = code,
+                onAccepted = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Splash.route) { inclusive = true }
+                    }
+                },
+                onBack = { navController.navigate(Screen.Splash.route) },
+            )
+        }
+    }
+}
