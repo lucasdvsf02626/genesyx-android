@@ -21,7 +21,7 @@ import com.genesyx.app.ui.screens.LogScreen
 import com.genesyx.app.ui.screens.NutritionScreen
 import com.genesyx.app.ui.screens.PregnancyScreen
 import com.genesyx.app.ui.screens.ProfileScreen
-import com.genesyx.app.ui.screens.TrackScreen
+import com.genesyx.app.ui.track.TrackScreen
 
 @Composable
 fun GenesyxNavGraph(
