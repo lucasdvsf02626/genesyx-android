@@ -9,13 +9,13 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
 import com.genesyx.app.ui.home.HomeScreen
+import com.genesyx.app.ui.insights.InsightsScreen
 import com.genesyx.app.ui.onboarding.OnboardingIntroScreen
 import com.genesyx.app.ui.onboarding.OnboardingQuizScreen
 import com.genesyx.app.ui.onboarding.ReadinessSummaryScreen
 import com.genesyx.app.ui.onboarding.SplashScreen
 import com.genesyx.app.ui.onboarding.WaitlistScreen
 import com.genesyx.app.ui.screens.AuthScreen
-import com.genesyx.app.ui.screens.InsightsScreen
 import com.genesyx.app.ui.screens.InviteScreen
 import com.genesyx.app.ui.screens.LogScreen
 import com.genesyx.app.ui.nutrition.NutritionScreen

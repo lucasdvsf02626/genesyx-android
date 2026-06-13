@@ -18,8 +18,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Medication
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.outlined.WaterDrop
@@ -266,7 +266,7 @@ private fun FoodRow(food: FocusFood, accent: Color, expanded: Boolean, onClick: 
                 modifier = Modifier.weight(1f),
             )
             Icon(
-                Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                Icons.Filled.ChevronRight,
                 null,
                 tint = colors.onSurfaceVariant,
                 modifier = Modifier

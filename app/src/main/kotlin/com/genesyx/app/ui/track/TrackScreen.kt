@@ -20,8 +20,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -145,7 +145,7 @@ fun TrackScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    MonthNavButton(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Previous month") {
+                    MonthNavButton(Icons.Filled.ChevronLeft, "Previous month") {
                         monthAnchor = monthAnchor.minusMonths(1)
                     }
                     Text(
@@ -153,7 +153,7 @@ fun TrackScreen(
                         style = MaterialTheme.typography.bodyMedium,
                         color = colors.onSurfaceVariant,
                     )
-                    MonthNavButton(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Next month") {
+                    MonthNavButton(Icons.Filled.ChevronRight, "Next month") {
                         monthAnchor = monthAnchor.plusMonths(1)
                     }
                 }
