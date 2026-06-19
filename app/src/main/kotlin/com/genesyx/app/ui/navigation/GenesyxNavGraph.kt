@@ -19,8 +19,8 @@ import com.genesyx.app.ui.screens.AuthScreen
 import com.genesyx.app.ui.screens.InviteScreen
 import com.genesyx.app.ui.screens.LogScreen
 import com.genesyx.app.ui.nutrition.NutritionScreen
+import com.genesyx.app.ui.profile.ProfileScreen
 import com.genesyx.app.ui.screens.PregnancyScreen
-import com.genesyx.app.ui.screens.ProfileScreen
 import com.genesyx.app.ui.track.TrackScreen
 
 @Composable
