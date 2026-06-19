@@ -15,10 +15,6 @@ fun LogScreen(onClose: () -> Unit) =
     PlaceholderScreen("Log Today", "Mood / energy / symptoms / sleep / water / supplements")
 
 @Composable
-fun PregnancyScreen(onBack: () -> Unit) =
-    PlaceholderScreen("Support for the next chapter", "Pregnancy preview")
-
-@Composable
 fun AuthScreen(onSignedIn: () -> Unit, onBack: () -> Unit) =
     PlaceholderScreen("Welcome back", "Email + Google sign-in")
 
