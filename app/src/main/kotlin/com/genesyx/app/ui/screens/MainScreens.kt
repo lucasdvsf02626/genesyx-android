@@ -15,9 +15,5 @@ fun LogScreen(onClose: () -> Unit) =
     PlaceholderScreen("Log Today", "Mood / energy / symptoms / sleep / water / supplements")
 
 @Composable
-fun AuthScreen(onSignedIn: () -> Unit, onBack: () -> Unit) =
-    PlaceholderScreen("Welcome back", "Email + Google sign-in")
-
-@Composable
 fun InviteScreen(code: String, onAccepted: () -> Unit, onBack: () -> Unit) =
     PlaceholderScreen("Partner invite", "Accept invite • code: $code")
