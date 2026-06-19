@@ -10,10 +10,3 @@ import com.genesyx.app.ui.components.PlaceholderScreen
 fun ProfileScreen(navController: NavController) =
     PlaceholderScreen("Profile", "Focus toggle + partner + account + theme")
 
-@Composable
-fun LogScreen(onClose: () -> Unit) =
-    PlaceholderScreen("Log Today", "Mood / energy / symptoms / sleep / water / supplements")
-
-@Composable
-fun InviteScreen(code: String, onAccepted: () -> Unit, onBack: () -> Unit) =
-    PlaceholderScreen("Partner invite", "Accept invite • code: $code")

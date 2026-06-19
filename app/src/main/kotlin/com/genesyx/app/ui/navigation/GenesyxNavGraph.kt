@@ -125,6 +125,7 @@ fun GenesyxNavGraph(
                     }
                 },
                 onBack = { navController.navigate(Screen.Splash.route) },
+                onSignIn = { navController.navigate(Screen.Auth.route) },
             )
         }
     }
