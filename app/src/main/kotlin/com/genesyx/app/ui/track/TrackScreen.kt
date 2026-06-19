@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Edit
@@ -55,9 +56,11 @@ import com.genesyx.app.domain.model.Phase
 import com.genesyx.app.domain.model.PhReading
 import com.genesyx.app.ui.components.CycleSettingsDialog
 import com.genesyx.app.ui.components.Eyebrow
+import com.genesyx.app.ui.components.GxPrimaryButton
 import com.genesyx.app.ui.components.PhLogDialog
 import com.genesyx.app.ui.components.PhTrackerCard
 import com.genesyx.app.ui.components.tintOnWhite
+import com.genesyx.app.ui.navigation.Screen
 import com.genesyx.app.ui.theme.BabyLavender
 import com.genesyx.app.ui.theme.ElectricLavender
 import com.genesyx.app.ui.theme.PowderBlue
@@ -200,6 +203,47 @@ fun TrackScreen(
             }
         }
 
+        Spacer(Modifier.height(12.dp))
+
+        // ── Current phase card
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(28.dp),
+            colors = CardDefaults.cardColors(containerColor = colors.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        ) {
+            val info = settings?.let { CycleEngine.getCyclePhase(it, today) }
+            Column(Modifier.padding(20.dp)) {
+                Eyebrow("Current phase", color = ElectricLavender)
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    info?.let { phaseLabel.getValue(it.phase) } ?: "—",
+                    style = MaterialTheme.typography.headlineMedium.copy(fontSize = 22.sp),
+                    color = colors.onSurface,
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = when {
+                        info == null -> "Set up your cycle to see today's phase."
+                        info.dayOfCycle in info.fertileWindow ->
+                            "You're in your fertile window. Stay hydrated and prioritise rest."
+                        else -> "About ${info.daysUntilNextPeriod} days until your next period."
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colors.onSurfaceVariant,
+                )
+            }
+        }
+
+        Spacer(Modifier.height(12.dp))
+
+        // ── Add to today's log
+        GxPrimaryButton(
+            text = "Add to today's log",
+            onClick = { navController.navigate(Screen.Log.route) },
+            leadingIcon = Icons.Filled.Add,
+        )
+
         Spacer(Modifier.height(16.dp))
 
         // ── pH Tracker card
@@ -327,7 +371,7 @@ private fun EmptyCalendar(onClick: () -> Unit) {
 private fun Legend() {
     val items = listOf(
         "Period" to PowderPink.tintOnWhite(0.55f),
-        "Fertile" to PowderBlue.tintOnWhite(0.55f),
+        "Fertile window" to PowderBlue.tintOnWhite(0.55f),
         "Ovulation" to ElectricLavender,
         "Luteal" to BabyLavender.tintOnWhite(0.25f),
     )
