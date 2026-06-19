@@ -49,6 +49,27 @@ val phaseHeroCopy: Map<Phase, PhaseHeroCopy> = mapOf(
     ),
 )
 
+// ── Fertile-window overlay (ports lib/cycleEngine.ts). When the day is in the fertile window and
+// it isn't the ovulation day itself, the hero copy switches to "fertile window is open" messaging.
+
+fun phaseSubLabel(phase: Phase, inFertile: Boolean): String =
+    if (inFertile) "Fertile window" else phaseLabel.getValue(phase)
+
+fun phaseHeroText(phase: Phase, inFertile: Boolean): String =
+    if (inFertile && phase != Phase.OVULATORY) "Fertile window is open" else phaseHeroCopy.getValue(phase).hero
+
+fun phaseHeroSubtext(phase: Phase, inFertile: Boolean): String =
+    if (inFertile && phase != Phase.OVULATORY) {
+        "Conception chances are rising — stay hydrated and prioritise rest."
+    } else {
+        phaseHeroCopy.getValue(phase).sub
+    }
+
+fun phaseTags(phase: Phase, inFertile: Boolean): List<String> {
+    val base = phaseHeroCopy.getValue(phase).tags
+    return if (inFertile && phase != Phase.OVULATORY) listOf("Fertile window") + base else base
+}
+
 val phaseFoods: Map<Phase, List<FocusFood>> = mapOf(
     Phase.PERIOD to listOf(
         FocusFood("Lentils & beans", "Plant iron to replenish what's lost during menstruation."),
