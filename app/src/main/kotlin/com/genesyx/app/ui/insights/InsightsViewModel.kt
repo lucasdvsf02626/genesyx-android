@@ -44,36 +44,47 @@ class InsightsViewModel @Inject constructor(
         if (readings.isEmpty()) return PhInsights()
 
         val now = LocalDateTime.now()
-        val latest = readings.last()
+        val sorted = readings.sortedBy { it.recordedAt }
+        val latest = sorted.last()
+        val previous = sorted.getOrNull(sorted.size - 2)
         val status = PhStatus.classify(latest.phValue)
 
         fun avgWithin(days: Long): Double? {
             val cutoff = now.minusDays(days)
-            val window = readings.filter { it.recordedAt.isAfter(cutoff) }
+            val window = sorted.filter { it.recordedAt.isAfter(cutoff) }
             return if (window.isEmpty()) null else window.map { it.phValue }.average()
         }
 
-        val trend = if (readings.size < 2) {
-            Trend.FLAT
-        } else {
-            val prev = readings[readings.size - 2].phValue
-            when {
-                latest.phValue - prev > 0.05 -> Trend.UP
-                prev - latest.phValue > 0.05 -> Trend.DOWN
-                else -> Trend.FLAT
-            }
+        val last7 = sorted.filter { it.recordedAt.isAfter(now.minusDays(7)) }
+        val avg7 = avgWithin(7)
+        val avg30 = avgWithin(30)
+
+        // Trend vs the previous reading (threshold 0.1), matching PhInsightsSection.tsx.
+        val trend = when {
+            previous == null -> Trend.FLAT
+            latest.phValue - previous.phValue > 0.1 -> Trend.UP
+            latest.phValue - previous.phValue < -0.1 -> Trend.DOWN
+            else -> Trend.FLAT
         }
 
-        val (insight, recommendation) = when (status) {
-            PhStatus.OPTIMAL ->
-                "Your latest reading sits in the optimal 6.0–7.5 range." to
-                    "Keep up your current hydration and nutrition habits."
-            PhStatus.ACIDIC ->
-                "Your latest reading is acidic (below 6.0)." to
-                    "Add alkalising foods — leafy greens, citrus — and keep your water up."
-            PhStatus.ALKALINE ->
-                "Your latest reading is alkaline (above 7.5)." to
-                    "Rebalance with whole grains and protein, and stay hydrated."
+        // Insight is derived from the 7-day average status, only once there are 2+ recent readings.
+        var insight = "Log a few more readings and we'll share gentle observations."
+        var recommendation = ""
+        if (last7.size >= 2 && avg7 != null) {
+            when (PhStatus.classify(avg7)) {
+                PhStatus.ACIDIC -> {
+                    insight = "Your pH has been trending acidic this week."
+                    recommendation = "Try more leafy greens, citrus, and steady hydration to gently shift toward optimal."
+                }
+                PhStatus.ALKALINE -> {
+                    insight = "Your pH has been trending alkaline this week."
+                    recommendation = "Balance with whole grains, lean protein, and reduce excess mineral water."
+                }
+                PhStatus.OPTIMAL -> {
+                    insight = "Your pH is sitting comfortably in the optimal range — lovely work."
+                    recommendation = "Keep your current hydration and meal rhythm; consistency is the goal."
+                }
+            }
         }
 
         return PhInsights(
@@ -81,8 +92,8 @@ class InsightsViewModel @Inject constructor(
             currentValue = latest.phValue,
             currentStatus = status,
             trend = trend,
-            avg7 = avgWithin(7),
-            avg30 = avgWithin(30),
+            avg7 = avg7,
+            avg30 = avg30,
             insight = insight,
             recommendation = recommendation,
         )
