@@ -71,9 +71,9 @@ object CycleEngine {
         else -> DayType.FOLLICULAR
     }
 
-    /** 1-based cycle number for [target]. */
+    /** 1-based cycle number for [target]. Dates before the last period clamp to cycle 1 (web parity). */
     fun cycleNumberFor(lastPeriodDate: LocalDate, cycleLength: Int, target: LocalDate = LocalDate.now()): Int =
-        Math.floorDiv(daysBetween(lastPeriodDate, target), cycleLength) + 1
+        Math.floorDiv(daysBetween(lastPeriodDate, target).coerceAtLeast(0), cycleLength) + 1
 
     /** Sunday-first month grid with leading/trailing empty cells. */
     fun buildMonthGrid(
