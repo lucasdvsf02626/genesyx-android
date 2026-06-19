@@ -44,7 +44,7 @@ class HomeViewModel @Inject constructor(
     val uiState: StateFlow<HomeUiState> =
         combine(
             cycleRepository.settings,
-            dailyLogRepository.waterMlByDate,
+            dailyLogRepository.logByDate,
         ) { settings, _ ->
             buildState(settings)
         }.stateIn(

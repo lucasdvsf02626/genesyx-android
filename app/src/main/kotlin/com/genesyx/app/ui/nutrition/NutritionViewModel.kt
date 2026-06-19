@@ -37,7 +37,7 @@ class NutritionViewModel @Inject constructor(
     val uiState: StateFlow<NutritionUiState> =
         combine(
             cycleRepository.settings,
-            dailyLogRepository.waterMlByDate,
+            dailyLogRepository.logByDate,
         ) { settings, _ ->
             val today = LocalDate.now()
             val waterMl = dailyLogRepository.waterMlOn(today)
