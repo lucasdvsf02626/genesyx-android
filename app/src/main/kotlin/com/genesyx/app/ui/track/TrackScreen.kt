@@ -53,14 +53,12 @@ import com.genesyx.app.domain.model.CalendarCell
 import com.genesyx.app.domain.model.CycleSettings
 import com.genesyx.app.domain.model.DayType
 import com.genesyx.app.domain.model.Phase
-import com.genesyx.app.domain.model.PhReading
 import com.genesyx.app.ui.components.CycleSettingsDialog
 import com.genesyx.app.ui.components.Eyebrow
 import com.genesyx.app.ui.components.GxPrimaryButton
-import com.genesyx.app.ui.components.PhLogDialog
-import com.genesyx.app.ui.components.PhTrackerCard
 import com.genesyx.app.ui.components.tintOnWhite
 import com.genesyx.app.ui.navigation.Screen
+import com.genesyx.app.ui.ph.PhTrackerSection
 import com.genesyx.app.ui.theme.BabyLavender
 import com.genesyx.app.ui.theme.ElectricLavender
 import com.genesyx.app.ui.theme.PowderBlue
@@ -80,13 +78,10 @@ fun TrackScreen(
 ) {
     val colors = MaterialTheme.colorScheme
     val settings by viewModel.settings.collectAsState()
-    val readings by viewModel.readings.collectAsState()
     val today = remember { LocalDate.now() }
 
     var monthAnchor by remember { mutableStateOf(YearMonth.now()) }
     var showCycleDialog by remember { mutableStateOf(false) }
-    var showPhDialog by remember { mutableStateOf(false) }
-    var editingReading by remember { mutableStateOf<PhReading?>(null) }
     var selectedDay by remember { mutableStateOf<CalendarCell.Day?>(null) }
 
     Column(
@@ -246,14 +241,8 @@ fun TrackScreen(
 
         Spacer(Modifier.height(16.dp))
 
-        // ── pH Tracker card
-        PhTrackerCard(
-            readings = readings,
-            onLogClick = {
-                editingReading = null
-                showPhDialog = true
-            },
-        )
+        // ── pH Tracker section (self-contained card + log dialog)
+        PhTrackerSection()
 
         Spacer(Modifier.height(24.dp))
     }
@@ -266,22 +255,6 @@ fun TrackScreen(
             onSave = {
                 viewModel.saveCycleSettings(it)
                 showCycleDialog = false
-            },
-        )
-    }
-
-    if (showPhDialog) {
-        PhLogDialog(
-            existing = editingReading,
-            onDismiss = { showPhDialog = false },
-            onSave = { reading ->
-                if (editingReading == null) viewModel.savePhReading(reading)
-                else viewModel.updatePhReading(reading)
-                showPhDialog = false
-            },
-            onDelete = { id ->
-                viewModel.deletePhReading(id)
-                showPhDialog = false
             },
         )
     }

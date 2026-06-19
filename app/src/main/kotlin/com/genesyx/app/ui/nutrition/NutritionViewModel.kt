@@ -4,9 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.genesyx.app.data.CycleRepository
 import com.genesyx.app.data.DailyLogRepository
-import com.genesyx.app.domain.content.FocusFood
-import com.genesyx.app.domain.content.phaseFoods
-import com.genesyx.app.domain.content.phaseHeroCopy
+import com.genesyx.app.domain.content.PhaseFood
+import com.genesyx.app.domain.content.nutritionPhaseDescription
+import com.genesyx.app.domain.content.nutritionPhaseFoods
 import com.genesyx.app.domain.content.phaseLabel
 import com.genesyx.app.domain.cycle.CycleEngine
 import com.genesyx.app.domain.model.Phase
@@ -23,7 +23,7 @@ data class NutritionUiState(
     val phase: Phase? = null,
     val phaseHeader: String = "TODAY · SET UP YOUR CYCLE",
     val headlineSub: String = "Set up your cycle to get personalised nutrition guidance.",
-    val foods: List<FocusFood> = emptyList(),
+    val foods: List<PhaseFood> = emptyList(),
     val waterMl: Int = 0,
     val waterGoalMl: Int = 2400,
 )
@@ -49,8 +49,8 @@ class NutritionViewModel @Inject constructor(
                     cycleSetUp = true,
                     phase = phase,
                     phaseHeader = "TODAY · ${phaseLabel.getValue(phase).uppercase()}",
-                    headlineSub = phaseHeroCopy.getValue(phase).sub,
-                    foods = phaseFoods.getValue(phase),
+                    headlineSub = nutritionPhaseDescription.getValue(phase),
+                    foods = nutritionPhaseFoods.getValue(phase),
                     waterMl = waterMl,
                 )
             }

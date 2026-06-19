@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -23,12 +24,14 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Medication
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.outlined.WaterDrop
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -45,31 +48,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.genesyx.app.domain.content.FocusFood
-import com.genesyx.app.domain.model.Phase
+import com.genesyx.app.domain.content.Article
+import com.genesyx.app.domain.content.PhaseFood
+import com.genesyx.app.domain.content.nutritionArticles
+import com.genesyx.app.domain.content.supplementPlan
 import com.genesyx.app.ui.components.Eyebrow
+import com.genesyx.app.ui.components.GxPrimaryButton
+import com.genesyx.app.ui.ph.PhTrackerSection
+import com.genesyx.app.ui.theme.ElectricBlue
 import com.genesyx.app.ui.theme.ElectricLavender
-import com.genesyx.app.ui.theme.FoodFollicular
-import com.genesyx.app.ui.theme.FoodLuteal
-import com.genesyx.app.ui.theme.FoodOvulatory
-import com.genesyx.app.ui.theme.FoodPeriod
-
-private fun accentFor(phase: Phase?): Color = when (phase) {
-    Phase.PERIOD -> FoodPeriod
-    Phase.FOLLICULAR -> FoodFollicular
-    Phase.OVULATORY -> FoodOvulatory
-    Phase.LUTEAL -> FoodLuteal
-    null -> ElectricLavender
-}
-
-private data class Supplement(val name: String, val rationale: String)
-
-private val supplements = listOf(
-    Supplement("Folate", "Supports egg quality and early neural development."),
-    Supplement("Omega-3", "Anti-inflammatory fats for hormone balance."),
-    Supplement("Vitamin D", "Linked to healthy ovulation and implantation."),
-    Supplement("Zinc", "Aids cell division and progesterone production."),
-)
+import com.genesyx.app.ui.theme.ElectricPink
 
 @Composable
 fun NutritionScreen(
@@ -78,82 +66,108 @@ fun NutritionScreen(
 ) {
     val colors = MaterialTheme.colorScheme
     val state by viewModel.uiState.collectAsState()
-    val accent = accentFor(state.phase)
-    var expandedFood by remember { mutableStateOf(-1) }
+    var expandedFood by remember { mutableStateOf<String?>(null) }
+    var planOpen by remember { mutableStateOf(false) }
+    var articleOpen by remember { mutableStateOf<Article?>(null) }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(colors.background)
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp),
+            .verticalScroll(rememberScrollState()),
     ) {
-        Spacer(Modifier.height(20.dp))
+        // ── Header (px-6)
+        Column(Modifier.padding(horizontal = 24.dp).padding(top = 20.dp, bottom = 12.dp)) {
+            Eyebrow(state.phaseHeader, color = ElectricLavender)
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "Your nutrition focus",
+                style = MaterialTheme.typography.displayLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = colors.onBackground,
+            )
+            Spacer(Modifier.height(10.dp))
+            Text(state.headlineSub, style = MaterialTheme.typography.bodyLarge, color = colors.onSurfaceVariant)
+        }
 
-        // ── Header
-        Eyebrow(state.phaseHeader, color = ElectricLavender)
-        Spacer(Modifier.height(8.dp))
-        Text(
-            "Your nutrition focus",
-            style = MaterialTheme.typography.displayLarge,
-            fontWeight = FontWeight.SemiBold,
-            color = colors.onBackground,
-        )
-        Spacer(Modifier.height(10.dp))
-        Text(
-            state.headlineSub,
-            style = MaterialTheme.typography.bodyLarge,
-            color = colors.onSurfaceVariant,
-        )
+        Column(Modifier.padding(horizontal = 20.dp)) {
+            // ── Hydration card
+            HydrationCard(
+                waterMl = state.waterMl,
+                goalMl = state.waterGoalMl,
+                onAdd = { viewModel.adjustWater(200) },
+                onRemove = { viewModel.adjustWater(-200) },
+            )
 
-        Spacer(Modifier.height(20.dp))
-
-        // ── Hydration card
-        HydrationCard(
-            waterMl = state.waterMl,
-            goalMl = state.waterGoalMl,
-            onAdd = { viewModel.adjustWater(200) },
-            onRemove = { viewModel.adjustWater(-200) },
-        )
-
-        if (state.cycleSetUp) {
             Spacer(Modifier.height(12.dp))
+            PhTrackerSection()
 
-            // ── Focus foods card
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(28.dp),
-                colors = CardDefaults.cardColors(containerColor = colors.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-            ) {
-                Column(Modifier.padding(vertical = 6.dp)) {
-                    state.foods.forEachIndexed { i, food ->
-                        FoodRow(
-                            food = food,
-                            accent = accent,
-                            expanded = expandedFood == i,
-                            onClick = { expandedFood = if (expandedFood == i) -1 else i },
-                        )
-                        if (i < state.foods.lastIndex) {
-                            Box(
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 20.dp)
-                                    .height(1.dp)
-                                    .background(colors.outline),
-                            )
+            if (state.cycleSetUp) {
+                Spacer(Modifier.height(12.dp))
+                FocusFoodsCard(state.foods, expandedFood) { name ->
+                    expandedFood = if (expandedFood == name) null else name
+                }
+
+                Spacer(Modifier.height(12.dp))
+                SupplementPlanCard(onReview = { planOpen = true })
+
+                Spacer(Modifier.height(16.dp))
+                ArticlesSection(onOpen = { articleOpen = it })
+            }
+
+            Spacer(Modifier.height(24.dp))
+        }
+    }
+
+    if (planOpen) {
+        AlertDialog(
+            onDismissRequest = { planOpen = false },
+            shape = RoundedCornerShape(20.dp),
+            containerColor = colors.surface,
+            title = { Text("Your supplement plan", style = MaterialTheme.typography.titleLarge, color = colors.onSurface) },
+            text = {
+                Column {
+                    Text(
+                        "Gentle, evidence-informed essentials for fertility prep.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = colors.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    supplementPlan.forEachIndexed { i, s ->
+                        Row(Modifier.padding(vertical = 6.dp)) {
+                            SupplementAvatar(s.initial, i)
+                            Spacer(Modifier.size(12.dp))
+                            Column {
+                                Text(s.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, color = colors.onSurface)
+                                Text(s.rationale, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                            }
                         }
                     }
                 }
-            }
+            },
+            confirmButton = { TextButton(onClick = { planOpen = false }) { Text("Got it", color = ElectricLavender) } },
+        )
+    }
 
-            Spacer(Modifier.height(12.dp))
-
-            // ── Supplements card
-            SupplementsCard()
-        }
-
-        Spacer(Modifier.height(24.dp))
+    articleOpen?.let { article ->
+        AlertDialog(
+            onDismissRequest = { articleOpen = null },
+            shape = RoundedCornerShape(20.dp),
+            containerColor = colors.surface,
+            title = { Text(article.title, style = MaterialTheme.typography.titleLarge, color = colors.onSurface) },
+            text = {
+                Column {
+                    Eyebrow(article.read, color = colors.onSurfaceVariant)
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "Keep the focus simple: regular meals, steady hydration, and phase-aware foods. Use your logs and pH tracker to notice patterns over time rather than chasing perfection.",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = colors.onSurfaceVariant,
+                    )
+                }
+            },
+            confirmButton = { TextButton(onClick = { articleOpen = null }) { Text("Done", color = ElectricLavender) } },
+        )
     }
 }
 
@@ -177,34 +191,21 @@ private fun HydrationCard(waterMl: Int, goalMl: Int, onAdd: () -> Unit, onRemove
                     Eyebrow("Hydration", color = colors.onSurfaceVariant)
                     Spacer(Modifier.height(4.dp))
                     Row(verticalAlignment = Alignment.Bottom) {
-                        Text(
-                            "%.1f".format(waterMl / 1000f),
-                            fontSize = 28.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = colors.onSurface,
-                        )
+                        Text("%.1f".format(waterMl / 1000f), fontSize = 28.sp, fontWeight = FontWeight.SemiBold, color = colors.onSurface)
                         Spacer(Modifier.size(4.dp))
-                        Text(
-                            "/ ${"%.1f".format(goalMl / 1000f)} L",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = colors.onSurfaceVariant,
-                            modifier = Modifier.padding(bottom = 4.dp),
-                        )
+                        Text("/ ${"%.1f".format(goalMl / 1000f)} L", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, modifier = Modifier.padding(bottom = 4.dp))
                     }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     StepperButton(Icons.Filled.Remove, "Remove 200ml", colors.surfaceVariant, colors.onSurface, onRemove)
-                    Spacer(Modifier.size(10.dp))
+                    Spacer(Modifier.size(8.dp))
                     StepperButton(Icons.Filled.Add, "Add 200ml", ElectricLavender, Color.White, onAdd)
                 }
             }
             Spacer(Modifier.height(16.dp))
             LinearProgressIndicator(
                 progress = { (waterMl.toFloat() / goalMl).coerceIn(0f, 1f) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(6.dp)
-                    .clip(CircleShape),
+                modifier = Modifier.fillMaxWidth().height(6.dp).clip(CircleShape),
                 color = colors.onSurface,
                 trackColor = colors.surfaceVariant,
             )
@@ -223,19 +224,9 @@ private fun HydrationCard(waterMl: Int, goalMl: Int, onAdd: () -> Unit, onRemove
 }
 
 @Composable
-private fun StepperButton(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    cd: String,
-    bg: Color,
-    fg: Color,
-    onClick: () -> Unit,
-) {
+private fun StepperButton(icon: androidx.compose.ui.graphics.vector.ImageVector, cd: String, bg: Color, fg: Color, onClick: () -> Unit) {
     Box(
-        modifier = Modifier
-            .size(36.dp)
-            .clip(CircleShape)
-            .background(bg)
-            .clickable(onClick = onClick),
+        modifier = Modifier.size(36.dp).clip(CircleShape).background(bg).clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Icon(icon, cd, tint = fg, modifier = Modifier.size(18.dp))
@@ -243,50 +234,60 @@ private fun StepperButton(
 }
 
 @Composable
-private fun FoodRow(food: FocusFood, accent: Color, expanded: Boolean, onClick: () -> Unit) {
+private fun FocusFoodsCard(foods: List<PhaseFood>, expanded: String?, onToggle: (String) -> Unit) {
     val colors = MaterialTheme.colorScheme
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 14.dp),
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.cardColors(containerColor = colors.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                Modifier
-                    .size(10.dp)
-                    .clip(CircleShape)
-                    .background(accent),
-            )
-            Spacer(Modifier.size(12.dp))
-            Text(
-                food.title,
-                style = MaterialTheme.typography.titleMedium,
-                color = colors.onSurface,
-                modifier = Modifier.weight(1f),
-            )
-            Icon(
-                Icons.Filled.ChevronRight,
-                null,
-                tint = colors.onSurfaceVariant,
-                modifier = Modifier
-                    .size(20.dp)
-                    .rotate(if (expanded) 90f else 0f),
-            )
-        }
-        AnimatedVisibility(visible = expanded) {
-            Text(
-                food.desc,
-                style = MaterialTheme.typography.bodyMedium,
-                color = colors.onSurfaceVariant,
-                modifier = Modifier.padding(start = 22.dp, top = 6.dp),
-            )
+        Column {
+            Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 12.dp)) {
+                Eyebrow("Focus foods", color = colors.onSurfaceVariant)
+                Spacer(Modifier.height(4.dp))
+                Text("Your focus foods this phase", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+            }
+            foods.forEachIndexed { i, food ->
+                val open = expanded == food.name
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onToggle(food.name) }
+                        .padding(horizontal = 20.dp, vertical = 14.dp),
+                ) {
+                    Box(Modifier.padding(top = 6.dp).size(12.dp).clip(CircleShape).background(food.accent))
+                    Spacer(Modifier.size(16.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(food.name, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+                        Spacer(Modifier.height(2.dp))
+                        Text(food.shortDesc, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                        AnimatedVisibility(visible = open) {
+                            Text(
+                                food.expandedDesc,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = colors.onSurfaceVariant.copy(alpha = 0.8f),
+                                modifier = Modifier.padding(top = 8.dp),
+                            )
+                        }
+                    }
+                    Icon(
+                        Icons.Filled.ChevronRight,
+                        null,
+                        tint = colors.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp).size(18.dp).rotate(if (open) 90f else 0f),
+                    )
+                }
+                if (i < foods.lastIndex) {
+                    Box(Modifier.fillMaxWidth().padding(horizontal = 20.dp).height(1.dp).background(colors.outline.copy(alpha = 0.6f)))
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun SupplementsCard() {
+private fun SupplementPlanCard(onReview: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -295,33 +296,77 @@ private fun SupplementsCard() {
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Column(Modifier.padding(20.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row {
                 Box(
-                    Modifier
-                        .size(40.dp)
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(ElectricLavender.copy(alpha = 0.10f)),
+                    Modifier.size(44.dp).clip(RoundedCornerShape(16.dp)).background(ElectricLavender.copy(alpha = 0.08f)),
                     contentAlignment = Alignment.Center,
-                ) {
-                    Icon(Icons.Filled.Medication, null, tint = ElectricLavender, modifier = Modifier.size(20.dp))
-                }
-                Spacer(Modifier.size(12.dp))
-                Text("Supplements", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
-            }
-            Spacer(Modifier.height(14.dp))
-            supplements.forEachIndexed { i, s ->
-                Column(Modifier.padding(vertical = 6.dp)) {
-                    Text(s.name, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
-                    Text(s.rationale, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
-                }
-                if (i < supplements.lastIndex) {
-                    Box(
-                        Modifier
-                            .fillMaxWidth()
-                            .height(1.dp)
-                            .background(colors.outline.copy(alpha = 0.5f)),
+                ) { Icon(Icons.Filled.Medication, null, tint = ElectricLavender) }
+                Spacer(Modifier.size(16.dp))
+                Column(Modifier.weight(1f)) {
+                    Text("Your supplement plan", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "Folate, Omega-3, Vitamin D, and Zinc — taken with breakfast.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = colors.onSurfaceVariant,
                     )
+                    Spacer(Modifier.height(12.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        supplementPlan.forEachIndexed { i, s ->
+                            Box(Modifier.offset(x = (i * -6).dp)) { SupplementAvatar(s.initial, i, bordered = true) }
+                        }
+                        Spacer(Modifier.size(8.dp))
+                        Text("3 of 4 taken today", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                    }
                 }
+            }
+            Spacer(Modifier.height(16.dp))
+            GxPrimaryButton(text = "Review Plan", onClick = onReview)
+        }
+    }
+}
+
+@Composable
+private fun SupplementAvatar(initial: String, index: Int, bordered: Boolean = false) {
+    val colors = MaterialTheme.colorScheme
+    val tint = when (index) {
+        1 -> ElectricBlue
+        3 -> ElectricPink
+        else -> ElectricLavender
+    }
+    Box(
+        modifier = Modifier
+            .size(28.dp)
+            .clip(CircleShape)
+            .background(tint.copy(alpha = 0.12f)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(initial, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = tint)
+    }
+}
+
+@Composable
+private fun ArticlesSection(onOpen: (Article) -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    Column {
+        Eyebrow("Learn more", color = colors.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp, bottom = 10.dp))
+        nutritionArticles.forEach { a ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(colors.surface)
+                    .clickable { onOpen(a) }
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text(a.title, style = MaterialTheme.typography.labelLarge, color = colors.onSurface)
+                    Spacer(Modifier.height(2.dp))
+                    Text(a.read, fontSize = 11.5.sp, color = colors.onSurfaceVariant)
+                }
+                Icon(Icons.Filled.ChevronRight, null, tint = colors.onSurfaceVariant, modifier = Modifier.size(18.dp))
             }
         }
     }
