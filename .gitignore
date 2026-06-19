@@ -12,3 +12,6 @@
 *.aab
 *.keystore
 *.jks
+*.zip
+keystore.properties
+/app/release

@@ -6,9 +6,9 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
-// Display = Outfit, Body = Inter. TODO: add Outfit/Inter .ttf to res/font and wire
-// FontFamily here (see docs/DESIGN_TOKENS.md). Until then we fall back to the system
-// sans-serif so the scale/weights are already correct.
+// Display = Outfit, Body = DM Sans (per the web styles.css @font-face). TODO: add the Outfit +
+// DM Sans .ttf to res/font and wire the FontFamily here. Until the font files are bundled we fall
+// back to the system sans-serif so the scale/weights are already correct.
 val DisplayFamily = FontFamily.SansSerif
 val BodyFamily = FontFamily.SansSerif
 

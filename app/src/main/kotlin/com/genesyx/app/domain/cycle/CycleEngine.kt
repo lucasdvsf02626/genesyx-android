@@ -47,7 +47,8 @@ object CycleEngine {
             else -> Phase.LUTEAL
         }
 
-        val daysUntilNextPeriod = (cycleLength - dayOfCycle).coerceAtLeast(0)
+        // Matches web cycle.ts: day 1 reports 0 (period just started).
+        val daysUntilNextPeriod = if (dayOfCycle == 1) 0 else cycleLength - dayOfCycle
 
         return CyclePhaseInfo(
             dayOfCycle = dayOfCycle,
@@ -61,18 +62,18 @@ object CycleEngine {
     fun getCyclePhase(settings: CycleSettings, target: LocalDate = LocalDate.now()): CyclePhaseInfo =
         getCyclePhase(settings.lastPeriodDate, settings.cycleLength, settings.periodLength, target)
 
-    /** Calendar day classification: ovulation > fertile > phase. */
+    /** Calendar day classification. Order matches web cycle.ts: period > ovulation > fertile > luteal. */
     fun dayTypeFor(info: CyclePhaseInfo): DayType = when {
-        info.phase == Phase.OVULATORY -> DayType.OVULATION
-        info.dayOfCycle in info.fertileWindow -> DayType.FERTILE
         info.phase == Phase.PERIOD -> DayType.PERIOD
+        info.dayOfCycle == info.ovulationDay -> DayType.OVULATION
+        info.dayOfCycle in info.fertileWindow -> DayType.FERTILE
         info.phase == Phase.LUTEAL -> DayType.LUTEAL
         else -> DayType.FOLLICULAR
     }
 
-    /** 1-based cycle number for [target]. */
+    /** 1-based cycle number for [target]. Dates before the last period clamp to cycle 1 (web parity). */
     fun cycleNumberFor(lastPeriodDate: LocalDate, cycleLength: Int, target: LocalDate = LocalDate.now()): Int =
-        Math.floorDiv(daysBetween(lastPeriodDate, target), cycleLength) + 1
+        Math.floorDiv(daysBetween(lastPeriodDate, target).coerceAtLeast(0), cycleLength) + 1
 
     /** Sunday-first month grid with leading/trailing empty cells. */
     fun buildMonthGrid(

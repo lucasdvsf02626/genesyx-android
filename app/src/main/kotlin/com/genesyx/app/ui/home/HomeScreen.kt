@@ -1,14 +1,23 @@
 package com.genesyx.app.ui.home
 
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -16,22 +25,31 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Eco
 import androidx.compose.material.icons.outlined.WaterDrop
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -39,10 +57,26 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.genesyx.app.ui.components.BrandOrb
+import com.genesyx.app.ui.components.CycleSettingsDialog
+import com.genesyx.app.ui.components.Eyebrow
+import com.genesyx.app.ui.components.GxPrimaryButton
+import com.genesyx.app.ui.components.tintOnWhite
 import com.genesyx.app.ui.navigation.Screen
 import com.genesyx.app.ui.theme.ElectricBlue
 import com.genesyx.app.ui.theme.ElectricLavender
+import com.genesyx.app.ui.theme.PowderBlue
 
+private data class Bubble(val x: Int, val y: Int, val size: Int, val a: Color, val b: Color, val durationMs: Int, val drift: Float)
+
+private val bubbles = listOf(
+    Bubble(300, 96, 112, Color(0xFFC4B5FD), Color(0xFFA78BFA), 5000, -14f),
+    Bubble(-32, 224, 80, Color(0xFFBAE6FD), Color(0xFF7DD3FC), 7000, -10f),
+    Bubble(280, 360, 96, Color(0xFFE9D5FF), Color(0xFFC084FC), 6000, -18f),
+    Bubble(16, 420, 64, Color(0xFFFBCFE8), Color(0xFFF472B6), 4500, -12f),
+    Bubble(300, 540, 56, Color(0xFFBFDBFE), Color(0xFF60A5FA), 8000, -10f),
+)
+
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun HomeScreen(
     navController: NavController,
@@ -50,174 +84,237 @@ fun HomeScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val colors = MaterialTheme.colorScheme
+    var showCycleDialog by remember { mutableStateOf(false) }
+    var menuOpen by remember { mutableStateOf(false) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(colors.background)
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp),
-    ) {
-        Spacer(Modifier.height(20.dp))
+    Box(Modifier.fillMaxSize().background(colors.background)) {
+        FloatingBubbles()
 
-        // ── Greeting header
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp),
         ) {
-            Column {
-                Text(
-                    text = "Good afternoon",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = colors.onSurfaceVariant,
-                )
-                Text(
-                    text = state.userName,
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = colors.onBackground,
-                )
-            }
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(colors.surface),
-                contentAlignment = Alignment.Center,
+            Spacer(Modifier.height(20.dp))
+
+            // ── Greeting header
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    text = state.userName.firstOrNull()?.uppercase() ?: "G",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = colors.onSurface,
-                )
-            }
-        }
-
-        Spacer(Modifier.height(24.dp))
-
-        // ── Cycle hero card
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(28.dp),
-            colors = CardDefaults.cardColors(containerColor = colors.surface),
-            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-            onClick = { /* TODO: open CycleSettings sheet */ },
-        ) {
-            Box(Modifier.fillMaxWidth()) {
-                BrandOrb(
-                    modifier = Modifier.align(Alignment.TopEnd),
-                    size = 176.dp,
-                )
-                Column(Modifier.padding(24.dp)) {
-                    Text(
-                        text = state.cycleEyebrow,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = ElectricLavender,
-                    )
-                    Spacer(Modifier.height(10.dp))
-                    Text(
-                        text = state.cycleHeadline,
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = colors.onSurface,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        text = state.cycleSub,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = colors.onSurfaceVariant,
-                    )
+                Column {
+                    Text(state.greeting, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                    Text(state.userName, style = MaterialTheme.typography.headlineMedium, color = colors.onBackground)
+                }
+                Box {
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(colors.surface)
+                            .clickable { menuOpen = true },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            state.userName.firstOrNull()?.uppercase() ?: "G",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = colors.onSurface,
+                        )
+                    }
+                    DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                        if (!state.signedIn) {
+                            DropdownMenuItem(
+                                text = { Text("Sign in or create account") },
+                                leadingIcon = { Icon(Icons.AutoMirrored.Filled.Login, null) },
+                                onClick = { menuOpen = false; navController.navigate(Screen.Auth.route) },
+                            )
+                        }
+                        DropdownMenuItem(
+                            text = { Text("Profile") },
+                            leadingIcon = { Icon(Icons.Filled.Person, null) },
+                            onClick = { menuOpen = false; navController.navigate(Screen.Profile.route) },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Cycle setup") },
+                            leadingIcon = { Icon(Icons.Filled.Settings, null) },
+                            onClick = { menuOpen = false; showCycleDialog = true },
+                        )
+                    }
                 }
             }
-        }
 
-        Spacer(Modifier.height(12.dp))
+            // ── Sign-in banner (signed-out)
+            if (!state.signedIn) {
+                Spacer(Modifier.height(16.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(ElectricLavender)
+                        .clickable { navController.navigate(Screen.Auth.route) }
+                        .padding(horizontal = 20.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Sign in to save your journey", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                        Text("Cycle setup, logs, pH readings, and profile sync.", color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp)
+                    }
+                    Icon(Icons.AutoMirrored.Filled.Login, null, tint = Color.White)
+                }
+            }
 
-        // ── Today's focus card
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = colors.surface),
-            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        ) {
-            Column(Modifier.padding(20.dp)) {
-                Text(
-                    text = "TODAY'S FOCUS",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = colors.onSurfaceVariant,
+            Spacer(Modifier.height(24.dp))
+
+            // ── Cycle hero card
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(28.dp),
+                colors = CardDefaults.cardColors(containerColor = colors.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                onClick = { showCycleDialog = true },
+            ) {
+                Box(Modifier.fillMaxWidth()) {
+                    BrandOrb(modifier = Modifier.align(Alignment.TopEnd), size = 176.dp)
+                    Column(Modifier.padding(24.dp)) {
+                        Text(state.cycleEyebrow, style = MaterialTheme.typography.labelSmall, color = ElectricLavender)
+                        Spacer(Modifier.height(10.dp))
+                        Text(
+                            state.cycleHeadline,
+                            style = MaterialTheme.typography.headlineMedium,
+                            color = colors.onSurface,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(state.cycleSub, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                        if (state.cycleTags.isNotEmpty()) {
+                            Spacer(Modifier.height(16.dp))
+                            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                state.cycleTags.forEachIndexed { i, tag -> TagChip(tag, primary = i == 0) }
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            // ── Today's focus card
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = colors.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+            ) {
+                Column(Modifier.padding(20.dp)) {
+                    Eyebrow("Today's focus", color = colors.onSurfaceVariant)
+                    Spacer(Modifier.height(6.dp))
+                    if (state.todayFocusTitle != null) {
+                        Text(state.todayFocusTitle!!, style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+                        Spacer(Modifier.height(4.dp))
+                        Text(state.todayFocusBody.orEmpty(), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                    } else {
+                        Text(
+                            "Complete your cycle setup to see focus foods.",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = colors.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            // ── Stat grid
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                StatCard(
+                    modifier = Modifier.weight(1f),
+                    icon = { Icon(Icons.Outlined.WaterDrop, null, tint = ElectricBlue) },
+                    label = "Hydration",
+                    value = state.hydrationLitres?.let { "%.1fL".format(it) } ?: "—",
+                    suffix = "/ ${"%.1f".format(state.hydrationGoalLitres)}L",
                 )
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    text = state.todayFocus ?: "Complete your cycle setup to see focus foods.",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = colors.onSurface,
+                StatCard(
+                    modifier = Modifier.weight(1f),
+                    icon = { Icon(Icons.Outlined.Eco, null, tint = ElectricLavender) },
+                    label = "Streak",
+                    value = state.streakDays?.toString() ?: "—",
+                    suffix = "days",
                 )
             }
+
+            Spacer(Modifier.height(20.dp))
+
+            GxPrimaryButton(text = "Log today", onClick = { navController.navigate(Screen.Log.route) }, leadingIcon = Icons.Filled.Add)
+
+            Spacer(Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable { navController.navigate(Screen.Pregnancy.route) }
+                    .padding(horizontal = 4.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("Preview pregnancy pathway", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                Icon(Icons.AutoMirrored.Filled.ArrowForward, null, tint = colors.onSurfaceVariant, modifier = Modifier.size(16.dp))
+            }
+
+            Spacer(Modifier.height(24.dp))
         }
+    }
 
-        Spacer(Modifier.height(12.dp))
+    if (showCycleDialog) {
+        CycleSettingsDialog(
+            current = state.settings,
+            onDismiss = { showCycleDialog = false },
+            onSave = { viewModel.saveCycleSettings(it); showCycleDialog = false },
+        )
+    }
+}
 
-        // ── Stat grid (hydration + streak)
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            StatCard(
-                modifier = Modifier.weight(1f),
-                icon = { Icon(Icons.Outlined.WaterDrop, null, tint = ElectricBlue) },
-                label = "HYDRATION",
-                value = state.hydrationLitres?.let { "%.1fL".format(it) } ?: "—",
-                suffix = "/ ${"%.1f".format(state.hydrationGoalLitres)}L",
+@Composable
+private fun FloatingBubbles() {
+    val transition = rememberInfiniteTransition(label = "bubbles")
+    Box(Modifier.fillMaxSize()) {
+        bubbles.forEach { b ->
+            val dy by transition.animateFloat(
+                initialValue = 0f,
+                targetValue = b.drift,
+                animationSpec = infiniteRepeatable(tween(b.durationMs), RepeatMode.Reverse),
+                label = "bubble",
             )
-            StatCard(
-                modifier = Modifier.weight(1f),
-                icon = { Icon(Icons.Outlined.Eco, null, tint = ElectricLavender) },
-                label = "STREAK",
-                value = state.streakDays?.toString() ?: "—",
-                suffix = "days",
-            )
-        }
-
-        Spacer(Modifier.height(20.dp))
-
-        // ── Log today CTA
-        Button(
-            onClick = { navController.navigate(Screen.Log.route) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            shape = RoundedCornerShape(28.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = ElectricLavender),
-        ) {
-            Icon(Icons.Filled.Add, null, tint = Color.White)
-            Spacer(Modifier.size(8.dp))
-            Text(
-                text = "Log today",
-                style = MaterialTheme.typography.titleMedium,
-                color = Color.White,
+            Box(
+                modifier = Modifier
+                    .offset(x = b.x.dp, y = (b.y + dy).dp)
+                    .size(b.size.dp)
+                    .blur(18.dp)
+                    .clip(CircleShape)
+                    .background(Brush.radialGradient(listOf(b.a, b.b))),
             )
         }
+    }
+}
 
-        Spacer(Modifier.height(12.dp))
-
-        // ── Pregnancy preview link
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .padding(horizontal = 4.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = "Preview pregnancy pathway",
-                style = MaterialTheme.typography.bodyMedium,
-                color = colors.onSurfaceVariant,
-            )
-            Text(text = "→", color = colors.onSurfaceVariant, fontSize = 16.sp)
-        }
-
-        Spacer(Modifier.height(24.dp))
+@Composable
+private fun TagChip(text: String, primary: Boolean) {
+    val colors = MaterialTheme.colorScheme
+    Box(
+        modifier = Modifier
+            .clip(CircleShape)
+            .background(if (primary) ElectricLavender.tintOnWhite(0.08f) else PowderBlue.tintOnWhite(0.22f))
+            .padding(horizontal = 10.dp, vertical = 4.dp),
+    ) {
+        Text(
+            text = text,
+            fontSize = 11.5.sp,
+            color = if (primary) ElectricLavender else colors.onSurface.copy(alpha = 0.75f),
+            fontWeight = FontWeight.Medium,
+        )
     }
 }
 
@@ -239,17 +336,12 @@ private fun StatCard(
         Column(Modifier.padding(16.dp)) {
             icon()
             Spacer(Modifier.height(8.dp))
-            Text(text = label, style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
+            Eyebrow(label, color = colors.onSurfaceVariant)
             Spacer(Modifier.height(4.dp))
             Row(verticalAlignment = Alignment.Bottom) {
-                Text(text = value, style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+                Text(value, style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
                 Spacer(Modifier.size(4.dp))
-                Text(
-                    text = suffix,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = colors.onSurfaceVariant,
-                    modifier = Modifier.padding(bottom = 2.dp),
-                )
+                Text(suffix, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, modifier = Modifier.padding(bottom = 2.dp))
             }
         }
     }

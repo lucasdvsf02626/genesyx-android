@@ -1,11 +1,15 @@
 package com.genesyx.app.domain.cycle
 
+import com.genesyx.app.domain.model.CalendarCell
+import com.genesyx.app.domain.model.CycleSettings
 import com.genesyx.app.domain.model.DayType
 import com.genesyx.app.domain.model.Phase
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDate
+import java.time.YearMonth
 
 /** Validates the cycle engine against the web `cycle.ts` formulas (docs/CYCLE_ENGINE.md). */
 class CycleEngineTest {
@@ -44,6 +48,15 @@ class CycleEngineTest {
     }
 
     @Test
+    fun `fertile window is inclusive at both boundaries`() {
+        val info = phaseOn(lastPeriod)
+        assertTrue("start day 9 is fertile", 9 in info.fertileWindow)
+        assertTrue("end day 15 is fertile", 15 in info.fertileWindow)
+        assertFalse("day 8 is not fertile", 8 in info.fertileWindow)
+        assertFalse("day 16 is not fertile", 16 in info.fertileWindow)
+    }
+
+    @Test
     fun `follicular before ovulation, luteal after`() {
         assertEquals(Phase.FOLLICULAR, phaseOn(lastPeriod.plusDays(7)).phase) // day 8
         assertEquals(Phase.LUTEAL, phaseOn(lastPeriod.plusDays(20)).phase) // day 21
@@ -61,5 +74,61 @@ class CycleEngineTest {
     fun `fertile day is classified as fertile not phase`() {
         val info = phaseOn(lastPeriod.plusDays(11)) // day 12, within [9,15], not ovulation
         assertEquals(DayType.FERTILE, CycleEngine.dayTypeFor(info))
+    }
+
+    @Test
+    fun `daysUntilNextPeriod is zero on day one and counts down otherwise`() {
+        // Matches web cycle.ts: day 1 reports 0.
+        assertEquals(0, phaseOn(lastPeriod).daysUntilNextPeriod)
+        assertEquals(20, phaseOn(lastPeriod.plusDays(7)).daysUntilNextPeriod) // day 8 -> 28-8
+        assertEquals(1, phaseOn(lastPeriod.plusDays(26)).daysUntilNextPeriod) // day 27 -> 28-27
+    }
+
+    @Test
+    fun `period takes precedence over fertile when they overlap on a short cycle`() {
+        // 21-day cycle: ovulation = day 7, fertile window = [2, 8]; period = days 1-5.
+        // Days 2-5 are both period and fertile — web cycle.ts classifies them as period.
+        val shortLast = LocalDate.of(2026, 6, 1)
+        val day3 = CycleEngine.getCyclePhase(shortLast, 21, 5, shortLast.plusDays(2)) // day 3
+        assertEquals(Phase.PERIOD, day3.phase)
+        assertTrue(3 in day3.fertileWindow)
+        assertEquals("period wins over fertile", DayType.PERIOD, CycleEngine.dayTypeFor(day3))
+
+        // Day 6 is fertile but no longer period -> fertile.
+        val day6 = CycleEngine.getCyclePhase(shortLast, 21, 5, shortLast.plusDays(5))
+        assertEquals(DayType.FERTILE, CycleEngine.dayTypeFor(day6))
+    }
+
+    @Test
+    fun `luteal day after the fertile window is classified luteal`() {
+        val info = phaseOn(lastPeriod.plusDays(19)) // day 20, luteal, outside fertile
+        assertEquals(Phase.LUTEAL, info.phase)
+        assertEquals(DayType.LUTEAL, CycleEngine.dayTypeFor(info))
+    }
+
+    @Test
+    fun `cycle number increments once per full cycle`() {
+        assertEquals(1, CycleEngine.cycleNumberFor(lastPeriod, cycleLength, lastPeriod))
+        assertEquals(2, CycleEngine.cycleNumberFor(lastPeriod, cycleLength, lastPeriod.plusDays(28)))
+        assertEquals(3, CycleEngine.cycleNumberFor(lastPeriod, cycleLength, lastPeriod.plusDays(56)))
+        // Dates before the last period clamp to cycle 1.
+        assertEquals(1, CycleEngine.cycleNumberFor(lastPeriod, cycleLength, lastPeriod.minusDays(3)))
+    }
+
+    @Test
+    fun `month grid is sunday-first, padded to full weeks, with correct day count and today flag`() {
+        val settings = CycleSettings(lastPeriod, cycleLength, periodLength)
+        val anchor = YearMonth.of(2026, 6) // June 2026: the 1st is a Monday
+        val today = LocalDate.of(2026, 6, 15)
+        val cells = CycleEngine.buildMonthGrid(anchor, settings, today)
+
+        assertEquals("grid is whole weeks", 0, cells.size % 7)
+        val dayCells = cells.filterIsInstance<CalendarCell.Day>()
+        assertEquals("30 day cells for June", 30, dayCells.size)
+        // Monday -> one leading empty (Sunday-first).
+        assertTrue(cells.first() is CalendarCell.Empty)
+        assertEquals(1, cells.indexOfFirst { it is CalendarCell.Day })
+        assertEquals(1, dayCells.count { it.isToday })
+        assertTrue(dayCells.single { it.isToday }.date == today)
     }
 }

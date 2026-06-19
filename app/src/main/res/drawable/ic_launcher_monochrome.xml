@@ -1,21 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Genesyx "G" mark (open ring + crossbar + accent dot), white, centered in the 108dp safe zone.
-     Approximation of the brand logo; replace with the exact traced path once the SVG is attached. -->
+<!-- Monochrome "G" mark for Android 13+ themed icons. Colour is replaced by the system tint. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Open ring (G body), gap on the right -->
     <path
         android:fillColor="#FFFFFFFF"
         android:fillType="evenOdd"
         android:pathData="M82.3,39 A32,32 0 1 1 82.3,69 L70.3,62.7 A18.5,18.5 0 1 0 70.3,45.3 Z" />
-    <!-- Crossbar (G tongue) -->
     <path
         android:fillColor="#FFFFFFFF"
         android:pathData="M53,49.5 L72,49.5 L72,59.5 L53,59.5 Z" />
-    <!-- Accent dot -->
     <path
         android:fillColor="#FFFFFFFF"
         android:pathData="M80,32 m-8,0 a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0" />
