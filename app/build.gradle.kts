@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.ksp)
 }
@@ -19,7 +20,6 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // Supabase config injected from gradle properties (see gradle.properties)
         buildConfigField(
             "String",
             "SUPABASE_URL",
@@ -29,6 +29,11 @@ android {
             "String",
             "SUPABASE_ANON_KEY",
             "\"${providers.gradleProperty("genesyx.supabaseAnonKey").getOrElse("")}\"",
+        )
+        buildConfigField(
+            "String",
+            "GOOGLE_WEB_CLIENT_ID",
+            "\"${providers.gradleProperty("genesyx.googleWebClientId").getOrElse("")}\"",
         )
     }
 
@@ -45,6 +50,7 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
@@ -58,6 +64,8 @@ android {
 }
 
 dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.2")
+
     // Core / lifecycle
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)
@@ -98,7 +106,16 @@ dependencies {
     implementation(platform(libs.supabase.bom))
     implementation(libs.supabase.postgrest)
     implementation(libs.supabase.auth)
+    implementation(libs.supabase.functions)
     implementation(libs.ktor.client.okhttp)
+
+    // Serialization
+    implementation(libs.kotlinx.serialization.json)
+
+    // Credential Manager (Google Sign-In)
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services)
+    implementation(libs.google.identity.googleid)
 
     // Test
     testImplementation(libs.junit)
