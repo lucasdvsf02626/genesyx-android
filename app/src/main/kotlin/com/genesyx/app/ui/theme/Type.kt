@@ -6,14 +6,32 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
-// Display = Outfit, Body = Inter. TODO: add Outfit/Inter .ttf to res/font and wire
-// FontFamily here (see docs/DESIGN_TOKENS.md). Until then we fall back to the system
-// sans-serif so the scale/weights are already correct.
-val DisplayFamily = FontFamily.SansSerif
-val BodyFamily = FontFamily.SansSerif
+// Fonts: Outfit (display) + Inter (body) — per ARCHITECTURE.md / DESIGN_TOKENS.md.
+//
+// TO ACTIVATE: run `scripts/download_fonts.sh` from the repo root (needs curl).
+// That drops the .ttf files into res/font/. Then swap the two lines below:
+//   DisplayFamily = FontFamily.SansSerif  →  DisplayFamily = outfitFamily
+//   BodyFamily    = FontFamily.SansSerif  →  BodyFamily    = interFamily
+//
+// import androidx.compose.ui.text.font.Font
+// import com.genesyx.app.R
+//
+// private val outfitFamily = FontFamily(
+//     Font(R.font.outfit_regular,  FontWeight.Normal),
+//     Font(R.font.outfit_medium,   FontWeight.Medium),
+//     Font(R.font.outfit_semibold, FontWeight.SemiBold),
+//     Font(R.font.outfit_bold,     FontWeight.Bold),
+// )
+// private val interFamily = FontFamily(
+//     Font(R.font.inter_regular,  FontWeight.Normal),
+//     Font(R.font.inter_medium,   FontWeight.Medium),
+//     Font(R.font.inter_semibold, FontWeight.SemiBold),
+// )
+
+val DisplayFamily: FontFamily = FontFamily.SansSerif
+val BodyFamily: FontFamily = FontFamily.SansSerif
 
 val GenesyxTypography = Typography(
-    // Outfit (display)
     displayLarge = TextStyle(
         fontFamily = DisplayFamily,
         fontWeight = FontWeight.SemiBold,
@@ -40,7 +58,6 @@ val GenesyxTypography = Typography(
         fontSize = 16.sp,
         lineHeight = 22.sp,
     ),
-    // Inter (body)
     bodyLarge = TextStyle(
         fontFamily = BodyFamily,
         fontWeight = FontWeight.Normal,
@@ -61,7 +78,6 @@ val GenesyxTypography = Typography(
         fontSize = 14.sp,
         lineHeight = 18.sp,
     ),
-    // ALL-CAPS eyebrow / section label
     labelSmall = TextStyle(
         fontFamily = BodyFamily,
         fontWeight = FontWeight.Medium,
