@@ -8,6 +8,7 @@ import io.github.jan.supabase.auth.providers.Google
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.providers.builtin.IDToken
 import io.github.jan.supabase.auth.user.UserSession
+import io.github.jan.supabase.postgrest.postgrest
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -70,6 +71,21 @@ class SupabaseAuthService @Inject constructor(
 
     override suspend fun currentSession(): AuthSession? =
         client.auth.currentSessionOrNull()?.toAuthSession()
+
+    /**
+     * Deletes the auth user via the `delete_current_user()` SECURITY DEFINER RPC; the FK
+     * `on delete cascade` on every owned table removes the user's rows. Then clears the session.
+     * TODO(supabase): the RPC must be deployed server-side (see release notes / delete_current_user SQL).
+     */
+    override suspend fun deleteAccount(): DataResult<Unit> =
+        try {
+            client.postgrest.rpc("delete_current_user")
+            runCatching { client.auth.signOut() } // session is now invalid — best-effort cleanup
+            DataResult.Success(Unit)
+        } catch (t: Throwable) {
+            logger.e("Auth", "delete-account failed", t)
+            DataResult.Error(t, t.message)
+        }
 
     private fun requireSession(): AuthSession =
         client.auth.currentSessionOrNull()?.toAuthSession()

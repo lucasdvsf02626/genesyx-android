@@ -2,6 +2,7 @@ package com.genesyx.app.ui.profile
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.genesyx.app.auth.AuthRepository
 import com.genesyx.app.data.PartnerRepository
 import com.genesyx.app.data.PreferencesRepository
 import com.genesyx.app.data.ProfileRepository
@@ -21,6 +22,7 @@ class ProfileViewModel @Inject constructor(
     private val preferencesRepository: PreferencesRepository,
     private val partnerRepository: PartnerRepository,
     private val profileRepository: ProfileRepository,
+    private val authRepository: AuthRepository,
 ) : ViewModel() {
 
     val isSignedIn: StateFlow<Boolean> = sessionRepository.isSignedIn
@@ -48,6 +50,11 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch { profileRepository.setDisplayName(name) }
     }
     fun signOut() = sessionRepository.signOut()
+
+    /** Permanently delete the account (remote + local). */
+    fun deleteAccount() {
+        viewModelScope.launch { authRepository.deleteAccount() }
+    }
 
     fun sendInvite(email: String) = partnerRepository.sendInvite(email)
     fun revokeInvite(id: String) = partnerRepository.revoke(id)

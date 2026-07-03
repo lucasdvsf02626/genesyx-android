@@ -197,22 +197,8 @@ fun AuthContent(
                     )
                 }
 
-                Spacer(Modifier.height(24.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    HorizontalDivider(Modifier.weight(1f))
-                    Text("  OR  ", style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
-                    HorizontalDivider(Modifier.weight(1f))
-                }
-                Spacer(Modifier.height(24.dp))
-
-                // Google sign-in: config (web client id) is wired; the Android token flow (Credential
-                // Manager) is not implemented yet, so this doesn't fake a session.
-                OutlinedButton(
-                    onClick = { localError = "Google sign-in is coming soon." },
-                    modifier = Modifier.fillMaxWidth().height(48.dp),
-                    shape = RoundedCornerShape(12.dp),
-                ) { Text("Continue with Google", color = colors.onSurface) }
-
+                // Google sign-in intentionally omitted until the Android Credential Manager flow is
+                // implemented — no dead/misleading button ships to production.
                 Spacer(Modifier.height(28.dp))
                 Row {
                     Text(

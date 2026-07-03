@@ -27,4 +27,7 @@ interface AuthService {
     suspend fun signInWithIdToken(googleIdToken: String): DataResult<AuthSession>
     suspend fun signOut(): DataResult<Unit>
     suspend fun currentSession(): AuthSession?
+
+    /** Permanently delete the current account (auth user + owned rows) — Play requirement. */
+    suspend fun deleteAccount(): DataResult<Unit>
 }

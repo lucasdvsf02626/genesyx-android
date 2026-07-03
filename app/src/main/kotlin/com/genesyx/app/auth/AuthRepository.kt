@@ -1,5 +1,6 @@
 package com.genesyx.app.auth
 
+import com.genesyx.app.core.DispatcherProvider
 import com.genesyx.app.core.di.ApplicationScope
 import com.genesyx.app.core.log.Logger
 import com.genesyx.app.core.result.DataResult
@@ -8,9 +9,11 @@ import com.genesyx.app.data.DailyLogRepository
 import com.genesyx.app.data.PhRepository
 import com.genesyx.app.data.ProfileRepository
 import com.genesyx.app.data.SessionRepository
+import com.genesyx.app.data.local.GenesyxDatabase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -28,6 +31,8 @@ class AuthRepository @Inject constructor(
     private val cycleRepository: CycleRepository,
     private val dailyLogRepository: DailyLogRepository,
     private val phRepository: PhRepository,
+    private val database: GenesyxDatabase,
+    private val dispatchers: DispatcherProvider,
     @ApplicationScope private val appScope: CoroutineScope,
     private val logger: Logger,
 ) {
@@ -45,6 +50,21 @@ class AuthRepository @Inject constructor(
         persist(authService.signUp(email, password, name), "sign-up")
 
     fun signOut() = session.signOut()
+
+    /** Permanently delete the account remotely (RPC → cascade) then wipe all local data. */
+    suspend fun deleteAccount(): DataResult<Unit> =
+        when (val result = authService.deleteAccount()) {
+            is DataResult.Success -> {
+                withContext(dispatchers.io) { database.clearAllTables() }
+                session.signOut()
+                DataResult.Success(Unit)
+            }
+            is DataResult.Error -> {
+                logger.e("Auth", "account deletion failed", result.throwable)
+                result
+            }
+            DataResult.Loading -> DataResult.Loading
+        }
 
     private suspend fun persist(result: DataResult<AuthSession>, op: String): DataResult<Unit> =
         when (result) {

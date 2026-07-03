@@ -236,7 +236,7 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel = hi
             containerColor = colors.surface,
             title = { Text("Delete your account?", style = MaterialTheme.typography.titleLarge, color = colors.onSurface) },
             text = { Text("This will permanently delete your account and all your data. This cannot be undone.", style = MaterialTheme.typography.bodyLarge, color = colors.onSurfaceVariant) },
-            confirmButton = { TextButton(onClick = { viewModel.signOut(); delOpen = false }) { Text("Delete", color = colors.error, fontWeight = FontWeight.SemiBold) } },
+            confirmButton = { TextButton(onClick = { viewModel.deleteAccount(); delOpen = false }) { Text("Delete", color = colors.error, fontWeight = FontWeight.SemiBold) } },
             dismissButton = { TextButton(onClick = { delOpen = false }) { Text("Cancel", color = colors.onSurfaceVariant) } },
         )
     }
