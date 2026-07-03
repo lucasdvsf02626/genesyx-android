@@ -6,11 +6,39 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
-// Display = Outfit, Body = DM Sans (per the web styles.css @font-face). TODO: add the Outfit +
-// DM Sans .ttf to res/font and wire the FontFamily here. Until the font files are bundled we fall
-// back to the system sans-serif so the scale/weights are already correct.
+// ─────────────────────────────────────────────────────────────────────────────
+// Brand fonts: Display = Outfit, Body = Inter (per the web styles.css @font-face).
+//
+// ACTIVE fallback: system sans-serif, so the scale/weights are already correct and
+// the app compiles before the .ttf files are bundled.
+//
+// TO ACTIVATE THE REAL FONTS (2 steps):
+//   1. Drop these 7 files into  app/src/main/res/font/  (exact lowercase names):
+//        outfit_regular.ttf, outfit_medium.ttf, outfit_semibold.ttf, outfit_bold.ttf
+//        inter_regular.ttf,  inter_medium.ttf,   inter_semibold.ttf
+//      Grab them free (Open Font License) from fonts.google.com/specimen/Outfit
+//      and fonts.google.com/specimen/Inter — rename the static weights as above.
+//   2. Delete the two `= FontFamily.SansSerif` lines below and uncomment the two
+//      `BundledFamily` blocks + the `val DisplayFamily = OutfitFamily` lines.
+// ─────────────────────────────────────────────────────────────────────────────
 val DisplayFamily = FontFamily.SansSerif
 val BodyFamily = FontFamily.SansSerif
+
+/*  ── Uncomment once the .ttf files are in res/font/ (and remove the two lines above) ──
+val DisplayFamily = FontFamily(
+    Font(R.font.outfit_regular, FontWeight.Normal),
+    Font(R.font.outfit_medium, FontWeight.Medium),
+    Font(R.font.outfit_semibold, FontWeight.SemiBold),
+    Font(R.font.outfit_bold, FontWeight.Bold),
+)
+val BodyFamily = FontFamily(
+    Font(R.font.inter_regular, FontWeight.Normal),
+    Font(R.font.inter_medium, FontWeight.Medium),
+    Font(R.font.inter_semibold, FontWeight.SemiBold),
+)
+// Also add the import:  import androidx.compose.ui.text.font.Font
+// and:                  import com.genesyx.app.R
+*/
 
 val GenesyxTypography = Typography(
     // Outfit (display)

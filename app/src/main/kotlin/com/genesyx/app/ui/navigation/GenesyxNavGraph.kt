@@ -8,6 +8,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
+import com.genesyx.app.ui.clients.ClientsScreen
 import com.genesyx.app.ui.home.HomeScreen
 import com.genesyx.app.ui.insights.InsightsScreen
 import com.genesyx.app.ui.onboarding.OnboardingIntroScreen
@@ -95,6 +96,9 @@ fun GenesyxNavGraph(
         }
         composable(Screen.Pregnancy.route) {
             PregnancyScreen(onBack = { navController.popBackStack() })
+        }
+        composable(Screen.Clients.route) {
+            ClientsScreen(onBack = { navController.popBackStack() })
         }
         composable(Screen.Auth.route) {
             AuthScreen(

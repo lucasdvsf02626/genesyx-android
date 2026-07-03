@@ -1,5 +1,6 @@
 package com.genesyx.app.ui.onboarding
 
+import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -35,12 +36,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.genesyx.app.ui.components.BrandOrb
 import com.genesyx.app.ui.components.Eyebrow
 import com.genesyx.app.ui.components.GxGhostButton
 import com.genesyx.app.ui.components.GxPrimaryButton
 import com.genesyx.app.ui.theme.ElectricLavender
+import com.genesyx.app.ui.theme.GenesyxTheme
 
 private val EMAIL_REGEX = Regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")
 
@@ -166,5 +169,21 @@ fun WaitlistScreen(onContinue: () -> Unit, onBack: () -> Unit) {
         )
         Spacer(Modifier.height(4.dp))
         GxGhostButton(text = "Continue to app", onClick = onContinue)
+    }
+}
+
+@Preview(name = "Waitlist — light", showBackground = true, showSystemUi = true)
+@Composable
+private fun WaitlistScreenLightPreview() {
+    GenesyxTheme(darkTheme = false) {
+        WaitlistScreen(onContinue = {}, onBack = {})
+    }
+}
+
+@Preview(name = "Waitlist — dark", showBackground = true, showSystemUi = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun WaitlistScreenDarkPreview() {
+    GenesyxTheme(darkTheme = true) {
+        WaitlistScreen(onContinue = {}, onBack = {})
     }
 }

@@ -1,32 +1,61 @@
 package com.genesyx.app.data
 
+import com.genesyx.app.core.di.ApplicationScope
+import com.genesyx.app.core.log.Logger
+import com.genesyx.app.core.result.DataResult
+import com.genesyx.app.data.local.dao.DailyLogDao
+import com.genesyx.app.data.local.entity.toDomain
+import com.genesyx.app.data.local.entity.toEntity
+import com.genesyx.app.data.remote.DailyLogRemoteDataSource
 import com.genesyx.app.domain.model.DailyLog
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * In-memory daily-log store (mood/energy/symptoms/sleep/supplements/notes/water), keyed by date.
- *
- * Stands in for `getDailyLog`/`upsertDailyLog`/`getStreak` (docs/DATA_LAYER.md daily-log.functions)
- * until the remote layer lands. Hydration helpers operate on the `waterMl` field so Home, Nutrition
- * and Log all stay consistent. Streak counts consecutive days back from today with water logged.
+ * Daily-log store — local-first (Room source of truth) with Supabase sync. Public API is unchanged
+ * (StateFlow + logOn/waterMlOn/upsert/adjustWater/setWater/streak) so Home / Nutrition / Log are
+ * untouched; `upsert` now write-throughs to Supabase and `refresh` read-throughs all logs on
+ * sign-in. Mirrors `daily_logs` (UNIQUE(user_id, date)); streak counts consecutive days with water.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 @Singleton
-class DailyLogRepository @Inject constructor() {
+class DailyLogRepository @Inject constructor(
+    private val dao: DailyLogDao,
+    private val remote: DailyLogRemoteDataSource,
+    private val session: SessionRepository,
+    private val logger: Logger,
+    @ApplicationScope private val scope: CoroutineScope,
+) {
+    val logByDate: StateFlow<Map<LocalDate, DailyLog>> =
+        session.userId
+            .flatMapLatest { uid -> dao.observeAll(uid ?: SessionRepository.LOCAL_USER_ID) }
+            .map { list -> list.associate { it.date to it.toDomain() } }
+            .stateIn(scope, SharingStarted.Eagerly, emptyMap())
 
-    private val _logByDate = MutableStateFlow<Map<LocalDate, DailyLog>>(emptyMap())
-    val logByDate: StateFlow<Map<LocalDate, DailyLog>> = _logByDate.asStateFlow()
-
-    fun logOn(date: LocalDate): DailyLog = _logByDate.value[date] ?: DailyLog()
+    fun logOn(date: LocalDate): DailyLog = logByDate.value[date] ?: DailyLog()
 
     fun waterMlOn(date: LocalDate): Int = logOn(date).waterMl
 
+    /** Write-through: save locally (source of truth) then push to Supabase (best-effort). */
     fun upsert(date: LocalDate, log: DailyLog) {
-        _logByDate.value = _logByDate.value.toMutableMap().apply { put(date, log) }
+        scope.launch {
+            val userId = session.currentUserId()
+            dao.upsert(log.toEntity(userId, date))
+            if (remote.upsertLog(userId, date, log) is DataResult.Error) {
+                logger.w("DailyLog", "remote upsert deferred (offline/unconfigured)")
+            } else {
+                logger.i("DailyLog", "synced daily log $date for $userId")
+            }
+        }
     }
 
     /** Adjust today's hydration by [deltaMl], clamped to 0..10000. */
@@ -42,7 +71,7 @@ class DailyLogRepository @Inject constructor() {
 
     /** Consecutive days back from [today] (inclusive) that have water logged. */
     fun streak(today: LocalDate = LocalDate.now()): Int {
-        val map = _logByDate.value
+        val map = logByDate.value
         var streak = 0
         var day = today
         while ((map[day]?.waterMl ?: 0) > 0) {
@@ -50,5 +79,19 @@ class DailyLogRepository @Inject constructor() {
             day = day.minusDays(1)
         }
         return streak
+    }
+
+    /** Read-through: pull all of the user's logs into the local cache (called after sign-in). */
+    suspend fun refresh(userId: String = session.currentUserId()) {
+        when (val result = remote.listLogs(userId)) {
+            is DataResult.Success -> {
+                result.data.forEach { (date, log) -> dao.upsert(log.toEntity(userId, date)) }
+                if (result.data.isNotEmpty()) {
+                    logger.i("DailyLog", "cached ${result.data.size} daily logs for $userId")
+                }
+            }
+            is DataResult.Error -> logger.w("DailyLog", "refresh failed: ${result.message}")
+            DataResult.Loading -> Unit
+        }
     }
 }

@@ -1,0 +1,5 @@
+# Drop the brand font .ttf files here (exact lowercase names):
+#   outfit_regular.ttf  outfit_medium.ttf  outfit_semibold.ttf  outfit_bold.ttf
+#   inter_regular.ttf   inter_medium.ttf   inter_semibold.ttf
+# Then follow the 2-step activation note in ui/theme/Type.kt.
+# (This dot-file is ignored by the Android resource compiler.)

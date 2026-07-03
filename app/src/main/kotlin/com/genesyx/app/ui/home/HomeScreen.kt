@@ -52,10 +52,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import android.content.res.Configuration
+import com.genesyx.app.domain.model.CycleSettings
 import com.genesyx.app.ui.components.BrandOrb
 import com.genesyx.app.ui.components.CycleSettingsDialog
 import com.genesyx.app.ui.components.Eyebrow
@@ -64,7 +67,9 @@ import com.genesyx.app.ui.components.tintOnWhite
 import com.genesyx.app.ui.navigation.Screen
 import com.genesyx.app.ui.theme.ElectricBlue
 import com.genesyx.app.ui.theme.ElectricLavender
+import com.genesyx.app.ui.theme.GenesyxTheme
 import com.genesyx.app.ui.theme.PowderBlue
+import java.time.LocalDate
 
 private data class Bubble(val x: Int, val y: Int, val size: Int, val a: Color, val b: Color, val durationMs: Int, val drift: Float)
 
@@ -76,13 +81,26 @@ private val bubbles = listOf(
     Bubble(300, 540, 56, Color(0xFFBFDBFE), Color(0xFF60A5FA), 8000, -10f),
 )
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun HomeScreen(
     navController: NavController,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
+    HomeContent(
+        state = state,
+        onNavigate = { navController.navigate(it) },
+        onSaveCycle = { viewModel.saveCycleSettings(it) },
+    )
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun HomeContent(
+    state: HomeUiState,
+    onNavigate: (String) -> Unit,
+    onSaveCycle: (CycleSettings) -> Unit,
+) {
     val colors = MaterialTheme.colorScheme
     var showCycleDialog by remember { mutableStateOf(false) }
     var menuOpen by remember { mutableStateOf(false) }
@@ -128,13 +146,13 @@ fun HomeScreen(
                             DropdownMenuItem(
                                 text = { Text("Sign in or create account") },
                                 leadingIcon = { Icon(Icons.AutoMirrored.Filled.Login, null) },
-                                onClick = { menuOpen = false; navController.navigate(Screen.Auth.route) },
+                                onClick = { menuOpen = false; onNavigate(Screen.Auth.route) },
                             )
                         }
                         DropdownMenuItem(
                             text = { Text("Profile") },
                             leadingIcon = { Icon(Icons.Filled.Person, null) },
-                            onClick = { menuOpen = false; navController.navigate(Screen.Profile.route) },
+                            onClick = { menuOpen = false; onNavigate(Screen.Profile.route) },
                         )
                         DropdownMenuItem(
                             text = { Text("Cycle setup") },
@@ -153,7 +171,7 @@ fun HomeScreen(
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(16.dp))
                         .background(ElectricLavender)
-                        .clickable { navController.navigate(Screen.Auth.route) }
+                        .clickable { onNavigate(Screen.Auth.route) }
                         .padding(horizontal = 20.dp, vertical = 12.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
@@ -247,7 +265,7 @@ fun HomeScreen(
 
             Spacer(Modifier.height(20.dp))
 
-            GxPrimaryButton(text = "Log today", onClick = { navController.navigate(Screen.Log.route) }, leadingIcon = Icons.Filled.Add)
+            GxPrimaryButton(text = "Log today", onClick = { onNavigate(Screen.Log.route) }, leadingIcon = Icons.Filled.Add)
 
             Spacer(Modifier.height(12.dp))
 
@@ -255,7 +273,7 @@ fun HomeScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
-                    .clickable { navController.navigate(Screen.Pregnancy.route) }
+                    .clickable { onNavigate(Screen.Pregnancy.route) }
                     .padding(horizontal = 4.dp, vertical = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
@@ -272,7 +290,7 @@ fun HomeScreen(
         CycleSettingsDialog(
             current = state.settings,
             onDismiss = { showCycleDialog = false },
-            onSave = { viewModel.saveCycleSettings(it); showCycleDialog = false },
+            onSave = { onSaveCycle(it); showCycleDialog = false },
         )
     }
 }
@@ -344,5 +362,55 @@ private fun StatCard(
                 Text(suffix, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, modifier = Modifier.padding(bottom = 2.dp))
             }
         }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Compose Previews — render the Home UI live in Android Studio, no emulator needed.
+// HomeContent is stateless, so we feed it sample data and no-op callbacks.
+// ─────────────────────────────────────────────────────────────────────────────
+
+private val sampleHomeState = HomeUiState(
+    userName = "Lucas",
+    signedIn = true,
+    greeting = "Good afternoon",
+    settings = CycleSettings(lastPeriodDate = LocalDate.now().minusDays(8)),
+    cycleSetUp = true,
+    cycleEyebrow = "DAY 9 · FOLLICULAR",
+    cycleHeadline = "Your body is preparing",
+    cycleSub = "Energy is climbing toward your fertile window.",
+    cycleTags = listOf("Follicular", "Rising energy", "Prep foods"),
+    todayFocusTitle = "Leafy greens & folate",
+    todayFocusBody = "Spinach, lentils and citrus support the follicular build-up.",
+    hydrationLitres = 1.6f,
+    streakDays = 4,
+)
+
+@Preview(name = "Home — light", showBackground = true, showSystemUi = true)
+@Composable
+private fun HomeContentLightPreview() {
+    GenesyxTheme(darkTheme = false) {
+        HomeContent(state = sampleHomeState, onNavigate = {}, onSaveCycle = {})
+    }
+}
+
+@Preview(
+    name = "Home — dark",
+    showBackground = true,
+    showSystemUi = true,
+    uiMode = Configuration.UI_MODE_NIGHT_YES,
+)
+@Composable
+private fun HomeContentDarkPreview() {
+    GenesyxTheme(darkTheme = true) {
+        HomeContent(state = sampleHomeState, onNavigate = {}, onSaveCycle = {})
+    }
+}
+
+@Preview(name = "Home — not set up", showBackground = true, showSystemUi = true)
+@Composable
+private fun HomeContentEmptyPreview() {
+    GenesyxTheme(darkTheme = false) {
+        HomeContent(state = HomeUiState(), onNavigate = {}, onSaveCycle = {})
     }
 }

@@ -1,5 +1,6 @@
 package com.genesyx.app.ui.onboarding
 
+import android.content.res.Configuration
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -27,12 +28,14 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.genesyx.app.R
 import com.genesyx.app.ui.components.GxGhostButton
 import com.genesyx.app.ui.components.GxPrimaryButton
 import com.genesyx.app.ui.theme.ElectricLavender
+import com.genesyx.app.ui.theme.GenesyxTheme
 
 private data class Egg(
     val male: Boolean,
@@ -139,5 +142,21 @@ fun SplashScreen(onStart: () -> Unit, onSignIn: () -> Unit) {
             }
             Spacer(Modifier.height(8.dp))
         }
+    }
+}
+
+@Preview(name = "Splash — light", showBackground = true, showSystemUi = true)
+@Composable
+private fun SplashScreenLightPreview() {
+    GenesyxTheme(darkTheme = false) {
+        SplashScreen(onStart = {}, onSignIn = {})
+    }
+}
+
+@Preview(name = "Splash — dark", showBackground = true, showSystemUi = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun SplashScreenDarkPreview() {
+    GenesyxTheme(darkTheme = true) {
+        SplashScreen(onStart = {}, onSignIn = {})
     }
 }

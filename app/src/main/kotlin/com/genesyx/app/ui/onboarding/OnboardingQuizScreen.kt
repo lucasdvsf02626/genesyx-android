@@ -1,5 +1,6 @@
 package com.genesyx.app.ui.onboarding
 
+import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -31,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.genesyx.app.domain.content.DidYouKnow
 import com.genesyx.app.domain.content.quizQuestions
@@ -39,6 +41,7 @@ import com.genesyx.app.ui.components.GxOptionPill
 import com.genesyx.app.ui.components.GxPrimaryButton
 import com.genesyx.app.ui.components.tintOnWhite
 import com.genesyx.app.ui.theme.ElectricLavender
+import com.genesyx.app.ui.theme.GenesyxTheme
 
 @Composable
 fun OnboardingQuizScreen(onComplete: () -> Unit, onBack: () -> Unit) {
@@ -153,5 +156,21 @@ fun OnboardingQuizScreen(onComplete: () -> Unit, onBack: () -> Unit) {
             shape = RoundedCornerShape(28.dp),
             containerColor = colors.surface,
         )
+    }
+}
+
+@Preview(name = "OnboardingQuiz — light", showBackground = true, showSystemUi = true)
+@Composable
+private fun OnboardingQuizScreenLightPreview() {
+    GenesyxTheme(darkTheme = false) {
+        OnboardingQuizScreen(onComplete = {}, onBack = {})
+    }
+}
+
+@Preview(name = "OnboardingQuiz — dark", showBackground = true, showSystemUi = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun OnboardingQuizScreenDarkPreview() {
+    GenesyxTheme(darkTheme = true) {
+        OnboardingQuizScreen(onComplete = {}, onBack = {})
     }
 }

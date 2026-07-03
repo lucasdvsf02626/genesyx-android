@@ -1,5 +1,6 @@
 package com.genesyx.app.ui.onboarding
 
+import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -30,6 +31,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.genesyx.app.ui.components.GxBackButton
 import com.genesyx.app.ui.components.GxPrimaryButton
@@ -37,6 +39,7 @@ import com.genesyx.app.ui.components.tintOnWhite
 import com.genesyx.app.ui.theme.ElectricBlue
 import com.genesyx.app.ui.theme.ElectricLavender
 import com.genesyx.app.ui.theme.ElectricPink
+import com.genesyx.app.ui.theme.GenesyxTheme
 import com.genesyx.app.ui.theme.PowderBlue
 import com.genesyx.app.ui.theme.PowderPink
 
@@ -120,5 +123,21 @@ fun OnboardingIntroScreen(onContinue: () -> Unit, onBack: () -> Unit) {
 
         Spacer(Modifier.height(16.dp))
         GxPrimaryButton(text = "Continue", onClick = onContinue)
+    }
+}
+
+@Preview(name = "OnboardingIntro — light", showBackground = true, showSystemUi = true)
+@Composable
+private fun OnboardingIntroScreenLightPreview() {
+    GenesyxTheme(darkTheme = false) {
+        OnboardingIntroScreen(onContinue = {}, onBack = {})
+    }
+}
+
+@Preview(name = "OnboardingIntro — dark", showBackground = true, showSystemUi = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun OnboardingIntroScreenDarkPreview() {
+    GenesyxTheme(darkTheme = true) {
+        OnboardingIntroScreen(onContinue = {}, onBack = {})
     }
 }

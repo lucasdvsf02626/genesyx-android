@@ -1,5 +1,6 @@
 package com.genesyx.app.ui.onboarding
 
+import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,6 +34,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.genesyx.app.ui.components.BrandOrb
 import com.genesyx.app.ui.components.Eyebrow
@@ -40,6 +42,7 @@ import com.genesyx.app.ui.components.GxGhostButton
 import com.genesyx.app.ui.components.GxPrimaryButton
 import com.genesyx.app.ui.components.tintOnWhite
 import com.genesyx.app.ui.theme.ElectricLavender
+import com.genesyx.app.ui.theme.GenesyxTheme
 import com.genesyx.app.ui.theme.PowderBlue
 
 private data class Insight(val icon: ImageVector, val label: String, val value: String)
@@ -153,5 +156,21 @@ fun ReadinessSummaryScreen(onUnlockGuide: () -> Unit, onContinue: () -> Unit, on
         )
         Spacer(Modifier.height(4.dp))
         GxGhostButton(text = "Continue to dashboard", onClick = onContinue)
+    }
+}
+
+@Preview(name = "ReadinessSummary — light", showBackground = true, showSystemUi = true)
+@Composable
+private fun ReadinessSummaryScreenLightPreview() {
+    GenesyxTheme(darkTheme = false) {
+        ReadinessSummaryScreen(onUnlockGuide = {}, onContinue = {}, onBack = {})
+    }
+}
+
+@Preview(name = "ReadinessSummary — dark", showBackground = true, showSystemUi = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun ReadinessSummaryScreenDarkPreview() {
+    GenesyxTheme(darkTheme = true) {
+        ReadinessSummaryScreen(onUnlockGuide = {}, onContinue = {}, onBack = {})
     }
 }

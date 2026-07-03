@@ -45,8 +45,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import android.content.res.Configuration
 import com.genesyx.app.domain.content.phaseLabel
 import com.genesyx.app.domain.cycle.CycleEngine
 import com.genesyx.app.domain.model.CalendarCell
@@ -61,6 +63,7 @@ import com.genesyx.app.ui.navigation.Screen
 import com.genesyx.app.ui.ph.PhTrackerSection
 import com.genesyx.app.ui.theme.BabyLavender
 import com.genesyx.app.ui.theme.ElectricLavender
+import com.genesyx.app.ui.theme.GenesyxTheme
 import com.genesyx.app.ui.theme.PowderBlue
 import com.genesyx.app.ui.theme.PowderPink
 import java.time.LocalDate
@@ -76,8 +79,21 @@ fun TrackScreen(
     navController: NavController,
     viewModel: TrackViewModel = hiltViewModel(),
 ) {
-    val colors = MaterialTheme.colorScheme
     val settings by viewModel.settings.collectAsState()
+    TrackContent(
+        settings = settings,
+        onNavigate = { navController.navigate(it) },
+        onSaveCycle = { viewModel.saveCycleSettings(it) },
+    )
+}
+
+@Composable
+fun TrackContent(
+    settings: CycleSettings?,
+    onNavigate: (String) -> Unit,
+    onSaveCycle: (CycleSettings) -> Unit,
+) {
+    val colors = MaterialTheme.colorScheme
     val today = remember { LocalDate.now() }
 
     var monthAnchor by remember { mutableStateOf(YearMonth.now()) }
@@ -235,7 +251,7 @@ fun TrackScreen(
         // ── Add to today's log
         GxPrimaryButton(
             text = "Add to today's log",
-            onClick = { navController.navigate(Screen.Log.route) },
+            onClick = { onNavigate(Screen.Log.route) },
             leadingIcon = Icons.Filled.Add,
         )
 
@@ -253,7 +269,7 @@ fun TrackScreen(
             current = settings,
             onDismiss = { showCycleDialog = false },
             onSave = {
-                viewModel.saveCycleSettings(it)
+                onSaveCycle(it)
                 showCycleDialog = false
             },
         )
@@ -400,4 +416,43 @@ private fun DayDetailDialog(day: CalendarCell.Day, today: LocalDate, onDismiss: 
             TextButton(onClick = onDismiss) { Text("Close", color = ElectricLavender) }
         },
     )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Compose Previews — TrackContent is stateless, so we feed it sample data.
+// ─────────────────────────────────────────────────────────────────────────────
+
+private val sampleTrackSettings = CycleSettings(
+    lastPeriodDate = LocalDate.now().minusDays(8),
+    cycleLength = 28,
+    periodLength = 5,
+)
+
+@Preview(name = "Track — light", showBackground = true, showSystemUi = true)
+@Composable
+private fun TrackContentLightPreview() {
+    GenesyxTheme(darkTheme = false) {
+        TrackContent(settings = sampleTrackSettings, onNavigate = {}, onSaveCycle = {})
+    }
+}
+
+@Preview(
+    name = "Track — dark",
+    showBackground = true,
+    showSystemUi = true,
+    uiMode = Configuration.UI_MODE_NIGHT_YES,
+)
+@Composable
+private fun TrackContentDarkPreview() {
+    GenesyxTheme(darkTheme = true) {
+        TrackContent(settings = sampleTrackSettings, onNavigate = {}, onSaveCycle = {})
+    }
+}
+
+@Preview(name = "Track — not set up", showBackground = true, showSystemUi = true)
+@Composable
+private fun TrackContentEmptyPreview() {
+    GenesyxTheme(darkTheme = false) {
+        TrackContent(settings = null, onNavigate = {}, onSaveCycle = {})
+    }
 }

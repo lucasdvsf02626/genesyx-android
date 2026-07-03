@@ -20,6 +20,7 @@ sealed class Screen(val route: String) {
     data object Log : Screen("log")
     data object Pregnancy : Screen("pregnancy")
     data object Auth : Screen("auth")
+    data object Clients : Screen("clients")
 
     // Deep link: genesyx://invite/{code}
     data object Invite : Screen("invite/{code}") {
@@ -43,6 +44,7 @@ sealed class Screen(val route: String) {
             Pregnancy.route,
             Auth.route,
             Invite.route,
+            Clients.route,
             )
         }
     }

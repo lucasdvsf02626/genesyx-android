@@ -23,8 +23,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,22 +35,58 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
-import com.genesyx.app.data.SessionRepository
+import androidx.lifecycle.viewModelScope
+import android.content.res.Configuration
+import com.genesyx.app.auth.AuthRepository
+import com.genesyx.app.core.result.DataResult
 import com.genesyx.app.ui.components.GxGhostButton
 import com.genesyx.app.ui.components.isValidEmail
 import com.genesyx.app.ui.theme.ElectricLavender
+import com.genesyx.app.ui.theme.GenesyxTheme
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import javax.inject.Inject
+
+/** Transient auth screen state (async in-flight + last error). */
+data class AuthUiState(val loading: Boolean = false, val error: String? = null)
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
-    private val sessionRepository: SessionRepository,
+    private val authRepository: AuthRepository,
 ) : ViewModel() {
-    fun signIn(email: String, name: String?) = sessionRepository.signIn(email, name)
+
+    private val _uiState = MutableStateFlow(AuthUiState())
+    val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
+
+    /** Real email/password auth via [AuthRepository]; local-first when Supabase isn't configured. */
+    fun submit(signup: Boolean, email: String, password: String, name: String?, onSuccess: () -> Unit) {
+        _uiState.value = AuthUiState(loading = true)
+        viewModelScope.launch {
+            val result = if (signup) authRepository.signUp(email, password, name)
+            else authRepository.signInWithPassword(email, password)
+            when (result) {
+                is DataResult.Success -> {
+                    _uiState.value = AuthUiState()
+                    onSuccess()
+                }
+                is DataResult.Error ->
+                    _uiState.value = AuthUiState(error = result.message ?: "Something went wrong. Please try again.")
+                DataResult.Loading -> Unit
+            }
+        }
+    }
+
+    fun clearError() {
+        if (_uiState.value.error != null) _uiState.value = _uiState.value.copy(error = null)
+    }
 }
 
 @Composable
@@ -59,21 +95,44 @@ fun AuthScreen(
     onBack: () -> Unit,
     viewModel: AuthViewModel = hiltViewModel(),
 ) {
+    val uiState by viewModel.uiState.collectAsState()
+    AuthContent(
+        uiState = uiState,
+        onSubmit = { signup, email, password, name -> viewModel.submit(signup, email, password, name, onSignedIn) },
+        onClearError = viewModel::clearError,
+        onBack = onBack,
+    )
+}
+
+@Composable
+fun AuthContent(
+    uiState: AuthUiState,
+    onSubmit: (signup: Boolean, email: String, password: String, name: String?) -> Unit,
+    onClearError: () -> Unit,
+    onBack: () -> Unit,
+) {
     val colors = MaterialTheme.colorScheme
     var signupMode by remember { mutableStateOf(false) }
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var error by remember { mutableStateOf<String?>(null) }
+    var localError by remember { mutableStateOf<String?>(null) }
+
+    val shownError = localError ?: uiState.error
+
+    fun clearErrors() {
+        localError = null
+        onClearError()
+    }
 
     fun submit() {
         when {
-            !isValidEmail(email) -> error = "Enter a valid email"
-            password.length < 8 -> error = "Password must be at least 8 characters"
-            password.length > 72 -> error = "Password is too long"
+            !isValidEmail(email) -> localError = "Enter a valid email"
+            password.length < 8 -> localError = "Password must be at least 8 characters"
+            password.length > 72 -> localError = "Password is too long"
             else -> {
-                viewModel.signIn(email.trim(), name.takeIf { signupMode })
-                onSignedIn()
+                localError = null
+                onSubmit(signupMode, email.trim(), password, name.takeIf { signupMode })
             }
         }
     }
@@ -108,26 +167,34 @@ fun AuthScreen(
 
                 Spacer(Modifier.height(28.dp))
                 if (signupMode) {
-                    Field("Name", name, { if (it.length <= 80) name = it; error = null }, placeholder = "Your name")
+                    Field("Name", name, { if (it.length <= 80) name = it; clearErrors() }, placeholder = "Your name")
                     Spacer(Modifier.height(16.dp))
                 }
-                Field("Email", email, { email = it; error = null }, keyboardType = KeyboardType.Email)
+                Field("Email", email, { email = it; clearErrors() }, keyboardType = KeyboardType.Email)
                 Spacer(Modifier.height(16.dp))
-                Field("Password", password, { password = it; error = null }, keyboardType = KeyboardType.Password, isPassword = true)
+                Field("Password", password, { password = it; clearErrors() }, keyboardType = KeyboardType.Password, isPassword = true)
 
-                if (error != null) {
+                if (shownError != null) {
                     Spacer(Modifier.height(8.dp))
-                    Text(error!!, style = MaterialTheme.typography.bodyMedium, color = colors.error, modifier = Modifier.fillMaxWidth())
+                    Text(shownError, style = MaterialTheme.typography.bodyMedium, color = colors.error, modifier = Modifier.fillMaxWidth())
                 }
 
                 Spacer(Modifier.height(20.dp))
                 Button(
                     onClick = { submit() },
+                    enabled = !uiState.loading,
                     modifier = Modifier.fillMaxWidth().height(48.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = ElectricLavender),
                 ) {
-                    Text(if (signupMode) "Create account" else "Sign in", fontWeight = FontWeight.SemiBold)
+                    Text(
+                        when {
+                            uiState.loading -> "Please wait…"
+                            signupMode -> "Create account"
+                            else -> "Sign in"
+                        },
+                        fontWeight = FontWeight.SemiBold,
+                    )
                 }
 
                 Spacer(Modifier.height(24.dp))
@@ -138,8 +205,10 @@ fun AuthScreen(
                 }
                 Spacer(Modifier.height(24.dp))
 
+                // Google sign-in: config (web client id) is wired; the Android token flow (Credential
+                // Manager) is not implemented yet, so this doesn't fake a session.
                 OutlinedButton(
-                    onClick = { viewModel.signIn(email.trim().ifBlank { "you@genesyx.app" }, name.ifBlank { null }); onSignedIn() },
+                    onClick = { localError = "Google sign-in is coming soon." },
                     modifier = Modifier.fillMaxWidth().height(48.dp),
                     shape = RoundedCornerShape(12.dp),
                 ) { Text("Continue with Google", color = colors.onSurface) }
@@ -156,7 +225,7 @@ fun AuthScreen(
                         style = MaterialTheme.typography.bodyMedium,
                         color = ElectricLavender,
                         fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.clickable { signupMode = !signupMode; error = null },
+                        modifier = Modifier.clickable { signupMode = !signupMode; clearErrors() },
                     )
                 }
                 Spacer(Modifier.height(4.dp))
@@ -188,5 +257,21 @@ private fun Field(
             visualTransformation = if (isPassword) PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None,
             keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
         )
+    }
+}
+
+@Preview(name = "Auth — light", showBackground = true)
+@Composable
+private fun AuthContentLightPreview() {
+    GenesyxTheme(darkTheme = false) {
+        AuthContent(uiState = AuthUiState(), onSubmit = { _, _, _, _ -> }, onClearError = {}, onBack = {})
+    }
+}
+
+@Preview(name = "Auth — dark", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun AuthContentDarkPreview() {
+    GenesyxTheme(darkTheme = true) {
+        AuthContent(uiState = AuthUiState(), onSubmit = { _, _, _, _ -> }, onClearError = {}, onBack = {})
     }
 }

@@ -1,30 +1,39 @@
 package com.genesyx.app.data
 
+import com.genesyx.app.core.di.ApplicationScope
+import com.genesyx.app.data.local.datastore.GenesyxPreferencesDataStore
 import com.genesyx.app.domain.model.FocusMode
 import com.genesyx.app.domain.model.ThemeMode
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * In-memory app preferences (theme, push toggle, current focus). The theme value drives
- * [com.genesyx.app.ui.AppViewModel] so the Profile dark-mode switch flips the app theme live.
+ * App preferences (theme, push toggle, current focus, onboarding-complete), now persisted via
+ * DataStore so they survive process death. Public API is unchanged (StateFlows + setters) — the
+ * theme value still drives [com.genesyx.app.ui.AppViewModel] so the Profile dark-mode switch flips
+ * the app theme live, and now the choice is remembered across restarts.
  */
 @Singleton
-class PreferencesRepository @Inject constructor() {
+class PreferencesRepository @Inject constructor(
+    private val store: GenesyxPreferencesDataStore,
+    @ApplicationScope private val scope: CoroutineScope,
+) {
+    val themeMode: StateFlow<ThemeMode> =
+        store.themeMode.stateIn(scope, SharingStarted.Eagerly, ThemeMode.SYSTEM)
+    val pushEnabled: StateFlow<Boolean> =
+        store.pushEnabled.stateIn(scope, SharingStarted.Eagerly, true)
+    val focusMode: StateFlow<FocusMode> =
+        store.focusMode.stateIn(scope, SharingStarted.Eagerly, FocusMode.PREP)
+    val onboardingComplete: StateFlow<Boolean> =
+        store.onboardingComplete.stateIn(scope, SharingStarted.Eagerly, false)
 
-    private val _themeMode = MutableStateFlow(ThemeMode.SYSTEM)
-    val themeMode: StateFlow<ThemeMode> = _themeMode.asStateFlow()
-
-    private val _pushEnabled = MutableStateFlow(true)
-    val pushEnabled: StateFlow<Boolean> = _pushEnabled.asStateFlow()
-
-    private val _focusMode = MutableStateFlow(FocusMode.PREP)
-    val focusMode: StateFlow<FocusMode> = _focusMode.asStateFlow()
-
-    fun setTheme(mode: ThemeMode) { _themeMode.value = mode }
-    fun setPush(enabled: Boolean) { _pushEnabled.value = enabled }
-    fun setFocus(mode: FocusMode) { _focusMode.value = mode }
+    fun setTheme(mode: ThemeMode) { scope.launch { store.setTheme(mode) } }
+    fun setPush(enabled: Boolean) { scope.launch { store.setPush(enabled) } }
+    fun setFocus(mode: FocusMode) { scope.launch { store.setFocus(mode) } }
+    fun setOnboardingComplete(complete: Boolean) { scope.launch { store.setOnboardingComplete(complete) } }
 }

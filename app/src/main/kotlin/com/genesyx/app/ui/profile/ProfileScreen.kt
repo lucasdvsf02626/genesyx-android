@@ -152,6 +152,12 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel = hi
             }
 
             Spacer(Modifier.height(16.dp))
+            GroupLabel("Clients")
+            CardGroup {
+                RowItem("Manage clients", onClick = { navController.navigate(Screen.Clients.route) })
+            }
+
+            Spacer(Modifier.height(16.dp))
             GroupLabel("Tracking")
             CardGroup {
                 listOf("Personal Details", "Health Profile", "Tracking Preferences").forEachIndexed { i, label ->

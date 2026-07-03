@@ -1,41 +1,64 @@
 package com.genesyx.app.data
 
-import kotlinx.coroutines.flow.MutableStateFlow
+import com.genesyx.app.core.di.ApplicationScope
+import com.genesyx.app.data.local.datastore.GenesyxPreferencesDataStore
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * In-memory auth/session state. Stands in for Supabase Auth (`use-auth`) until the remote layer
- * is wired — `signIn` is a mock that simply marks the session active so the signed-in vs
- * signed-out UI states across Home / Profile / Partner / Invite behave correctly.
+ * Local session state, persisted via DataStore so sign-in survives process death. Public API is
+ * unchanged (StateFlows + signIn/updateDisplayName/signOut) so all existing ViewModels keep working.
+ *
+ * `signIn` currently mints a stable local userId used to scope every Room row per user, and marks
+ * the session active. When Supabase Auth is wired (see [com.genesyx.app.auth.AuthRepository] /
+ * [com.genesyx.app.auth.AuthService]) the userId becomes the Supabase auth uid and this class stays
+ * the local mirror of that remote session.
  */
 @Singleton
-class SessionRepository @Inject constructor() {
+class SessionRepository @Inject constructor(
+    private val store: GenesyxPreferencesDataStore,
+    @ApplicationScope private val scope: CoroutineScope,
+) {
+    companion object {
+        /** Row-scoping id used before a real account exists, so guest data stays isolated & migratable. */
+        const val LOCAL_USER_ID = "local-user"
+    }
 
-    private val _isSignedIn = MutableStateFlow(false)
-    val isSignedIn: StateFlow<Boolean> = _isSignedIn.asStateFlow()
+    val isSignedIn: StateFlow<Boolean> =
+        store.signedIn.stateIn(scope, SharingStarted.Eagerly, false)
+    val userId: StateFlow<String?> =
+        store.userId.stateIn(scope, SharingStarted.Eagerly, null)
+    val email: StateFlow<String?> =
+        store.email.stateIn(scope, SharingStarted.Eagerly, null)
+    val displayName: StateFlow<String?> =
+        store.displayName.stateIn(scope, SharingStarted.Eagerly, null)
 
-    private val _email = MutableStateFlow<String?>(null)
-    val email: StateFlow<String?> = _email.asStateFlow()
+    /** The id all persisted rows are scoped to: the signed-in user, or the local guest bucket. */
+    fun currentUserId(): String = userId.value ?: LOCAL_USER_ID
 
-    private val _displayName = MutableStateFlow<String?>(null)
-    val displayName: StateFlow<String?> = _displayName.asStateFlow()
-
-    fun signIn(email: String, name: String?) {
-        _email.value = email
-        _displayName.value = name?.takeIf { it.isNotBlank() } ?: email.substringBefore("@")
-        _isSignedIn.value = true
+    fun signIn(email: String, name: String?, userId: String? = null) {
+        scope.launch {
+            // Prefer the real auth uid (Supabase) so Room rows scope to the account and match RLS;
+            // else reuse an existing local id, else mint one for the guest bucket.
+            val id = userId?.takeIf { it.isNotBlank() }
+                ?: this@SessionRepository.userId.value
+                ?: UUID.randomUUID().toString()
+            val display = name?.takeIf { it.isNotBlank() } ?: email.substringBefore("@")
+            store.setSession(userId = id, email = email, displayName = display)
+        }
     }
 
     fun updateDisplayName(name: String) {
-        if (name.isNotBlank()) _displayName.value = name
+        if (name.isNotBlank()) scope.launch { store.setDisplayName(name) }
     }
 
     fun signOut() {
-        _isSignedIn.value = false
-        _email.value = null
-        _displayName.value = null
+        scope.launch { store.clearSession() }
     }
 }

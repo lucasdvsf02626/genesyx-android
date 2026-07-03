@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 // Release signing is loaded from keystore.properties (kept out of git). When the file is absent
@@ -18,6 +19,13 @@ val keystoreProperties = Properties().apply {
     }
 }
 val hasReleaseKeystore = keystorePropertiesFile.exists()
+
+// Secrets (Supabase, Google) live in local.properties (git-ignored), falling back to gradle
+// properties / CI env. Never commit real values into gradle.properties.
+val localProperties = Properties().apply {
+    val f = rootProject.file("local.properties")
+    if (f.exists()) FileInputStream(f).use { load(it) }
+}
 
 android {
     namespace = "com.genesyx.app"
@@ -32,16 +40,29 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // Supabase config injected from gradle properties (see gradle.properties)
+        // Supabase + Google config from local.properties (git-ignored); fallback to gradle properties.
         buildConfigField(
             "String",
             "SUPABASE_URL",
-            "\"${providers.gradleProperty("genesyx.supabaseUrl").getOrElse("")}\"",
+            "\"${localProperties.getProperty("genesyx.supabaseUrl") ?: providers.gradleProperty("genesyx.supabaseUrl").getOrElse("")}\"",
         )
         buildConfigField(
             "String",
             "SUPABASE_ANON_KEY",
-            "\"${providers.gradleProperty("genesyx.supabaseAnonKey").getOrElse("")}\"",
+            "\"${localProperties.getProperty("genesyx.supabaseAnonKey") ?: providers.gradleProperty("genesyx.supabaseAnonKey").getOrElse("")}\"",
+        )
+        buildConfigField(
+            "String",
+            "GOOGLE_WEB_CLIENT_ID",
+            "\"${localProperties.getProperty("genesyx.googleWebClientId") ?: providers.gradleProperty("genesyx.googleWebClientId").getOrElse("")}\"",
+        )
+
+        // Environment + Google Cloud / backend API base. Dev default; release overrides env to PROD.
+        buildConfigField("String", "GENESYX_ENV", "\"DEV\"")
+        buildConfigField(
+            "String",
+            "GENESYX_API_BASE_URL",
+            "\"${localProperties.getProperty("genesyx.apiBaseUrl") ?: providers.gradleProperty("genesyx.apiBaseUrl").getOrElse("")}\"",
         )
     }
 
@@ -60,6 +81,7 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
+            buildConfigField("String", "GENESYX_ENV", "\"PROD\"")
             // Falls back to debug signing when keystore.properties is absent, so the release build
             // is still producible locally for testing. Bump versionCode/versionName (defaultConfig)
             // for every Play Store upload.
