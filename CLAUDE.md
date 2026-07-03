@@ -37,14 +37,18 @@ Release-candidate handoff. Read this first. Honest state as of the commit below.
 - `./gradlew clean bundleRelease assembleRelease` → BUILD SUCCESSFUL, R8/minify clean (only a pre-existing `MenuBook` deprecation warning, unrelated).
 - APK signed with the release keystore (cert SHA-256 match) and not debuggable.
 
-## NOT verified this session (needs your device)
-- Targeted on-device re-test of the 4 fixes against the new APK (below).
+## On-device re-test — versionCode 3 APK on emulator-5554 (all PASS, no FATAL in the whole run)
+1. **Cold-start routing (FIX 3): PASS.** Force-stop cold start → signed-in `lucas+gx01` landed on **Home**, no onboarding; second force-close→reopen still Home. Signed-out relaunch showed **Splash**. New gx02 signup → Home.
+2. **Offline save (FIX 2): PASS.** `svc` offline (`Active default network: none`) → Save did **not** close and showed exact copy "You're offline — reconnect to save your log." Reconnect → Save closed to Home; logcat `DailyLog: synced daily log 2026-07-04`.
+3. **No pH claim in quiz (FIX 1): PASS.** Walked onboarding Q1–Q5; only "Did you know?" shown was the legit cycle-length fact on Q2. Answering the gender question advanced **straight to Q5** — no pH modal.
+4. **Softened gender copy (FIX 4): PASS.** Q4 shows "When it comes to your baby's sex, what feels right for you?" + helper + the 3 new options; old boy/girl options gone.
+- Note: after each sign-in `PhRepository.refresh()` queries the absent `ph_readings` table and logs a non-fatal `E Ph` error — expected, irrelevant (pH flagged off), does not crash.
 
-## SINGLE NEXT ACTION — targeted on-device re-test (versionCode 3 APK)
-1. **Cold-start routing:** launch signed-in → lands on **Home** (no intro/quiz/summary). Sign out → launch → onboarding shows.
-2. **Onboarding quiz Q4:** shows softened copy "When it comes to your baby's sex, what feels right for you?" with the 3 options; **no** "Did you know?" pH/boy-or-girl modal anywhere in the quiz.
-3. **Offline save:** airplane mode → open Log → Save → shows "You're offline — reconnect to save your log.", does **not** close/persist. Reconnect → Save works.
-4. **Delete account LAST:** progress → signed out → returns to start → cannot log back in → re-signup same email succeeds.
+## Left in this state for the next steps
+- Signed in on-device as **`lucas+gx02@mysupplementfactory.com`** (throwaway password `Gx02!verify7k`), on Home.
+
+## SINGLE NEXT ACTION — delete-account steps (owner-run, steps 12–13)
+Delete account (progress → signed out → returns to start) → confirm cannot log back in → re-signup same email succeeds → delete again. Then the RC is clear for Play Console (upload AAB, Data Safety form, store listing).
 
 ## v1.1 backlog (deferred, do NOT build for 1.0)
 - **Real offline-first sync queue** so offline edits persist and reconcile on reconnect (removes the FIX 2 offline block).
