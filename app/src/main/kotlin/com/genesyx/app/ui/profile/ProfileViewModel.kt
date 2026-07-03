@@ -43,6 +43,8 @@ class ProfileViewModel @Inject constructor(
     val deleting: StateFlow<Boolean> = _deleting.asStateFlow()
     private val _deleteError = MutableStateFlow<String?>(null)
     val deleteError: StateFlow<String?> = _deleteError.asStateFlow()
+    private val _deleted = MutableStateFlow(false)
+    val deleted: StateFlow<Boolean> = _deleted.asStateFlow()
 
     fun setDark(dark: Boolean) {
         // Drive the live app theme (DataStore) and sync the profile row (Room + Supabase).
@@ -67,8 +69,12 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch {
             val result = authRepository.deleteAccount()
             _deleting.value = false
-            _deleteError.value = (result as? DataResult.Error)?.message
-                ?: if (result is DataResult.Error) "Couldn't delete your account. Please try again." else null
+            when (result) {
+                is DataResult.Success -> _deleted.value = true
+                is DataResult.Error ->
+                    _deleteError.value = result.message ?: "Couldn't delete your account. Please try again."
+                DataResult.Loading -> Unit
+            }
         }
     }
 

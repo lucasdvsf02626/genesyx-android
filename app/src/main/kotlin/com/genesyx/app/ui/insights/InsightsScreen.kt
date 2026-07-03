@@ -73,11 +73,13 @@ fun InsightsScreen(
 
         Column(Modifier.padding(horizontal = 20.dp)) {
             Spacer(Modifier.height(8.dp))
-            PhInsightsSection(ph) {
-                navController.navigate(Screen.Track.route) {
-                    popUpTo(Screen.Home.route) { saveState = true }
-                    launchSingleTop = true
-                    restoreState = true
+            if (com.genesyx.app.core.FeatureFlags.PH_TRACKING) {
+                PhInsightsSection(ph) {
+                    navController.navigate(Screen.Track.route) {
+                        popUpTo(Screen.Home.route) { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
                 }
             }
 

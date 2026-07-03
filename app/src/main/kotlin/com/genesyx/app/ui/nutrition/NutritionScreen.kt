@@ -99,8 +99,10 @@ fun NutritionScreen(
                 onRemove = { viewModel.adjustWater(-200) },
             )
 
-            Spacer(Modifier.height(12.dp))
-            PhTrackerSection()
+            if (com.genesyx.app.core.FeatureFlags.PH_TRACKING) {
+                Spacer(Modifier.height(12.dp))
+                PhTrackerSection()
+            }
 
             if (state.cycleSetUp) {
                 Spacer(Modifier.height(12.dp))

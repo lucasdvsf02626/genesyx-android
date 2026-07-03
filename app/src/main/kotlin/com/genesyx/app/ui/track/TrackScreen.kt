@@ -257,10 +257,11 @@ fun TrackContent(
 
         Spacer(Modifier.height(16.dp))
 
-        // ── pH Tracker section (self-contained card + log dialog)
-        PhTrackerSection()
-
-        Spacer(Modifier.height(24.dp))
+        // ── pH Tracker section — gated off for 1.0 (FeatureFlags.PH_TRACKING)
+        if (com.genesyx.app.core.FeatureFlags.PH_TRACKING) {
+            PhTrackerSection()
+            Spacer(Modifier.height(24.dp))
+        }
     }
 
     // ── Dialogs

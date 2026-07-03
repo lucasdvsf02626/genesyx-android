@@ -49,8 +49,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.genesyx.app.core.AppLinks
 import com.genesyx.app.domain.model.FocusMode
 import com.genesyx.app.domain.model.PartnerInvite
 import com.genesyx.app.domain.model.ThemeMode
@@ -64,10 +68,10 @@ import com.genesyx.app.ui.theme.ElectricPink
 
 private val detailCopy = mapOf(
     "Personal Details" to "Manage your display name, email sign-in, and account details from this screen.",
-    "Health Profile" to "Your cycle settings, daily logs, pH readings, and partner connection shape your personalised guidance.",
+    "Health Profile" to "Your cycle settings, daily logs, and partner connection shape your personalised guidance.",
     "Tracking Preferences" to "Keep notifications on and update your cycle settings any time your rhythm changes.",
     "Privacy & Data" to "Your saved data is private to your account. You can log out or delete your account from Profile.",
-    "Help & Support" to "For best results, complete cycle setup, log today, and use the Track or Nutrition tabs to add pH readings.",
+    "Help & Support" to "For best results, complete cycle setup and log today.",
 )
 
 @Composable
@@ -83,6 +87,15 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel = hi
     val invites by viewModel.invites.collectAsState()
     val deleting by viewModel.deleting.collectAsState()
     val deleteError by viewModel.deleteError.collectAsState()
+    val accountDeleted by viewModel.deleted.collectAsState()
+    val context = LocalContext.current
+
+    // Account deleted → clear the back stack and return to the start (splash/auth).
+    LaunchedEffect(accountDeleted) {
+        if (accountDeleted) {
+            navController.navigate(Screen.Splash.route) { popUpTo(0) { inclusive = true } }
+        }
+    }
 
     var nameOpen by remember { mutableStateOf(false) }
     var pwOpen by remember { mutableStateOf(false) }
@@ -180,7 +193,9 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel = hi
             Spacer(Modifier.height(16.dp))
             GroupLabel("About")
             CardGroup {
-                RowItem("Privacy & Data", onClick = { detail = "Privacy & Data" })
+                RowItem("Privacy & Data", onClick = {
+                    runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(AppLinks.PRIVACY_POLICY_URL))) }
+                })
                 Divider()
                 RowItem("Help & Support", onClick = { detail = "Help & Support" })
             }

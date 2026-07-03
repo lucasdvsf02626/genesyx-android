@@ -178,7 +178,7 @@ fun HomeContent(
                 ) {
                     Column(Modifier.weight(1f)) {
                         Text("Sign in to save your journey", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                        Text("Cycle setup, logs, pH readings, and profile sync.", color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp)
+                        Text("Cycle setup, daily logs, and profile sync.", color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp)
                     }
                     Icon(Icons.AutoMirrored.Filled.Login, null, tint = Color.White)
                 }
