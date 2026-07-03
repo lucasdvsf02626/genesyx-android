@@ -3,6 +3,7 @@ package com.genesyx.app.ui.profile
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.genesyx.app.auth.AuthRepository
+import com.genesyx.app.core.result.DataResult
 import com.genesyx.app.data.PartnerRepository
 import com.genesyx.app.data.PreferencesRepository
 import com.genesyx.app.data.ProfileRepository
@@ -12,7 +13,9 @@ import com.genesyx.app.domain.model.Partner
 import com.genesyx.app.domain.model.PartnerInvite
 import com.genesyx.app.domain.model.ThemeMode
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -36,6 +39,11 @@ class ProfileViewModel @Inject constructor(
     val partner: StateFlow<Partner?> = partnerRepository.partner
     val invites: StateFlow<List<PartnerInvite>> = partnerRepository.invites
 
+    private val _deleting = MutableStateFlow(false)
+    val deleting: StateFlow<Boolean> = _deleting.asStateFlow()
+    private val _deleteError = MutableStateFlow<String?>(null)
+    val deleteError: StateFlow<String?> = _deleteError.asStateFlow()
+
     fun setDark(dark: Boolean) {
         // Drive the live app theme (DataStore) and sync the profile row (Room + Supabase).
         preferencesRepository.setTheme(if (dark) ThemeMode.DARK else ThemeMode.SYSTEM)
@@ -51,10 +59,20 @@ class ProfileViewModel @Inject constructor(
     }
     fun signOut() = sessionRepository.signOut()
 
-    /** Permanently delete the account (remote + local). */
+    /** Permanently delete the account (remote + local), exposing loading/error to the UI. */
     fun deleteAccount() {
-        viewModelScope.launch { authRepository.deleteAccount() }
+        if (_deleting.value) return
+        _deleteError.value = null
+        _deleting.value = true
+        viewModelScope.launch {
+            val result = authRepository.deleteAccount()
+            _deleting.value = false
+            _deleteError.value = (result as? DataResult.Error)?.message
+                ?: if (result is DataResult.Error) "Couldn't delete your account. Please try again." else null
+        }
     }
+
+    fun clearDeleteError() { _deleteError.value = null }
 
     fun sendInvite(email: String) = partnerRepository.sendInvite(email)
     fun revokeInvite(id: String) = partnerRepository.revoke(id)

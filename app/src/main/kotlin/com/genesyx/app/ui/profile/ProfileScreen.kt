@@ -35,6 +35,7 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -80,6 +81,8 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel = hi
     val focus by viewModel.focusMode.collectAsState()
     val partner by viewModel.partner.collectAsState()
     val invites by viewModel.invites.collectAsState()
+    val deleting by viewModel.deleting.collectAsState()
+    val deleteError by viewModel.deleteError.collectAsState()
 
     var nameOpen by remember { mutableStateOf(false) }
     var pwOpen by remember { mutableStateOf(false) }
@@ -230,14 +233,40 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel = hi
         )
     }
     if (delOpen) {
+        // On successful deletion the session is cleared → signedIn flips false → close the dialog.
+        LaunchedEffect(signedIn) { if (!signedIn) delOpen = false }
         AlertDialog(
-            onDismissRequest = { delOpen = false },
+            onDismissRequest = { if (!deleting) { delOpen = false; viewModel.clearDeleteError() } },
             shape = RoundedCornerShape(20.dp),
             containerColor = colors.surface,
             title = { Text("Delete your account?", style = MaterialTheme.typography.titleLarge, color = colors.onSurface) },
-            text = { Text("This will permanently delete your account and all your data. This cannot be undone.", style = MaterialTheme.typography.bodyLarge, color = colors.onSurfaceVariant) },
-            confirmButton = { TextButton(onClick = { viewModel.deleteAccount(); delOpen = false }) { Text("Delete", color = colors.error, fontWeight = FontWeight.SemiBold) } },
-            dismissButton = { TextButton(onClick = { delOpen = false }) { Text("Cancel", color = colors.onSurfaceVariant) } },
+            text = {
+                Column {
+                    Text(
+                        "This will permanently delete your account and all your data. This cannot be undone.",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = colors.onSurfaceVariant,
+                    )
+                    if (deleteError != null) {
+                        Spacer(Modifier.height(12.dp))
+                        Text(deleteError!!, style = MaterialTheme.typography.bodyMedium, color = colors.error)
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { viewModel.deleteAccount() }, enabled = !deleting) {
+                    Text(
+                        if (deleting) "Deleting…" else "Delete",
+                        color = colors.error,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { delOpen = false; viewModel.clearDeleteError() }, enabled = !deleting) {
+                    Text("Cancel", color = colors.onSurfaceVariant)
+                }
+            },
         )
     }
 }
