@@ -29,10 +29,11 @@ sealed class Screen(val route: String) {
 
     companion object {
         /** Tabs shown in the bottom navigation bar. */
-        val bottomTabs = listOf(Home, Track, Nutrition, Insights, Profile)
+        val bottomTabs by lazy { listOf(Home, Track, Nutrition, Insights, Profile) }
 
         /** Routes where the bottom navigation bar is hidden. */
-        val noBottomNavRoutes = setOf(
+        val noBottomNavRoutes by lazy {
+            setOf(
             Splash.route,
             OnboardingIntro.route,
             OnboardingQuiz.route,
@@ -42,6 +43,7 @@ sealed class Screen(val route: String) {
             Pregnancy.route,
             Auth.route,
             Invite.route,
-        )
+            )
+        }
     }
 }
