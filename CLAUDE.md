@@ -44,11 +44,22 @@ Release-candidate handoff. Read this first. Honest state as of the commit below.
 4. **Softened gender copy (FIX 4): PASS.** Q4 shows "When it comes to your baby's sex, what feels right for you?" + helper + the 3 new options; old boy/girl options gone.
 - Note: after each sign-in `PhRepository.refresh()` queries the absent `ph_readings` table and logs a non-fatal `E Ph` error — expected, irrelevant (pH flagged off), does not crash.
 
-## Left in this state for the next steps
-- Signed in on-device as **`lucas+gx02@mysupplementfactory.com`** (throwaway password `Gx02!verify7k`), on Home.
+## T4 — deletion lifecycle (STARTED this session, NOT COMPLETE)
+- **(a) gx02 in-app delete: PASS.** Profile → Delete account → confirm → progress → signed out → **Splash/start screen** (shots `T4_00`–`T4_03`), no crash. App-side success path ran (Room cleared, signed out, navigated to Splash).
+- **(b) gx02 login-fail: NOT RUN** (interrupted before submit). **(c) re-signup same email: NOT RUN. (d) delete gx02 again: NOT RUN. (e) gx01 delete: NOT RUN.**
+- **Supabase Step-4 proof still outstanding:** app-side delete succeeded, but server-side removal of the `auth.users` row for gx02 is **not independently verified**. That is the deletion-compliance proof and must be recorded.
 
-## SINGLE NEXT ACTION — delete-account steps (owner-run, steps 12–13)
-Delete account (progress → signed out → returns to start) → confirm cannot log back in → re-signup same email succeeds → delete again. Then the RC is clear for Play Console (upload AAB, Data Safety form, store listing).
+## Device state at checkpoint (accurate)
+- emulator-5554 is **signed OUT**, sitting on the **Auth "Welcome back"** screen.
+- **`lucas+gx02@mysupplementfactory.com`** was **deleted in-app** during T4(a) (password was `Gx02!verify7k`) — it is no longer a usable session; re-login is expected to fail until re-signup.
+- **`lucas+gx01`** account still exists (its password is in prior session notes; not held in this file).
+
+## SINGLE NEXT ACTION — finish T4, then Supabase Step-4 proof
+1. Complete T4 (b)→(e): gx02 login must **fail** → re-signup same email succeeds **fresh (no old data)** → delete gx02 again → sign in as gx01 → delete it too.
+2. Capture **Supabase Step-4 proof**: confirm each deleted account's `auth.users` row (and profile/logs) is actually gone server-side.
+3. **Sunday closeout order:** T4 → Supabase Step-4 proof → closeout/evidence pack → Shopify pages verify live → store assets (feature graphic + phone + 7"/10" tablet) → Play Console forms (privacy + deletion URLs, Data Safety, content rating) → AAB upload → internal smoke → submit.
+
+> **CODE FREEZE:** source is frozen at `e400d19`. No source edits before submission — only docs/evidence, store setup, and on-device verification.
 
 ## v1.1 backlog (deferred, do NOT build for 1.0)
 - **Real offline-first sync queue** so offline edits persist and reconcile on reconnect (removes the FIX 2 offline block).
