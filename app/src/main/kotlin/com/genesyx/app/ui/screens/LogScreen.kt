@@ -91,6 +91,7 @@ fun LogScreen(onClose: () -> Unit, viewModel: LogViewModel = hiltViewModel()) {
     var sleepOpen by remember { mutableStateOf(false) }
     var waterOpen by remember { mutableStateOf(false) }
     var suppOpen by remember { mutableStateOf(false) }
+    var offline by remember { mutableStateOf(false) }
 
     val allSymptoms = remember(symptoms) { (DEFAULT_SYMPTOMS + symptoms).distinct() }
 
@@ -223,11 +224,23 @@ fun LogScreen(onClose: () -> Unit, viewModel: LogViewModel = hiltViewModel()) {
             )
 
             Spacer(Modifier.height(20.dp))
+            if (offline) {
+                Text(
+                    "You're offline — reconnect to save your log.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colors.error,
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
+                )
+            }
             GxPrimaryButton(
                 text = "Save log",
                 onClick = {
-                    viewModel.save(DailyLog(mood, energy, symptoms, sleepMinutes, supplements, notes.ifBlank { null }, waterMl))
-                    onClose()
+                    if (!viewModel.isOnline()) {
+                        offline = true
+                    } else {
+                        viewModel.save(DailyLog(mood, energy, symptoms, sleepMinutes, supplements, notes.ifBlank { null }, waterMl))
+                        onClose()
+                    }
                 },
             )
             Spacer(Modifier.height(24.dp))

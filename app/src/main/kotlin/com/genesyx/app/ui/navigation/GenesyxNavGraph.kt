@@ -27,11 +27,12 @@ import com.genesyx.app.ui.track.TrackScreen
 @Composable
 fun GenesyxNavGraph(
     navController: NavHostController,
+    startDestination: String = Screen.Splash.route,
     modifier: Modifier = Modifier,
 ) {
     NavHost(
         navController = navController,
-        startDestination = Screen.Splash.route,
+        startDestination = startDestination,
         modifier = modifier,
     ) {
         // ── Onboarding flow (each step pops itself off the back stack)

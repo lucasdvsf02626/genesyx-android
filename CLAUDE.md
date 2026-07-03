@@ -5,46 +5,54 @@ Project Name: Genesyx Android
 Release-candidate handoff. Read this first. Honest state as of the commit below.
 
 ## Build identity
-- **RC build:** versionCode `2`, versionName `1.0.0`  (`app/build.gradle.kts`)
-- **Last commit:** `c066424` — "RC prep: FeatureFlags pH gate, AppLinks privacy URL, delete flow success/error/nav, versionCode bump"
-- **Release artifacts** (built & signed with `genesyx-release.jks` via `keystore.properties`; `assembleDebug`, `assembleRelease`, `bundleRelease` all green):
+- **RC build:** versionCode `3`, versionName `1.0.0`  (`app/build.gradle.kts:38-39`)
+- **Release artifacts** (built & signed with `genesyx-release.jks` via `keystore.properties`; `clean bundleRelease assembleRelease` all GREEN, R8/minify clean):
   - AAB (Play upload): `app/build/outputs/bundle/release/app-release.aab` — 7.5 MB
   - APK (on-device test): `app/build/outputs/apk/release/app-release.apk` — 3.9 MB
   - Install: `adb install -r app/build/outputs/apk/release/app-release.apk`
+- **Signing verified:** APK signer cert SHA-256 `c3d51f4b…a446c17d` matches the `genesyx-release.jks` cert (CN=Lucas Valenca, OU=Genesyx). APK verifies under v2 scheme; `android:debuggable` absent (release = not debuggable).
 
-## What THIS session actually fixed (file by file, all verified compiling)
-- `core/FeatureFlags.kt` **(NEW)** — `PH_TRACKING = false`. pH is compile-time gated OFF for 1.0.
-- `core/AppLinks.kt` **(NEW)** — `PRIVACY_POLICY_URL = https://genesyx.co.uk/pages/privacy-policy`, `DELETE_ACCOUNT_URL = https://genesyx.co.uk/pages/delete-account`.
-- `ui/track/TrackScreen.kt` — `PhTrackerSection()` wrapped in `if (FeatureFlags.PH_TRACKING)`.
-- `ui/nutrition/NutritionScreen.kt` — pH section wrapped in `if (FeatureFlags.PH_TRACKING)`.
-- `ui/insights/InsightsScreen.kt` — `PhInsightsSection` wrapped in `if (FeatureFlags.PH_TRACKING)`.
-- `ui/home/HomeScreen.kt` — pH removed from subtitle copy ("Cycle setup, daily logs, and profile sync.").
-- `ui/profile/ProfileScreen.kt` — removed "pH readings" from detail copy; **"Privacy & Data" row now opens `PRIVACY_POLICY_URL`** via `ACTION_VIEW` intent; added `LaunchedEffect(accountDeleted)` that navigates to `Screen.Splash` with `popUpTo(0){inclusive=true}` after delete.
-- `ui/profile/ProfileViewModel.kt` — added `deleted: StateFlow<Boolean>`; `deleteAccount()` now sets `deleted=true` on `DataResult.Success`, surfaces message on `Error` (alongside existing `deleting`/`deleteError`).
-- `app/build.gradle.kts` — `versionCode 1 → 2`.
+## What THIS session fixed (device test found 4 blockers; all fixed, verified in source + compiled into the RC)
+- **FIX 1 — pH sex-selection claim in onboarding quiz (blocker, content).** The "Did you know?" modal on quiz Q4 claimed "…even pH balance can subtly influence the likelihood of conceiving a boy or girl." Removed the entire `fact = DidYouKnow(...)` block. `domain/content/QuizContent.kt` (gender question, ~line 58). The earlier pH audit only covered Home/Profile/Track/Nutrition/Insights and missed onboarding. Repo-wide grep for `boy or girl` / `conceiving a boy|girl` / `sex-selection` / `sway` now returns **zero** user-visible hits.
+- **FIX 2 — offline save must not lie (blocker, data-loss).** There is no sync queue in v1.0: an offline daily-log write lands in Room but is silently overwritten by the server on the next read-through (data loss). Now the log Save is gated on connectivity — offline, it does **not** save/close; it shows `"You're offline — reconnect to save your log."`
+  - `ui/screens/LogViewModel.kt` — added `isOnline()` (ConnectivityManager point-in-time check; injects `@ApplicationContext`). `ACCESS_NETWORK_STATE` already in the manifest.
+  - `ui/screens/LogScreen.kt:227-243` — Save `onClick` calls `viewModel.isOnline()`; offline → sets `offline=true` (shows the error string), online → saves + `onClose()`.
+- **FIX 3 — don't re-onboard signed-in users (high, UX).** Cold start forced a signed-in user through intro → 5-question quiz → readiness summary before Home. Now the start destination is resolved from the persisted session before the graph is built; onboarding shows only for new/signed-out users. Quiz screens left dormant, not deleted.
+  - `data/SessionRepository.kt:48` — `suspend fun awaitSignedIn() = store.signedIn.first()` (reads the real persisted value; avoids the eagerly-seeded `isSignedIn` StateFlow that reads `false` until DataStore loads).
+  - `ui/AppViewModel.kt` — `startRoute: StateFlow<String?>` (null until resolved); `init` awaits `awaitSignedIn()` → `Home` or `Splash`.
+  - `MainActivity.kt` — activity-scoped `AppViewModel`; `splash.setKeepOnScreenCondition { startRoute.value == null }` holds the system splash until resolved; NavHost built only when `route != null`, passing `startDestination = route`.
+  - `ui/navigation/GenesyxNavGraph.kt` — added `startDestination: String` param (defaults to `Splash.route`).
+- **FIX 4 — softened gender question copy (content).** `domain/content/QuizContent.kt` gender question → "When it comes to your baby's sex, what feels right for you?"; options "I have a hope in mind" / "I'm happy either way" / "I'd rather not say". Same `id = "gender"`.
+- `app/build.gradle.kts:38` — `versionCode 2 → 3`.
 
-**Audit (grep):** no user-visible pH strings remain reachable outside the gated components. No dead/placeholder privacy URLs.
+## Prior session (context, already true before tonight)
+- pH tracking is compile-time gated OFF for 1.0 via `core/FeatureFlags.PH_TRACKING = false`. To re-enable later: flip the single flag.
+- `ph_readings` is **irrelevant** to v1.0 (pH hidden, no table needed). Do not chase it.
+- `delete_current_user` RPC is **deployed and REST-verified**; no Edge Function needed. Delete flow (`SupabaseAuthService`/`AuthRepository`) calls RPC → clears Room → signs out → navigates to Splash.
+- In-app "Privacy & Data" row opens `AppLinks.PRIVACY_POLICY_URL` (`https://genesyx.co.uk/pages/privacy-policy`) via `ACTION_VIEW`.
+- P0 on-device script previously ran steps 1–11 clean (see `docs/GENESYX_P0_TEST_SCRIPT.md`).
 
-## Task 0 findings (state found at session start, now resolved)
-- FeatureFlags did not exist → created, pH gated OFF. ✅
-- pH was user-visible on Track/Nutrition/Insights/Home/Profile → gated + strings cleaned. ✅
-- `versionCode` was still `1` → bumped to `2`. ✅
-- In-app privacy link was a dead in-app detail pane, not a real URL → wired to live page. ✅
-- Delete-account flow had success/error but **no nav-to-start** → added. ✅
-- No project `CLAUDE.md` → this file. ✅
-- Delete RPC (`delete_current_user`) wiring is present in `SupabaseAuthService`/`AuthRepository` (calls RPC, clears Room, signs out). Remote deployment NOT yet verified on device — see open items.
+## Verified this session
+- All 4 fixes present in source (greps + pasted lines).
+- `./gradlew clean bundleRelease assembleRelease` → BUILD SUCCESSFUL, R8/minify clean (only a pre-existing `MenuBook` deprecation warning, unrelated).
+- APK signed with the release keystore (cert SHA-256 match) and not debuggable.
 
-## Remaining (fresh session)
-1. **Write & run the on-device P0 test script** (Task 3 — not yet written). Clean install cold start → onboarding → fresh sign-up (plus-address) → cycle setup → daily log create+edit → airplane-mode log + reconnect sync → theme toggle → rotation → sign out/in → force-close reopen (session survives) → tap in-app privacy link (opens live page) → **DELETE ACCOUNT last** (progress → signed out → returns to start → cannot log back in) → re-signup same email succeeds.
-2. **Supabase:** verify `ph_readings` table + `delete_current_user` RPC are deployed and in the PostgREST schema cache (recurring PGRST205/PGRST202; fix via Dashboard "Reload schema cache"). Account deletion from `auth.users` likely needs an Edge Function, not a plain SECURITY DEFINER RPC.
-3. **Shopify pages content:** ensure `genesyx.co.uk/pages/privacy-policy` and `/pages/delete-account` have real, live content.
-4. **Play Console:** upload the AAB, complete Data Safety form + store listing.
+## NOT verified this session (needs your device)
+- Targeted on-device re-test of the 4 fixes against the new APK (below).
 
-## SINGLE NEXT ACTION
-Write the numbered on-device P0 test script (Task 3), then run it against the release APK. Everything else waits on a clean P0 pass.
+## SINGLE NEXT ACTION — targeted on-device re-test (versionCode 3 APK)
+1. **Cold-start routing:** launch signed-in → lands on **Home** (no intro/quiz/summary). Sign out → launch → onboarding shows.
+2. **Onboarding quiz Q4:** shows softened copy "When it comes to your baby's sex, what feels right for you?" with the 3 options; **no** "Did you know?" pH/boy-or-girl modal anywhere in the quiz.
+3. **Offline save:** airplane mode → open Log → Save → shows "You're offline — reconnect to save your log.", does **not** close/persist. Reconnect → Save works.
+4. **Delete account LAST:** progress → signed out → returns to start → cannot log back in → re-signup same email succeeds.
 
-## Notes for whoever continues
+## v1.1 backlog (deferred, do NOT build for 1.0)
+- **Real offline-first sync queue** so offline edits persist and reconcile on reconnect (removes the FIX 2 offline block).
+- **Log-screen Back discards unsaved edits** — add a trivial confirm/guard.
+
+## Notes
 - Secrets in `local.properties` (git-ignored): `genesyx.supabaseUrl`, `genesyx.supabaseAnonKey`, `genesyx.googleWebClientId`, `genesyx.apiBaseUrl`. Never commit real values.
+- `keystore.properties` → `storeFile=/Users/lucasvalenca_sf/Documents/genesyx-release.jks`.
 - Java: `JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"`.
-- To re-enable pH later: flip `FeatureFlags.PH_TRACKING = true` (single switch, no other code changes).
 - Architecture is local-first: Room = source of truth, Supabase read-through on sign-in + write-through. Details in `ARCHITECTURE.md`, `docs/DATA_LAYER.md`, `docs/schema.sql`.
+- Remaining release ops: upload the AAB to Play Console, complete Data Safety form + store listing; ensure `genesyx.co.uk/pages/privacy-policy` has live content.

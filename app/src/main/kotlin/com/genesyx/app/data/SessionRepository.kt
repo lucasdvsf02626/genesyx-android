@@ -5,6 +5,7 @@ import com.genesyx.app.data.local.datastore.GenesyxPreferencesDataStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.util.UUID
@@ -41,6 +42,10 @@ class SessionRepository @Inject constructor(
 
     /** The id all persisted rows are scoped to: the signed-in user, or the local guest bucket. */
     fun currentUserId(): String = userId.value ?: LOCAL_USER_ID
+
+    /** Awaits the first persisted value from DataStore. Used at launch to pick the start destination
+     *  without racing the eagerly-seeded [isSignedIn] StateFlow (which reads `false` until it loads). */
+    suspend fun awaitSignedIn(): Boolean = store.signedIn.first()
 
     fun signIn(email: String, name: String?, userId: String? = null) {
         scope.launch {
