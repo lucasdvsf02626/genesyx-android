@@ -57,12 +57,20 @@ Release-candidate handoff. Read this first. Honest state as of the commit below.
 - **`lucas+gx02`** has been **deleted twice** (a and d) and re-created once (c); currently deleted. Password used throughout: `Gx02!verify7k`.
 - **`lucas+gx01`** still exists — blocked on its password for T4(e).
 
-## SINGLE NEXT ACTION — items only the owner can do
-1. **T4(e):** provide `lucas+gx01`'s password → sign in → delete (agent can drive once the password is supplied).
-2. **Supabase Step-4 proof:** in the dashboard, confirm the deleted accounts' rows are gone in `auth.users` (+ `profiles` / `daily_logs` / `cycle_settings`).
-3. **Shopify pages:** replace `body_html` of `/pages/privacy-policy` + `/pages/delete-account` from `~/Downloads/*-FINAL.html` (blocked earlier on expired Shopify MCP token) and verify live.
-4. **Store assets:** feature graphic + phone + 7"/10" tablet screenshots.
-5. **Play Console:** privacy + deletion URLs, Data Safety form, content rating, AAB upload, internal smoke, submit.
+## LAUNCH CHECKLIST — where we are (updated Mon)
+
+**Engineering (DONE):** 4 fixes, v3 built/signed, PR #2, T1–T3 PASS, T4(a–d) PASS. Code frozen at `e400d19`.
+
+| # | Item | Status | Detail / evidence |
+|---|---|---|---|
+| 1 | T4(e) gx01 delete | ⛔ BLOCKED | needs `lucas+gx01` password; agent drives it once supplied |
+| 2 | Supabase server-side delete proof | ⛔ OWNER | dashboard: confirm deleted rows gone in `auth.users` + `profiles`/`daily_logs`/`cycle_settings`. (b)+(c) already prove auth-layer deletion works |
+| 3a | Shopify `/pages/privacy-policy` | ✅ DONE | verified LIVE clean — H1 ok, 0 `[CONTACT_EMAIL]`, 0 `genesxy`, no `.html`, only `info@genesyx.co.uk` |
+| 3b | Shopify `/pages/delete-account` | ❌ BROKEN LIVE | an **old draft** is published: has `[CONTACT_EMAIL]` (×1), misspelled `info@genesxy.co.uk`, two `./privacy-policy.html` links. Must re-publish `body_html` from clean `~/Downloads/delete-account-FINAL.html` (agent can do it once Shopify MCP is re-authed), then re-verify live |
+| 4 | Store assets | ⛔ OWNER | feature graphic 1024×500 + phone + 7"/10" tablet screenshots |
+| 5 | Play Console | ⛔ OWNER | privacy + deletion URLs, Data Safety form, content rating, AAB upload, internal smoke, **submit** |
+
+**Overall: ~90%.** All engineering verification is green except T4(e). Remaining = store/console/dashboard work + the one broken Shopify page.
 
 > **CODE FREEZE:** source is frozen at `e400d19`. No source edits before submission — only docs/evidence, store setup, and on-device verification.
 
