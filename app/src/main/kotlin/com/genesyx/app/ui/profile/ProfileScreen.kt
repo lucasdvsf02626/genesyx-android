@@ -167,10 +167,13 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel = hi
                 RowItem("Change password", onClick = { if (signedIn) pwOpen = true else goSignIn() })
             }
 
-            Spacer(Modifier.height(16.dp))
-            GroupLabel("Clients")
-            CardGroup {
-                RowItem("Manage clients", onClick = { navController.navigate(Screen.Clients.route) })
+            // ── Clients (admin/dev tool) — gated off for 1.0 (FeatureFlags.ADMIN_CLIENTS)
+            if (com.genesyx.app.core.FeatureFlags.ADMIN_CLIENTS) {
+                Spacer(Modifier.height(16.dp))
+                GroupLabel("Clients")
+                CardGroup {
+                    RowItem("Manage clients", onClick = { navController.navigate(Screen.Clients.route) })
+                }
             }
 
             Spacer(Modifier.height(16.dp))

@@ -5,6 +5,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -51,6 +52,9 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -58,8 +62,8 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import android.content.res.Configuration
+import com.genesyx.app.R
 import com.genesyx.app.domain.model.CycleSettings
-import com.genesyx.app.ui.components.BrandOrb
 import com.genesyx.app.ui.components.CycleSettingsDialog
 import com.genesyx.app.ui.components.Eyebrow
 import com.genesyx.app.ui.components.GxPrimaryButton
@@ -106,7 +110,19 @@ fun HomeContent(
     var menuOpen by remember { mutableStateOf(false) }
 
     Box(Modifier.fillMaxSize().background(colors.background)) {
-        FloatingBubbles()
+        // Brand hero background. The artwork is light, so it only reads on a light surface —
+        // in dark theme fall back to the animated bubbles so text stays AA-readable.
+        if (colors.background.luminance() > 0.5f) {
+            Image(
+                painter = painterResource(R.drawable.home_hero_bg),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+                alignment = Alignment.TopCenter,
+            )
+        } else {
+            FloatingBubbles()
+        }
 
         Column(
             modifier = Modifier
@@ -186,32 +202,30 @@ fun HomeContent(
 
             Spacer(Modifier.height(24.dp))
 
-            // ── Cycle hero card
+            // ── Cycle hero card. Translucent surface acts as a subtle scrim so the brand hero
+            //    reads through behind the copy while keeping the dynamic text AA-readable.
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(28.dp),
-                colors = CardDefaults.cardColors(containerColor = colors.surface),
+                colors = CardDefaults.cardColors(containerColor = colors.surface.copy(alpha = 0.72f)),
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
                 onClick = { showCycleDialog = true },
             ) {
-                Box(Modifier.fillMaxWidth()) {
-                    BrandOrb(modifier = Modifier.align(Alignment.TopEnd), size = 176.dp)
-                    Column(Modifier.padding(24.dp)) {
-                        Text(state.cycleEyebrow, style = MaterialTheme.typography.labelSmall, color = ElectricLavender)
-                        Spacer(Modifier.height(10.dp))
-                        Text(
-                            state.cycleHeadline,
-                            style = MaterialTheme.typography.headlineMedium,
-                            color = colors.onSurface,
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        Text(state.cycleSub, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
-                        if (state.cycleTags.isNotEmpty()) {
-                            Spacer(Modifier.height(16.dp))
-                            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                state.cycleTags.forEachIndexed { i, tag -> TagChip(tag, primary = i == 0) }
-                            }
+                Column(Modifier.padding(24.dp)) {
+                    Text(state.cycleEyebrow, style = MaterialTheme.typography.labelSmall, color = ElectricLavender)
+                    Spacer(Modifier.height(10.dp))
+                    Text(
+                        state.cycleHeadline,
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = colors.onSurface,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(state.cycleSub, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                    if (state.cycleTags.isNotEmpty()) {
+                        Spacer(Modifier.height(16.dp))
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            state.cycleTags.forEachIndexed { i, tag -> TagChip(tag, primary = i == 0) }
                         }
                     }
                 }

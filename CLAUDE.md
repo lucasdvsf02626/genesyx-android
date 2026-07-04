@@ -5,12 +5,18 @@ Project Name: Genesyx Android
 Release-candidate handoff. Read this first. Honest state as of the commit below.
 
 ## Build identity
-- **RC build:** versionCode `3`, versionName `1.0.0`  (`app/build.gradle.kts:38-39`)
+- **RC build:** versionCode `4`, versionName `1.0.0`  (`app/build.gradle.kts:38-39`)
 - **Release artifacts** (built & signed with `genesyx-release.jks` via `keystore.properties`; `clean bundleRelease assembleRelease` all GREEN, R8/minify clean):
-  - AAB (Play upload): `app/build/outputs/bundle/release/app-release.aab` — 7.5 MB
-  - APK (on-device test): `app/build/outputs/apk/release/app-release.apk` — 3.9 MB
+  - AAB (Play upload): `app/build/outputs/bundle/release/app-release.aab` — 7.9 MB
+  - APK (on-device test): `app/build/outputs/apk/release/app-release.apk` — 4.2 MB
   - Install: `adb install -r app/build/outputs/apk/release/app-release.apk`
-- **Signing verified:** APK signer cert SHA-256 `c3d51f4b…a446c17d` matches the `genesyx-release.jks` cert (CN=Lucas Valenca, OU=Genesyx). APK verifies under v2 scheme; `android:debuggable` absent (release = not debuggable).
+- **Release env:** `GENESYX_ENV=PROD` — the `release` buildType overrides the `DEV` default (`app/build.gradle.kts:84`). Confirmed in the compiled `BuildConfig.java` (release) → `GENESYX_ENV = "PROD"`, `VERSION_CODE = 4`. Release logging (`Logger.d`) is suppressed outside DEV.
+- **Signing verified (v3):** APK signer cert SHA-256 `c3d51f4b…a446c17d` matches the `genesyx-release.jks` cert (CN=Lucas Valenca, OU=Genesyx). APK verifies under v2 scheme; `android:debuggable` absent (release = not debuggable). (v4 rebuilt with the same signing config.)
+
+## v4 — two scoped changes (Sat Jul 4), built + smoke-tested on-device
+- **FIX A — dev "Clients" screen gated OFF (blocker).** The admin/dev Clients screen (add client + "Seed 100 demo clients" → `ClientsViewModel.seedDemo(100)`) was reachable in release via **Profile → "Manage clients"** (`ProfileScreen.kt`, the only entry point — no gesture/deep-link, not in bottom tabs). Now gated behind new `FeatureFlags.ADMIN_CLIENTS = false` (same pattern as `PH_TRACKING`): the Profile "Clients" section is wrapped in `if (…ADMIN_CLIENTS)`, so the screen and its seed action are unreachable. Route composable left dormant. Dev sweep found no other dev/debug screens or seed actions (`Environment.DEV` only gates debug logcat verbosity, not a screen).
+- **FIX B — Home hero banner brand image.** Replaced the gradient-bubble decorations on Home (`FloatingBubbles()` full-screen + `BrandOrb` on the cycle card) with the brand crescent artwork. Asset `~/Desktop/genesyx-brand/home-hero.jpg` (5375×11650) downscaled to `res/drawable-nodpi/home_hero_bg.jpg` (1080×2341, 82 KB). `HomeScreen.kt`: theme-aware — light theme shows the hero image (the art is light), dark theme keeps `FloatingBubbles` so text stays AA-readable; the cycle card is now a translucent surface (`surface.copy(alpha=0.72f)`) acting as a subtle scrim, `BrandOrb` removed. Card copy verified AA-readable over the image on-device. `BrandOrb` still used by onboarding screens (not dead).
+- **On-device smoke (v4, emulator-5554, all PASS, 0 FATAL):** cold-start signed-out → **intro** ✓; sign-up/sign-in flow reachable (created gx03) ✓; Home renders the new brand background, card text readable ✓; all 5 tabs open (Home/Track/Nutrition/Insights/Profile) ✓; **no Clients screen reachable** (Profile has no "Manage clients") ✓; delete flow works (gx03 deleted → Splash) ✓; logcat 0 FATAL ✓. Before/after Home shots in scratchpad `t4e/` (`FIXB_06_before_home`, `FIXB_07_after_home_v4`).
 
 ## What THIS session fixed (device test found 4 blockers; all fixed, verified in source + compiled into the RC)
 - **FIX 1 — pH sex-selection claim in onboarding quiz (blocker, content).** The "Did you know?" modal on quiz Q4 claimed "…even pH balance can subtly influence the likelihood of conceiving a boy or girl." Removed the entire `fact = DidYouKnow(...)` block. `domain/content/QuizContent.kt` (gender question, ~line 58). The earlier pH audit only covered Home/Profile/Track/Nutrition/Insights and missed onboarding. Repo-wide grep for `boy or girl` / `conceiving a boy|girl` / `sex-selection` / `sway` now returns **zero** user-visible hits.
@@ -53,13 +59,12 @@ Release-candidate handoff. Read this first. Honest state as of the commit below.
 - **Deletion evidence:** T4(b)+(e) rejection + (c) same-email re-signup are strong app/auth-level proof deletion works for **both** accounts. The remaining piece is the **Supabase server-side DB check** (below), which requires dashboard access.
 
 ## Device state (accurate, end of Sat Jul 4 session)
-- emulator-5554 is **signed OUT** on the **Splash** screen.
-- **`lucas+gx02`** has been **deleted twice** (a and d) and re-created once (c); currently deleted. (Passwords for both test accounts are held by the owner, not recorded in this doc.)
-- **`lucas+gx01`** has been **deleted** (T4(e), Sat Jul 4); currently deleted. Both test accounts are now deleted.
+- emulator-5554 runs **v4** (versionCode 4) and is **signed OUT** on the **intro/Splash** screen.
+- **`lucas+gx01`** and **`lucas+gx02`** are both **deleted** (T4). **`lucas+gx03`** was created for the v4 before/after + smoke, then **deleted** — currently no live test accounts. (Passwords held by the owner, not recorded in this doc.)
 
 ## LAUNCH CHECKLIST — where we are (updated Mon)
 
-**Engineering (DONE):** 4 fixes, v3 built/signed, PR #2, T1–T3 PASS, T4(a–e) PASS. Code frozen at `e400d19`.
+**Engineering (DONE):** 4 RC fixes + v4 FIX A (Clients gate) + FIX B (Home hero), v4 built/signed, PR #2, T1–T3 PASS, T4(a–e) PASS, v4 smoke PASS. `GENESYX_ENV=PROD` verified.
 
 | # | Item | Status | Detail / evidence |
 |---|---|---|---|
@@ -72,7 +77,7 @@ Release-candidate handoff. Read this first. Honest state as of the commit below.
 
 **Overall: ~92%.** All engineering verification is now green (T4(a–e) PASS). Remaining = owner-only store/console/dashboard work (#2, #4, #5) + the one broken Shopify page (#3b, deferred this session).
 
-> **CODE FREEZE:** source is frozen at `e400d19`. No source edits before submission — only docs/evidence, store setup, and on-device verification.
+> **CODE FREEZE:** re-frozen at v4 (after the two owner-authorized scoped changes: FIX A Clients gate + FIX B Home hero). No further source edits before submission — only docs/evidence, store setup, and on-device verification.
 
 ## v1.1 backlog (deferred, do NOT build for 1.0)
 - **Real offline-first sync queue** so offline edits persist and reconcile on reconnect (removes the FIX 2 offline block).
