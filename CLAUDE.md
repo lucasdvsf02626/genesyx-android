@@ -44,20 +44,25 @@ Release-candidate handoff. Read this first. Honest state as of the commit below.
 4. **Softened gender copy (FIX 4): PASS.** Q4 shows "When it comes to your baby's sex, what feels right for you?" + helper + the 3 new options; old boy/girl options gone.
 - Note: after each sign-in `PhRepository.refresh()` queries the absent `ph_readings` table and logs a non-fatal `E Ph` error — expected, irrelevant (pH flagged off), does not crash.
 
-## T4 — deletion lifecycle (STARTED this session, NOT COMPLETE)
-- **(a) gx02 in-app delete: PASS.** Profile → Delete account → confirm → progress → signed out → **Splash/start screen** (shots `T4_00`–`T4_03`), no crash. App-side success path ran (Room cleared, signed out, navigated to Splash).
-- **(b) gx02 login-fail: NOT RUN** (interrupted before submit). **(c) re-signup same email: NOT RUN. (d) delete gx02 again: NOT RUN. (e) gx01 delete: NOT RUN.**
-- **Supabase Step-4 proof still outstanding:** app-side delete succeeded, but server-side removal of the `auth.users` row for gx02 is **not independently verified**. That is the deletion-compliance proof and must be recorded.
+## T4 — deletion lifecycle (a–d PASS on-device; e blocked on a credential)
+- **(a) gx02 in-app delete: PASS.** Profile → Delete account → confirm → signed out → **Splash** (shots `T4_00`–`T4_03`), no crash.
+- **(b) gx02 login must fail: PASS.** Re-login with `lucas+gx02` / `Gx02!verify7k` returned **"Invalid login credentials"** and stayed on Auth (shot `T4_13`). Server rejected the deleted account's credentials.
+- **(c) re-signup same email: PASS.** Created `lucas+gx02` again → landed on a **fresh Home** ("Set up your cycle", 0-day streak, no old data) (shot `T4_15`). Re-using the email proves the prior account was genuinely freed.
+- **(d) delete gx02 again: PASS.** Profile → Delete account → confirm → **Splash**, no crash (shots `T4_16`–`T4_18`).
+- **(e) gx01 delete: BLOCKED — needs `lucas+gx01`'s password** (never held by the agent; it was signed in from a prior session). Provide it and this is a 30-second step.
+- **Deletion evidence so far:** (b) rejection + (c) same-email re-signup are strong app/auth-level proof deletion works. The remaining piece is the **Supabase server-side DB check** (below), which requires dashboard access.
 
-## Device state at checkpoint (accurate)
-- emulator-5554 is **signed OUT**, sitting on the **Auth "Welcome back"** screen.
-- **`lucas+gx02@mysupplementfactory.com`** was **deleted in-app** during T4(a) (password was `Gx02!verify7k`) — it is no longer a usable session; re-login is expected to fail until re-signup.
-- **`lucas+gx01`** account still exists (its password is in prior session notes; not held in this file).
+## Device state (accurate, end of Monday session)
+- emulator-5554 is **signed OUT** on the **Splash** screen.
+- **`lucas+gx02`** has been **deleted twice** (a and d) and re-created once (c); currently deleted. Password used throughout: `Gx02!verify7k`.
+- **`lucas+gx01`** still exists — blocked on its password for T4(e).
 
-## SINGLE NEXT ACTION — finish T4, then Supabase Step-4 proof
-1. Complete T4 (b)→(e): gx02 login must **fail** → re-signup same email succeeds **fresh (no old data)** → delete gx02 again → sign in as gx01 → delete it too.
-2. Capture **Supabase Step-4 proof**: confirm each deleted account's `auth.users` row (and profile/logs) is actually gone server-side.
-3. **Sunday closeout order:** T4 → Supabase Step-4 proof → closeout/evidence pack → Shopify pages verify live → store assets (feature graphic + phone + 7"/10" tablet) → Play Console forms (privacy + deletion URLs, Data Safety, content rating) → AAB upload → internal smoke → submit.
+## SINGLE NEXT ACTION — items only the owner can do
+1. **T4(e):** provide `lucas+gx01`'s password → sign in → delete (agent can drive once the password is supplied).
+2. **Supabase Step-4 proof:** in the dashboard, confirm the deleted accounts' rows are gone in `auth.users` (+ `profiles` / `daily_logs` / `cycle_settings`).
+3. **Shopify pages:** replace `body_html` of `/pages/privacy-policy` + `/pages/delete-account` from `~/Downloads/*-FINAL.html` (blocked earlier on expired Shopify MCP token) and verify live.
+4. **Store assets:** feature graphic + phone + 7"/10" tablet screenshots.
+5. **Play Console:** privacy + deletion URLs, Data Safety form, content rating, AAB upload, internal smoke, submit.
 
 > **CODE FREEZE:** source is frozen at `e400d19`. No source edits before submission — only docs/evidence, store setup, and on-device verification.
 
