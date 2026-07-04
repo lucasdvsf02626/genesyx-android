@@ -44,33 +44,33 @@ Release-candidate handoff. Read this first. Honest state as of the commit below.
 4. **Softened gender copy (FIX 4): PASS.** Q4 shows "When it comes to your baby's sex, what feels right for you?" + helper + the 3 new options; old boy/girl options gone.
 - Note: after each sign-in `PhRepository.refresh()` queries the absent `ph_readings` table and logs a non-fatal `E Ph` error — expected, irrelevant (pH flagged off), does not crash.
 
-## T4 — deletion lifecycle (a–d PASS on-device; e blocked on a credential)
+## T4 — deletion lifecycle (a–e ALL PASS on-device)
 - **(a) gx02 in-app delete: PASS.** Profile → Delete account → confirm → signed out → **Splash** (shots `T4_00`–`T4_03`), no crash.
-- **(b) gx02 login must fail: PASS.** Re-login with `lucas+gx02` / `Gx02!verify7k` returned **"Invalid login credentials"** and stayed on Auth (shot `T4_13`). Server rejected the deleted account's credentials.
+- **(b) gx02 login must fail: PASS.** Re-login with `lucas+gx02` (password on file with owner) returned **"Invalid login credentials"** and stayed on Auth (shot `T4_13`). Server rejected the deleted account's credentials.
 - **(c) re-signup same email: PASS.** Created `lucas+gx02` again → landed on a **fresh Home** ("Set up your cycle", 0-day streak, no old data) (shot `T4_15`). Re-using the email proves the prior account was genuinely freed.
 - **(d) delete gx02 again: PASS.** Profile → Delete account → confirm → **Splash**, no crash (shots `T4_16`–`T4_18`).
-- **(e) gx01 delete: BLOCKED — needs `lucas+gx01`'s password** (never held by the agent; it was signed in from a prior session). Provide it and this is a 30-second step.
-- **Deletion evidence so far:** (b) rejection + (c) same-email re-signup are strong app/auth-level proof deletion works. The remaining piece is the **Supabase server-side DB check** (below), which requires dashboard access.
+- **(e) gx01 delete: PASS (Sat Jul 4).** Password supplied by owner (not recorded here). Signed in as `lucas+gx01` → landed on **Home** with existing cycle data ("DAY 2 · PERIOD", not onboarding) (shot `T4e_07_home`). Profile → **Delete account** → confirm dialog "This will permanently delete your account and all your data. This cannot be undone." → **Delete** → signed out → **Splash/intro**, no FATAL in logcat (shot `T4e_11_after_delete`). Re-login with the **same** gx01 creds returned **"Invalid login credentials"** in red and stayed on Auth (shot `T4e_13_relogin_result`); logcat: `AuthRestException: Invalid login credentials`. Server rejected the deleted account. Shots in scratchpad `t4e/`.
+- **Deletion evidence:** T4(b)+(e) rejection + (c) same-email re-signup are strong app/auth-level proof deletion works for **both** accounts. The remaining piece is the **Supabase server-side DB check** (below), which requires dashboard access.
 
-## Device state (accurate, end of Monday session)
+## Device state (accurate, end of Sat Jul 4 session)
 - emulator-5554 is **signed OUT** on the **Splash** screen.
-- **`lucas+gx02`** has been **deleted twice** (a and d) and re-created once (c); currently deleted. Password used throughout: `Gx02!verify7k`.
-- **`lucas+gx01`** still exists — blocked on its password for T4(e).
+- **`lucas+gx02`** has been **deleted twice** (a and d) and re-created once (c); currently deleted. (Passwords for both test accounts are held by the owner, not recorded in this doc.)
+- **`lucas+gx01`** has been **deleted** (T4(e), Sat Jul 4); currently deleted. Both test accounts are now deleted.
 
 ## LAUNCH CHECKLIST — where we are (updated Mon)
 
-**Engineering (DONE):** 4 fixes, v3 built/signed, PR #2, T1–T3 PASS, T4(a–d) PASS. Code frozen at `e400d19`.
+**Engineering (DONE):** 4 fixes, v3 built/signed, PR #2, T1–T3 PASS, T4(a–e) PASS. Code frozen at `e400d19`.
 
 | # | Item | Status | Detail / evidence |
 |---|---|---|---|
-| 1 | T4(e) gx01 delete | ⛔ BLOCKED | needs `lucas+gx01` password; agent drives it once supplied |
+| 1 | T4(e) gx01 delete | ✅ DONE | PASS on-device Sat Jul 4: delete → Splash (no FATAL); re-login rejected with "Invalid login credentials" (`AuthRestException`). Shots in scratchpad `t4e/` |
 | 2 | Supabase server-side delete proof | ⛔ OWNER | dashboard: confirm deleted rows gone in `auth.users` + `profiles`/`daily_logs`/`cycle_settings`. (b)+(c) already prove auth-layer deletion works |
 | 3a | Shopify `/pages/privacy-policy` | ✅ DONE | verified LIVE clean — H1 ok, 0 `[CONTACT_EMAIL]`, 0 `genesxy`, no `.html`, only `info@genesyx.co.uk` |
 | 3b | Shopify `/pages/delete-account` | ❌ BROKEN LIVE | an **old draft** is published: has `[CONTACT_EMAIL]` (×1), misspelled `info@genesxy.co.uk`, two `./privacy-policy.html` links. Must re-publish `body_html` from clean `~/Downloads/delete-account-FINAL.html` (agent can do it once Shopify MCP is re-authed), then re-verify live |
 | 4 | Store assets | ⛔ OWNER | feature graphic 1024×500 + phone + 7"/10" tablet screenshots |
 | 5 | Play Console | ⛔ OWNER | privacy + deletion URLs, Data Safety form, content rating, AAB upload, internal smoke, **submit** |
 
-**Overall: ~90%.** All engineering verification is green except T4(e). Remaining = store/console/dashboard work + the one broken Shopify page.
+**Overall: ~92%.** All engineering verification is now green (T4(a–e) PASS). Remaining = owner-only store/console/dashboard work (#2, #4, #5) + the one broken Shopify page (#3b, deferred this session).
 
 > **CODE FREEZE:** source is frozen at `e400d19`. No source edits before submission — only docs/evidence, store setup, and on-device verification.
 
