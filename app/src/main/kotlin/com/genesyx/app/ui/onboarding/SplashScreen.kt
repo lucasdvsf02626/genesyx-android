@@ -32,6 +32,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.genesyx.app.R
+import com.genesyx.app.ui.components.BrandLockup
 import com.genesyx.app.ui.components.GxGhostButton
 import com.genesyx.app.ui.components.GxPrimaryButton
 import com.genesyx.app.ui.theme.ElectricLavender
@@ -86,13 +87,7 @@ fun SplashScreen(onStart: () -> Unit, onSignIn: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Spacer(Modifier.height(8.dp))
-            Text(
-                "GENESYX",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = colors.onBackground,
-                letterSpacing = 2.sp,
-            )
+            BrandLockup(height = 30.dp)
 
             Spacer(Modifier.weight(1f))
 

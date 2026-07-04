@@ -52,32 +52,28 @@ class PhRepository @Inject constructor(
         scope.launch {
             val userId = session.currentUserId()
             dao.upsert(normalized.toEntity(userId))
-            if (remote.upsert(userId, normalized) is DataResult.Error) {
-                logger.w("Ph", "remote upsert deferred (offline/unconfigured)")
-            } else {
-                logger.i("Ph", "synced pH reading ${normalized.id} for $userId")
-            }
+            logger.i("Ph", "saved pH reading ${normalized.id} locally for $userId")
+            // v1.1: enable when ph_readings table exists. pH is local-only in 1.0, so no network
+            // call fires for pH.
+            // if (remote.upsert(userId, normalized) is DataResult.Error) {
+            //     logger.w("Ph", "remote upsert deferred (offline/unconfigured)")
+            // } else {
+            //     logger.i("Ph", "synced pH reading ${normalized.id} for $userId")
+            // }
         }
     }
 
     fun delete(id: String) {
         scope.launch {
             dao.delete(id)
-            remote.delete(session.currentUserId(), id)
+            // v1.1: enable when ph_readings table exists (local-only in 1.0).
+            // remote.delete(session.currentUserId(), id)
         }
     }
 
-    /** Read-through: pull the user's readings into the local cache (called after sign-in). */
+    /** Read-through: local-only in 1.0, so this is a no-op (no network read for pH). */
     suspend fun refresh(userId: String = session.currentUserId()) {
-        when (val result = remote.list(userId, sinceDays = null)) {
-            is DataResult.Success -> {
-                result.data.forEach { dao.upsert(it.toEntity(userId)) }
-                if (result.data.isNotEmpty()) {
-                    logger.i("Ph", "cached ${result.data.size} pH readings for $userId")
-                }
-            }
-            is DataResult.Error -> logger.w("Ph", "refresh failed: ${result.message}")
-            DataResult.Loading -> Unit
-        }
+        // v1.1: enable when ph_readings table exists. pH is local-only in 1.0 — no read-through and
+        // no network call for pH (this previously logged a non-fatal `E Ph` against the absent table).
     }
 }

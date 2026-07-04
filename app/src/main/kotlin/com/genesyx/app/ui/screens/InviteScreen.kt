@@ -27,6 +27,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import com.genesyx.app.data.PartnerRepository
 import com.genesyx.app.data.SessionRepository
+import com.genesyx.app.ui.components.BrandLockup
 import com.genesyx.app.ui.components.GxGhostButton
 import com.genesyx.app.ui.components.GxPrimaryButton
 import com.genesyx.app.ui.theme.ElectricLavender
@@ -64,7 +65,7 @@ fun InviteScreen(
         verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
     ) {
         Column(Modifier.widthIn(max = 360.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("GENESYX", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = colors.onBackground, letterSpacing = 2.sp)
+            BrandLockup(height = 26.dp)
 
             if (!signedIn) {
                 Spacer(Modifier.height(24.dp))

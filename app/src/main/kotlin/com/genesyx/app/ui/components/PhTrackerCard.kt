@@ -118,6 +118,13 @@ fun PhTrackerCard(
             } else {
                 EmptyState(onLogClick)
             }
+
+            Spacer(Modifier.height(12.dp))
+            Text(
+                "pH entries are stored on this device for now.",
+                style = MaterialTheme.typography.bodySmall,
+                color = colors.onSurfaceVariant,
+            )
         }
     }
 }

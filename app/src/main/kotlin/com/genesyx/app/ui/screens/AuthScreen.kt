@@ -44,6 +44,7 @@ import androidx.lifecycle.viewModelScope
 import android.content.res.Configuration
 import com.genesyx.app.auth.AuthRepository
 import com.genesyx.app.core.result.DataResult
+import com.genesyx.app.ui.components.BrandLockup
 import com.genesyx.app.ui.components.GxGhostButton
 import com.genesyx.app.ui.components.isValidEmail
 import com.genesyx.app.ui.theme.ElectricLavender
@@ -148,7 +149,7 @@ fun AuthContent(
     ) {
         Box(Modifier.widthIn(max = 360.dp).fillMaxWidth()) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-                Text("GENESYX", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = colors.onBackground, letterSpacing = 2.sp)
+                BrandLockup(height = 26.dp)
                 Spacer(Modifier.height(24.dp))
                 Text(
                     if (signupMode) "Create your account" else "Welcome back",

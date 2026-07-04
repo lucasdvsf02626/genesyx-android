@@ -1,6 +1,7 @@
 package com.genesyx.app.ui.components
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -29,8 +30,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.genesyx.app.R
 import com.genesyx.app.ui.theme.ElectricLavender
 
 /** Tints a brand color over a white card (approximates the web `color-mix(color X%, white)`). */
@@ -42,10 +47,24 @@ fun Eyebrow(text: String, color: Color = MaterialTheme.colorScheme.onSurfaceVari
     Text(text.uppercase(), style = MaterialTheme.typography.labelSmall, color = color, modifier = modifier)
 }
 
-/** Back chevron button (44dp hit area). */
+/**
+ * Genesyx primary lockup (G mark + wordmark). Theme-aware via `drawable-night` (white wordmark on
+ * dark). [height] controls the wordmark height; width scales to keep the aspect ratio.
+ */
+@Composable
+fun BrandLockup(modifier: Modifier = Modifier, height: Dp = 30.dp) {
+    Image(
+        painter = painterResource(R.drawable.brand_lockup),
+        contentDescription = "Genesyx",
+        modifier = modifier.height(height),
+        contentScale = ContentScale.Fit,
+    )
+}
+
+/** Back chevron button (48dp hit area — Android minimum touch target). */
 @Composable
 fun GxBackButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
-    IconButton(onClick = onClick, modifier = modifier.size(44.dp)) {
+    IconButton(onClick = onClick, modifier = modifier.size(48.dp)) {
         Icon(
             Icons.AutoMirrored.Filled.ArrowBack,
             contentDescription = "Back",

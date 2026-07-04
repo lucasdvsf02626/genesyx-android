@@ -3,10 +3,12 @@ package com.genesyx.app.core
 /** Compile-time feature gates. A disabled feature is fully hidden from the UI. */
 object FeatureFlags {
     /**
-     * Urine-pH tracking. Disabled for the 1.0 release — the backend sync path is not yet verified,
-     * so the whole feature (tracker card, log dialog, insights section) is hidden.
+     * Urine-pH tracking. Enabled for 1.0 as a LOCAL-ONLY feature — the tracker card, log dialog and
+     * insights section save/read Room on-device only. The Supabase `ph_readings` table does not exist
+     * yet, so [com.genesyx.app.data.PhRepository] fires no network call for pH (see its "v1.1" guards).
+     * Backend + sync land in v1.1.
      */
-    const val PH_TRACKING = false
+    const val PH_TRACKING = true
 
     /**
      * Admin/dev "Manage clients" screen (add client, "Seed 100 demo clients" scale-test action).

@@ -1,6 +1,7 @@
 package com.genesyx.app.ui.onboarding
 
 import android.content.res.Configuration
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -63,6 +64,10 @@ fun OnboardingQuizScreen(onComplete: () -> Unit, onBack: () -> Unit) {
         val fact = question.fact
         if (fact != null) pendingFact = fact else advance()
     }
+
+    // System/gesture back mirrors the arrow: step 0 exits to intro; later steps go to the
+    // previous question (answers are kept in `answers`, so the selection is preserved).
+    BackHandler { if (step == 0) onBack() else step -= 1 }
 
     Column(
         modifier = Modifier
