@@ -18,6 +18,7 @@ sealed class Screen(val route: String) {
 
     // Modal / secondary destinations
     data object Log : Screen("log")
+    data object LogHistory : Screen("log_history")
     data object Pregnancy : Screen("pregnancy")
     data object Auth : Screen("auth")
     data object Clients : Screen("clients")
@@ -41,6 +42,7 @@ sealed class Screen(val route: String) {
             ReadinessSummary.route,
             Waitlist.route,
             Log.route,
+            LogHistory.route,
             Pregnancy.route,
             Auth.route,
             Invite.route,

@@ -9,6 +9,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
 import com.genesyx.app.ui.clients.ClientsScreen
+import com.genesyx.app.ui.history.LogHistoryScreen
 import com.genesyx.app.ui.home.HomeScreen
 import com.genesyx.app.ui.insights.InsightsScreen
 import com.genesyx.app.ui.onboarding.OnboardingIntroScreen
@@ -94,6 +95,9 @@ fun GenesyxNavGraph(
         // ── Secondary / modal destinations
         composable(Screen.Log.route) {
             LogScreen(onClose = { navController.popBackStack() })
+        }
+        composable(Screen.LogHistory.route) {
+            LogHistoryScreen(onBack = { navController.popBackStack() })
         }
         composable(Screen.Pregnancy.route) {
             PregnancyScreen(onBack = { navController.popBackStack() })
