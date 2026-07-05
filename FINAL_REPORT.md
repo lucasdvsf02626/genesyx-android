@@ -115,6 +115,10 @@ only the pre-existing `MenuBook` deprecation warning).
 - **Daily-log sync queue** — the FIX 2 band-aid (offline log save is *blocked* via `isOnline()`) is
   **still in place**. Only pH got the offline-first queue this cycle; applying the same pattern to daily
   logs is the follow-up that retires FIX 2.
+- **Guest→signed-in data migration** — pH rows written while signed out are scoped to `local-user` and
+  stay local-only (see the guest guard in `PhRepository`). On sign-in they are **stranded**: not
+  re-assigned to the new `user_id`, not synced, not visible under the account. Adopting local guest rows
+  into the account on first sign-in is a deliberate follow-up.
 - **FCM** (push) — not started.
 - **`storage-kt` / `functions-kt`** — add only when a feature needs them.
 - **Dependency bump pass** — Kotlin/AGP/Compose/Hilt/Room/supabase/ktor are ~1–2 minors behind; bump

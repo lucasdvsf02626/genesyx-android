@@ -68,14 +68,17 @@ class PhRepository @Inject constructor(
         }
         scope.launch {
             val userId = session.currentUserId()
+            val signedIn = userId != SessionRepository.LOCAL_USER_ID
             val entity = reading.copy(phValue = value).toEntity(
                 userId = userId,
-                syncStatus = PhSyncStatus.PENDING_UPSERT,
+                // Guests have no server target (RLS scopes to auth.uid()). Mark SYNCED (no pending
+                // sync) and never push/queue — otherwise the write would enqueue doomed retries.
+                syncStatus = if (signedIn) PhSyncStatus.PENDING_UPSERT else PhSyncStatus.SYNCED,
                 updatedAt = LocalDateTime.now(),
             )
             dao.upsert(entity)
             logger.i("Ph", "saved pH reading ${entity.id} locally for $userId")
-            pushOrQueue(entity)
+            if (signedIn) pushOrQueue(entity)
         }
         return PhWriteResult.Accepted
     }
@@ -84,7 +87,11 @@ class PhRepository @Inject constructor(
         scope.launch {
             dao.markDeleted(id, LocalDateTime.now())
             val tombstone = dao.getById(id) ?: return@launch
-            pushOrQueue(tombstone)
+            if (session.currentUserId() != SessionRepository.LOCAL_USER_ID) {
+                pushOrQueue(tombstone)
+            } else {
+                dao.setStatus(id, PhSyncStatus.SYNCED) // guest tombstone stays local-only
+            }
         }
     }
 
@@ -118,6 +125,7 @@ class PhRepository @Inject constructor(
      * never overwrites a row with unsynced local changes. Then drains anything still PENDING.
      */
     suspend fun refresh(userId: String = session.currentUserId()) {
+        if (userId == SessionRepository.LOCAL_USER_ID) return // guest: nothing to pull/push
         when (val result = remote.list(userId)) {
             is DataResult.Success -> {
                 for (dto in result.data) {

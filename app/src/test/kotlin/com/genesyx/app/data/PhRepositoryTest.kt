@@ -58,6 +58,26 @@ class PhRepositoryTest {
     }
 
     @Test
+    fun `guest write stays local-only (no remote push, no WorkManager enqueue)`() = runTest {
+        every { session.userId } returns MutableStateFlow<String?>(null) // not signed in
+        every { session.currentUserId() } returns SessionRepository.LOCAL_USER_ID
+        every { dao.observeAll(any()) } returns flowOf(emptyList())
+        val scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler))
+
+        val result = PhRepository(dao, remote, session, scheduler, logger, scope).create(reading(6.5))
+
+        assertEquals(PhWriteResult.Accepted, result)
+        coVerify {
+            dao.upsert(
+                match { it.userId == SessionRepository.LOCAL_USER_ID && it.syncStatus == PhSyncStatus.SYNCED },
+            )
+        }
+        coVerify(exactly = 0) { remote.upsert(any()) } // no server target for a guest
+        verify(exactly = 0) { scheduler.schedule() }   // no doomed retry queued
+        scope.cancel()
+    }
+
+    @Test
     fun `offline create stays PENDING and enqueues a retry (never blocks)`() = runTest {
         every { session.userId } returns MutableStateFlow<String?>("user-a")
         every { session.currentUserId() } returns "user-a"
@@ -77,6 +97,7 @@ class PhRepositoryTest {
     @Test
     fun `delete soft-deletes (tombstone) and pushes it`() = runTest {
         every { session.userId } returns MutableStateFlow<String?>("user-a")
+        every { session.currentUserId() } returns "user-a" // signed in -> push path
         every { dao.observeAll(any()) } returns flowOf(emptyList())
         coEvery { dao.getById("r1") } returns
             entity("r1", "user-a", 6.5).copy(syncStatus = PhSyncStatus.PENDING_DELETE)
