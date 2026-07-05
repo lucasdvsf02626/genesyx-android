@@ -38,7 +38,7 @@ android {
         versionCode = 5
         versionName = "1.0.0"
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner = "com.genesyx.app.HiltTestRunner"
 
         // Supabase + Google config from local.properties (git-ignored); fallback to gradle properties.
         buildConfigField(
@@ -155,6 +155,22 @@ dependencies {
     implementation(libs.supabase.auth)
     implementation(libs.ktor.client.okhttp)
 
-    // Test
+    // Serialization (explicit pin — previously only transitive)
+    implementation(libs.kotlinx.serialization.json)
+
+    // Test — unit (JVM)
     testImplementation(libs.junit)
+    testImplementation(libs.mockk)
+    testImplementation(libs.turbine)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.androidx.room.testing)
+
+    // Test — instrumented (androidTest); runner swaps in HiltTestApplication
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    androidTestImplementation(libs.hilt.android.testing)
+    kspAndroidTest(libs.hilt.compiler)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
 }
