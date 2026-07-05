@@ -31,7 +31,7 @@ import com.genesyx.app.data.local.entity.ProfileEntity
         PartnerInviteEntity::class,
         PartnerLinkEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)

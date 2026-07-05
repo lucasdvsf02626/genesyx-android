@@ -1,9 +1,12 @@
 package com.genesyx.app.data
 
 import com.genesyx.app.core.log.Logger
+import com.genesyx.app.core.result.DataResult
 import com.genesyx.app.data.local.dao.PhReadingDao
 import com.genesyx.app.data.remote.PhRemoteDataSource
+import com.genesyx.app.data.sync.PhSyncScheduler
 import com.genesyx.app.domain.model.PhReading
+import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
@@ -24,6 +27,7 @@ class PhRepositoryRangeTest {
 
     private val dao = mockk<PhReadingDao>(relaxed = true)
     private val remote = mockk<PhRemoteDataSource>(relaxed = true)
+    private val scheduler = mockk<PhSyncScheduler>(relaxed = true)
     private val logger = mockk<Logger>(relaxed = true)
     private val session = mockk<SessionRepository>().apply {
         every { userId } returns MutableStateFlow<String?>("user-a")
@@ -37,7 +41,8 @@ class PhRepositoryRangeTest {
      *  eagerly to first suspension (the relaxed dao completes immediately) — no advance needed. */
     private fun repo(scope: CoroutineScope): PhRepository {
         every { dao.observeAll(any()) } returns flowOf(emptyList())
-        return PhRepository(dao, remote, session, logger, scope)
+        coEvery { remote.upsert(any()) } returns DataResult.Success(Unit)
+        return PhRepository(dao, remote, session, scheduler, logger, scope)
     }
 
     @Test

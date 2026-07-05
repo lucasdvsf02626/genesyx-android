@@ -157,6 +157,9 @@ dependencies {
     // DataStore (session / theme / onboarding flags)
     implementation(libs.androidx.datastore.preferences)
 
+    // WorkManager (pH offline-first sync queue)
+    implementation(libs.androidx.work.runtime.ktx)
+
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)
 
@@ -181,6 +184,7 @@ dependencies {
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    androidTestImplementation(libs.androidx.room.testing)
     androidTestImplementation(libs.hilt.android.testing)
     kspAndroidTest(libs.hilt.compiler)
     debugImplementation(libs.androidx.compose.ui.test.manifest)

@@ -6,6 +6,8 @@ import com.genesyx.app.core.log.Analytics
 import com.genesyx.app.core.log.NoopAnalytics
 import com.genesyx.app.data.remote.ClientRemoteDataSource
 import com.genesyx.app.data.remote.StubClientRemoteDataSource
+import com.genesyx.app.data.sync.PhSyncScheduler
+import com.genesyx.app.data.sync.WorkManagerPhSyncScheduler
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -28,4 +30,7 @@ abstract class BindingsModule {
 
     @Binds @Singleton
     abstract fun bindClientRemote(impl: StubClientRemoteDataSource): ClientRemoteDataSource
+
+    @Binds @Singleton
+    abstract fun bindPhSyncScheduler(impl: WorkManagerPhSyncScheduler): PhSyncScheduler
 }

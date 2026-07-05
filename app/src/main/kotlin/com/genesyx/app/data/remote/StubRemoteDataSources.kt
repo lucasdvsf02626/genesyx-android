@@ -1,10 +1,10 @@
 package com.genesyx.app.data.remote
 
 import com.genesyx.app.core.result.DataResult
+import com.genesyx.app.data.remote.dto.PhReadingDto
 import com.genesyx.app.domain.model.Client
 import com.genesyx.app.domain.model.CycleSettings
 import com.genesyx.app.domain.model.DailyLog
-import com.genesyx.app.domain.model.PhReading
 import java.time.LocalDate
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -40,13 +40,10 @@ class StubDailyLogRemoteDataSource @Inject constructor() : DailyLogRemoteDataSou
 
 @Singleton
 class StubPhRemoteDataSource @Inject constructor() : PhRemoteDataSource {
-    override suspend fun list(userId: String, sinceDays: Int?): DataResult<List<PhReading>> =
+    override suspend fun list(userId: String): DataResult<List<PhReadingDto>> =
         DataResult.Success(emptyList())
 
-    override suspend fun upsert(userId: String, reading: PhReading): DataResult<Unit> =
-        DataResult.Success(Unit)
-
-    override suspend fun delete(userId: String, id: String): DataResult<Unit> =
+    override suspend fun upsert(reading: PhReadingDto): DataResult<Unit> =
         DataResult.Success(Unit)
 }
 

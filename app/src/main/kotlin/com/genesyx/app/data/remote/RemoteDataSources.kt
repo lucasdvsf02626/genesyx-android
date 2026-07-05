@@ -1,10 +1,10 @@
 package com.genesyx.app.data.remote
 
 import com.genesyx.app.core.result.DataResult
+import com.genesyx.app.data.remote.dto.PhReadingDto
 import com.genesyx.app.domain.model.Client
 import com.genesyx.app.domain.model.CycleSettings
 import com.genesyx.app.domain.model.DailyLog
-import com.genesyx.app.domain.model.PhReading
 import java.time.LocalDate
 
 /**
@@ -25,9 +25,11 @@ interface DailyLogRemoteDataSource {
 }
 
 interface PhRemoteDataSource {
-    suspend fun list(userId: String, sinceDays: Int?): DataResult<List<PhReading>>
-    suspend fun upsert(userId: String, reading: PhReading): DataResult<Unit>
-    suspend fun delete(userId: String, id: String): DataResult<Unit>
+    /** All rows for the user, INCLUDING soft-deleted tombstones (deleted_at set) so deletes sync. */
+    suspend fun list(userId: String): DataResult<List<PhReadingDto>>
+
+    /** Upsert (conflict on id). A soft delete is an upsert of the row with deleted_at set. */
+    suspend fun upsert(reading: PhReadingDto): DataResult<Unit>
 }
 
 /** Minimal projection of the Supabase `profiles` row. */

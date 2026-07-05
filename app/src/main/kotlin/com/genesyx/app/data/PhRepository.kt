@@ -4,9 +4,14 @@ import com.genesyx.app.core.di.ApplicationScope
 import com.genesyx.app.core.log.Logger
 import com.genesyx.app.core.result.DataResult
 import com.genesyx.app.data.local.dao.PhReadingDao
+import com.genesyx.app.data.local.entity.PhReadingEntity
+import com.genesyx.app.data.local.entity.PhSyncStatus
 import com.genesyx.app.data.local.entity.toDomain
 import com.genesyx.app.data.local.entity.toEntity
 import com.genesyx.app.data.remote.PhRemoteDataSource
+import com.genesyx.app.data.remote.dto.toDto
+import com.genesyx.app.data.remote.dto.toEntity
+import com.genesyx.app.data.sync.PhSyncScheduler
 import com.genesyx.app.domain.model.PhReading
 import com.genesyx.app.domain.ph.PhStatus
 import kotlinx.coroutines.CoroutineScope
@@ -17,15 +22,19 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.time.LocalDateTime
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.roundToInt
 
 /**
- * Urine-pH store — local-first (Room source of truth) with Supabase sync. Public API is unchanged
- * (readings StateFlow + create/update/delete) so Insights keeps working; writes now write-through to
- * Supabase and `refresh` read-throughs on sign-in. pH values rounded to 1 dp on write. Mirrors
- * `ph_readings` (docs/DATA_LAYER.md), scoped per user, ordered by recordedAt ascending.
+ * Urine-pH store — local-first (Room is the source of truth) with offline-first Supabase sync.
+ *
+ * Writes land in Room immediately (instant UI) as PENDING, then push to Supabase; on failure the row
+ * stays PENDING and a WorkManager job ([PhSyncScheduler]) retries with backoff — offline writes QUEUE,
+ * never block. Deletes are soft (deletedAt tombstone) so they sync safely. [refresh] pulls on sign-in
+ * / manual refresh, merging by id (no duplicates) with last-write-wins on updatedAt, and never
+ * clobbering locally-pending edits. pH values are rounded to 1 dp and range-checked (4.5–9.0).
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @Singleton
@@ -33,6 +42,7 @@ class PhRepository @Inject constructor(
     private val dao: PhReadingDao,
     private val remote: PhRemoteDataSource,
     private val session: SessionRepository,
+    private val scheduler: PhSyncScheduler,
     private val logger: Logger,
     @ApplicationScope private val scope: CoroutineScope,
 ) {
@@ -56,34 +66,77 @@ class PhRepository @Inject constructor(
             logger.w("Ph", "rejected out-of-range pH $value (allowed ${PhStatus.MIN}..${PhStatus.MAX})")
             return PhWriteResult.OutOfRange(value)
         }
-        val normalized = reading.copy(phValue = value)
         scope.launch {
             val userId = session.currentUserId()
-            dao.upsert(normalized.toEntity(userId))
-            logger.i("Ph", "saved pH reading ${normalized.id} locally for $userId")
-            // v1.1: enable when ph_readings table exists. pH is local-only in 1.0, so no network
-            // call fires for pH.
-            // if (remote.upsert(userId, normalized) is DataResult.Error) {
-            //     logger.w("Ph", "remote upsert deferred (offline/unconfigured)")
-            // } else {
-            //     logger.i("Ph", "synced pH reading ${normalized.id} for $userId")
-            // }
+            val entity = reading.copy(phValue = value).toEntity(
+                userId = userId,
+                syncStatus = PhSyncStatus.PENDING_UPSERT,
+                updatedAt = LocalDateTime.now(),
+            )
+            dao.upsert(entity)
+            logger.i("Ph", "saved pH reading ${entity.id} locally for $userId")
+            pushOrQueue(entity)
         }
         return PhWriteResult.Accepted
     }
 
     fun delete(id: String) {
         scope.launch {
-            dao.delete(id)
-            // v1.1: enable when ph_readings table exists (local-only in 1.0).
-            // remote.delete(session.currentUserId(), id)
+            dao.markDeleted(id, LocalDateTime.now())
+            val tombstone = dao.getById(id) ?: return@launch
+            pushOrQueue(tombstone)
         }
     }
 
-    /** Read-through: local-only in 1.0, so this is a no-op (no network read for pH). */
+    /** Push one row; on success mark SYNCED, on failure keep it PENDING and enqueue a retry. */
+    private suspend fun pushOrQueue(entity: PhReadingEntity) {
+        when (remote.upsert(entity.toDto())) {
+            is DataResult.Success -> dao.setStatus(entity.id, PhSyncStatus.SYNCED)
+            is DataResult.Error -> {
+                logger.w("Ph", "pH ${entity.id} push failed — queued for retry")
+                scheduler.schedule()
+            }
+            DataResult.Loading -> Unit
+        }
+    }
+
+    /** Drains all PENDING rows (called by [com.genesyx.app.data.sync.PhSyncWorker]). */
+    suspend fun syncPending(): Boolean {
+        var allSynced = true
+        for (entity in dao.pending()) {
+            if (remote.upsert(entity.toDto()) is DataResult.Success) {
+                dao.setStatus(entity.id, PhSyncStatus.SYNCED)
+            } else {
+                allSynced = false
+            }
+        }
+        return allSynced
+    }
+
+    /**
+     * Read-through pull. Merges by id (upsert → no duplicates), last-write-wins on updatedAt, and
+     * never overwrites a row with unsynced local changes. Then drains anything still PENDING.
+     */
     suspend fun refresh(userId: String = session.currentUserId()) {
-        // v1.1: enable when ph_readings table exists. pH is local-only in 1.0 — no read-through and
-        // no network call for pH (this previously logged a non-fatal `E Ph` against the absent table).
+        when (val result = remote.list(userId)) {
+            is DataResult.Success -> {
+                for (dto in result.data) {
+                    val local = dao.getById(dto.id)
+                    if (local != null && local.syncStatus != PhSyncStatus.SYNCED) continue // keep local edits
+                    val incoming = dto.toEntity(userId)
+                    val localTs = local?.updatedAt
+                    if (local == null || localTs == null || incoming.updatedAt == null ||
+                        !incoming.updatedAt.isBefore(localTs)
+                    ) {
+                        dao.upsert(incoming)
+                    }
+                }
+                syncPending()
+            }
+            is DataResult.Error ->
+                logger.w("Ph", "pH pull failed — keeping local, will retry", result.throwable)
+            DataResult.Loading -> Unit
+        }
     }
 }
 
