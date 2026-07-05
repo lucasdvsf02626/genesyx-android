@@ -186,30 +186,35 @@ BEGIN NEW.updated_at = now(); RETURN NEW; END $$;
 -- delete_current_user()  — account self-deletion RPC (GDPR / Play requirement)
 -- ============================================================
 -- Called by the app via postgrest.rpc("delete_current_user") on "Delete account"
--- (see SupabaseAuthService.deleteAccount). Confirmed DEPLOYED + REST-verified (CLAUDE.md).
+-- (see SupabaseAuthService.deleteAccount). DEPLOYED + REST-verified (CLAUDE.md).
 --
--- ⚠ RECONSTRUCTED, NOT VERBATIM: the deployed function body was not captured in the repo, so
---   this is rebuilt from CLAUDE.md + the app code's documented intent. Reconcile against the
---   actual deployed source in the Supabase dashboard before treating it as canonical.
--- ⚠ DISCREPANCY TO RESOLVE: SupabaseAuthService.kt says deletion relies on "FK on delete cascade
---   on every owned table", but this file's header states the DB has NO FK constraints. If that
---   holds, a bare `DELETE FROM auth.users` would NOT remove owned rows. This reconstruction
---   therefore deletes each owned table explicitly first (correct whether or not cascades exist);
---   if the deployed function instead relies on real FK cascades, capture that version here.
-CREATE OR REPLACE FUNCTION public.delete_current_user()
-RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
-DECLARE uid uuid := auth.uid();
-BEGIN
-  IF uid IS NULL THEN
-    RAISE EXCEPTION 'no authenticated user';
-  END IF;
-  DELETE FROM public.partner_invites WHERE inviter_id = uid;
-  DELETE FROM public.ph_readings     WHERE user_id = uid;
-  DELETE FROM public.daily_logs      WHERE user_id = uid;
-  DELETE FROM public.cycle_settings  WHERE user_id = uid;
-  DELETE FROM public.profiles        WHERE id = uid;
-  DELETE FROM auth.users             WHERE id = uid;
-END $$;
+-- VERBATIM as deployed (owner-provided & run, 2026-07-05). The function does explicit per-table
+-- deletes of every user-owned row and then deletes the auth account: correct regardless of FK
+-- cascade presence. This resolves the SupabaseAuthService.kt comment — account deletion does NOT
+-- depend on cascades; the per-table DELETEs are authoritative.
+-- The DELETE is a HARD delete: it bypasses the ph_readings soft-delete (deleted_at) path on
+-- purpose. GDPR / Play "erase my account" must physically remove the rows, not tombstone them.
+-- NOTE: execute-grant not part of the provided body — relies on Postgres' default EXECUTE-to-PUBLIC
+-- unless a separate GRANT was applied.
+create or replace function public.delete_current_user()
+returns void
+language plpgsql
+security definer
+as $$
+declare
+  uid uuid := auth.uid();
+begin
+  if uid is null then
+    raise exception 'no authenticated user';
+  end if;
 
-REVOKE ALL ON FUNCTION public.delete_current_user() FROM public, anon;
-GRANT EXECUTE ON FUNCTION public.delete_current_user() TO authenticated;
+  -- explicit deletes of user-owned rows (backstop to the FK cascades)
+  delete from public.ph_readings    where user_id = uid;
+  delete from public.daily_logs     where user_id = uid;
+  delete from public.cycle_settings where user_id = uid;
+  delete from public.profiles       where id      = uid;
+
+  -- finally remove the auth account (cascades cover anything above too)
+  delete from auth.users where id = uid;
+end;
+$$;

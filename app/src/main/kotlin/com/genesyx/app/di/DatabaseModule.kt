@@ -30,6 +30,9 @@ object DatabaseModule {
             // MIGRATION_x_y to GENESYX_MIGRATIONS; a missing migration now fails loudly instead of
             // silently wiping the user's data.
             .addMigrations(*GENESYX_MIGRATIONS)
+            // Narrow safety valve: only a DOWNGRADE (older app over newer schema) resets the DB.
+            // Upgrade protection is unchanged — upgrades must have a real migration.
+            .fallbackToDestructiveMigrationOnDowngrade()
             .build()
 
     @Provides fun provideCycleSettingsDao(db: GenesyxDatabase): CycleSettingsDao = db.cycleSettingsDao()
