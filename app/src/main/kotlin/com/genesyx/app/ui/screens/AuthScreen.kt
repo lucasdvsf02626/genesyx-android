@@ -41,8 +41,15 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import android.content.Context
 import android.content.res.Configuration
+import androidx.compose.ui.platform.LocalContext
+import androidx.credentials.exceptions.GetCredentialCancellationException
+import androidx.credentials.exceptions.GetCredentialException
+import androidx.credentials.exceptions.NoCredentialException
+import com.genesyx.app.BuildConfig
 import com.genesyx.app.auth.AuthRepository
+import com.genesyx.app.auth.GoogleCredentialClient
 import com.genesyx.app.core.result.DataResult
 import com.genesyx.app.ui.components.BrandLockup
 import com.genesyx.app.ui.components.GxGhostButton
@@ -62,10 +69,47 @@ data class AuthUiState(val loading: Boolean = false, val error: String? = null)
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     private val authRepository: AuthRepository,
+    private val googleClient: GoogleCredentialClient,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AuthUiState())
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
+
+    /** Google sign-in is only usable when a Web client ID was compiled in (see BuildConfig). */
+    val isGoogleConfigured: Boolean = BuildConfig.GOOGLE_WEB_CLIENT_ID.isNotBlank()
+
+    /**
+     * Launches the Credential Manager Google flow, then signs in to Supabase with the ID token.
+     * No fake success: unconfigured → clear error; user-cancelled → silently dismissed; any
+     * failure (incl. airplane mode) → a friendly error, never a crash.
+     */
+    fun signInWithGoogle(activityContext: Context, onSuccess: () -> Unit) {
+        if (!isGoogleConfigured) {
+            _uiState.value = AuthUiState(error = "Google sign-in isn't configured.")
+            return
+        }
+        _uiState.value = AuthUiState(loading = true)
+        viewModelScope.launch {
+            try {
+                val idToken = googleClient.getIdToken(activityContext, BuildConfig.GOOGLE_WEB_CLIENT_ID)
+                when (val result = authRepository.signInWithGoogle(idToken)) {
+                    is DataResult.Success -> {
+                        _uiState.value = AuthUiState()
+                        onSuccess()
+                    }
+                    is DataResult.Error ->
+                        _uiState.value = AuthUiState(error = result.message ?: "Google sign-in failed.")
+                    DataResult.Loading -> Unit
+                }
+            } catch (e: GetCredentialCancellationException) {
+                _uiState.value = AuthUiState() // user dismissed the sheet — not an error
+            } catch (e: NoCredentialException) {
+                _uiState.value = AuthUiState(error = "No Google account found on this device.")
+            } catch (e: GetCredentialException) {
+                _uiState.value = AuthUiState(error = "Couldn't reach Google. Check your connection and try again.")
+            }
+        }
+    }
 
     /** Real email/password auth via [AuthRepository]; local-first when Supabase isn't configured. */
     fun submit(signup: Boolean, email: String, password: String, name: String?, onSuccess: () -> Unit) {
@@ -97,9 +141,11 @@ fun AuthScreen(
     viewModel: AuthViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
     AuthContent(
         uiState = uiState,
         onSubmit = { signup, email, password, name -> viewModel.submit(signup, email, password, name, onSignedIn) },
+        onGoogleSignIn = { viewModel.signInWithGoogle(context, onSignedIn) },
         onClearError = viewModel::clearError,
         onBack = onBack,
     )
@@ -111,6 +157,7 @@ fun AuthContent(
     onSubmit: (signup: Boolean, email: String, password: String, name: String?) -> Unit,
     onClearError: () -> Unit,
     onBack: () -> Unit,
+    onGoogleSignIn: () -> Unit = {},
 ) {
     val colors = MaterialTheme.colorScheme
     var signupMode by remember { mutableStateOf(false) }
@@ -198,8 +245,27 @@ fun AuthContent(
                     )
                 }
 
-                // Google sign-in intentionally omitted until the Android Credential Manager flow is
-                // implemented — no dead/misleading button ships to production.
+                // "or" divider + Google sign-in via Credential Manager.
+                Spacer(Modifier.height(20.dp))
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                    HorizontalDivider(Modifier.weight(1f))
+                    Text(
+                        "  or  ",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = colors.onSurfaceVariant,
+                    )
+                    HorizontalDivider(Modifier.weight(1f))
+                }
+                Spacer(Modifier.height(16.dp))
+                OutlinedButton(
+                    onClick = onGoogleSignIn,
+                    enabled = !uiState.loading,
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    shape = RoundedCornerShape(12.dp),
+                ) {
+                    Text("Continue with Google", fontWeight = FontWeight.SemiBold)
+                }
+
                 Spacer(Modifier.height(28.dp))
                 Row {
                     Text(

@@ -9,6 +9,8 @@ lifecycle = "2.8.6"
 navigationCompose = "2.8.3"
 hilt = "2.52"
 hiltNavigationCompose = "1.2.0"
+credentials = "1.3.0"
+googleId = "1.1.1"
 room = "2.6.1"
 workManager = "2.9.1"
 datastore = "1.1.1"
@@ -42,6 +44,11 @@ androidx-compose-material-icons-extended = { group = "androidx.compose.material"
 
 # Navigation
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
+
+# Google sign-in (Credential Manager + Google ID token)
+androidx-credentials = { group = "androidx.credentials", name = "credentials", version.ref = "credentials" }
+androidx-credentials-play-services = { group = "androidx.credentials", name = "credentials-play-services-auth", version.ref = "credentials" }
+google-identity-googleid = { group = "com.google.android.libraries.identity.googleid", name = "googleid", version.ref = "googleId" }
 
 # Hilt DI
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }

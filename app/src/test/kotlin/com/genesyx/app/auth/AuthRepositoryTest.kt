@@ -88,4 +88,29 @@ class AuthRepositoryTest {
         coVerify { profileRepo.refresh("uid-123") }         // background read-through fired
         appScope.cancel()
     }
+
+    @Test
+    fun `signInWithGoogle persists the session on success`() = runTest {
+        val user = AuthUser(id = "g-uid", email = "g@b.co", displayName = "g", emailVerified = true)
+        coEvery { authService.signInWithIdToken("tok-123") } returns
+            DataResult.Success(AuthSession(user, accessToken = "at"))
+        val appScope = CoroutineScope(UnconfinedTestDispatcher(testScheduler))
+
+        val result = repo(appScope).signInWithGoogle("tok-123")
+
+        assertTrue(result is DataResult.Success)
+        verify { session.signIn("g@b.co", "g", userId = "g-uid") }
+        appScope.cancel()
+    }
+
+    @Test
+    fun `signInWithGoogle surfaces error and does not persist a session`() = runTest {
+        coEvery { authService.signInWithIdToken(any()) } returns
+            DataResult.Error(RuntimeException("bad token"))
+
+        val result = repo(backgroundScope).signInWithGoogle("bad")
+
+        assertTrue(result is DataResult.Error)
+        verify(exactly = 0) { session.signIn(any(), any(), any()) }
+    }
 }

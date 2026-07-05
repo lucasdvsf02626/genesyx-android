@@ -49,6 +49,10 @@ class AuthRepository @Inject constructor(
     suspend fun signUp(email: String, password: String, name: String?): DataResult<Unit> =
         persist(authService.signUp(email, password, name), "sign-up")
 
+    /** Google sign-in via a Google ID token; persists the session on success. */
+    suspend fun signInWithGoogle(idToken: String): DataResult<Unit> =
+        persist(authService.signInWithIdToken(idToken), "google-sign-in")
+
     fun signOut() = session.signOut()
 
     /** Permanently delete the account remotely (RPC → cascade) then wipe all local data. */
