@@ -99,6 +99,9 @@ only the pre-existing `MenuBook` deprecation warning).
   sign-in will fail on release builds until this is done.
 - **Publish the OAuth consent screen to production** (currently testing) so non-allowlisted users can
   sign in with Google.
+- **Re-enable "Confirm email" in Supabase → Auth → Providers → Email.** It is currently **OFF**
+  (pre-existing config, used for QA sign-in). Leaving it off in production lets anyone create accounts
+  with unverified/typo'd emails (spam/abuse, undeliverable password resets). Turn it back on before launch.
 
 ### Google Cloud / Supabase dashboard
 - Google: confirm the release SHA-1 (above) is on the Android client; consent screen published.
