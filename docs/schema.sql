@@ -194,8 +194,7 @@ BEGIN NEW.updated_at = now(); RETURN NEW; END $$;
 -- depend on cascades; the per-table DELETEs are authoritative.
 -- The DELETE is a HARD delete: it bypasses the ph_readings soft-delete (deleted_at) path on
 -- purpose. GDPR / Play "erase my account" must physically remove the rows, not tombstone them.
--- NOTE: execute-grant not part of the provided body — relies on Postgres' default EXECUTE-to-PUBLIC
--- unless a separate GRANT was applied.
+-- Execute is locked to authenticated callers (public/anon revoked) — see grants below.
 create or replace function public.delete_current_user()
 returns void
 language plpgsql
@@ -218,3 +217,6 @@ begin
   delete from auth.users where id = uid;
 end;
 $$;
+
+revoke execute on function public.delete_current_user() from public, anon;
+grant execute on function public.delete_current_user() to authenticated;
