@@ -3,6 +3,31 @@
 On-device verification for the `feature/v1.1-sync-hardening` branch. **Non-Google tests come first** so
 you can validate the whole app even if the Google config has an issue. Google scenarios are last.
 
+---
+
+## ✅ Automated coverage (autonomous run, 2026-07-05, emulator-5554, QA user genesyx.qa.step1)
+
+Proven end-to-end without human taps (evidence in `AUTONOMOUS_RUN_LOG.md`):
+
+| Step | Status | Evidence |
+|---|---|---|
+| A — pH log online → Supabase | ✅ AUTOMATED | UI saved 6.5 → Room `SYNCED` sub-second → same id on Supabase |
+| B — offline queue, no block | ✅ AUTOMATED | airplane on, UI saved 7.2 → `PENDING_UPSERT`, dialog closed, no block |
+| 2b — reconnect drain | ✅ AUTOMATED | ≤5 s to `SYNCED`; server shows exactly 6.5 + 7.2, **no duplicate** |
+| C — edit → updated_at | ✅ backend (REST) | 6.5→6.8, `updated_at` advanced. UI-edit path not driven |
+| D — delete → soft-delete | ✅ backend (REST) + device | REST set `deleted_at`; app pulled the tombstone (hidden). UI-delete not driven |
+| E — sign-in pull-merge no dup | ✅ AUTOMATED (partial) | sign-in pulled server row + tombstone, count=1. Full sign-out→in cycle not driven |
+| G — migration preserves data | ✅ INSTRUMENTED | `PhMigrationTest` green on device |
+
+### 🖐️ Shortest human checklist (what still needs your fingers)
+1. **Account deletion (Test F)** — destructive, so I did NOT run it. On a throwaway account: Profile → Delete account → confirm → Splash; re-login must fail. *(Do this last.)*
+2. **Google sign-in (Tests H–L)** — needs a real Google account on the device: fresh sign-in, returning user, cancelled dialogue, airplane-mode failure.
+3. *(Optional)* UI **edit** + UI **delete** of a pH reading — backend already proven via REST; just confirm the on-screen path behaves.
+
+Full detailed steps remain below for reference.
+
+---
+
 ## Setup
 - Build/install debug: `./gradlew :app:installDebug` (debug SHA-1 is registered, so Google works on
   debug too). For a true "fresh install", `adb uninstall com.genesyx.app` first.
