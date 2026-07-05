@@ -181,3 +181,35 @@ END $$;
 CREATE OR REPLACE FUNCTION public.touch_updated_at()
 RETURNS trigger LANGUAGE plpgsql SET search_path = public AS $$
 BEGIN NEW.updated_at = now(); RETURN NEW; END $$;
+
+-- ============================================================
+-- delete_current_user()  — account self-deletion RPC (GDPR / Play requirement)
+-- ============================================================
+-- Called by the app via postgrest.rpc("delete_current_user") on "Delete account"
+-- (see SupabaseAuthService.deleteAccount). Confirmed DEPLOYED + REST-verified (CLAUDE.md).
+--
+-- ⚠ RECONSTRUCTED, NOT VERBATIM: the deployed function body was not captured in the repo, so
+--   this is rebuilt from CLAUDE.md + the app code's documented intent. Reconcile against the
+--   actual deployed source in the Supabase dashboard before treating it as canonical.
+-- ⚠ DISCREPANCY TO RESOLVE: SupabaseAuthService.kt says deletion relies on "FK on delete cascade
+--   on every owned table", but this file's header states the DB has NO FK constraints. If that
+--   holds, a bare `DELETE FROM auth.users` would NOT remove owned rows. This reconstruction
+--   therefore deletes each owned table explicitly first (correct whether or not cascades exist);
+--   if the deployed function instead relies on real FK cascades, capture that version here.
+CREATE OR REPLACE FUNCTION public.delete_current_user()
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE uid uuid := auth.uid();
+BEGIN
+  IF uid IS NULL THEN
+    RAISE EXCEPTION 'no authenticated user';
+  END IF;
+  DELETE FROM public.partner_invites WHERE inviter_id = uid;
+  DELETE FROM public.ph_readings     WHERE user_id = uid;
+  DELETE FROM public.daily_logs      WHERE user_id = uid;
+  DELETE FROM public.cycle_settings  WHERE user_id = uid;
+  DELETE FROM public.profiles        WHERE id = uid;
+  DELETE FROM auth.users             WHERE id = uid;
+END $$;
+
+REVOKE ALL ON FUNCTION public.delete_current_user() FROM public, anon;
+GRANT EXECUTE ON FUNCTION public.delete_current_user() TO authenticated;

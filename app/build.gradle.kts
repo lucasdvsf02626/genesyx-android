@@ -110,6 +110,17 @@ android {
         compose = true
         buildConfig = true
     }
+
+    // Room exports the schema JSON here (exportSchema = true) so version bumps are diffable and
+    // MigrationTestHelper can validate them. Also expose it to androidTest as assets.
+    sourceSets {
+        getByName("androidTest").assets.srcDir("$projectDir/schemas")
+    }
+}
+
+// Room schema export location (see GenesyxDatabase.exportSchema).
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
 
 dependencies {

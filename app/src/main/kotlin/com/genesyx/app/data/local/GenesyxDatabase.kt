@@ -32,7 +32,7 @@ import com.genesyx.app.data.local.entity.ProfileEntity
         PartnerLinkEntity::class,
     ],
     version = 2,
-    exportSchema = false,
+    exportSchema = true,
 )
 @TypeConverters(Converters::class)
 abstract class GenesyxDatabase : RoomDatabase() {

@@ -2,6 +2,7 @@ package com.genesyx.app.di
 
 import android.content.Context
 import androidx.room.Room
+import com.genesyx.app.data.local.GENESYX_MIGRATIONS
 import com.genesyx.app.data.local.GenesyxDatabase
 import com.genesyx.app.data.local.dao.ClientDao
 import com.genesyx.app.data.local.dao.CycleSettingsDao
@@ -24,8 +25,11 @@ object DatabaseModule {
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): GenesyxDatabase =
         Room.databaseBuilder(context, GenesyxDatabase::class.java, "genesyx.db")
-            // v1 local cache; on schema change, rebuild from Supabase rather than migrating.
-            .fallbackToDestructiveMigration()
+            // Real migrations only — NO destructive fallback, so schema bumps preserve local data
+            // (critical for LOCAL-ONLY pH readings, which have no server copy in v1.0). Add each
+            // MIGRATION_x_y to GENESYX_MIGRATIONS; a missing migration now fails loudly instead of
+            // silently wiping the user's data.
+            .addMigrations(*GENESYX_MIGRATIONS)
             .build()
 
     @Provides fun provideCycleSettingsDao(db: GenesyxDatabase): CycleSettingsDao = db.cycleSettingsDao()

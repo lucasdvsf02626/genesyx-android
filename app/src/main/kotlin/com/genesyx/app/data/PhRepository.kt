@@ -8,6 +8,7 @@ import com.genesyx.app.data.local.entity.toDomain
 import com.genesyx.app.data.local.entity.toEntity
 import com.genesyx.app.data.remote.PhRemoteDataSource
 import com.genesyx.app.domain.model.PhReading
+import com.genesyx.app.domain.ph.PhStatus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.SharingStarted
@@ -43,12 +44,19 @@ class PhRepository @Inject constructor(
 
     private fun Double.round1(): Double = (this * 10).roundToInt() / 10.0
 
-    fun create(reading: PhReading) = write(reading)
+    fun create(reading: PhReading): PhWriteResult = write(reading)
 
-    fun update(reading: PhReading) = write(reading)
+    fun update(reading: PhReading): PhWriteResult = write(reading)
 
-    private fun write(reading: PhReading) {
-        val normalized = reading.copy(phValue = reading.phValue.round1())
+    private fun write(reading: PhReading): PhWriteResult {
+        // Enforce the trackable urine-pH range in the data layer (defense-in-depth beyond the UI
+        // slider). Out-of-range values are rejected, never persisted. Boundaries are inclusive.
+        val value = reading.phValue.round1()
+        if (value < PhStatus.MIN || value > PhStatus.MAX) {
+            logger.w("Ph", "rejected out-of-range pH $value (allowed ${PhStatus.MIN}..${PhStatus.MAX})")
+            return PhWriteResult.OutOfRange(value)
+        }
+        val normalized = reading.copy(phValue = value)
         scope.launch {
             val userId = session.currentUserId()
             dao.upsert(normalized.toEntity(userId))
@@ -61,6 +69,7 @@ class PhRepository @Inject constructor(
             //     logger.i("Ph", "synced pH reading ${normalized.id} for $userId")
             // }
         }
+        return PhWriteResult.Accepted
     }
 
     fun delete(id: String) {
@@ -76,4 +85,14 @@ class PhRepository @Inject constructor(
         // v1.1: enable when ph_readings table exists. pH is local-only in 1.0 — no read-through and
         // no network call for pH (this previously logged a non-fatal `E Ph` against the absent table).
     }
+}
+
+/** Outcome of a pH write. Callers may surface [OutOfRange] to the user; the value is not persisted. */
+sealed interface PhWriteResult {
+    data object Accepted : PhWriteResult
+    data class OutOfRange(
+        val value: Double,
+        val min: Double = PhStatus.MIN,
+        val max: Double = PhStatus.MAX,
+    ) : PhWriteResult
 }
