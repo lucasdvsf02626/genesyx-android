@@ -73,6 +73,11 @@ fun InsightsScreen(
 
         Column(Modifier.padding(horizontal = 20.dp)) {
             Spacer(Modifier.height(8.dp))
+            LogHistoryEntryCard {
+                navController.navigate(Screen.LogHistory.route)
+            }
+
+            Spacer(Modifier.height(12.dp))
             if (com.genesyx.app.core.FeatureFlags.PH_TRACKING) {
                 PhInsightsSection(ph) {
                     navController.navigate(Screen.Track.route) {
@@ -109,6 +114,38 @@ fun InsightsScreen(
             )
 
             Spacer(Modifier.height(24.dp))
+        }
+    }
+}
+
+@Composable
+private fun LogHistoryEntryCard(onClick: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    Card(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = colors.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(20.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text("My logs", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    "See everything you've tracked",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colors.onSurfaceVariant,
+                )
+            }
+            Icon(
+                Icons.AutoMirrored.Filled.ArrowForward,
+                contentDescription = null,
+                tint = ElectricLavender,
+            )
         }
     }
 }

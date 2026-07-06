@@ -80,11 +80,11 @@ Release-candidate handoff. Read this first. Honest state as of the commit below.
 | 1 | T4(e) gx01 delete | ✅ DONE | PASS on-device Sat Jul 4: delete → Splash (no FATAL); re-login rejected with "Invalid login credentials" (`AuthRestException`). Shots in scratchpad `t4e/` |
 | 2 | Supabase server-side delete proof | ⛔ OWNER | dashboard: confirm deleted rows gone in `auth.users` + `profiles`/`daily_logs`/`cycle_settings`. (b)+(c) already prove auth-layer deletion works |
 | 3a | Shopify `/pages/privacy-policy` | ✅ DONE | verified LIVE clean — H1 ok, 0 `[CONTACT_EMAIL]`, 0 `genesxy`, no `.html`, only `info@genesyx.co.uk` |
-| 3b | Shopify `/pages/delete-account` | ❌ BROKEN LIVE | an **old draft** is published: has `[CONTACT_EMAIL]` (×1), misspelled `info@genesxy.co.uk`, two `./privacy-policy.html` links. Must re-publish `body_html` from clean `~/Downloads/delete-account-FINAL.html` (agent can do it once Shopify MCP is re-authed), then re-verify live |
+| 3b | Shopify `/pages/delete-account` | ✅ DONE | verified LIVE clean (Sun Jul 6): H1 "Delete account", 0 `[CONTACT_EMAIL]`, 0 `genesxy`, no `.html` links, only `info@genesyx.co.uk`. The old broken draft has been replaced — page now matches the clean `delete-account-FINAL.html`. |
 | 4 | Store assets | ⛔ OWNER | feature graphic 1024×500 + phone + 7"/10" tablet screenshots |
 | 5 | Play Console | ⛔ OWNER | privacy + deletion URLs, Data Safety form, content rating, AAB upload, internal smoke, **submit** |
 
-**Overall: ~92%.** All engineering verification is now green (T4(a–e) PASS). Remaining = owner-only store/console/dashboard work (#2, #4, #5) + the one broken Shopify page (#3b, deferred this session).
+**Overall: ~94%.** All engineering verification is now green (T4(a–e) PASS) and both Shopify pages (#3a, #3b) are LIVE clean. Remaining = owner-only store/console/dashboard work (#2, #4, #5).
 
 > **CODE FREEZE:** freezes at **v5** once the v5 smoke completes (pH restore + quiz back-arrow fix + intro logo). No further source edits after that — only docs/evidence, store setup, and on-device verification.
 >
