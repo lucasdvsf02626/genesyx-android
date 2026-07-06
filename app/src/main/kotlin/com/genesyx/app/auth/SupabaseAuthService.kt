@@ -42,7 +42,16 @@ class SupabaseAuthService @Inject constructor(
                 this.email = email
                 this.password = password
             }
-            DataResult.Success(requireSession())
+            // Verify the sign-in actually established a session for THIS account. Without this,
+            // a prior still-valid session (e.g. an existing Google login) is returned by
+            // currentSessionOrNull() and reported as success — a failed sign-in would silently
+            // land the user back in the previous session. Reject that stale-session masquerade.
+            val session = client.auth.currentSessionOrNull()
+                ?: throw IllegalStateException("Sign-in failed — no session established.")
+            if (!session.user?.email.equals(email.trim(), ignoreCase = true)) {
+                throw IllegalStateException("Sign-in did not establish a session for this account.")
+            }
+            DataResult.Success(session.toAuthSession())
         } catch (t: Throwable) {
             logger.e("Auth", "sign-in failed", t)
             DataResult.Error(t, t.message)
