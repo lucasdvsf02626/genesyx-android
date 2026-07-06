@@ -90,6 +90,20 @@ class AuthRepositoryTest {
     }
 
     @Test
+    fun `signInWithPassword surfaces error and does not persist a session`() = runTest {
+        // Regression: a failed sign-in (e.g. wrong password / stale-session masquerade rejected
+        // by SupabaseAuthService) must NOT leave the user in any session. Previously a failed
+        // sign-in could land the user back in a prior still-valid session.
+        coEvery { authService.signInWithPassword(any(), any()) } returns
+            DataResult.Error(RuntimeException("Invalid login credentials"))
+
+        val result = repo(backgroundScope).signInWithPassword("nope@b.co", "wrong")
+
+        assertTrue(result is DataResult.Error)
+        verify(exactly = 0) { session.signIn(any(), any(), any()) }
+    }
+
+    @Test
     fun `signInWithGoogle persists the session on success`() = runTest {
         val user = AuthUser(id = "g-uid", email = "g@b.co", displayName = "g", emailVerified = true)
         coEvery { authService.signInWithIdToken("tok-123") } returns
