@@ -5,7 +5,7 @@ Project Name: Genesyx Android
 Release-candidate handoff. Read this first. Honest state as of the commit below.
 
 ## Build identity
-- **RC build:** versionCode `5`, versionName `1.0.0`  (`app/build.gradle.kts:38-39`)
+- **Shipping build:** versionCode `6`, versionName `1.0.0`  (`app/build.gradle.kts:38-39`) — `main` = `27c2ac0`. See "Release build v6" below. (History: RC was v5.)
 - **Release artifacts** (built & signed with `genesyx-release.jks` via `keystore.properties`; `clean bundleRelease assembleRelease` all GREEN, R8/minify clean):
   - AAB (Play upload): `app/build/outputs/bundle/release/app-release.aab` — 8.1 MB
   - APK (on-device test): `app/build/outputs/apk/release/app-release.apk` — 4.3 MB
@@ -71,6 +71,19 @@ Release-candidate handoff. Read this first. Honest state as of the commit below.
 - emulator-5554 runs **v5** (versionCode 5), **LIGHT** theme, **signed IN** as **`lucas+gx05`** (throwaway: cycle set up, 1 pH reading 6.5), on **Home**.
 - Test accounts `lucas+gx01/02/03` all **deleted**. **`lucas+gx05`** is live — delete it at the end of the v5 smoke. (Passwords held by the owner, not recorded here.)
 
+## Release build v6 — AAB built & signing-verified (Jul 6)
+- **P9 (build + AAB): AAB built & signing-verified — upload pending Play Console app creation (P1).** Not uploaded (owner does Play Console manually).
+  - `main` = **`27c2ac0`** (`Release: versionCode 5→6; mark Shopify delete-account page live-clean (P4)`).
+  - AAB = `app/build/outputs/bundle/release/app-release.aab` — **8.7 MB (9,073,671 bytes)**.
+  - **versionCode 6**, versionName **1.0.0**. `./gradlew clean bundleRelease` GREEN (CI on the source also green).
+  - Signing SHA1 = **`8D:EB:47:63:5F:10:2A:DA:7C:93:AA:27:15:E3:37:C6:49:B2:CC:73`** (matches `genesyx-release.jks` and the fingerprint registered in Google Cloud). SHA256 `C3:D5:1F:4B…A4:46:C1:7D`.
+- **Branch/merge reconciliation:**
+  - `main` was **force-reset to the release line** (`main` → `27c2ac0`). Previously `origin/main` held a divergent scaffold (`586533c`, versionCode 1) that was **not** the release app.
+  - Old scaffold **preserved** at `origin/backup/old-main` (recoverable; nothing lost).
+  - `claude/rc-v3` **deleted** (was fully merged into main via PR #2; no unique commits).
+  - **PR #3 / #4 merge steps are complete** — all their content (v1.1 pH sync + Google sign-in + the full app) is now in `main`. PR #4 is MERGED (its base was `feature/v1.1-sync-hardening`); PR #3 left open but redundant. `feature/log-history` and `feature/v1.1-sync-hardening` kept as-is.
+  - `main` is the **GitHub default branch**, so all new PRs base off it (no more wrong-base risk).
+
 ## LAUNCH CHECKLIST — where we are (updated Mon)
 
 **Engineering (DONE):** 4 RC fixes + v4 FIX A (Clients gate) + FIX B (Home hero), v4 built/signed, PR #2, T1–T3 PASS, T4(a–e) PASS, v4 smoke PASS. `GENESYX_ENV=PROD` verified.
@@ -83,12 +96,13 @@ Release-candidate handoff. Read this first. Honest state as of the commit below.
 | 3b | Shopify `/pages/delete-account` | ✅ DONE | verified LIVE clean (Sun Jul 6): H1 "Delete account", 0 `[CONTACT_EMAIL]`, 0 `genesxy`, no `.html` links, only `info@genesyx.co.uk`. The old broken draft has been replaced — page now matches the clean `delete-account-FINAL.html`. |
 | 4 | Store assets | ⛔ OWNER | feature graphic 1024×500 + phone + 7"/10" tablet screenshots |
 | 5 | Play Console | ⛔ OWNER | privacy + deletion URLs, Data Safety form, content rating, AAB upload, internal smoke, **submit** |
+| P9 | Release AAB build | ✅ DONE (upload pending) | AAB built & signing-verified — upload pending Play Console app creation (P1). `main` `27c2ac0`, versionCode 6, 8.7 MB, SHA1 `8D:EB:47:63…B2:CC:73`. See "Release build v6" above |
 
-**Overall: ~94%.** All engineering verification is now green (T4(a–e) PASS) and both Shopify pages (#3a, #3b) are LIVE clean. Remaining = owner-only store/console/dashboard work (#2, #4, #5).
+**Overall: ~95%.** All engineering is done — release AAB (v6) built & signing-verified, `main` is the release trunk, both Shopify pages LIVE clean. Remaining = owner-only Play Console + dashboard work (#2, #4, #5) and the manual AAB upload.
 
-> **CODE FREEZE:** freezes at **v5** once the v5 smoke completes (pH restore + quiz back-arrow fix + intro logo). No further source edits after that — only docs/evidence, store setup, and on-device verification.
+> **CODE FROZEN at versionCode 6 (`main` = `27c2ac0`).** No further source edits — only docs/evidence and owner store/console/dashboard steps.
 >
-> **NEXT ACTION (single):** finish/resume the v5 smoke (pH persistence-across-restart, airplane-mode, all 5 tabs, no-Clients, FATAL scan, delete gx05 → pH gone + login fails). Then **CODE FROZEN** → Play Console: upload the v5 AAB, complete Data Safety/store forms, submit.
+> **NEXT ACTION (single, owner):** Play Console — create the app (P1), complete Data Safety/store forms, **upload the v6 AAB** (`app/build/outputs/bundle/release/app-release.aab`), internal smoke, submit.
 
 ## v1.1 backlog (deferred, do NOT build for 1.0)
 - **pH backend + sync (headline v1.1 task):** create the Supabase `ph_readings` table, then un-guard the `PhRepository` remote calls (search `// v1.1: enable when ph_readings table exists`) so pH write-through/read-through works. pH is LOCAL-ONLY in v1.0.
