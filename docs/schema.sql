@@ -195,6 +195,10 @@ BEGIN NEW.updated_at = now(); RETURN NEW; END $$;
 -- The DELETE is a HARD delete: it bypasses the ph_readings soft-delete (deleted_at) path on
 -- purpose. GDPR / Play "erase my account" must physically remove the rows, not tombstone them.
 -- Execute is locked to authenticated callers (public/anon revoked) — see grants below.
+-- TODO(post-launch): harden this SECURITY DEFINER function with an explicit
+--   `set search_path = public, auth, pg_temp`
+-- to pin schema resolution and prevent search_path hijacking. Deliberately NOT applied for the
+-- launch redeploy (2026-07-06) to keep the deployed body identical to what was validated on-device.
 create or replace function public.delete_current_user()
 returns void
 language plpgsql
