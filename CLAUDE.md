@@ -5,7 +5,7 @@ Project Name: Genesyx Android
 Release-candidate handoff. Read this first. Honest state as of the commit below.
 
 ## Build identity
-- **Shipping build:** versionCode `6`, versionName `1.0.0`  (`app/build.gradle.kts:38-39`) — `main` = `27c2ac0`. See "Release build v6" below. (History: RC was v5.)
+- **Shipping build:** versionCode `6`, versionName `1.0.0`  (`app/build.gradle.kts:38-39`) — `main` = `1da07f9` (PR #5, ghost-session sign-in fix; versionCode unchanged at 6). See "Release build v6" below. (History: RC was v5; earlier v6 tag was `27c2ac0`.)
 - **Release artifacts** (built & signed with `genesyx-release.jks` via `keystore.properties`; `clean bundleRelease assembleRelease` all GREEN, R8/minify clean):
   - AAB (Play upload): `app/build/outputs/bundle/release/app-release.aab` — 8.1 MB
   - APK (on-device test): `app/build/outputs/apk/release/app-release.apk` — 4.3 MB
@@ -71,10 +71,16 @@ Release-candidate handoff. Read this first. Honest state as of the commit below.
 - emulator-5554 runs **v5** (versionCode 5), **LIGHT** theme, **signed IN** as **`lucas+gx05`** (throwaway: cycle set up, 1 pH reading 6.5), on **Home**.
 - Test accounts `lucas+gx01/02/03` all **deleted**. **`lucas+gx05`** is live — delete it at the end of the v5 smoke. (Passwords held by the owner, not recorded here.)
 
-## Release build v6 — AAB built & signing-verified (Jul 6)
-- **P9 (build + AAB): AAB built & signing-verified — upload pending Play Console app creation (P1).** Not uploaded (owner does Play Console manually).
-  - `main` = **`27c2ac0`** (`Release: versionCode 5→6; mark Shopify delete-account page live-clean (P4)`).
-  - AAB = `app/build/outputs/bundle/release/app-release.aab` — **8.7 MB (9,073,671 bytes)**.
+## PR #5 — sign-in ghost-session fix (Mon Jul 6, versionCode unchanged 6)
+- **Bug:** `signInWithPassword` returned `DataResult.Success` off the *ambient* session — `requireSession()` read `currentSessionOrNull()`, so with a still-valid prior session (e.g. an existing Google login) a **wrong-password attempt fell through to a false Success and navigated Home as the OLD user**, no error shown.
+- **Fix (`auth/SupabaseAuthService.kt`):** after `signInWith`, read `currentSessionOrNull()`; throw if null, and throw if `session.user.email` ≠ the attempted email (case-insensitive) → surfaces `DataResult.Error`, form shows the error and stays put. Regression test added (`AuthRepositoryTest`: failed sign-in persists no session). No schema/API/nav changes; **versionCode stays 6**.
+- **`delete_current_user` redeployed server-side** (Jul 6) with the `delete from auth.users where id = uid;` line (deployed body matches `docs/schema.sql`). **S6 verified 0+0** — post-delete rows gone across `auth.users`/`profiles`/`daily_logs`/`cycle_settings` (checklist #2).
+- Merged as **PR #5** (`fix/auth-stale-session-signin`) → `main` = **`1da07f9`**.
+
+## Release build v6 — AAB built, signing-verified & UPLOADED (Jul 6)
+- **P9 (build + AAB): AAB built, signing-verified, and UPLOADED + PUBLISHED to Internal testing** on the existing `com.genesyx.app` Play app. Testers attached; all three OAuth clients registered incl. Google's Play app-signing key **E0:CE**.
+  - Final AAB **rebuilt from merged `main` = `1da07f9`** (incl. the PR #5 fix), **Mon Jul 6 14:48**.
+  - AAB = `app/build/outputs/bundle/release/app-release.aab`.
   - **versionCode 6**, versionName **1.0.0**. `./gradlew clean bundleRelease` GREEN (CI on the source also green).
   - Signing SHA1 = **`8D:EB:47:63:5F:10:2A:DA:7C:93:AA:27:15:E3:37:C6:49:B2:CC:73`** (matches `genesyx-release.jks` and the fingerprint registered in Google Cloud). SHA256 `C3:D5:1F:4B…A4:46:C1:7D`.
 - **Branch/merge reconciliation:**
@@ -91,18 +97,19 @@ Release-candidate handoff. Read this first. Honest state as of the commit below.
 | # | Item | Status | Detail / evidence |
 |---|---|---|---|
 | 1 | T4(e) gx01 delete | ✅ DONE | PASS on-device Sat Jul 4: delete → Splash (no FATAL); re-login rejected with "Invalid login credentials" (`AuthRestException`). Shots in scratchpad `t4e/` |
-| 2 | Supabase server-side delete proof | ⛔ OWNER | dashboard: confirm deleted rows gone in `auth.users` + `profiles`/`daily_logs`/`cycle_settings`. (b)+(c) already prove auth-layer deletion works |
+| 2 | Supabase server-side delete proof | ✅ DONE | **S6 verified 0+0** (Mon Jul 6): after delete, deleted rows confirmed gone in `auth.users` + `profiles`/`daily_logs`/`cycle_settings`. `delete_current_user` **redeployed server-side** with the `delete from auth.users where id = uid;` line (schema.sql body matches deployed) |
 | 3a | Shopify `/pages/privacy-policy` | ✅ DONE | verified LIVE clean — H1 ok, 0 `[CONTACT_EMAIL]`, 0 `genesxy`, no `.html`, only `info@genesyx.co.uk` |
 | 3b | Shopify `/pages/delete-account` | ✅ DONE | verified LIVE clean (Sun Jul 6): H1 "Delete account", 0 `[CONTACT_EMAIL]`, 0 `genesxy`, no `.html` links, only `info@genesyx.co.uk`. The old broken draft has been replaced — page now matches the clean `delete-account-FINAL.html`. |
 | 4 | Store assets | ⛔ OWNER | feature graphic 1024×500 + phone + 7"/10" tablet screenshots |
-| 5 | Play Console | ⛔ OWNER | privacy + deletion URLs, Data Safety form, content rating, AAB upload, internal smoke, **submit** |
-| P9 | Release AAB build | ✅ DONE (upload pending) | AAB built & signing-verified — upload pending Play Console app creation (P1). `main` `27c2ac0`, versionCode 6, 8.7 MB, SHA1 `8D:EB:47:63…B2:CC:73`. See "Release build v6" above |
+| 5a | AAB upload → Internal testing | ✅ DONE | Final AAB **rebuilt from merged `main` (1da07f9, Mon Jul 6 14:48, versionCode 6)** and **UPLOADED + PUBLISHED to Internal testing** on the existing **`com.genesyx.app`** Play app. Testers attached. All three OAuth clients registered incl. Google's Play app-signing key **E0:CE** |
+| 5b | Play Console forms + submit | ⛔ OWNER | internal smoke on the **Play-delivered** build, Data Safety form, content rating, reviewer/test account, privacy + deletion URLs, **promote to Production, submit** |
+| P9 | Release AAB build | ✅ DONE (uploaded) | AAB built, signing-verified, **uploaded + published to Internal testing**. `main` `1da07f9`, versionCode 6, SHA1 `8D:EB:47:63…B2:CC:73`. See "Release build v6" above |
 
-**Overall: ~95%.** All engineering is done — release AAB (v6) built & signing-verified, `main` is the release trunk, both Shopify pages LIVE clean. Remaining = owner-only Play Console + dashboard work (#2, #4, #5) and the manual AAB upload.
+**Overall: ~98%.** All engineering is done — v6 AAB (from merged `main` incl. the PR #5 ghost-session fix) is **live on Internal testing**, server-side delete proven (S6 0+0), both Shopify pages LIVE clean. Remaining = owner-only Play Console finishing: internal smoke on the delivered build, store assets, Data Safety/rating/reviewer forms, promote to Production, submit.
 
-> **CODE FROZEN at versionCode 6 (`main` = `27c2ac0`).** No further source edits — only docs/evidence and owner store/console/dashboard steps.
+> **CODE FROZEN at versionCode 6 (`main` = `1da07f9`).** No further source edits — only docs/evidence and owner store/console steps.
 >
-> **NEXT ACTION (single, owner):** Play Console — create the app (P1), complete Data Safety/store forms, **upload the v6 AAB** (`app/build/outputs/bundle/release/app-release.aab`), internal smoke, submit.
+> **NEXT ACTION (owner):** run the internal smoke test on the **Play-delivered** Internal-testing build, then complete store assets + Data Safety/content-rating/reviewer-account forms, **promote to Production and submit**.
 
 ## v1.1 backlog (deferred, do NOT build for 1.0)
 - **pH backend + sync (headline v1.1 task):** create the Supabase `ph_readings` table, then un-guard the `PhRepository` remote calls (search `// v1.1: enable when ph_readings table exists`) so pH write-through/read-through works. pH is LOCAL-ONLY in v1.0.
