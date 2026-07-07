@@ -16,4 +16,13 @@ object FeatureFlags {
      * release. Code kept dormant (like [PH_TRACKING]); flip to re-enable.
      */
     const val ADMIN_CLIENTS = false
+
+    /**
+     * "Add your partner" invite/link section on Profile. Disabled for 1.0: the flow is UI-only —
+     * [com.genesyx.app.data.PartnerRepository.sendInvite] writes a local Room row and sends NO email,
+     * and accept/link is a local placeholder (no real cross-account linking). Hidden until the
+     * Supabase `partner_invites` table + an invite-email Edge Function land in v1.1. Code kept
+     * dormant (like [ADMIN_CLIENTS]); flip to re-enable.
+     */
+    const val PARTNER_INVITES = false
 }

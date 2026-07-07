@@ -149,16 +149,20 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel = hi
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
-            PartnerSection(
-                signedIn = signedIn,
-                partnerName = partner?.name,
-                pending = invites.filter { it.status == com.genesyx.app.domain.model.InviteStatus.PENDING },
-                onSignIn = { goSignIn() },
-                onSend = { viewModel.sendInvite(it) },
-                onRevoke = { viewModel.revokeInvite(it) },
-                onUnlink = { viewModel.unlinkPartner() },
-            )
+            // ── Partner invites — gated off for 1.0 (FeatureFlags.PARTNER_INVITES): the flow sends no
+            // email and links no accounts yet (backend lands in v1.1). Section kept dormant.
+            if (com.genesyx.app.core.FeatureFlags.PARTNER_INVITES) {
+                Spacer(Modifier.height(16.dp))
+                PartnerSection(
+                    signedIn = signedIn,
+                    partnerName = partner?.name,
+                    pending = invites.filter { it.status == com.genesyx.app.domain.model.InviteStatus.PENDING },
+                    onSignIn = { goSignIn() },
+                    onSend = { viewModel.sendInvite(it) },
+                    onRevoke = { viewModel.revokeInvite(it) },
+                    onUnlink = { viewModel.unlinkPartner() },
+                )
+            }
 
             Spacer(Modifier.height(16.dp))
             GroupLabel("Account")
