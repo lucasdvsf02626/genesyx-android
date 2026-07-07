@@ -67,11 +67,12 @@ import com.genesyx.app.ui.theme.ElectricLavender
 import com.genesyx.app.ui.theme.ElectricPink
 
 private val detailCopy = mapOf(
-    "Personal Details" to "Manage your display name, email sign-in, and account details from this screen.",
-    "Health Profile" to "Your cycle settings, daily logs, and partner connection shape your personalised guidance.",
-    "Tracking Preferences" to "Keep notifications on and update your cycle settings any time your rhythm changes.",
-    "Privacy & Data" to "Your saved data is private to your account. You can log out or delete your account from Profile.",
-    "Help & Support" to "For best results, complete cycle setup and log today.",
+    "Health Profile" to "Your health profile is built from your cycle setup and daily logs — cycle " +
+        "length, period dates, flow, symptoms, mood and energy. Keep logging so your insights stay " +
+        "personal to you.",
+    "Tracking Preferences" to "Genesyx tracks your cycle day and phase, daily logs, nutrition " +
+        "guidance and insights — all in one calm place. Update your cycle settings any time your " +
+        "rhythm changes, and keep notifications on for gentle daily reminders.",
 )
 
 @Composable
@@ -252,7 +253,31 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel = hi
             shape = RoundedCornerShape(20.dp),
             containerColor = colors.surface,
             title = { Text(d, style = MaterialTheme.typography.titleLarge, color = colors.onSurface) },
-            text = { Text(detailCopy[d] ?: "This section is ready for your saved app settings.", style = MaterialTheme.typography.bodyLarge, color = colors.onSurfaceVariant) },
+            text = {
+                when (d) {
+                    "Personal Details" -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        DetailLine("Name", name)
+                        DetailLine("Email", if (signedIn) (email ?: "—") else "Not signed in")
+                        DetailLine("Account", if (signedIn) "Signed in & syncing" else "Guest — sign in to sync your data")
+                        Text("Tap \"Edit name\" under Account to update how you appear.", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                    }
+                    "Help & Support" -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text("Questions, feedback or need a hand? Email our team and we'll get back to you.", style = MaterialTheme.typography.bodyLarge, color = colors.onSurfaceVariant)
+                        Text(
+                            AppLinks.SUPPORT_EMAIL,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.SemiBold,
+                            color = ElectricLavender,
+                            modifier = Modifier.clickable {
+                                runCatching {
+                                    context.startActivity(Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:${AppLinks.SUPPORT_EMAIL}")))
+                                }
+                            },
+                        )
+                    }
+                    else -> Text(detailCopy[d] ?: "This section is ready for your saved app settings.", style = MaterialTheme.typography.bodyLarge, color = colors.onSurfaceVariant)
+                }
+            },
             confirmButton = { TextButton(onClick = { detail = null }) { Text("Done", color = ElectricLavender) } },
         )
     }
@@ -302,6 +327,15 @@ private fun FocusSeg(label: String, selected: Boolean, modifier: Modifier, onCli
         modifier = modifier.heightIn(min = 44.dp).clip(RoundedCornerShape(12.dp)).background(if (selected) colors.surface else Color.Transparent).clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) { Text(label, fontSize = 13.sp, fontWeight = FontWeight.Medium, color = if (selected) colors.onSurface else colors.onSurfaceVariant) }
+}
+
+@Composable
+private fun DetailLine(label: String, value: String) {
+    val colors = MaterialTheme.colorScheme
+    Column {
+        Text(label, style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant)
+        Text(value, style = MaterialTheme.typography.bodyLarge, color = colors.onSurface)
+    }
 }
 
 @Composable

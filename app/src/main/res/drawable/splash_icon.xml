@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Branded splash icon: brand gradient background + the white Genesyx "G" mark, composed into one
+     self-contained drawable. The Android 12+ splash screen (windowSplashScreenAnimatedIcon) masks
+     this to a circle, so unlike @mipmap/ic_launcher it keeps the gradient behind the mark instead of
+     showing a white G on the near-white splash background. Mirrors the launcher icon layers. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@drawable/ic_launcher_background" />
+    <item android:drawable="@drawable/ic_launcher_foreground" />
+</layer-list>
