@@ -31,8 +31,10 @@ class GenesyxPreferencesDataStore @Inject constructor(
         val DISPLAY_NAME = stringPreferencesKey("display_name")
     }
 
+    // Default LIGHT: a fresh install (or an upgrade with no stored choice) opens in light, so the
+    // app never starts locked in dark on a dark-set device. Users can pick System/Light/Dark.
     val themeMode: Flow<ThemeMode> = dataStore.data.map { p ->
-        p[Keys.THEME]?.let { runCatching { ThemeMode.valueOf(it) }.getOrNull() } ?: ThemeMode.SYSTEM
+        p[Keys.THEME]?.let { runCatching { ThemeMode.valueOf(it) }.getOrNull() } ?: ThemeMode.LIGHT
     }
     val pushEnabled: Flow<Boolean> = dataStore.data.map { it[Keys.PUSH] ?: true }
     val focusMode: Flow<FocusMode> = dataStore.data.map { p ->

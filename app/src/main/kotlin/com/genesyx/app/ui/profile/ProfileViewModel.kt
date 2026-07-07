@@ -46,10 +46,10 @@ class ProfileViewModel @Inject constructor(
     private val _deleted = MutableStateFlow(false)
     val deleted: StateFlow<Boolean> = _deleted.asStateFlow()
 
-    fun setDark(dark: Boolean) {
+    fun setTheme(mode: ThemeMode) {
         // Drive the live app theme (DataStore) and sync the profile row (Room + Supabase).
-        preferencesRepository.setTheme(if (dark) ThemeMode.DARK else ThemeMode.SYSTEM)
-        viewModelScope.launch { profileRepository.setTheme(if (dark) "dark" else "light") }
+        preferencesRepository.setTheme(mode)
+        viewModelScope.launch { profileRepository.setTheme(if (mode == ThemeMode.DARK) "dark" else "light") }
     }
 
     fun setPush(enabled: Boolean) = preferencesRepository.setPush(enabled)

@@ -189,8 +189,14 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel = hi
             GroupLabel("Preferences")
             CardGroup {
                 SwitchRow("Push Notifications", push) { viewModel.setPush(it) }
-                Divider()
-                SwitchRow("Dark Mode", dark == ThemeMode.DARK) { viewModel.setDark(it) }
+            }
+
+            Spacer(Modifier.height(12.dp))
+            Eyebrow("Theme", color = colors.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp, bottom = 8.dp))
+            Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(colors.surfaceVariant).padding(4.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                FocusSeg("System", dark == ThemeMode.SYSTEM, Modifier.weight(1f)) { viewModel.setTheme(ThemeMode.SYSTEM) }
+                FocusSeg("Light", dark == ThemeMode.LIGHT, Modifier.weight(1f)) { viewModel.setTheme(ThemeMode.LIGHT) }
+                FocusSeg("Dark", dark == ThemeMode.DARK, Modifier.weight(1f)) { viewModel.setTheme(ThemeMode.DARK) }
             }
 
             Spacer(Modifier.height(16.dp))

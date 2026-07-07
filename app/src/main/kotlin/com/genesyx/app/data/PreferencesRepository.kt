@@ -24,7 +24,7 @@ class PreferencesRepository @Inject constructor(
     @ApplicationScope private val scope: CoroutineScope,
 ) {
     val themeMode: StateFlow<ThemeMode> =
-        store.themeMode.stateIn(scope, SharingStarted.Eagerly, ThemeMode.SYSTEM)
+        store.themeMode.stateIn(scope, SharingStarted.Eagerly, ThemeMode.LIGHT)
     val pushEnabled: StateFlow<Boolean> =
         store.pushEnabled.stateIn(scope, SharingStarted.Eagerly, true)
     val focusMode: StateFlow<FocusMode> =
