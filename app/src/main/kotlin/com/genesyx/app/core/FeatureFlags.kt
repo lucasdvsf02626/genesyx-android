@@ -25,4 +25,13 @@ object FeatureFlags {
      * dormant (like [ADMIN_CLIENTS]); flip to re-enable.
      */
     const val PARTNER_INVITES = false
+
+    /**
+     * "Push Notifications" toggle on Profile. Disabled for 1.0: it is UI-only — the switch persists a
+     * `push_enabled` boolean but nothing consumes it. There is NO notification infrastructure (no FCM/
+     * Firebase, no NotificationManager/channel, no POST_NOTIFICATIONS permission, no reminder
+     * scheduling), so toggling it does nothing. Hidden until notifications land in v1.1. Code kept
+     * dormant (like [PARTNER_INVITES]); flip to re-enable.
+     */
+    const val PUSH_NOTIFICATIONS = false
 }

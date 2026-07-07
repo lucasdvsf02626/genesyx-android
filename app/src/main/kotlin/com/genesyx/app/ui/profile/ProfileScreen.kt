@@ -190,13 +190,17 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel = hi
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
-            GroupLabel("Preferences")
-            CardGroup {
-                SwitchRow("Push Notifications", push) { viewModel.setPush(it) }
+            // ── Push notifications — gated off for 1.0 (FeatureFlags.PUSH_NOTIFICATIONS): the toggle
+            // is UI-only; there is no notification infrastructure yet (lands in v1.1). Section dormant.
+            if (com.genesyx.app.core.FeatureFlags.PUSH_NOTIFICATIONS) {
+                Spacer(Modifier.height(16.dp))
+                GroupLabel("Preferences")
+                CardGroup {
+                    SwitchRow("Push Notifications", push) { viewModel.setPush(it) }
+                }
             }
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(16.dp))
             Eyebrow("Theme", color = colors.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp, bottom = 8.dp))
             Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(colors.surfaceVariant).padding(4.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 FocusSeg("System", dark == ThemeMode.SYSTEM, Modifier.weight(1f)) { viewModel.setTheme(ThemeMode.SYSTEM) }
