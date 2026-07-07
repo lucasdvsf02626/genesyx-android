@@ -4,5 +4,5 @@ package com.genesyx.app.core
 object AppLinks {
     const val PRIVACY_POLICY_URL = "https://genesyx.co.uk/pages/privacy-policy"
     const val DELETE_ACCOUNT_URL = "https://genesyx.co.uk/pages/delete-account"
-    const val SUPPORT_EMAIL = "hello@genesyx.co.uk"
+    const val SUPPORT_EMAIL = "info@genesyx.co.uk"
 }
