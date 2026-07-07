@@ -91,7 +91,7 @@ fun WaitlistScreen(onContinue: () -> Unit, onBack: () -> Unit) {
                 textAlign = TextAlign.Center,
             )
             Spacer(Modifier.height(28.dp))
-            GxPrimaryButton(text = "Continue to app", onClick = onContinue)
+            GxPrimaryButton(text = "Register / Login to continue", onClick = onContinue)
             return@Column
         }
 
@@ -168,7 +168,7 @@ fun WaitlistScreen(onContinue: () -> Unit, onBack: () -> Unit) {
             },
         )
         Spacer(Modifier.height(4.dp))
-        GxGhostButton(text = "Continue to app", onClick = onContinue)
+        GxGhostButton(text = "Register / Login to continue", onClick = onContinue)
     }
 }
 
