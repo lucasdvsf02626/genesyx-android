@@ -31,9 +31,12 @@ class PreferencesRepository @Inject constructor(
         store.focusMode.stateIn(scope, SharingStarted.Eagerly, FocusMode.PREP)
     val onboardingComplete: StateFlow<Boolean> =
         store.onboardingComplete.stateIn(scope, SharingStarted.Eagerly, false)
+    val learnIntroSeen: StateFlow<Boolean> =
+        store.learnIntroSeen.stateIn(scope, SharingStarted.Eagerly, false)
 
     fun setTheme(mode: ThemeMode) { scope.launch { store.setTheme(mode) } }
     fun setPush(enabled: Boolean) { scope.launch { store.setPush(enabled) } }
     fun setFocus(mode: FocusMode) { scope.launch { store.setFocus(mode) } }
     fun setOnboardingComplete(complete: Boolean) { scope.launch { store.setOnboardingComplete(complete) } }
+    fun setLearnIntroSeen(seen: Boolean) { scope.launch { store.setLearnIntroSeen(seen) } }
 }

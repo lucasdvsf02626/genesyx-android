@@ -23,6 +23,14 @@ sealed class Screen(val route: String) {
     data object Auth : Screen("auth")
     data object Clients : Screen("clients")
 
+    // Learn. Bottom tab (took Profile's slot); also entered from Nutrition's "Learn more" section.
+    data object Learn : Screen("learn")
+    data object LearnSearch : Screen("learn/search")
+    data object ArticleDetail : Screen("learn/article/{slug}") {
+        fun create(slug: String) = "learn/article/$slug"
+        const val ARG_SLUG = "slug"
+    }
+
     // Deep link: genesyx://invite/{code}
     data object Invite : Screen("invite/{code}") {
         fun create(code: String) = "invite/$code"
@@ -30,8 +38,12 @@ sealed class Screen(val route: String) {
     }
 
     companion object {
-        /** Tabs shown in the bottom navigation bar. */
-        val bottomTabs by lazy { listOf(Home, Track, Nutrition, Insights, Profile) }
+        /**
+         * Tabs shown in the bottom navigation bar. Six, by product decision — one past the Material 3
+         * recommended maximum of five. Labels are tight at 360dp; check any label change on a small
+         * screen before shipping it.
+         */
+        val bottomTabs by lazy { listOf(Home, Track, Nutrition, Insights, Learn, Profile) }
 
         /** Routes where the bottom navigation bar is hidden. */
         val noBottomNavRoutes by lazy {
@@ -47,6 +59,9 @@ sealed class Screen(val route: String) {
             Auth.route,
             Invite.route,
             Clients.route,
+            // Reading and searching are immersive. `Learn` itself keeps the bar (it's a tab).
+            ArticleDetail.route,
+            LearnSearch.route,
             )
         }
     }

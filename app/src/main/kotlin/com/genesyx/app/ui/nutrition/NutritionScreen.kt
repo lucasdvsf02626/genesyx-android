@@ -48,12 +48,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.genesyx.app.domain.content.Article
 import com.genesyx.app.domain.content.PhaseFood
-import com.genesyx.app.domain.content.nutritionArticles
+import com.genesyx.app.domain.content.learnArticles
 import com.genesyx.app.domain.content.supplementPlan
 import com.genesyx.app.ui.components.Eyebrow
 import com.genesyx.app.ui.components.GxPrimaryButton
+import com.genesyx.app.ui.navigation.Screen
 import com.genesyx.app.ui.ph.PhTrackerSection
 import com.genesyx.app.ui.theme.ElectricBlue
 import com.genesyx.app.ui.theme.ElectricLavender
@@ -68,7 +68,6 @@ fun NutritionScreen(
     val state by viewModel.uiState.collectAsState()
     var expandedFood by remember { mutableStateOf<String?>(null) }
     var planOpen by remember { mutableStateOf(false) }
-    var articleOpen by remember { mutableStateOf<Article?>(null) }
 
     Column(
         modifier = Modifier
@@ -112,10 +111,14 @@ fun NutritionScreen(
 
                 Spacer(Modifier.height(12.dp))
                 SupplementPlanCard(onReview = { planOpen = true })
-
-                Spacer(Modifier.height(16.dp))
-                ArticlesSection(onOpen = { articleOpen = it })
             }
+
+            // Outside the cycle gate: Learn is most useful to someone who hasn't set up a cycle yet.
+            Spacer(Modifier.height(16.dp))
+            ArticlesSection(
+                onOpen = { navController.navigate(Screen.ArticleDetail.create(it)) },
+                onSeeAll = { navController.navigate(Screen.Learn.route) },
+            )
 
             Spacer(Modifier.height(24.dp))
         }
@@ -148,27 +151,6 @@ fun NutritionScreen(
                 }
             },
             confirmButton = { TextButton(onClick = { planOpen = false }) { Text("Got it", color = ElectricLavender) } },
-        )
-    }
-
-    articleOpen?.let { article ->
-        AlertDialog(
-            onDismissRequest = { articleOpen = null },
-            shape = RoundedCornerShape(20.dp),
-            containerColor = colors.surface,
-            title = { Text(article.title, style = MaterialTheme.typography.titleLarge, color = colors.onSurface) },
-            text = {
-                Column {
-                    Eyebrow(article.read, color = colors.onSurfaceVariant)
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        "Keep the focus simple: regular meals, steady hydration, and phase-aware foods. Use your logs and pH tracker to notice patterns over time rather than chasing perfection.",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = colors.onSurfaceVariant,
-                    )
-                }
-            },
-            confirmButton = { TextButton(onClick = { articleOpen = null }) { Text("Done", color = ElectricLavender) } },
         )
     }
 }
@@ -347,29 +329,33 @@ private fun SupplementAvatar(initial: String, index: Int, bordered: Boolean = fa
     }
 }
 
+/** Entry point into the Learn section. Each tile opens its own article; "See all" opens the landing. */
 @Composable
-private fun ArticlesSection(onOpen: (Article) -> Unit) {
+private fun ArticlesSection(onOpen: (String) -> Unit, onSeeAll: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     Column {
         Eyebrow("Learn more", color = colors.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp, bottom = 10.dp))
-        nutritionArticles.forEach { a ->
+        learnArticles.forEach { a ->
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 8.dp)
                     .clip(RoundedCornerShape(16.dp))
                     .background(colors.surface)
-                    .clickable { onOpen(a) }
+                    .clickable { onOpen(a.slug) }
                     .padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(Modifier.weight(1f)) {
                     Text(a.title, style = MaterialTheme.typography.labelLarge, color = colors.onSurface)
                     Spacer(Modifier.height(2.dp))
-                    Text(a.read, fontSize = 11.5.sp, color = colors.onSurfaceVariant)
+                    Text(a.readingTime, fontSize = 11.5.sp, color = colors.onSurfaceVariant)
                 }
                 Icon(Icons.Filled.ChevronRight, null, tint = colors.onSurfaceVariant, modifier = Modifier.size(18.dp))
             }
+        }
+        TextButton(onClick = onSeeAll, modifier = Modifier.padding(start = 4.dp)) {
+            Text("See all articles", style = MaterialTheme.typography.bodyMedium, color = ElectricLavender)
         }
     }
 }

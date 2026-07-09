@@ -12,6 +12,9 @@ import com.genesyx.app.ui.clients.ClientsScreen
 import com.genesyx.app.ui.history.LogHistoryScreen
 import com.genesyx.app.ui.home.HomeScreen
 import com.genesyx.app.ui.insights.InsightsScreen
+import com.genesyx.app.ui.learn.ArticleDetailScreen
+import com.genesyx.app.ui.learn.LearnScreen
+import com.genesyx.app.ui.learn.LearnSearchScreen
 import com.genesyx.app.ui.onboarding.OnboardingIntroScreen
 import com.genesyx.app.ui.onboarding.OnboardingQuizScreen
 import com.genesyx.app.ui.onboarding.ReadinessSummaryScreen
@@ -98,6 +101,17 @@ fun GenesyxNavGraph(
         }
         composable(Screen.Clients.route) {
             ClientsScreen(onBack = { navController.popBackStack() })
+        }
+
+        // ── Learn
+        composable(Screen.Learn.route) { LearnScreen(navController) }
+        composable(Screen.LearnSearch.route) { LearnSearchScreen(navController) }
+        composable(
+            route = Screen.ArticleDetail.route,
+            arguments = listOf(navArgument(Screen.ArticleDetail.ARG_SLUG) { type = NavType.StringType }),
+        ) { backStackEntry ->
+            val slug = backStackEntry.arguments?.getString(Screen.ArticleDetail.ARG_SLUG).orEmpty()
+            ArticleDetailScreen(slug = slug, navController = navController)
         }
         composable(Screen.Auth.route) {
             AuthScreen(

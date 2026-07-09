@@ -25,6 +25,7 @@ class GenesyxPreferencesDataStore @Inject constructor(
         val PUSH = booleanPreferencesKey("push_enabled")
         val FOCUS = stringPreferencesKey("focus_mode")
         val ONBOARDING_COMPLETE = booleanPreferencesKey("onboarding_complete")
+        val LEARN_INTRO_SEEN = booleanPreferencesKey("learn_intro_seen")
         val SIGNED_IN = booleanPreferencesKey("signed_in")
         val USER_ID = stringPreferencesKey("user_id")
         val EMAIL = stringPreferencesKey("email")
@@ -41,6 +42,7 @@ class GenesyxPreferencesDataStore @Inject constructor(
         p[Keys.FOCUS]?.let { runCatching { FocusMode.valueOf(it) }.getOrNull() } ?: FocusMode.PREP
     }
     val onboardingComplete: Flow<Boolean> = dataStore.data.map { it[Keys.ONBOARDING_COMPLETE] ?: false }
+    val learnIntroSeen: Flow<Boolean> = dataStore.data.map { it[Keys.LEARN_INTRO_SEEN] ?: false }
 
     val signedIn: Flow<Boolean> = dataStore.data.map { it[Keys.SIGNED_IN] ?: false }
     val userId: Flow<String?> = dataStore.data.map { it[Keys.USER_ID] }
@@ -51,6 +53,7 @@ class GenesyxPreferencesDataStore @Inject constructor(
     suspend fun setPush(enabled: Boolean) = dataStore.edit { it[Keys.PUSH] = enabled }.let {}
     suspend fun setFocus(mode: FocusMode) = dataStore.edit { it[Keys.FOCUS] = mode.name }.let {}
     suspend fun setOnboardingComplete(v: Boolean) = dataStore.edit { it[Keys.ONBOARDING_COMPLETE] = v }.let {}
+    suspend fun setLearnIntroSeen(v: Boolean) = dataStore.edit { it[Keys.LEARN_INTRO_SEEN] = v }.let {}
 
     suspend fun setSession(userId: String, email: String?, displayName: String?) {
         dataStore.edit {

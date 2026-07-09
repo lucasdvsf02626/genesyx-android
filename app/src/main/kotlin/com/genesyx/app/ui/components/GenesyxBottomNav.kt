@@ -1,6 +1,7 @@
 package com.genesyx.app.ui.components
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Eco
@@ -15,7 +16,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.genesyx.app.ui.navigation.Screen
@@ -28,6 +31,7 @@ private val items = listOf(
     BottomNavItem(Screen.Track, "Track", Icons.Outlined.CalendarMonth),
     BottomNavItem(Screen.Nutrition, "Nutrition", Icons.Outlined.Eco),
     BottomNavItem(Screen.Insights, "Insights", Icons.Outlined.BarChart),
+    BottomNavItem(Screen.Learn, "Learn", Icons.AutoMirrored.Outlined.MenuBook),
     BottomNavItem(Screen.Profile, "Profile", Icons.Outlined.Person),
 )
 
@@ -54,7 +58,19 @@ fun GenesyxBottomNav(navController: NavController) {
                     }
                 },
                 icon = { Icon(item.icon, contentDescription = item.label) },
-                label = { Text(item.label, style = MaterialTheme.typography.labelSmall) },
+                label = {
+                    // Six tabs leave ~60dp per item at 360dp. labelSmall wraps "Nutrition" onto a
+                    // second line, so shrink and pin to one line.
+                    Text(
+                        item.label,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontSize = 9.sp,
+                        lineHeight = 12.sp,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Visible,
+                    )
+                },
                 colors = NavigationBarItemDefaults.colors(
                     selectedIconColor = ElectricLavender,
                     selectedTextColor = ElectricLavender,
