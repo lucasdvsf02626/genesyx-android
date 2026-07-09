@@ -35,21 +35,34 @@ hardcoded paragraph* in an `AlertDialog`.
 codebase — in a comment in `core/AppLinks.kt:10` explaining why the share sheet does *not* link to
 `/blog/{slug}`. There is no blog screen, route, model, or content. Learn *is* the blog. Moving on.
 
-**Top risks / gaps (specific):**
+> **Update (post-audit).** Three defects this document originally reported have been **fixed** in
+> commit following `e6f279e`. They are described below as fixed, with the fix, because iOS must
+> replicate the *corrected* behaviour — not the version that shipped in `659de4d`.
 
-1. **The banned-phrase test does not scan `tags`.** It concatenates `title + excerpt + body` only. A
-   prohibited term in a tag ships silently. See §B.4.
-2. **The disclaimer test only covers `NUTRITION` and `WELLNESS`.** Articles `a8` and `a10` are
-   `INSIGHTS` and set `disclaimerRequired = true`, but **nothing enforces that**. Someone can delete
-   those flags and the build stays green.
-3. **`CtaType.OPEN_ARTICLE` is a latent crash.** `ArticleCta.route()` calls
-   `requireNotNull(targetSlug)`. No article uses `OPEN_ARTICLE` today, so it never fires — but the
-   enum case is reachable from content. Dead control, unsafe if used.
-4. **`tags` are never rendered.** Searched only. Not a bug; know it before you build a tag UI.
-5. **Share sends the site root**, not a per-article URL. `https://genesyx.co.uk/blog/{slug}` is not
+**Fixed since the first audit:**
+
+1. ~~The banned-phrase test does not scan `tags`.~~ **Fixed.** It now scans `title`, `excerpt`, **`tags`**,
+   **`cta.label`**, and all body blocks. A meta-test (`banned-phrase scan covers …`) asserts each field
+   is in the corpus, so the coverage can't silently shrink. Mutation-verified: a `"sway"` tag now fails
+   the build. See §B.4.
+2. ~~The disclaimer test only covers `NUTRITION` and `WELLNESS`.~~ **Fixed.** Category alone cannot express
+   the rule — `a7` (`what-insights-mean`) is `INSIGHTS` and correctly carries **no** disclaimer, while
+   `a8` and `a10` are `INSIGHTS` and do. A new test pins the **exact set of six slugs**, so a flag cannot
+   be dropped silently. Mutation-verified. See §B.4.
+3. ~~`CtaType.OPEN_ARTICLE` is a latent crash.~~ **Fixed.** `ArticleCta` now has an `init` block rejecting
+   `OPEN_ARTICLE` with a null `targetSlug`. Since `learnArticles` is a compile-time constant, a bad CTA
+   now fails at class-init in tests, never in a user's hands. `route()` uses `checkNotNull`, unreachable
+   by construction. **The JSON wire shape is unchanged.**
+
+**Remaining risks / gaps (specific):**
+
+1. **`tags` are never rendered.** Searched only. Not a bug; know it before you build a tag UI.
+2. **Share sends the site root**, not a per-article URL. `https://genesyx.co.uk/blog/{slug}` is not
    confirmed to exist.
-6. **Slugs are a permanent public contract.** They are route keys now and share/deep-link keys later.
+3. **Slugs are a permanent public contract.** They are route keys now and share/deep-link keys later.
    If iOS invents its own, cross-platform links break forever.
+4. **Two category accent collisions.** `GETTING_STARTED`/`TRACKING` share `ElectricBlue`;
+   `NUTRITION`/`WELLNESS` share `ElectricLavender`. Confirmed; intent unverified.
 
 ---
 
@@ -479,6 +492,25 @@ internal fun ArticleCategory.accent(): Color = when (this) {
 ### B.4 Blocked terms — verbatim from `LearnContentTest.kt`
 
 ```kotlin
+    /**
+     * Every user-visible string on an article, lowercased and space-joined. Anything a reader can see
+     * must be scanned by [no banned health claims appear in any article] — tags are searchable and CTA
+     * labels are rendered on a button, so both count.
+     */
+    private fun Article.searchableText(): String = (
+        listOf(title, excerpt) +
+            tags +
+            listOfNotNull(cta?.label) +
+            body.map { block ->
+                when (block) {
+                    is ArticleBlock.Heading -> block.text
+                    is ArticleBlock.Paragraph -> block.text
+                    is ArticleBlock.Callout -> block.text
+                    is ArticleBlock.BulletList -> block.items.joinToString(" ")
+                }
+            }
+        ).joinToString(" ").lowercase()
+
     /** Release blocker, not a lint warning. Sex-selection and pH-"balancing" framing must never return. */
     @Test
     fun `no banned health claims appear in any article`() {
@@ -487,17 +519,7 @@ internal fun ArticleCategory.accent(): Color = when (this) {
             "douch", "optimize your ph", "balance your ph", "conceiving a boy", "conceiving a girl",
         )
         learnArticles.forEach { article ->
-            val text = (
-                article.title + " " + article.excerpt + " " +
-                    article.body.joinToString(" ") { block ->
-                        when (block) {
-                            is ArticleBlock.Heading -> block.text
-                            is ArticleBlock.Paragraph -> block.text
-                            is ArticleBlock.Callout -> block.text
-                            is ArticleBlock.BulletList -> block.items.joinToString(" ")
-                        }
-                    }
-                ).lowercase()
+            val text = article.searchableText()
             banned.forEach { phrase ->
                 assertTrue("${article.slug} contains banned phrase: $phrase", !text.contains(phrase))
             }
@@ -512,16 +534,20 @@ internal fun ArticleCategory.accent(): Color = when (this) {
 | Terms | `boy or girl` · `sex-selection` · `sway` · `alkaline diet` · `alkaline water` · `douch` · `optimize your ph` · `balance your ph` · `conceiving a boy` · `conceiving a girl` |
 | Match type | **plain substring** (`String.contains`), **not** regex, **not** word-boundary |
 | Case | insensitive — the haystack is `.lowercase()`d; the needles are already lowercase |
-| Fields scanned | `title`, `excerpt`, and **all** body block text (`Heading`, `Paragraph`, `Callout`, and each `BulletList` item, space-joined) |
-| Fields **NOT** scanned | **`tags`**, `readingTime`, `cta.label`, `slug`, `category.label` |
+| Fields scanned | `title`, `excerpt`, **`tags`**, **`cta.label`**, and **all** body block text (`Heading`, `Paragraph`, `Callout`, and each `BulletList` item, space-joined) |
+| Fields not scanned | `readingTime`, `slug`, `category.label` — none is free-text author-supplied prose |
 | Failure mode | `assertTrue` → **test failure → build failure** |
 
-**Two consequences you must not inherit blindly:**
+A companion test, `banned-phrase scan covers title, excerpt, tags, cta label and body`, asserts each
+field really is in the corpus — so if someone refactors `searchableText()` and drops a field, that
+fails *before* the phrase check can silently start passing. **Port both tests.**
 
-- **`tags` are unscanned.** Adding `tags = listOf("sway")` passes the build today. Close this on iOS.
-- **`sway` is an unanchored substring.** It matches `swayed`, `sways`, and would match inside a longer
-  word. No current article trips it. If iOS uses word boundaries instead, behaviour diverges — match
-  the Android semantics or tighten *both* platforms together.
+**One semantic to inherit deliberately:** `sway` is an **unanchored substring**. It matches `swayed`,
+`sways`, and any longer word containing it. No current article trips it. If iOS uses word boundaries
+instead, behaviour diverges — match the Android semantics, or tighten *both* platforms together.
+
+**Mutation-verified.** Adding `"sway"` to `a2`'s `tags` fails the build with
+`why-logging-beats-remembering contains banned phrase: sway`. Before the fix it passed silently.
 
 **Why this exists (context you need):** a prior Genesyx release shipped a claim in the onboarding quiz
 that pH balance "can subtly influence the likelihood of conceiving a boy or girl." It is unsupported,
@@ -937,19 +963,19 @@ Production-ready *within its scope*: real content, real navigation, real tests, 
 which was a deliberate, documented scoping decision — not incompleteness.
 
 **Evidence for "not shallow":** 10,246 characters of hand-written body text across 84 structured blocks;
-11 passing content-invariant tests including a build-failing safety guard; three screens with real empty
+14 passing content-invariant tests including a build-failing safety guard; three screens with real empty
 states and a not-found path; ten bundled hero images; on-device verification of every claim.
 
 **Complete list of placeholders / dead controls / fake content in Learn as it ships:**
 
 | Item | File | Severity | Note |
 |---|---|---|---|
-| `CtaType.OPEN_ARTICLE` unused; `requireNotNull(targetSlug)` | `ArticleDetailScreen.kt` `route()` | **Latent crash** | Reachable from content, never used. Would crash on null slug. |
+| `CtaType.OPEN_ARTICLE` unused | `LearnContent.kt` / `ArticleDetailScreen.kt` | ~~Latent crash~~ **Fixed** | `ArticleCta.init` rejects a null `targetSlug`; `route()` uses `checkNotNull`, unreachable by construction. Still unused by all ten articles. |
 | `tags` never rendered | `LearnScreen.kt`, `ArticleDetailScreen.kt` | Cosmetic | Searched only. Intentional. |
 | `heroImage == null` gradient path | `LearnScreen.kt` `ArticleHero` | None | Correct, never exercised — all ten have art. |
 | `ImeAction.Search` with no `onSearch` handler | `LearnSearchScreen.kt:80` | Cosmetic | Search is live; the key is decorative. |
-| Banned-phrase test skips `tags` | `LearnContentTest.kt` | **Real gap** | A prohibited term in a tag ships silently. |
-| Disclaimer test skips `INSIGHTS` | `LearnContentTest.kt` | **Real gap** | `a8`/`a10` flags unenforced. |
+| Banned-phrase test skips `tags` | `LearnContentTest.kt` | ~~Real gap~~ **Fixed** | Now scans `tags` + `cta.label`; a meta-test pins the corpus. Mutation-verified. |
+| Disclaimer test skips `INSIGHTS` | `LearnContentTest.kt` | ~~Real gap~~ **Fixed** | Exact six-slug set now pinned. Mutation-verified. |
 | `GETTING_STARTED` / `TRACKING` share an accent; `NUTRITION` / `WELLNESS` share one | `LearnScreen.kt` `accent()` | Cosmetic | Two colour collisions across five categories. |
 | Share links to site root, not article | `AppLinks.kt` | Known | `/blog/{slug}` unconfirmed. |
 | No deep links declared | `GenesyxNavGraph.kt` | Known | Scheduled with notifications. |
@@ -1062,8 +1088,17 @@ similarity algorithm.** Navigation **replaces** the current article (on iOS: swa
 checklist reads faster than dense prose and the arithmetic will disagree with Android.
 
 **Safety list — port as a build-failing test.** Same ten substrings, same case-insensitive `contains`,
-same fields. **And close the two gaps:** scan `tags` as well, and extend the disclaimer assertion to
-`INSIGHTS`. Reference: §B.4.
+same fields: `title`, `excerpt`, `tags`, `cta.label`, and every body block. Port the companion
+meta-test too, so the corpus can't shrink unnoticed. Reference: §B.4.
+
+**Disclaimer set — pin it explicitly.** Category is not sufficient: `what-insights-mean` is `INSIGHTS`
+with no disclaimer; `reading-your-trends` and `using-what-you-learn` are `INSIGHTS` with one. Assert the
+exact six slugs: `hydration-basics`, `eating-with-your-cycle`, `gentle-guide-supplements`,
+`reading-your-trends`, `small-habits-that-hold`, `using-what-you-learn`.
+
+**`OPEN_ARTICLE` must be unconstructible without a target.** On Swift the enum-with-associated-value
+shape gives this for free: `case openArticle(label: String, targetSlug: String)`. Do not model it as an
+optional.
 
 **Disclaimer:** exact string (§B.5), rendered iff `disclaimerRequired`, positioned after CTA, before
 Related.
@@ -1136,7 +1171,7 @@ free to feel native.
 - `ui/theme/Color.kt:7,12,14` — `ElectricLavender #4D4DAA`, `ElectricBlue #57A1CE`, `ElectricPink #C782D8`
 
 **Tests**
-- `app/src/test/kotlin/com/genesyx/app/domain/content/LearnContentTest.kt` — 11 invariants
+- `app/src/test/kotlin/com/genesyx/app/domain/content/LearnContentTest.kt` — 14 invariants
 
 **Assets**
 - `app/src/main/res/drawable-nodpi/learn_hero_*.jpg` — 10 × 1080×602, 864 KB total
@@ -1163,8 +1198,8 @@ free to feel native.
 4. **Should the two colour collisions be fixed?** `GETTING_STARTED`/`TRACKING` and
    `NUTRITION`/`WELLNESS` share accents. If iOS assigns five distinct colours, chips and eyebrows will
    not match Android. **[Confirmed collision; intent unverified.]**
-5. **Should `CtaType.OPEN_ARTICLE` be removed or made safe?** Unused, and `requireNotNull` makes it a
-   crash if ever used with a null slug. Out of scope for this audit (no code changes) — flagged.
+5. ~~Should `CtaType.OPEN_ARTICLE` be removed or made safe?~~ **Resolved:** made safe via
+   `ArticleCta.init`. It remains unused by all ten articles; the pH cluster is its intended consumer.
 6. **`supplementPlan` in `NutritionContent.kt` names doses** ("Folate (400–800 mcg)", "Zinc (8–11 mg)")
    while the Learn supplements article deliberately names none, in an app commercially adjacent to a
    supplements business. Pre-existing, outside Learn, unchanged. **[Flagged.]**

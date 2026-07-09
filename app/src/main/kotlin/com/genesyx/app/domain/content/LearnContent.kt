@@ -28,7 +28,15 @@ sealed interface ArticleBlock {
 /** Where an article's closing call-to-action sends the reader. */
 enum class CtaType { OPEN_LOG, OPEN_TRACK, OPEN_NUTRITION, OPEN_INSIGHTS, OPEN_ARTICLE }
 
-data class ArticleCta(val type: CtaType, val label: String, val targetSlug: String? = null)
+data class ArticleCta(val type: CtaType, val label: String, val targetSlug: String? = null) {
+    init {
+        // OPEN_ARTICLE without a target is unrenderable. Fail at construction — [learnArticles] is a
+        // compile-time constant, so a bad CTA blows up on class-init in tests, never in a user's hands.
+        require(type != CtaType.OPEN_ARTICLE || targetSlug != null) {
+            "ArticleCta(OPEN_ARTICLE) requires a targetSlug; label was \"$label\""
+        }
+    }
+}
 
 data class Article(
     val id: String,

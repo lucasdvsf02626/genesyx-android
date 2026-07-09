@@ -164,7 +164,8 @@ private fun ArticleCta.route(): String = when (type) {
     CtaType.OPEN_TRACK -> Screen.Track.route
     CtaType.OPEN_NUTRITION -> Screen.Nutrition.route
     CtaType.OPEN_INSIGHTS -> Screen.Insights.route
-    CtaType.OPEN_ARTICLE -> Screen.ArticleDetail.create(requireNotNull(targetSlug))
+    // Non-null by construction — ArticleCta's init block rejects OPEN_ARTICLE without a targetSlug.
+    CtaType.OPEN_ARTICLE -> Screen.ArticleDetail.create(checkNotNull(targetSlug))
 }
 
 @Composable

@@ -70,7 +70,7 @@ it. I have not invented a feature to satisfy the question.
 | `CategoryChips` (composable) | `FilterChip` row, All + 5 categories | `ui/learn/LearnScreen.kt` | `ArticleCategory.entries` | **Complete** | Filters in place; no navigation. |
 | `ArticlesSection` (composable) | Nutrition-screen entry point: 3 tiles + "See all articles" | `ui/nutrition/NutritionScreen.kt:355` | `learnArticles` | **Complete** | Was the dead-end stub. Now navigates. |
 | `LearnContent.kt` | The content itself + model + search/related helpers | `domain/content/LearnContent.kt` | — | **Complete** | 10 articles, ~430 lines. |
-| `LearnContentTest.kt` | Content invariants incl. the banned-phrase guard | `test/.../LearnContentTest.kt` | — | **Complete** | 11 tests, all green. |
+| `LearnContentTest.kt` | Content invariants incl. the banned-phrase guard | `test/.../LearnContentTest.kt` | — | **Complete** | 14 tests, all green. |
 | Bookmarks / saved articles | — | — | — | **DOES NOT EXIST** | Specified in the brief (§5.1, §6.5). Not built. |
 | Article deep links | — | — | — | **DOES NOT EXIST** | Specified in the brief (§2.6). Not built. See §D. |
 | Progress / completion tracking | — | — | — | **DOES NOT EXIST** | Never specified, never built. No lessons, no modules. |
@@ -210,7 +210,8 @@ constant carries a comment saying exactly this.
 `ContentScale.Crop`. No Coil/Glide/Picasso anywhere in the project (verified against
 `gradle/libs.versions.toml` and `app/build.gradle.kts`); bundled drawables need none.
 
-**Tests** — `LearnContentTest.kt`, 11 tests, all green under `:app:testDebugUnitTest`:
+**Tests** — `LearnContentTest.kt`, 14 tests, all green under `:app:testDebugUnitTest`. The banned-phrase and disclaimer guards are **mutation-verified**: reintroducing each defect fails the build.
+
 
 | Test | Guards against |
 |---|---|
@@ -720,7 +721,7 @@ Every conclusion above traces to one of these.
 - `app/src/main/kotlin/com/genesyx/app/ui/learn/ArticleDetailScreen.kt` — `ArticleDetailScreen`, `ArticleBlockView`, `CtaCard`, `ArticleNotFound`, `Context.shareArticle`, `ArticleCta.route()`
 - `app/src/main/kotlin/com/genesyx/app/ui/learn/LearnSearchScreen.kt` — `LearnSearchScreen`, `EmptyState`
 - `app/src/main/kotlin/com/genesyx/app/ui/learn/LearnViewModel.kt` — `introSeen`, `dismissIntro()`
-- `app/src/test/kotlin/com/genesyx/app/domain/content/LearnContentTest.kt` — 11 invariants
+- `app/src/test/kotlin/com/genesyx/app/domain/content/LearnContentTest.kt` — 14 invariants
 
 **Learn assets** — `app/src/main/res/drawable-nodpi/learn_hero_{first_week,logging,what_to_log,hydration,eating_cycle,supplements,insights,trends,habits,using}.jpg` (10 × 1080×602)
 
