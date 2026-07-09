@@ -1,0 +1,667 @@
+{
+  "articles": [
+    {
+      "id": "a1",
+      "slug": "getting-started-first-week",
+      "title": "Your first week with Genesyx",
+      "excerpt": "What to do on day one, day three, and day seven — and what to ignore until later.",
+      "category": "GETTING_STARTED",
+      "tags": [
+        "onboarding",
+        "basics",
+        "getting started"
+      ],
+      "readingTime": "5 min read",
+      "heroImage": "learn_hero_first_week",
+      "featured": true,
+      "relatedArticleIds": [
+        "a2",
+        "a9"
+      ],
+      "cta": {
+        "type": "OPEN_LOG",
+        "label": "Open today's log",
+        "targetSlug": null
+      },
+      "disclaimerRequired": false,
+      "body": [
+        {
+          "type": "paragraph",
+          "text": "The first week isn't about completeness. It's about proving to yourself that this takes a minute, not an evening."
+        },
+        {
+          "type": "heading",
+          "text": "Day one"
+        },
+        {
+          "type": "paragraph",
+          "text": "Set your cycle, then log once. That's it. The log can be almost empty — a mood and nothing else is a real entry."
+        },
+        {
+          "type": "heading",
+          "text": "Days two and three"
+        },
+        {
+          "type": "paragraph",
+          "text": "Notice how little time it takes. Most people spend under thirty seconds. If you're spending longer, you're logging more than you need to."
+        },
+        {
+          "type": "heading",
+          "text": "Day seven"
+        },
+        {
+          "type": "paragraph",
+          "text": "Your first patterns appear. They will also be mostly noise — seven days is not enough to conclude anything, and the app will say so. Look anyway. Seeing your own week written down is the point."
+        },
+        {
+          "type": "heading",
+          "text": "What to ignore for now"
+        },
+        {
+          "type": "bulletList",
+          "items": [
+            "Perfect streaks. Missing a day costs you almost nothing.",
+            "Every optional field. Fill in what you notice, skip what you don't.",
+            "Comparing your numbers to anyone else's."
+          ]
+        },
+        {
+          "type": "callout",
+          "text": "If you only do one thing this week: log on the day you feel worst. That's the entry you'll be glad to have in three months."
+        }
+      ]
+    },
+    {
+      "id": "a2",
+      "slug": "why-logging-beats-remembering",
+      "title": "Why logging beats remembering",
+      "excerpt": "Memory rewrites the past to fit the present. A log doesn't.",
+      "category": "TRACKING",
+      "tags": [
+        "tracking",
+        "habits",
+        "basics",
+        "memory"
+      ],
+      "readingTime": "4 min read",
+      "heroImage": "learn_hero_logging",
+      "featured": false,
+      "relatedArticleIds": [
+        "a3",
+        "a8"
+      ],
+      "cta": {
+        "type": "OPEN_LOG",
+        "label": "Log how you feel today",
+        "targetSlug": null
+      },
+      "disclaimerRequired": false,
+      "body": [
+        {
+          "type": "paragraph",
+          "text": "Memory is reconstructive. You don't replay the past — you rebuild it, every time, out of whatever material is nearest to hand. And the nearest material is how you feel right now."
+        },
+        {
+          "type": "paragraph",
+          "text": "This is why \"I felt terrible all week\" is so often untrue. You felt terrible today, and today has quietly colonised the other six days."
+        },
+        {
+          "type": "heading",
+          "text": "What a log actually does"
+        },
+        {
+          "type": "paragraph",
+          "text": "It's not a diary and it's not a report card. It's a set of small, boring, unrevised facts written by someone who didn't yet know how the story ended — you, on a Tuesday."
+        },
+        {
+          "type": "heading",
+          "text": "Boring entries beat detailed ones"
+        },
+        {
+          "type": "bulletList",
+          "items": [
+            "A one-tap mood, logged for sixty days, is worth more than a paragraph logged four times.",
+            "The entries you'll want later are the ordinary ones. Extremes you remember anyway.",
+            "\"Nothing to report\" is data. Log it."
+          ]
+        },
+        {
+          "type": "callout",
+          "text": "The goal isn't a complete record. It's a record honest enough to disagree with you."
+        }
+      ]
+    },
+    {
+      "id": "a3",
+      "slug": "what-to-log",
+      "title": "Symptoms and meals: what's worth writing down",
+      "excerpt": "You don't need to log everything. Here's the short list.",
+      "category": "TRACKING",
+      "tags": [
+        "tracking",
+        "symptoms",
+        "nutrition",
+        "logging"
+      ],
+      "readingTime": "4 min read",
+      "heroImage": "learn_hero_what_to_log",
+      "featured": false,
+      "relatedArticleIds": [
+        "a2",
+        "a9"
+      ],
+      "cta": {
+        "type": "OPEN_LOG",
+        "label": "Open today's log",
+        "targetSlug": null
+      },
+      "disclaimerRequired": false,
+      "body": [
+        {
+          "type": "paragraph",
+          "text": "The completeness trap goes like this: you decide to track properly, you build an elaborate routine, you sustain it for nine days, and then you stop entirely. A smaller habit you keep beats a thorough one you abandon."
+        },
+        {
+          "type": "heading",
+          "text": "Worth logging daily"
+        },
+        {
+          "type": "bulletList",
+          "items": [
+            "Mood — one tap, no elaboration.",
+            "Energy — the thing you'll most want to correlate later.",
+            "Anything unusual. If you noticed it, write it.",
+            "Whether you ate roughly normally. Not what. Whether."
+          ]
+        },
+        {
+          "type": "heading",
+          "text": "Worth logging weekly"
+        },
+        {
+          "type": "bulletList",
+          "items": [
+            "Sleep, in broad strokes — good week, bad week.",
+            "Anything that changed: new medication, travel, illness, unusual stress."
+          ]
+        },
+        {
+          "type": "heading",
+          "text": "Not worth logging at all"
+        },
+        {
+          "type": "paragraph",
+          "text": "Anything you'd only be recording to feel virtuous about recording it. If you can't imagine a question it would help answer, skip it."
+        },
+        {
+          "type": "callout",
+          "text": "Consistency beats detail. It isn't close."
+        }
+      ]
+    },
+    {
+      "id": "a4",
+      "slug": "hydration-basics",
+      "title": "Hydration, without the eight-glass myth",
+      "excerpt": "Where \"eight glasses a day\" came from, and what to do instead.",
+      "category": "NUTRITION",
+      "tags": [
+        "hydration",
+        "nutrition",
+        "myths",
+        "water"
+      ],
+      "readingTime": "3 min read",
+      "heroImage": "learn_hero_hydration",
+      "featured": false,
+      "relatedArticleIds": [
+        "a5",
+        "a9"
+      ],
+      "cta": {
+        "type": "OPEN_TRACK",
+        "label": "Track today's water",
+        "targetSlug": null
+      },
+      "disclaimerRequired": true,
+      "body": [
+        {
+          "type": "paragraph",
+          "text": "The eight-glasses rule appears to trace back to a 1945 recommendation that adults need roughly 2.5 litres of water a day. The very next sentence noted that most of it already comes from food. That sentence got dropped, and the number outlived it."
+        },
+        {
+          "type": "heading",
+          "text": "What's actually true"
+        },
+        {
+          "type": "bulletList",
+          "items": [
+            "For most healthy adults, thirst is a reasonable guide.",
+            "Food contributes a real share of your water. Fruit, vegetables, soup, and yoghurt all count.",
+            "Tea and coffee count too. The idea that they dehydrate you doesn't survive contact with the evidence at normal intake.",
+            "Needs vary with heat, altitude, exercise, illness, and pregnancy. A fixed target can't account for any of that."
+          ]
+        },
+        {
+          "type": "heading",
+          "text": "Something more useful than a number"
+        },
+        {
+          "type": "paragraph",
+          "text": "Anchor water to things you already do. A glass with each meal. A glass when you sit down at your desk. This works because it removes the decision, and decisions are what habits die of."
+        },
+        {
+          "type": "callout",
+          "text": "Persistent, unusual thirst — especially alongside fatigue or frequent urination — is worth mentioning to a doctor. It's not something to solve by drinking more."
+        }
+      ]
+    },
+    {
+      "id": "a5",
+      "slug": "eating-with-your-cycle",
+      "title": "Eating with your cycle, not against it",
+      "excerpt": "What changes across the four phases — and what genuinely doesn't.",
+      "category": "NUTRITION",
+      "tags": [
+        "nutrition",
+        "cycle",
+        "phases",
+        "food"
+      ],
+      "readingTime": "6 min read",
+      "heroImage": "learn_hero_eating_cycle",
+      "featured": false,
+      "relatedArticleIds": [
+        "a4",
+        "a6"
+      ],
+      "cta": {
+        "type": "OPEN_NUTRITION",
+        "label": "See this phase's foods",
+        "targetSlug": null
+      },
+      "disclaimerRequired": true,
+      "body": [
+        {
+          "type": "paragraph",
+          "text": "Your appetite, energy, and cravings genuinely do shift across a cycle. That much is well established. What's less well established is almost everything else you'll read about it online."
+        },
+        {
+          "type": "paragraph",
+          "text": "So here's an honest version: a short list of what actually changes, a shorter list of what to do about it, and a clear note about the claims that don't hold up."
+        },
+        {
+          "type": "heading",
+          "text": "What actually shifts"
+        },
+        {
+          "type": "bulletList",
+          "items": [
+            "Iron. Menstruation loses iron. Foods rich in it — lentils, dark leafy greens, red meat — are worth leaning on during your period.",
+            "Energy. Many people feel steadier in the follicular phase and flatter in the late luteal phase. Eating regularly matters more than eating perfectly.",
+            "Appetite. A modest increase in the luteal phase is normal and well documented. It is not a failure of discipline."
+          ]
+        },
+        {
+          "type": "heading",
+          "text": "What doesn't"
+        },
+        {
+          "type": "paragraph",
+          "text": "Your cycle length, your ovulation timing, and the sex of any future child are not influenced by what you eat. No food, supplement, or eating pattern changes them. Claims otherwise are common, confidently stated, and unsupported."
+        },
+        {
+          "type": "callout",
+          "text": "If an article promises that a food will change your cycle or influence conception, that's the moment to close the tab."
+        },
+        {
+          "type": "heading",
+          "text": "A practical idea per phase"
+        },
+        {
+          "type": "bulletList",
+          "items": [
+            "Period — iron with a source of vitamin C alongside it, which helps absorption.",
+            "Follicular — you likely have energy. This is a good week for meals that take effort.",
+            "Ovulatory — nothing special is required. Keep eating.",
+            "Luteal — more frequent, smaller meals help some people with energy dips. Try it, keep it if it works, drop it if it doesn't."
+          ]
+        },
+        {
+          "type": "paragraph",
+          "text": "That last instruction applies to this whole article. Log how you feel, look back after a couple of cycles, and keep only what your own data supports."
+        }
+      ]
+    },
+    {
+      "id": "a6",
+      "slug": "gentle-guide-supplements",
+      "title": "A gentle guide to supplements",
+      "excerpt": "What the evidence supports, what it doesn't, and why to talk to someone first.",
+      "category": "NUTRITION",
+      "tags": [
+        "supplements",
+        "nutrition",
+        "folate",
+        "evidence"
+      ],
+      "readingTime": "6 min read",
+      "heroImage": "learn_hero_supplements",
+      "featured": false,
+      "relatedArticleIds": [
+        "a5",
+        "a4"
+      ],
+      "cta": {
+        "type": "OPEN_LOG",
+        "label": "Log how you're feeling",
+        "targetSlug": null
+      },
+      "disclaimerRequired": true,
+      "body": [
+        {
+          "type": "paragraph",
+          "text": "The word supplement is doing a lot of quiet work. It means: in addition to. Not instead of, and not as insurance against, a diet that's already broadly fine."
+        },
+        {
+          "type": "heading",
+          "text": "The one with strong consensus"
+        },
+        {
+          "type": "paragraph",
+          "text": "Folate — folic acid in its supplement form — is recommended by mainstream health bodies for anyone who might become pregnant, ideally starting before conception. The evidence for reduced neural tube defects is unusually strong. This is the one worth raising with a doctor or pharmacist rather than reading about."
+        },
+        {
+          "type": "heading",
+          "text": "Everything else: ask, don't assume"
+        },
+        {
+          "type": "paragraph",
+          "text": "Vitamin D, omega-3, zinc, and the rest all have a real evidence base for specific people in specific circumstances — and a much larger marketing base aimed at everyone else. Whether any of them is useful for you depends on your diet, your bloodwork, where you live, and what else you take."
+        },
+        {
+          "type": "paragraph",
+          "text": "We're deliberately naming no doses and no brands here. A dose that's sensible for one person is pointless or harmful for another, and that judgement needs someone who can see your actual situation."
+        },
+        {
+          "type": "heading",
+          "text": "Interactions are real"
+        },
+        {
+          "type": "paragraph",
+          "text": "Supplements interact with medication and with each other. Some affect how other things are absorbed. \"Natural\" carries no information about safety."
+        },
+        {
+          "type": "heading",
+          "text": "How to raise it"
+        },
+        {
+          "type": "paragraph",
+          "text": "A pharmacist is free to talk to, knows about interactions, and doesn't need an appointment. Bring a list of everything you take, including anything you'd think of as \"just a vitamin\". That's usually the whole conversation."
+        },
+        {
+          "type": "callout",
+          "text": "If you're taking prescription medication, check before starting anything new. This is the single highest-value thing in this article."
+        }
+      ]
+    },
+    {
+      "id": "a7",
+      "slug": "what-insights-mean",
+      "title": "What \"insights\" actually means",
+      "excerpt": "Your app can spot correlations. It cannot spot causes. That distinction is the whole game.",
+      "category": "INSIGHTS",
+      "tags": [
+        "insights",
+        "data",
+        "basics",
+        "correlation"
+      ],
+      "readingTime": "5 min read",
+      "heroImage": "learn_hero_insights",
+      "featured": false,
+      "relatedArticleIds": [
+        "a8",
+        "a10"
+      ],
+      "cta": {
+        "type": "OPEN_INSIGHTS",
+        "label": "See your insights",
+        "targetSlug": null
+      },
+      "disclaimerRequired": false,
+      "body": [
+        {
+          "type": "paragraph",
+          "text": "An insight in this app is a pattern found by comparing things you logged. Nothing more mystical than that, and nothing more authoritative either."
+        },
+        {
+          "type": "heading",
+          "text": "Correlation, concretely"
+        },
+        {
+          "type": "paragraph",
+          "text": "Suppose your logs show low energy on the days you slept badly. Three explanations fit equally well: bad sleep drained you; whatever drained you also wrecked your sleep; or a third thing — illness, stress, a hard week — caused both. The data cannot distinguish between them. Only you can, and only sometimes."
+        },
+        {
+          "type": "heading",
+          "text": "How much data is enough"
+        },
+        {
+          "type": "bulletList",
+          "items": [
+            "Three weeks: almost nothing. Treat every pattern as coincidence.",
+            "Three months: something. Patterns that survive this long are worth noticing.",
+            "A year: enough to see how you change across seasons and circumstances."
+          ]
+        },
+        {
+          "type": "heading",
+          "text": "Holding an insight lightly"
+        },
+        {
+          "type": "paragraph",
+          "text": "A good insight makes you curious, not certain. If reading one makes you want to change three things at once, that's a sign you've believed it too hard."
+        }
+      ]
+    },
+    {
+      "id": "a8",
+      "slug": "reading-your-trends",
+      "title": "Reading your trends without over-reading them",
+      "excerpt": "One bad day is noise. Six weeks is a signal. Here's how to tell.",
+      "category": "INSIGHTS",
+      "tags": [
+        "insights",
+        "trends",
+        "patterns",
+        "variance"
+      ],
+      "readingTime": "5 min read",
+      "heroImage": "learn_hero_trends",
+      "featured": false,
+      "relatedArticleIds": [
+        "a7",
+        "a10"
+      ],
+      "cta": {
+        "type": "OPEN_INSIGHTS",
+        "label": "See your insights",
+        "targetSlug": null
+      },
+      "disclaimerRequired": true,
+      "body": [
+        {
+          "type": "paragraph",
+          "text": "Bodies vary. Not as a failure of the body, but as a basic property of it. Two days with identical sleep, food, and stress will still produce different numbers, and nothing has gone wrong."
+        },
+        {
+          "type": "heading",
+          "text": "What noise looks like"
+        },
+        {
+          "type": "bulletList",
+          "items": [
+            "A single outlier in an otherwise flat run.",
+            "A dramatic value on a day something unusual happened.",
+            "Any pattern you can only see if you squint."
+          ]
+        },
+        {
+          "type": "heading",
+          "text": "What a signal looks like"
+        },
+        {
+          "type": "bulletList",
+          "items": [
+            "It persists across several cycles, not several days.",
+            "It shows up whether or not you were looking for it.",
+            "It doesn't disappear when you exclude the most dramatic week."
+          ]
+        },
+        {
+          "type": "heading",
+          "text": "The trap"
+        },
+        {
+          "type": "paragraph",
+          "text": "When you feel worse, you track harder. More tracking finds more patterns. More patterns feel like confirmation that something is wrong. This loop is worth knowing about because it feels exactly like diligence."
+        },
+        {
+          "type": "callout",
+          "text": "A trend that is persistent, new for you, and unexplained is worth raising with a clinician — not worth resolving alone with more data."
+        }
+      ]
+    },
+    {
+      "id": "a9",
+      "slug": "small-habits-that-hold",
+      "title": "Small habits that hold",
+      "excerpt": "The habit research says: make it smaller than feels worthwhile.",
+      "category": "WELLNESS",
+      "tags": [
+        "habits",
+        "wellness",
+        "consistency",
+        "routine"
+      ],
+      "readingTime": "4 min read",
+      "heroImage": "learn_hero_habits",
+      "featured": false,
+      "relatedArticleIds": [
+        "a3",
+        "a10"
+      ],
+      "cta": {
+        "type": "OPEN_LOG",
+        "label": "Start with one log",
+        "targetSlug": null
+      },
+      "disclaimerRequired": true,
+      "body": [
+        {
+          "type": "paragraph",
+          "text": "Ambitious habits fail in week two, and they fail for a structural reason: they were designed by a version of you who had unusual amounts of energy and optimism. That person does not show up on Wednesdays."
+        },
+        {
+          "type": "heading",
+          "text": "Anchor it to something that already happens"
+        },
+        {
+          "type": "paragraph",
+          "text": "You already brush your teeth. You already sit down at a desk, or on a bus. Attach the new thing to the old thing and you never have to remember it, only notice it."
+        },
+        {
+          "type": "heading",
+          "text": "The two-minute version"
+        },
+        {
+          "type": "paragraph",
+          "text": "Whatever you want to do, define a version that takes two minutes and do that. Not as a stepping stone to the real habit — as the habit. Scale later, if you want to, or don't."
+        },
+        {
+          "type": "heading",
+          "text": "Missing a day"
+        },
+        {
+          "type": "paragraph",
+          "text": "Missing one day changes nothing measurable. Missing two is the pattern worth watching, because the second miss is where the habit stops being automatic."
+        },
+        {
+          "type": "heading",
+          "text": "On streaks"
+        },
+        {
+          "type": "paragraph",
+          "text": "Streaks motivate some people and quietly torment others. If a broken streak makes you want to abandon the whole thing, the streak is costing you more than it's paying. Ignore the number."
+        }
+      ]
+    },
+    {
+      "id": "a10",
+      "slug": "using-what-you-learn",
+      "title": "Using what you learn",
+      "excerpt": "Data is only useful if it changes something. Here's how to close the loop.",
+      "category": "INSIGHTS",
+      "tags": [
+        "insights",
+        "decisions",
+        "wellness",
+        "experiments"
+      ],
+      "readingTime": "4 min read",
+      "heroImage": "learn_hero_using",
+      "featured": false,
+      "relatedArticleIds": [
+        "a7",
+        "a8"
+      ],
+      "cta": {
+        "type": "OPEN_INSIGHTS",
+        "label": "See your insights",
+        "targetSlug": null
+      },
+      "disclaimerRequired": true,
+      "body": [
+        {
+          "type": "paragraph",
+          "text": "Tracking that never changes a decision is a hobby. A pleasant one — but let's be honest about which it is."
+        },
+        {
+          "type": "heading",
+          "text": "The loop"
+        },
+        {
+          "type": "bulletList",
+          "items": [
+            "Notice something in your logs.",
+            "Guess at why, out loud, in one sentence.",
+            "Change exactly one thing.",
+            "Wait a full cycle. Not a week.",
+            "Look again."
+          ]
+        },
+        {
+          "type": "heading",
+          "text": "Why one thing"
+        },
+        {
+          "type": "paragraph",
+          "text": "Change three things and you've learned nothing, whatever the result. You won't know which one moved the needle, or whether two of them cancelled out. This is the single most common way people waste months of careful tracking."
+        },
+        {
+          "type": "heading",
+          "text": "When to stop experimenting"
+        },
+        {
+          "type": "paragraph",
+          "text": "If something is getting worse, or it's new, or it frightens you, stop running experiments and talk to a professional. Your logs will make that conversation better. They are not a substitute for it."
+        },
+        {
+          "type": "callout",
+          "text": "Bring your logs to the appointment. \"Here's six weeks of data\" is a much better opening than \"I've been feeling off.\""
+        }
+      ]
+    }
+  ]
+}
