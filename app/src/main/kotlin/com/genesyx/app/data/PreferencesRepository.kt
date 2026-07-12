@@ -33,10 +33,16 @@ class PreferencesRepository @Inject constructor(
         store.onboardingComplete.stateIn(scope, SharingStarted.Eagerly, false)
     val learnIntroSeen: StateFlow<Boolean> =
         store.learnIntroSeen.stateIn(scope, SharingStarted.Eagerly, false)
+    val bestDailyStreak: StateFlow<Int> =
+        store.bestDailyStreak.stateIn(scope, SharingStarted.Eagerly, 0)
+    val celebratedMilestones: StateFlow<Set<String>> =
+        store.celebratedMilestones.stateIn(scope, SharingStarted.Eagerly, emptySet())
 
     fun setTheme(mode: ThemeMode) { scope.launch { store.setTheme(mode) } }
     fun setPush(enabled: Boolean) { scope.launch { store.setPush(enabled) } }
     fun setFocus(mode: FocusMode) { scope.launch { store.setFocus(mode) } }
     fun setOnboardingComplete(complete: Boolean) { scope.launch { store.setOnboardingComplete(complete) } }
     fun setLearnIntroSeen(seen: Boolean) { scope.launch { store.setLearnIntroSeen(seen) } }
+    fun setBestDailyStreak(days: Int) { scope.launch { store.setBestDailyStreak(days) } }
+    fun setCelebratedMilestones(ids: Set<String>) { scope.launch { store.setCelebratedMilestones(ids) } }
 }

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.genesyx.app.data.CycleRepository
 import com.genesyx.app.data.DailyLogRepository
+import com.genesyx.app.data.StreakRepository
 import com.genesyx.app.domain.content.PhaseFood
 import com.genesyx.app.domain.content.nutritionPhaseDescription
 import com.genesyx.app.domain.content.nutritionPhaseFoods
@@ -26,23 +27,26 @@ data class NutritionUiState(
     val foods: List<PhaseFood> = emptyList(),
     val waterMl: Int = 0,
     val waterGoalMl: Int = 2400,
+    val weeklyStreak: Int = 0,
 )
 
 @HiltViewModel
 class NutritionViewModel @Inject constructor(
     private val cycleRepository: CycleRepository,
     private val dailyLogRepository: DailyLogRepository,
+    streakRepository: StreakRepository,
 ) : ViewModel() {
 
     val uiState: StateFlow<NutritionUiState> =
         combine(
             cycleRepository.settings,
             dailyLogRepository.logByDate,
-        ) { settings, _ ->
+            streakRepository.state,
+        ) { settings, _, streaks ->
             val today = LocalDate.now()
             val waterMl = dailyLogRepository.waterMlOn(today)
             if (settings == null) {
-                NutritionUiState(waterMl = waterMl)
+                NutritionUiState(waterMl = waterMl, weeklyStreak = streaks.weeklyStreak)
             } else {
                 val phase = CycleEngine.getCyclePhase(settings, today).phase
                 NutritionUiState(
@@ -52,6 +56,7 @@ class NutritionViewModel @Inject constructor(
                     headlineSub = nutritionPhaseDescription.getValue(phase),
                     foods = nutritionPhaseFoods.getValue(phase),
                     waterMl = waterMl,
+                    weeklyStreak = streaks.weeklyStreak,
                 )
             }
         }.stateIn(

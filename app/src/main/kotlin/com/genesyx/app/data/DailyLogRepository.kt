@@ -8,6 +8,7 @@ import com.genesyx.app.data.local.entity.toDomain
 import com.genesyx.app.data.local.entity.toEntity
 import com.genesyx.app.data.remote.DailyLogRemoteDataSource
 import com.genesyx.app.domain.model.DailyLog
+import com.genesyx.app.domain.streaks.StreakEngine
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.SharingStarted
@@ -69,17 +70,13 @@ class DailyLogRepository @Inject constructor(
         upsert(date, logOn(date).copy(waterMl = ml.coerceIn(0, 10_000)))
     }
 
-    /** Consecutive days back from [today] (inclusive) that have water logged. */
-    fun streak(today: LocalDate = LocalDate.now()): Int {
-        val map = logByDate.value
-        var streak = 0
-        var day = today
-        while ((map[day]?.waterMl ?: 0) > 0) {
-            streak++
-            day = day.minusDays(1)
-        }
-        return streak
-    }
+    /**
+     * Consecutive days back from [today] (inclusive) that have water logged. Delegates to
+     * [StreakEngine] so the rule lives in exactly one place; [StreakRepository] exposes the rest of
+     * the streak state (weekly, best, milestones).
+     */
+    fun streak(today: LocalDate = LocalDate.now()): Int =
+        StreakEngine.compute(logByDate.value, phByDate = emptySet(), today = today).dailyHydration
 
     /** Read-through: pull all of the user's logs into the local cache (called after sign-in). */
     suspend fun refresh(userId: String = session.currentUserId()) {

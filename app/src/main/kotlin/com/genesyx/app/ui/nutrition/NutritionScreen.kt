@@ -94,6 +94,7 @@ fun NutritionScreen(
             HydrationCard(
                 waterMl = state.waterMl,
                 goalMl = state.waterGoalMl,
+                weeklyStreak = state.weeklyStreak,
                 onAdd = { viewModel.adjustWater(200) },
                 onRemove = { viewModel.adjustWater(-200) },
             )
@@ -156,7 +157,7 @@ fun NutritionScreen(
 }
 
 @Composable
-private fun HydrationCard(waterMl: Int, goalMl: Int, onAdd: () -> Unit, onRemove: () -> Unit) {
+private fun HydrationCard(waterMl: Int, goalMl: Int, weeklyStreak: Int, onAdd: () -> Unit, onRemove: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     val remaining = (goalMl - waterMl).coerceAtLeast(0)
     Card(
@@ -201,6 +202,14 @@ private fun HydrationCard(waterMl: Int, goalMl: Int, onAdd: () -> Unit, onRemove
                     if (remaining > 0) "${remaining}ml to go" else "Target reached — nice work",
                     style = MaterialTheme.typography.bodyMedium,
                     color = colors.onSurfaceVariant,
+                )
+            }
+            if (weeklyStreak >= 1) {
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    if (weeklyStreak == 1) "1 steady week" else "$weeklyStreak steady weeks",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colors.onSurfaceVariant.copy(alpha = 0.7f),
                 )
             }
         }
