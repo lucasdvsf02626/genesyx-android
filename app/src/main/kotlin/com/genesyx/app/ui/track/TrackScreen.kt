@@ -54,10 +54,13 @@ import com.genesyx.app.domain.cycle.CycleEngine
 import com.genesyx.app.domain.model.CalendarCell
 import com.genesyx.app.domain.model.CycleSettings
 import com.genesyx.app.domain.model.DayType
+import com.genesyx.app.domain.model.LogDay
 import com.genesyx.app.domain.model.Phase
 import com.genesyx.app.ui.components.CycleSettingsDialog
+import com.genesyx.app.ui.components.DailyLogSummary
 import com.genesyx.app.ui.components.Eyebrow
 import com.genesyx.app.ui.components.GxPrimaryButton
+import com.genesyx.app.ui.components.PhReadingRow
 import com.genesyx.app.ui.components.tintOnWhite
 import com.genesyx.app.ui.navigation.Screen
 import com.genesyx.app.ui.ph.PhTrackerSection
@@ -80,8 +83,10 @@ fun TrackScreen(
     viewModel: TrackViewModel = hiltViewModel(),
 ) {
     val settings by viewModel.settings.collectAsState()
+    val logDays by viewModel.logDays.collectAsState()
     TrackContent(
         settings = settings,
+        logDays = logDays,
         onNavigate = { navController.navigate(it) },
         onSaveCycle = { viewModel.saveCycleSettings(it) },
     )
@@ -90,6 +95,7 @@ fun TrackScreen(
 @Composable
 fun TrackContent(
     settings: CycleSettings?,
+    logDays: Map<LocalDate, LogDay> = emptyMap(),
     onNavigate: (String) -> Unit,
     onSaveCycle: (CycleSettings) -> Unit,
 ) {
@@ -277,7 +283,12 @@ fun TrackContent(
     }
 
     selectedDay?.let { day ->
-        DayDetailDialog(day = day, today = today, onDismiss = { selectedDay = null })
+        DayDetailDialog(
+            day = day,
+            logDay = logDays[day.date],
+            today = today,
+            onDismiss = { selectedDay = null },
+        )
     }
 }
 
@@ -385,8 +396,18 @@ private fun Legend() {
     }
 }
 
+/**
+ * [logDay] is what the user actually logged on [day] — null when nothing was. A future day has
+ * nothing to show but the prediction; a past day shows its log, and only claims there isn't one
+ * after the store has been asked.
+ */
 @Composable
-private fun DayDetailDialog(day: CalendarCell.Day, today: LocalDate, onDismiss: () -> Unit) {
+private fun DayDetailDialog(
+    day: CalendarCell.Day,
+    logDay: LogDay?,
+    today: LocalDate,
+    onDismiss: () -> Unit,
+) {
     val colors = MaterialTheme.colorScheme
     val phase = day.info.phase
     val isFuture = day.date.isAfter(today)
@@ -398,19 +419,42 @@ private fun DayDetailDialog(day: CalendarCell.Day, today: LocalDate, onDismiss: 
         containerColor = colors.surface,
         title = { Text(day.date.format(dayTitleFormat), style = MaterialTheme.typography.titleLarge, color = colors.onSurface) },
         text = {
-            Column {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 Eyebrow("Day ${day.info.dayOfCycle} · ${phaseLabel.getValue(phase)}", color = ElectricLavender)
                 Spacer(Modifier.height(8.dp))
-                Text(
-                    text = when {
-                        isFuture && phase == Phase.OVULATORY -> "Predicted: ovulation day — peak fertility."
-                        isFuture && isFertile -> "Predicted: fertile window."
-                        isFuture -> "Predicted: ${phaseLabel.getValue(phase).lowercase()}."
-                        else -> "No log yet for this day."
-                    },
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = colors.onSurfaceVariant,
-                )
+
+                if (isFuture) {
+                    Text(
+                        text = when {
+                            phase == Phase.OVULATORY -> "Predicted: ovulation day — peak fertility."
+                            isFertile -> "Predicted: fertile window."
+                            else -> "Predicted: ${phaseLabel.getValue(phase).lowercase()}."
+                        },
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = colors.onSurfaceVariant,
+                    )
+                    return@Column
+                }
+
+                val hasLog = logDay != null && !logDay.isEmpty
+                if (!hasLog) {
+                    Text(
+                        "Nothing logged on this day.",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = colors.onSurfaceVariant,
+                    )
+                    return@Column
+                }
+
+                if (logDay!!.hasDailyContent) {
+                    DailyLogSummary(logDay.dailyLog!!)
+                }
+                if (logDay.phReadings.isNotEmpty()) {
+                    if (logDay.hasDailyContent) Spacer(Modifier.height(12.dp))
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        logDay.phReadings.forEach { PhReadingRow(it) }
+                    }
+                }
             }
         },
         confirmButton = {
