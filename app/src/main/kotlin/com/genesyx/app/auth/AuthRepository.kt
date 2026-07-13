@@ -38,9 +38,6 @@ class AuthRepository @Inject constructor(
 ) {
     val isSignedIn: StateFlow<Boolean> = session.isSignedIn
 
-    /** Local sign-in used by the current UI (no password verification without Supabase). */
-    fun signIn(email: String, name: String?) = session.signIn(email, name)
-
     /** Password sign-in through the remote provider; persists the session on success. */
     suspend fun signInWithPassword(email: String, password: String): DataResult<Unit> =
         persist(authService.signInWithPassword(email, password), "sign-in")
@@ -53,7 +50,30 @@ class AuthRepository @Inject constructor(
     suspend fun signInWithGoogle(idToken: String): DataResult<Unit> =
         persist(authService.signInWithIdToken(idToken), "google-sign-in")
 
-    fun signOut() = session.signOut()
+    /**
+     * Ends the session everywhere: the remote provider, the local Room cache, then the persisted
+     * session itself.
+     *
+     * Clearing Room is not housekeeping. Without it the previous user's cycle, logs and pH rows sit
+     * on disk after they log out, and — because [SessionRepository.currentUserId] falls back to the
+     * shared [SessionRepository.LOCAL_USER_ID] bucket once the session is gone — whatever the *next*
+     * person on the device logs while signed out lands in that same bucket and is read straight
+     * back. Signed-in data is already write-through to Supabase and is re-pulled by `persist` on the
+     * next sign-in, so there is nothing to lose by dropping the local copy.
+     *
+     * The remote sign-out is best-effort: if it fails (offline), the local session must still go, or
+     * "Log out" would leave the user signed in. But supabase-kt's own session must be cleared, or a
+     * later sign-up would inherit it — see [AuthService.signOut].
+     */
+    suspend fun signOut(): DataResult<Unit> {
+        val remote = authService.signOut()
+        if (remote is DataResult.Error) {
+            logger.w("Auth", "remote sign-out failed; clearing local session anyway")
+        }
+        withContext(dispatchers.io) { database.clearAllTables() }
+        session.signOut()
+        return DataResult.Success(Unit)
+    }
 
     /** Permanently delete the account remotely (RPC → cascade) then wipe all local data. */
     suspend fun deleteAccount(): DataResult<Unit> =

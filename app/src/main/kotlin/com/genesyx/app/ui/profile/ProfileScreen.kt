@@ -89,11 +89,20 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel = hi
     val deleting by viewModel.deleting.collectAsState()
     val deleteError by viewModel.deleteError.collectAsState()
     val accountDeleted by viewModel.deleted.collectAsState()
+    val hasSignedOut by viewModel.signedOut.collectAsState()
     val context = LocalContext.current
 
     // Account deleted → clear the back stack and return to the start (splash/auth).
     LaunchedEffect(accountDeleted) {
         if (accountDeleted) {
+            navController.navigate(Screen.Splash.route) { popUpTo(0) { inclusive = true } }
+        }
+    }
+
+    // Signed out → same exit. Staying here would leave the user in the authenticated shell with no
+    // session, logging into the shared guest bucket.
+    LaunchedEffect(hasSignedOut) {
+        if (hasSignedOut) {
             navController.navigate(Screen.Splash.route) { popUpTo(0) { inclusive = true } }
         }
     }
