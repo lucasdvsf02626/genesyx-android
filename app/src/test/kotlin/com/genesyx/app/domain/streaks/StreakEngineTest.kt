@@ -132,17 +132,20 @@ class StreakEngineTest {
 
     // ── weekly streak: 5 of 7 days ──
 
+    // Tracking spec 2026-07: a week completes at FOUR logged days, not five — "most of the week",
+    // forgiving a weekend off. These two previously asserted the five-day threshold.
+
     @Test
-    fun `four days in a week is not a complete week`() {
-        val s = StreakEngine.compute(weekWithDays(monday, 4), emptySet(), today)
-        assertEquals(4, s.daysLoggedThisWeek)
+    fun `three days in a week is not a complete week`() {
+        val s = StreakEngine.compute(weekWithDays(monday, 3), emptySet(), today)
+        assertEquals(3, s.daysLoggedThisWeek)
         assertEquals(0, s.weeklyStreak)
     }
 
     @Test
-    fun `five days in a week completes it`() {
-        val s = StreakEngine.compute(weekWithDays(monday, 5), emptySet(), today)
-        assertEquals(5, s.daysLoggedThisWeek)
+    fun `four days in a week completes it`() {
+        val s = StreakEngine.compute(weekWithDays(monday, 4), emptySet(), today)
+        assertEquals(4, s.daysLoggedThisWeek)
         assertEquals(1, s.weeklyStreak)
     }
 

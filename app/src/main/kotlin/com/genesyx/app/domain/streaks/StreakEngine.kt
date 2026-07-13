@@ -38,14 +38,20 @@ data class StreakState(
  *   be a lie to tell her otherwise just because she didn't record water.
  * - **Daily hydration** — the same run, but water only. Surfaced on the Insights consistency card.
  * - **Weekly** — consecutive weeks in which she logged *anything* on at least [WEEK_COMPLETE_DAYS]
- *   of the seven days. Five-of-seven, not seven-of-seven: missing a day is meant to cost almost
+ *   of the seven days. Four-of-seven, not seven-of-seven: missing a day is meant to cost almost
  *   nothing. A week still in progress can't break the streak — an incomplete current week simply
  *   isn't counted yet.
  */
 object StreakEngine {
 
-    /** Days of logging that make a week count. */
-    const val WEEK_COMPLETE_DAYS = 5
+    /**
+     * Days of logging that make a week count. Four, not five: "most of the week", forgiving a
+     * weekend off, which is what real logging looks like.
+     *
+     * This is a cross-platform contract — iOS conforms to whatever Android ships here, so it is the
+     * single source and must not be duplicated in another engine. Tracking spec, 2026-07.
+     */
+    const val WEEK_COMPLETE_DAYS = 4
 
     fun compute(
         logsByDate: Map<LocalDate, DailyLog>,
@@ -123,7 +129,14 @@ object StreakEngine {
     private fun weekStart(date: LocalDate): LocalDate =
         date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
 
-    /** Any tracked field counts — water, mood, energy, a symptom, sleep, supplements or a note. */
+    /**
+     * Any tracked field counts — water, mood, energy, a symptom, sleep, supplements or a note.
+     * The single definition of a "meaningful log"; the cross-platform contract points here.
+     *
+     * Sleep is `!= null`, deliberately, not `> 0`: null means "not entered", so an explicitly
+     * logged zero is a real record. Someone logging an all-nighter *is* logging, and that is
+     * exactly the day she most deserves credit for tracking — `> 0` would silently discount it.
+     */
     private fun DailyLog.hasActivity(): Boolean =
         waterMl > 0 ||
             mood != null ||
