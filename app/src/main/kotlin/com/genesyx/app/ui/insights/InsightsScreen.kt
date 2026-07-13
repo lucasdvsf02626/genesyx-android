@@ -250,7 +250,9 @@ private fun ConsistencyCard(state: ConsistencyInsights) {
 
         Spacer(Modifier.height(16.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            StreakTile("Daily streak", state.dailyStreak, "d", Modifier.weight(1f))
+            // "Hydration", not "Daily" — this tile counts water only, and Home's "Streak" counts any
+            // logged activity. Two different numbers; they must not both be called a daily streak.
+            StreakTile("Hydration", state.dailyStreak, "d", Modifier.weight(1f))
             StreakTile("Weekly streak", state.weeklyStreak, "w", Modifier.weight(1f))
             StreakTile("Best", state.bestDailyStreak, "d", Modifier.weight(1f))
         }

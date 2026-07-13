@@ -8,7 +8,6 @@ import com.genesyx.app.data.local.entity.toDomain
 import com.genesyx.app.data.local.entity.toEntity
 import com.genesyx.app.data.remote.DailyLogRemoteDataSource
 import com.genesyx.app.domain.model.DailyLog
-import com.genesyx.app.domain.streaks.StreakEngine
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.SharingStarted
@@ -22,10 +21,12 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Daily-log store — local-first (Room source of truth) with Supabase sync. Public API is unchanged
- * (StateFlow + logOn/waterMlOn/upsert/adjustWater/setWater/streak) so Home / Nutrition / Log are
- * untouched; `upsert` now write-throughs to Supabase and `refresh` read-throughs all logs on
- * sign-in. Mirrors `daily_logs` (UNIQUE(user_id, date)); streak counts consecutive days with water.
+ * Daily-log store — local-first (Room source of truth) with Supabase sync: `upsert` write-throughs
+ * to Supabase and `refresh` read-throughs all logs on sign-in. Mirrors `daily_logs`
+ * (UNIQUE(user_id, date)).
+ *
+ * Streaks are not computed here — [com.genesyx.app.data.StreakRepository] owns that, feeding
+ * [com.genesyx.app.domain.streaks.StreakEngine] from these logs plus the pH readings.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @Singleton
@@ -84,14 +85,6 @@ class DailyLogRepository @Inject constructor(
     fun setWater(ml: Int, date: LocalDate = LocalDate.now()) {
         upsert(date, logOn(date).copy(waterMl = ml.coerceIn(0, 10_000)))
     }
-
-    /**
-     * Consecutive days back from [today] (inclusive) that have water logged. Delegates to
-     * [StreakEngine] so the rule lives in exactly one place; [StreakRepository] exposes the rest of
-     * the streak state (weekly, best, milestones).
-     */
-    fun streak(today: LocalDate = LocalDate.now()): Int =
-        StreakEngine.compute(logByDate.value, phByDate = emptySet(), today = today).dailyHydration
 
     /** Read-through: pull all of the user's logs into the local cache (called after sign-in). */
     suspend fun refresh(userId: String = session.currentUserId()) {

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.genesyx.app.data.CycleRepository
 import com.genesyx.app.data.DailyLogRepository
 import com.genesyx.app.data.SessionRepository
+import com.genesyx.app.data.StreakRepository
 import com.genesyx.app.domain.content.phaseHeroCopy
 import com.genesyx.app.domain.content.phaseHeroSubtext
 import com.genesyx.app.domain.content.phaseHeroText
@@ -12,6 +13,7 @@ import com.genesyx.app.domain.content.phaseSubLabel
 import com.genesyx.app.domain.content.phaseTags
 import com.genesyx.app.domain.cycle.CycleEngine
 import com.genesyx.app.domain.model.CycleSettings
+import com.genesyx.app.domain.streaks.StreakState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -46,6 +48,7 @@ class HomeViewModel @Inject constructor(
     private val cycleRepository: CycleRepository,
     private val dailyLogRepository: DailyLogRepository,
     private val sessionRepository: SessionRepository,
+    streakRepository: StreakRepository,
 ) : ViewModel() {
 
     val uiState: StateFlow<HomeUiState> =
@@ -54,17 +57,28 @@ class HomeViewModel @Inject constructor(
             dailyLogRepository.logByDate,
             sessionRepository.displayName,
             sessionRepository.isSignedIn,
-        ) { settings, _, displayName, signedIn ->
-            buildState(settings, displayName, signedIn)
+            streakRepository.state,
+        ) { settings, _, displayName, signedIn, streaks ->
+            buildState(settings, displayName, signedIn, streaks)
         }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = buildState(cycleRepository.settings.value, sessionRepository.displayName.value, sessionRepository.isSignedIn.value),
+            initialValue = buildState(
+                cycleRepository.settings.value,
+                sessionRepository.displayName.value,
+                sessionRepository.isSignedIn.value,
+                streakRepository.state.value,
+            ),
         )
 
     fun saveCycleSettings(settings: CycleSettings) = cycleRepository.upsert(settings)
 
-    private fun buildState(settings: CycleSettings?, displayName: String?, signedIn: Boolean): HomeUiState {
+    private fun buildState(
+        settings: CycleSettings?,
+        displayName: String?,
+        signedIn: Boolean,
+        streaks: StreakState,
+    ): HomeUiState {
         val today = LocalDate.now()
         val waterMl = dailyLogRepository.waterMlOn(today)
         val base = HomeUiState(
@@ -73,7 +87,9 @@ class HomeViewModel @Inject constructor(
             greeting = greetingFor(LocalTime.now()),
             settings = settings,
             hydrationLitres = if (waterMl > 0) waterMl / 1000f else null,
-            streakDays = dailyLogRepository.streak(today),
+            // Any logged activity, not water alone — the card is labelled "Streak", so it has to
+            // count everything she tracks, and it must not reset at midnight.
+            streakDays = streaks.dailyActivity,
         )
         if (settings == null) return base
 

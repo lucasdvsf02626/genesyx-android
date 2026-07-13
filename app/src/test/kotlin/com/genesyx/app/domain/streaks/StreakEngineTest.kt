@@ -45,10 +45,29 @@ class StreakEngineTest {
     }
 
     @Test
-    fun `daily streak is zero when today has no water yet`() {
-        // Yesterday and before are logged, today is not — same as the shipped behaviour.
-        val yesterday = (1..5).associate { today.minusDays(it.toLong()) to water() }
-        assertEquals(0, StreakEngine.compute(yesterday, emptySet(), today).dailyHydration)
+    fun `an unlogged today does not break the daily streak`() {
+        // Yesterday and before are logged; today is simply not logged YET. The day is still going,
+        // so the run stands at 5 — it must not read as 0 until she drinks. The old engine counted
+        // from today and so zeroed every streak at midnight.
+        val throughYesterday = (1..5).associate { today.minusDays(it.toLong()) to water() }
+        val s = StreakEngine.compute(throughYesterday, emptySet(), today)
+        assertEquals(5, s.dailyHydration)
+        assertEquals(5, s.dailyActivity)
+    }
+
+    @Test
+    fun `a streak is broken only once a full day passes unlogged`() {
+        // Nothing yesterday AND nothing today — the run really is over.
+        val stale = (2..8).associate { today.minusDays(it.toLong()) to water() }
+        val s = StreakEngine.compute(stale, emptySet(), today)
+        assertEquals(0, s.dailyHydration)
+        assertEquals(0, s.dailyActivity)
+    }
+
+    @Test
+    fun `today's log extends the run rather than restarting it`() {
+        val s = StreakEngine.compute(waterStreak(4), emptySet(), today) // today + 3 back
+        assertEquals(4, s.dailyHydration)
     }
 
     @Test
@@ -64,10 +83,41 @@ class StreakEngineTest {
 
     @Test
     fun `a day logged without water does not extend the hydration streak`() {
+        // Today: a mood, no water. Yesterday: water. The hydration run is yesterday's alone — the
+        // mood-only day adds nothing to it — but today is not over, so it does not break it either.
         val moodOnly = logs(today to DailyLog(mood = Mood.GOOD), today.minusDays(1) to water())
         val s = StreakEngine.compute(moodOnly, emptySet(), today)
-        assertEquals("water is what the hydration streak counts", 0, s.dailyHydration)
-        assertEquals("but the day still counts as activity", 2, s.daysLoggedThisWeek)
+        assertEquals("the mood-only day does not extend the water run", 1, s.dailyHydration)
+        assertEquals("but it is activity, so the logging streak counts both", 2, s.dailyActivity)
+        assertEquals(2, s.daysLoggedThisWeek)
+    }
+
+    // ── daily activity streak (what Home shows) ──
+
+    @Test
+    fun `the activity streak counts any tracked field, not just water`() {
+        // Sleep, a symptom and a mood on three consecutive days: no water anywhere.
+        val noWater = logs(
+            today to DailyLog(sleepMinutes = 450),
+            today.minusDays(1) to DailyLog(symptoms = setOf("Cramps")),
+            today.minusDays(2) to DailyLog(mood = Mood.LOW),
+        )
+        val s = StreakEngine.compute(noWater, emptySet(), today)
+        assertEquals("Home's streak must not read 0 for a user who logs every day", 3, s.dailyActivity)
+        assertEquals("...while the hydration tile honestly stays at 0", 0, s.dailyHydration)
+    }
+
+    @Test
+    fun `a ph reading alone keeps the activity streak alive`() {
+        val s = StreakEngine.compute(emptyMap(), setOf(today, today.minusDays(1)), today)
+        assertEquals(2, s.dailyActivity)
+    }
+
+    @Test
+    fun `an empty log shell does not extend the activity streak`() {
+        val shell = logs(today to DailyLog(), today.minusDays(1) to DailyLog(mood = Mood.GOOD))
+        // The blank row is not activity, so today is undecided and the run is yesterday's alone.
+        assertEquals(1, StreakEngine.compute(shell, emptySet(), today).dailyActivity)
     }
 
     @Test
@@ -166,11 +216,22 @@ class StreakEngineTest {
     }
 
     @Test
+    fun `a badge earned yesterday survives an unlogged today`() {
+        // The old engine zeroed the streak the moment midnight passed, so the day-7 badge silently
+        // un-earned itself every morning. A 7-day run through yesterday still holds it.
+        val throughYesterday = (1..7).associate { today.minusDays(it.toLong()) to water() }
+        val s = StreakEngine.compute(throughYesterday, emptySet(), today)
+        assertEquals(7, s.dailyHydration)
+        assertTrue(Milestone.DAY_7 in s.earned)
+    }
+
+    @Test
     fun `dropping below the threshold un-earns the milestone so it can re-fire`() {
-        // She had celebrated day7, then missed today — the streak is 0 and day7 is no longer earned.
+        // A real lapse: nothing yesterday and nothing today, so the run is genuinely over.
         val celebrated = setOf(Milestone.DAY_7.id)
-        val lapsed = (1..7).associate { today.minusDays(it.toLong()) to water() }
+        val lapsed = (2..8).associate { today.minusDays(it.toLong()) to water() }
         val s = StreakEngine.compute(lapsed, emptySet(), today, celebrated = celebrated)
+        assertEquals(0, s.dailyHydration)
         assertFalse(Milestone.DAY_7 in s.earned)
 
         // Persisting `earned` clears the flag, so building the streak back up fires it once more.
