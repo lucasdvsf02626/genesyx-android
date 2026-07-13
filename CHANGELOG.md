@@ -62,8 +62,17 @@ Branch `feature/streaks-v2` → **PR #9**, open against `main`. Not merged, not 
 
 ### Before this can ship
 Owner steps only — see **"Pre-release checks"** in `CLAUDE.md`. v1.1 changes what the app stores
-server-side, so the store data disclosures, the privacy copy, and the server-side deletion check each
-need a fresh review against current behaviour. Deletion check: `docs/supabase/verify_deletion.sql`.
+server-side, so the store data disclosures and the privacy copy each need a fresh review against
+current behaviour. Deletion check: `docs/supabase/verify_deletion.sql` (step 1 run 2026-07-13, clean).
+
+### Stopped here (2026-07-13)
+1. Fill the `[OWNER]` placeholders in `docs/DATA_SAFETY_AND_PRIVACY_v1.1.md` — **local-only, excluded
+   from git** via `.git/info/exclude`. Holds the drafted Play Data Safety answers + privacy copy.
+2. Publish the privacy copy; submit the Data Safety answers.
+3. Finish the deletion proof **for pH** (step 4 of the SQL script). The daily-log half is already
+   proven: a synced log from a throwaway account was erased by an in-app delete — which is why the
+   orphan counts came back 0.
+4. Merge PR #9, upload the AAB, promote.
 
 ---
 

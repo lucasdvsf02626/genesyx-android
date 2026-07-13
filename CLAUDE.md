@@ -8,8 +8,31 @@ v1.1 in progress. Read this first. Honest state, verified against the tree on **
 > 1. **pH is NOT local-only.** pH readings sync to Supabase. Never restore "stored on this device"
 >    copy — see "pH sync is live" below. It is the single most dangerous stale claim here.
 > 2. **Code is NOT frozen at versionCode 6.** `main` is at versionCode 7, and `feature/streaks-v2`
->    is 19 commits ahead of `main`.
+>    is ahead of `main` at versionCode 8.
 > 3. **`main` is NOT `1da07f9`.** It is `d7be924`.
+
+## 🔖 STOPPED HERE — resume from this (2026-07-13)
+
+**All engineering is done, committed and pushed. `PR #9` is open** (`feature/streaks-v2` → `main`,
+versionCode 8 / 1.1.0): offline log queue, streak engine v2 + vectors, user-set hydration goal,
+log-screen discard guard, CHANGELOG, deletion-verification script. Tests green, signed AAB builds.
+
+**Session-by-session history lives in `CHANGELOG.md`.** Read it before anything else.
+
+**Next actions, in order:**
+1. **Fill the `[OWNER]` placeholders** in `docs/DATA_SAFETY_AND_PRIVACY_v1.1.md` — legal entity,
+   Supabase hosting region, retention period, ICO/DPO contact, publication date. That file is
+   **local-only and git-excluded** (via `.git/info/exclude`), so it is on the machine but not in the
+   repo. It holds the Play Data Safety answers + privacy-policy copy drafted for v1.1.
+2. **Publish the privacy copy** to `genesyx.co.uk/pages/privacy-policy`, and **submit the Data Safety
+   answers** in Play Console. Both need to reflect that pH readings sync to the server in v1.1.
+3. **Finish the deletion proof for pH** — see "Pre-release checks" #3. Step 1 of
+   `docs/supabase/verify_deletion.sql` was run against production on 2026-07-13 and came back clean
+   (deployed function covers `ph_readings`; orphan rows 0/0/0/0). The remaining piece is the
+   end-to-end pass (step 4) **with a pH reading in play** — the daily-log half is already proven: a
+   synced log from a throwaway account was erased by an in-app delete, which is why the orphan counts
+   are zero.
+4. **Merge PR #9**, upload the AAB, promote.
 
 ## Where the code actually is
 
