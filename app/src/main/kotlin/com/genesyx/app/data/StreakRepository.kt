@@ -33,13 +33,15 @@ class StreakRepository @Inject constructor(
             phRepository.readings,
             preferences.bestDailyStreak,
             preferences.celebratedMilestones,
-        ) { logs, readings, best, celebrated ->
+            preferences.hydrationGoalMl,
+        ) { logs, readings, best, celebrated, goalMl ->
             StreakEngine.compute(
                 logsByDate = logs,
                 phByDate = readings.map { it.recordedAt.toLocalDate() }.toSet(),
                 today = LocalDate.now(),
                 celebrated = celebrated,
                 bestSoFar = best,
+                goalMl = goalMl,
             )
         }
             .onEach { streaks ->

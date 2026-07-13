@@ -19,6 +19,11 @@ data class StreakState(
     val dailyHydration: Int = 0,
     val weeklyStreak: Int = 0,
     val daysLoggedThisWeek: Int = 0,
+    /**
+     * Days in the current ISO week on which she actually reached her hydration goal. Logging water
+     * is not the same as drinking enough of it, so this is deliberately not [daysLoggedThisWeek].
+     */
+    val daysOnGoal: Int = 0,
     /** Mon..Sun of the current week; true where anything at all was logged. */
     val weekActivity: List<Boolean> = List(7) { false },
     val bestDailyStreak: Int = 0,
@@ -53,12 +58,24 @@ object StreakEngine {
      */
     const val WEEK_COMPLETE_DAYS = 4
 
+    /** Daily hydration target in millilitres, until the user sets her own. */
+    const val DEFAULT_GOAL_ML = 2400
+
+    /**
+     * The goal she is allowed to set. Bounded at both ends on purpose: a goal of zero would be met
+     * before she drank anything (and divides by zero in the progress bar), and a goal she cannot
+     * reach is a streak she can never hold. [GOAL_STEP_ML] matches the log button's 200ml pour.
+     */
+    val GOAL_RANGE_ML = 1000..5000
+    const val GOAL_STEP_ML = 200
+
     fun compute(
         logsByDate: Map<LocalDate, DailyLog>,
         phByDate: Set<LocalDate>,
         today: LocalDate,
         celebrated: Set<String> = emptySet(),
         bestSoFar: Int = 0,
+        goalMl: Int = DEFAULT_GOAL_ML,
     ): StreakState {
         val activeDates = logsByDate.filterValues { it.hasActivity() }.keys + phByDate
 
@@ -67,6 +84,7 @@ object StreakEngine {
 
         val thisWeek = weekStart(today)
         val weekActivity = (0L until 7L).map { thisWeek.plusDays(it) in activeDates }
+        val daysOnGoal = (0L until 7L).count { (logsByDate[thisWeek.plusDays(it)]?.waterMl ?: 0) >= goalMl }
 
         val weeklyStreak = countCompleteWeeks(activeDates, thisWeek)
 
@@ -83,6 +101,7 @@ object StreakEngine {
             dailyHydration = dailyHydration,
             weeklyStreak = weeklyStreak,
             daysLoggedThisWeek = weekActivity.count { it },
+            daysOnGoal = daysOnGoal,
             weekActivity = weekActivity,
             bestDailyStreak = best,
             earned = earned,

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.genesyx.app.data.CycleRepository
 import com.genesyx.app.data.DailyLogRepository
+import com.genesyx.app.data.PreferencesRepository
 import com.genesyx.app.data.SessionRepository
 import com.genesyx.app.data.StreakRepository
 import com.genesyx.app.domain.content.phaseHeroCopy
@@ -13,6 +14,7 @@ import com.genesyx.app.domain.content.phaseSubLabel
 import com.genesyx.app.domain.content.phaseTags
 import com.genesyx.app.domain.cycle.CycleEngine
 import com.genesyx.app.domain.model.CycleSettings
+import com.genesyx.app.domain.streaks.StreakEngine
 import com.genesyx.app.domain.streaks.StreakState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -37,8 +39,8 @@ data class HomeUiState(
     val todayFocusTitle: String? = null,
     val todayFocusBody: String? = null,
     val hydrationLitres: Float? = null,
-    /** A general daily recommendation, not a goal the user set. */
-    val hydrationGoalLitres: Float = 2.4f,
+    /** Her goal, from preferences — the default only until she sets her own. */
+    val hydrationGoalLitres: Float = StreakEngine.DEFAULT_GOAL_ML / 1000f,
     val streakDays: Int? = null,
     val isLoading: Boolean = false,
 )
@@ -48,8 +50,16 @@ class HomeViewModel @Inject constructor(
     private val cycleRepository: CycleRepository,
     private val dailyLogRepository: DailyLogRepository,
     private val sessionRepository: SessionRepository,
+    private val preferencesRepository: PreferencesRepository,
     streakRepository: StreakRepository,
 ) : ViewModel() {
+
+    // Paired rather than passed as a sixth flow: combine is only typed up to five, and the streak
+    // state and the goal it was computed against belong together anyway.
+    private val streaksWithGoal =
+        combine(streakRepository.state, preferencesRepository.hydrationGoalMl) { streaks, goalMl ->
+            streaks to goalMl
+        }
 
     val uiState: StateFlow<HomeUiState> =
         combine(
@@ -57,9 +67,9 @@ class HomeViewModel @Inject constructor(
             dailyLogRepository.logByDate,
             sessionRepository.displayName,
             sessionRepository.isSignedIn,
-            streakRepository.state,
-        ) { settings, _, displayName, signedIn, streaks ->
-            buildState(settings, displayName, signedIn, streaks)
+            streaksWithGoal,
+        ) { settings, _, displayName, signedIn, (streaks, goalMl) ->
+            buildState(settings, displayName, signedIn, streaks, goalMl)
         }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
@@ -68,6 +78,7 @@ class HomeViewModel @Inject constructor(
                 sessionRepository.displayName.value,
                 sessionRepository.isSignedIn.value,
                 streakRepository.state.value,
+                preferencesRepository.hydrationGoalMl.value,
             ),
         )
 
@@ -78,6 +89,7 @@ class HomeViewModel @Inject constructor(
         displayName: String?,
         signedIn: Boolean,
         streaks: StreakState,
+        goalMl: Int,
     ): HomeUiState {
         val today = LocalDate.now()
         val waterMl = dailyLogRepository.waterMlOn(today)
@@ -87,6 +99,7 @@ class HomeViewModel @Inject constructor(
             greeting = greetingFor(LocalTime.now()),
             settings = settings,
             hydrationLitres = if (waterMl > 0) waterMl / 1000f else null,
+            hydrationGoalLitres = goalMl / 1000f,
             // Any logged activity, not water alone — the card is labelled "Streak", so it has to
             // count everything she tracks, and it must not reset at midnight.
             streakDays = streaks.dailyActivity,

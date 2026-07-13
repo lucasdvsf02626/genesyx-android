@@ -51,6 +51,7 @@ import androidx.navigation.NavController
 import com.genesyx.app.domain.content.PhaseFood
 import com.genesyx.app.domain.content.learnArticles
 import com.genesyx.app.domain.content.supplementPlan
+import com.genesyx.app.domain.streaks.StreakEngine
 import com.genesyx.app.ui.components.Eyebrow
 import com.genesyx.app.ui.components.GxPrimaryButton
 import com.genesyx.app.ui.navigation.Screen
@@ -68,6 +69,7 @@ fun NutritionScreen(
     val state by viewModel.uiState.collectAsState()
     var expandedFood by remember { mutableStateOf<String?>(null) }
     var planOpen by remember { mutableStateOf(false) }
+    var goalOpen by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -95,8 +97,10 @@ fun NutritionScreen(
                 waterMl = state.waterMl,
                 goalMl = state.waterGoalMl,
                 weeklyStreak = state.weeklyStreak,
+                daysOnGoal = state.daysOnGoal,
                 onAdd = { viewModel.adjustWater(200) },
                 onRemove = { viewModel.adjustWater(-200) },
+                onEditGoal = { goalOpen = true },
             )
 
             if (com.genesyx.app.core.FeatureFlags.PH_TRACKING) {
@@ -123,6 +127,14 @@ fun NutritionScreen(
 
             Spacer(Modifier.height(24.dp))
         }
+    }
+
+    if (goalOpen) {
+        GoalDialog(
+            goalMl = state.waterGoalMl,
+            onDismiss = { goalOpen = false },
+            onSave = { viewModel.setWaterGoal(it); goalOpen = false },
+        )
     }
 
     if (planOpen) {
@@ -157,7 +169,15 @@ fun NutritionScreen(
 }
 
 @Composable
-private fun HydrationCard(waterMl: Int, goalMl: Int, weeklyStreak: Int, onAdd: () -> Unit, onRemove: () -> Unit) {
+private fun HydrationCard(
+    waterMl: Int,
+    goalMl: Int,
+    weeklyStreak: Int,
+    daysOnGoal: Int,
+    onAdd: () -> Unit,
+    onRemove: () -> Unit,
+    onEditGoal: () -> Unit,
+) {
     val colors = MaterialTheme.colorScheme
     val remaining = (goalMl - waterMl).coerceAtLeast(0)
     Card(
@@ -178,7 +198,7 @@ private fun HydrationCard(waterMl: Int, goalMl: Int, weeklyStreak: Int, onAdd: (
                     Row(verticalAlignment = Alignment.Bottom) {
                         Text("%.1f".format(waterMl / 1000f), fontSize = 28.sp, fontWeight = FontWeight.SemiBold, color = colors.onSurface)
                         Spacer(Modifier.size(4.dp))
-                        Text("/ ${"%.1f".format(goalMl / 1000f)} L recommended", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, modifier = Modifier.padding(bottom = 4.dp))
+                        Text("/ ${"%.1f".format(goalMl / 1000f)} L goal", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, modifier = Modifier.padding(bottom = 4.dp))
                     }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -195,13 +215,30 @@ private fun HydrationCard(waterMl: Int, goalMl: Int, weeklyStreak: Int, onAdd: (
                 trackColor = colors.surfaceVariant,
             )
             Spacer(Modifier.height(12.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Outlined.WaterDrop, null, tint = colors.onSurfaceVariant, modifier = Modifier.size(14.dp))
-                Spacer(Modifier.size(6.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Outlined.WaterDrop, null, tint = colors.onSurfaceVariant, modifier = Modifier.size(14.dp))
+                    Spacer(Modifier.size(6.dp))
+                    Text(
+                        if (remaining > 0) "${remaining}ml to go" else "Goal reached — nice work",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = colors.onSurfaceVariant,
+                    )
+                }
+                // A TextButton, not a tappable label: it carries Material's 48dp touch target.
+                TextButton(onClick = onEditGoal) {
+                    Text("Edit goal", style = MaterialTheme.typography.bodyMedium, color = ElectricLavender)
+                }
+            }
+            if (daysOnGoal >= 1) {
                 Text(
-                    if (remaining > 0) "${remaining}ml to go" else "Target reached — nice work",
+                    if (daysOnGoal == 1) "1 day on goal this week" else "$daysOnGoal days on goal this week",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = colors.onSurfaceVariant,
+                    color = colors.onSurfaceVariant.copy(alpha = 0.7f),
                 )
             }
             if (weeklyStreak >= 1) {
@@ -214,6 +251,58 @@ private fun HydrationCard(waterMl: Int, goalMl: Int, weeklyStreak: Int, onAdd: (
             }
         }
     }
+}
+
+/**
+ * Sets the goal the whole app measures her against. Steps in [StreakEngine.GOAL_STEP_ML] because
+ * that is the pour the log buttons add, so every reachable goal is one she can land on exactly.
+ */
+@Composable
+private fun GoalDialog(goalMl: Int, onDismiss: () -> Unit, onSave: (Int) -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    var draft by remember(goalMl) { mutableStateOf(goalMl) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(20.dp),
+        containerColor = colors.surface,
+        title = { Text("Daily water goal", style = MaterialTheme.typography.titleLarge, color = colors.onSurface) },
+        text = {
+            Column {
+                Text(
+                    "How much you're aiming for each day. Your streaks are measured against this.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colors.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(20.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    StepperButton(
+                        Icons.Filled.Remove,
+                        "Lower goal",
+                        colors.surfaceVariant,
+                        colors.onSurface,
+                    ) { draft = (draft - StreakEngine.GOAL_STEP_ML).coerceIn(StreakEngine.GOAL_RANGE_ML) }
+                    Text(
+                        "${"%.1f".format(draft / 1000f)} L",
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = colors.onSurface,
+                    )
+                    StepperButton(
+                        Icons.Filled.Add,
+                        "Raise goal",
+                        ElectricLavender,
+                        Color.White,
+                    ) { draft = (draft + StreakEngine.GOAL_STEP_ML).coerceIn(StreakEngine.GOAL_RANGE_ML) }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = { onSave(draft) }) { Text("Save", color = ElectricLavender) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel", color = colors.onSurfaceVariant) } },
+    )
 }
 
 @Composable

@@ -107,6 +107,11 @@ android {
     // MigrationTestHelper can validate them. Also expose it to androidTest as assets.
     sourceSets {
         getByName("androidTest").assets.srcDir("$projectDir/schemas")
+
+        // The cross-platform tracking vectors live next to the engine they define, and are mirrored
+        // verbatim into the iOS repo. Putting them on the unit-test classpath from there — rather
+        // than copying them into test resources — keeps one canonical copy that cannot drift.
+        getByName("test").resources.srcDir("$projectDir/src/main/kotlin/com/genesyx/app/domain/tracking")
     }
 }
 

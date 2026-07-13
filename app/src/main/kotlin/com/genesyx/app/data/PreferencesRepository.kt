@@ -4,6 +4,7 @@ import com.genesyx.app.core.di.ApplicationScope
 import com.genesyx.app.data.local.datastore.GenesyxPreferencesDataStore
 import com.genesyx.app.domain.model.FocusMode
 import com.genesyx.app.domain.model.ThemeMode
+import com.genesyx.app.domain.streaks.StreakEngine
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -37,6 +38,8 @@ class PreferencesRepository @Inject constructor(
         store.bestDailyStreak.stateIn(scope, SharingStarted.Eagerly, 0)
     val celebratedMilestones: StateFlow<Set<String>> =
         store.celebratedMilestones.stateIn(scope, SharingStarted.Eagerly, emptySet())
+    val hydrationGoalMl: StateFlow<Int> =
+        store.hydrationGoalMl.stateIn(scope, SharingStarted.Eagerly, StreakEngine.DEFAULT_GOAL_ML)
 
     fun setTheme(mode: ThemeMode) { scope.launch { store.setTheme(mode) } }
     fun setPush(enabled: Boolean) { scope.launch { store.setPush(enabled) } }
@@ -45,4 +48,13 @@ class PreferencesRepository @Inject constructor(
     fun setLearnIntroSeen(seen: Boolean) { scope.launch { store.setLearnIntroSeen(seen) } }
     fun setBestDailyStreak(days: Int) { scope.launch { store.setBestDailyStreak(days) } }
     fun setCelebratedMilestones(ids: Set<String>) { scope.launch { store.setCelebratedMilestones(ids) } }
+
+    /**
+     * Clamped here rather than at the call site, because this is the only writer: nothing outside
+     * [StreakEngine.GOAL_RANGE_ML] can reach the store, so no reader has to defend against a zero
+     * goal it would divide by.
+     */
+    fun setHydrationGoalMl(ml: Int) {
+        scope.launch { store.setHydrationGoalMl(ml.coerceIn(StreakEngine.GOAL_RANGE_ML)) }
+    }
 }

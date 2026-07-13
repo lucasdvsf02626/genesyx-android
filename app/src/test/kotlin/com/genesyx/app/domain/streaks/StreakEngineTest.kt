@@ -252,4 +252,34 @@ class StreakEngineTest {
         assertTrue(Milestone.WEEK_4 in s.earned)
         assertTrue(Milestone.WEEK_1 in s.earned)
     }
+
+    // ── the goal she set ──
+
+    @Test
+    fun `days on goal are measured against her goal, not the default`() {
+        // 1.2L on the Monday: over a 1L goal, well under the 2.4L default.
+        val day = logs(monday to water(1200))
+
+        assertEquals(1, StreakEngine.compute(day, emptySet(), today, goalMl = 1000).daysOnGoal)
+        assertEquals(0, StreakEngine.compute(day, emptySet(), today, goalMl = 3000).daysOnGoal)
+        assertEquals(0, StreakEngine.compute(day, emptySet(), today).daysOnGoal)
+    }
+
+    @Test
+    fun `hitting the goal exactly counts`() {
+        val exact = logs(monday to water(StreakEngine.DEFAULT_GOAL_ML))
+        assertEquals(1, StreakEngine.compute(exact, emptySet(), today).daysOnGoal)
+
+        val oneSipShort = logs(monday to water(StreakEngine.DEFAULT_GOAL_ML - 1))
+        assertEquals(0, StreakEngine.compute(oneSipShort, emptySet(), today).daysOnGoal)
+    }
+
+    @Test
+    fun `logging water is not the same as drinking enough of it`() {
+        // Five days logged, none of them near the goal: a full week of activity, zero days on goal.
+        val sipped = (0 until 5).associate { monday.plusDays(it.toLong()) to water(200) }
+        val s = StreakEngine.compute(sipped, emptySet(), today)
+        assertEquals(5, s.daysLoggedThisWeek)
+        assertEquals(0, s.daysOnGoal)
+    }
 }
