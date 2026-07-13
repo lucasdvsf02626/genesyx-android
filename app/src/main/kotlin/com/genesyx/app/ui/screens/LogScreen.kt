@@ -1,5 +1,6 @@
 package com.genesyx.app.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -107,9 +108,17 @@ private fun LogForm(initial: DailyLog, onClose: () -> Unit, viewModel: LogViewMo
     var sleepOpen by remember { mutableStateOf(false) }
     var waterOpen by remember { mutableStateOf(false) }
     var suppOpen by remember { mutableStateOf(false) }
-    var offline by remember { mutableStateOf(false) }
+    var confirmDiscard by remember { mutableStateOf(false) }
 
     val allSymptoms = remember(symptoms) { (DEFAULT_SYMPTOMS + symptoms).distinct() }
+
+    val edited = DailyLog(mood, energy, symptoms, sleepMinutes, supplements, notes.ifBlank { null }, waterMl)
+    val dirty = edited != initial
+
+    // Leaving with unsaved edits used to bin them silently. Ask first — but only when there is
+    // something to lose, so an untouched form still closes on the first tap.
+    fun attemptClose() { if (dirty) confirmDiscard = true else onClose() }
+    BackHandler(enabled = dirty) { confirmDiscard = true }
 
     Column(
         modifier = Modifier
@@ -117,7 +126,7 @@ private fun LogForm(initial: DailyLog, onClose: () -> Unit, viewModel: LogViewMo
             .background(colors.background)
             .verticalScroll(rememberScrollState()),
     ) {
-        ScreenHeader(title = "Log Today", subtitle = "Quick notes about how you're feeling.", onBack = onClose)
+        ScreenHeader(title = "Log Today", subtitle = "Quick notes about how you're feeling.", onBack = ::attemptClose)
 
         Column(Modifier.padding(horizontal = 20.dp)) {
             // Mood
@@ -239,27 +248,43 @@ private fun LogForm(initial: DailyLog, onClose: () -> Unit, viewModel: LogViewMo
             )
 
             Spacer(Modifier.height(20.dp))
-            if (offline) {
-                Text(
-                    "You're offline — reconnect to save your log.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = colors.error,
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
-                )
-            }
             GxPrimaryButton(
                 text = "Save log",
                 onClick = {
-                    if (!viewModel.isOnline()) {
-                        offline = true
-                    } else {
-                        viewModel.save(DailyLog(mood, energy, symptoms, sleepMinutes, supplements, notes.ifBlank { null }, waterMl))
-                        onClose()
-                    }
+                    // Saves unconditionally, online or off: the write lands in Room and, if the push
+                    // fails, queues for a WorkManager retry. Nothing is lost, so nothing is blocked.
+                    viewModel.save(edited)
+                    onClose()
                 },
             )
             Spacer(Modifier.height(24.dp))
         }
+    }
+
+    if (confirmDiscard) {
+        AlertDialog(
+            onDismissRequest = { confirmDiscard = false },
+            shape = RoundedCornerShape(20.dp),
+            containerColor = colors.surface,
+            title = { Text("Discard your changes?", style = MaterialTheme.typography.titleLarge, color = colors.onSurface) },
+            text = {
+                Text(
+                    "This log hasn't been saved yet. Leaving now loses what you've entered.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colors.onSurfaceVariant,
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { confirmDiscard = false; onClose() }) {
+                    Text("Discard", color = colors.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmDiscard = false }) {
+                    Text("Keep editing", color = ElectricLavender)
+                }
+            },
+        )
     }
 
     if (sleepOpen) {

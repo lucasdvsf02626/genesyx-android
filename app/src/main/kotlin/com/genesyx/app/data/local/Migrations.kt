@@ -20,6 +20,15 @@ val MIGRATION_2_3 = object : Migration(2, 3) {
     }
 }
 
+/** v3 -> v4: daily-log offline-sync column. Existing rows came from (or were pushed to) the server
+ *  while the app blocked offline saves, so they are all SYNCED — the default is the truth here. */
+val MIGRATION_3_4 = object : Migration(3, 4) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE daily_logs ADD COLUMN syncStatus TEXT NOT NULL DEFAULT 'SYNCED'")
+    }
+}
+
 val GENESYX_MIGRATIONS: Array<Migration> = arrayOf(
     MIGRATION_2_3,
+    MIGRATION_3_4,
 )
