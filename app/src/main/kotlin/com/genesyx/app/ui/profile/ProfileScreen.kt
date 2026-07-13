@@ -89,11 +89,20 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel = hi
     val deleting by viewModel.deleting.collectAsState()
     val deleteError by viewModel.deleteError.collectAsState()
     val accountDeleted by viewModel.deleted.collectAsState()
+    val hasSignedOut by viewModel.signedOut.collectAsState()
     val context = LocalContext.current
 
     // Account deleted → clear the back stack and return to the start (splash/auth).
     LaunchedEffect(accountDeleted) {
         if (accountDeleted) {
+            navController.navigate(Screen.Splash.route) { popUpTo(0) { inclusive = true } }
+        }
+    }
+
+    // Signed out → same exit. Staying here would leave the user in the authenticated shell with no
+    // session, logging into the shared guest bucket.
+    LaunchedEffect(hasSignedOut) {
+        if (hasSignedOut) {
             navController.navigate(Screen.Splash.route) { popUpTo(0) { inclusive = true } }
         }
     }
@@ -130,11 +139,6 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel = hi
                 Column(Modifier.weight(1f)) {
                     Text(name, style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
                     Text(email ?: "Sign in to sync your data", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
-                }
-                if (signedIn) {
-                    Box(Modifier.clip(CircleShape).background(ElectricLavender.copy(alpha = 0.10f)).padding(horizontal = 10.dp, vertical = 4.dp)) {
-                        Text("PREMIUM", fontSize = 10.5.sp, fontWeight = FontWeight.SemiBold, color = ElectricLavender)
-                    }
                 }
             }
 

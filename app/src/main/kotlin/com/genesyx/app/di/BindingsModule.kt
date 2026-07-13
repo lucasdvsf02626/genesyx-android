@@ -6,7 +6,9 @@ import com.genesyx.app.core.log.Analytics
 import com.genesyx.app.core.log.NoopAnalytics
 import com.genesyx.app.data.remote.ClientRemoteDataSource
 import com.genesyx.app.data.remote.StubClientRemoteDataSource
+import com.genesyx.app.data.sync.DailyLogSyncScheduler
 import com.genesyx.app.data.sync.PhSyncScheduler
+import com.genesyx.app.data.sync.WorkManagerDailyLogSyncScheduler
 import com.genesyx.app.data.sync.WorkManagerPhSyncScheduler
 import dagger.Binds
 import dagger.Module
@@ -33,4 +35,7 @@ abstract class BindingsModule {
 
     @Binds @Singleton
     abstract fun bindPhSyncScheduler(impl: WorkManagerPhSyncScheduler): PhSyncScheduler
+
+    @Binds @Singleton
+    abstract fun bindDailyLogSyncScheduler(impl: WorkManagerDailyLogSyncScheduler): DailyLogSyncScheduler
 }

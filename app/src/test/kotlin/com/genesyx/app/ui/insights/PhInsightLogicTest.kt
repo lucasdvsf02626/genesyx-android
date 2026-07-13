@@ -106,4 +106,14 @@ class PhInsightLogicTest {
         assertNull("no readings within 7 days", r.avg7)
         assertEquals(6.5, r.avg30!!, 1e-9)
     }
+
+    @Test
+    fun `the 30-day reading count says how solid the trend is`() {
+        val r = PhInsightLogic.compute(
+            listOf(reading(6.5, 40), reading(6.4, 20), reading(6.6, 2), reading(6.5, 0)),
+            now,
+        )
+        assertEquals("the 40-day-old reading is outside the window", 3, r.readings30)
+        assertEquals(0, PhInsightLogic.compute(emptyList(), now).readings30)
+    }
 }

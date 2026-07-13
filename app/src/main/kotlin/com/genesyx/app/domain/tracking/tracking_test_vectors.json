@@ -1,0 +1,416 @@
+{
+  "spec": "genesyx-tracking-v1",
+  "note": "Cross-platform vectors for the tracking engine. Mirrored verbatim in the iOS repo \u2014 keep free of platform-specific behaviour. Dates are ISO local dates. A log omitting a field means the user left it blank; sleepMinutes present-and-zero is a REAL record (an all-nighter is still logging), which is why the rule is null-vs-not-null, never > 0. 2026-07-13 is a Monday: ISO week 28 is 6-12 Jul, week 29 is 13-19 Jul.",
+  "config": {
+    "goalMl": 2400,
+    "minWeekDays": 4
+  },
+  "cases": [
+    {
+      "name": "empty history",
+      "today": "2026-07-13",
+      "logs": [],
+      "phDates": [],
+      "expected": {
+        "dailyActivity": 0,
+        "dailyHydration": 0,
+        "weeklyStreak": 0,
+        "daysLoggedThisWeek": 0,
+        "daysOnGoal": 0
+      }
+    },
+    {
+      "name": "single meaningful log today",
+      "today": "2026-07-13",
+      "logs": [
+        {
+          "date": "2026-07-13",
+          "mood": "GOOD"
+        }
+      ],
+      "phDates": [],
+      "expected": {
+        "dailyActivity": 1,
+        "dailyHydration": 0,
+        "weeklyStreak": 0,
+        "daysLoggedThisWeek": 1,
+        "daysOnGoal": 0
+      }
+    },
+    {
+      "name": "single log yesterday, today untouched \u2014 grace keeps it alive",
+      "today": "2026-07-13",
+      "logs": [
+        {
+          "date": "2026-07-12",
+          "mood": "GOOD"
+        }
+      ],
+      "phDates": [],
+      "expected": {
+        "dailyActivity": 1,
+        "dailyHydration": 0,
+        "weeklyStreak": 0,
+        "daysLoggedThisWeek": 0,
+        "daysOnGoal": 0
+      }
+    },
+    {
+      "name": "today unlogged after a five-day run \u2014 expect 5, not 0",
+      "today": "2026-07-13",
+      "logs": [
+        {
+          "date": "2026-07-08",
+          "waterMl": 2500
+        },
+        {
+          "date": "2026-07-09",
+          "waterMl": 2500
+        },
+        {
+          "date": "2026-07-10",
+          "waterMl": 2500
+        },
+        {
+          "date": "2026-07-11",
+          "waterMl": 2500
+        },
+        {
+          "date": "2026-07-12",
+          "waterMl": 2500
+        }
+      ],
+      "phDates": [],
+      "expected": {
+        "dailyActivity": 5,
+        "dailyHydration": 5,
+        "weeklyStreak": 1,
+        "daysLoggedThisWeek": 0,
+        "daysOnGoal": 0
+      }
+    },
+    {
+      "name": "a gap of one full day breaks the run",
+      "today": "2026-07-13",
+      "logs": [
+        {
+          "date": "2026-07-09",
+          "waterMl": 2500
+        },
+        {
+          "date": "2026-07-10",
+          "waterMl": 2500
+        }
+      ],
+      "phDates": [],
+      "expected": {
+        "dailyActivity": 0,
+        "dailyHydration": 0,
+        "weeklyStreak": 0,
+        "daysLoggedThisWeek": 0,
+        "daysOnGoal": 0
+      }
+    },
+    {
+      "name": "a backfilled day joins two runs into one",
+      "today": "2026-07-13",
+      "logs": [
+        {
+          "date": "2026-07-09",
+          "mood": "GOOD"
+        },
+        {
+          "date": "2026-07-10",
+          "mood": "GOOD"
+        },
+        {
+          "date": "2026-07-11",
+          "mood": "GOOD"
+        },
+        {
+          "date": "2026-07-12",
+          "mood": "GOOD"
+        },
+        {
+          "date": "2026-07-13",
+          "mood": "GOOD"
+        }
+      ],
+      "phDates": [],
+      "expected": {
+        "dailyActivity": 5,
+        "dailyHydration": 0,
+        "weeklyStreak": 1,
+        "daysLoggedThisWeek": 1,
+        "daysOnGoal": 0
+      }
+    },
+    {
+      "name": "water-only and meaningful-log streaks diverge",
+      "today": "2026-07-13",
+      "logs": [
+        {
+          "date": "2026-07-11",
+          "waterMl": 1000
+        },
+        {
+          "date": "2026-07-12",
+          "mood": "LOW",
+          "symptoms": [
+            "Cramps"
+          ]
+        },
+        {
+          "date": "2026-07-13",
+          "sleepMinutes": 450
+        }
+      ],
+      "phDates": [],
+      "expected": {
+        "dailyActivity": 3,
+        "dailyHydration": 0,
+        "weeklyStreak": 0,
+        "daysLoggedThisWeek": 1,
+        "daysOnGoal": 0
+      }
+    },
+    {
+      "name": "goal met counts, merely logging water does not",
+      "today": "2026-07-15",
+      "logs": [
+        {
+          "date": "2026-07-13",
+          "waterMl": 2400
+        },
+        {
+          "date": "2026-07-14",
+          "waterMl": 2399
+        },
+        {
+          "date": "2026-07-15",
+          "waterMl": 3000
+        }
+      ],
+      "phDates": [],
+      "expected": {
+        "dailyActivity": 3,
+        "dailyHydration": 3,
+        "weeklyStreak": 0,
+        "daysLoggedThisWeek": 3,
+        "daysOnGoal": 2
+      }
+    },
+    {
+      "name": "week boundary \u2014 Sunday belongs to the previous ISO week",
+      "today": "2026-07-13",
+      "logs": [
+        {
+          "date": "2026-07-12",
+          "waterMl": 3000
+        },
+        {
+          "date": "2026-07-13",
+          "waterMl": 3000
+        }
+      ],
+      "phDates": [],
+      "expected": {
+        "dailyActivity": 2,
+        "dailyHydration": 2,
+        "weeklyStreak": 0,
+        "daysLoggedThisWeek": 1,
+        "daysOnGoal": 1
+      }
+    },
+    {
+      "name": "an incomplete current week never breaks the weekly streak",
+      "today": "2026-07-14",
+      "logs": [
+        {
+          "date": "2026-07-06",
+          "mood": "GOOD"
+        },
+        {
+          "date": "2026-07-07",
+          "mood": "GOOD"
+        },
+        {
+          "date": "2026-07-08",
+          "mood": "GOOD"
+        },
+        {
+          "date": "2026-07-09",
+          "mood": "GOOD"
+        },
+        {
+          "date": "2026-07-13",
+          "mood": "GOOD"
+        },
+        {
+          "date": "2026-07-14",
+          "mood": "GOOD"
+        }
+      ],
+      "phDates": [],
+      "expected": {
+        "dailyActivity": 2,
+        "dailyHydration": 0,
+        "weeklyStreak": 1,
+        "daysLoggedThisWeek": 2,
+        "daysOnGoal": 0
+      }
+    },
+    {
+      "name": "a current week already at the threshold extends the streak",
+      "today": "2026-07-16",
+      "logs": [
+        {
+          "date": "2026-07-06",
+          "mood": "GOOD"
+        },
+        {
+          "date": "2026-07-07",
+          "mood": "GOOD"
+        },
+        {
+          "date": "2026-07-08",
+          "mood": "GOOD"
+        },
+        {
+          "date": "2026-07-09",
+          "mood": "GOOD"
+        },
+        {
+          "date": "2026-07-13",
+          "mood": "GOOD"
+        },
+        {
+          "date": "2026-07-14",
+          "mood": "GOOD"
+        },
+        {
+          "date": "2026-07-15",
+          "mood": "GOOD"
+        },
+        {
+          "date": "2026-07-16",
+          "mood": "GOOD"
+        }
+      ],
+      "phDates": [],
+      "expected": {
+        "dailyActivity": 4,
+        "dailyHydration": 0,
+        "weeklyStreak": 2,
+        "daysLoggedThisWeek": 4,
+        "daysOnGoal": 0
+      }
+    },
+    {
+      "name": "three days is short of the four-day threshold",
+      "today": "2026-07-20",
+      "logs": [
+        {
+          "date": "2026-07-13",
+          "mood": "GOOD"
+        },
+        {
+          "date": "2026-07-14",
+          "mood": "GOOD"
+        },
+        {
+          "date": "2026-07-15",
+          "mood": "GOOD"
+        }
+      ],
+      "phDates": [],
+      "expected": {
+        "dailyActivity": 0,
+        "dailyHydration": 0,
+        "weeklyStreak": 0,
+        "daysLoggedThisWeek": 0,
+        "daysOnGoal": 0
+      }
+    },
+    {
+      "name": "a pH reading alone is a meaningful log",
+      "today": "2026-07-13",
+      "logs": [],
+      "phDates": [
+        "2026-07-12",
+        "2026-07-13"
+      ],
+      "expected": {
+        "dailyActivity": 2,
+        "dailyHydration": 0,
+        "weeklyStreak": 0,
+        "daysLoggedThisWeek": 1,
+        "daysOnGoal": 0
+      }
+    },
+    {
+      "name": "duplicate entries on one date collapse to a single day",
+      "today": "2026-07-13",
+      "logs": [
+        {
+          "date": "2026-07-13",
+          "waterMl": 2500
+        }
+      ],
+      "phDates": [
+        "2026-07-13",
+        "2026-07-13"
+      ],
+      "expected": {
+        "dailyActivity": 1,
+        "dailyHydration": 1,
+        "weeklyStreak": 0,
+        "daysLoggedThisWeek": 1,
+        "daysOnGoal": 1
+      }
+    },
+    {
+      "name": "an empty log shell is not a log",
+      "today": "2026-07-13",
+      "logs": [
+        {
+          "date": "2026-07-12",
+          "mood": "GOOD"
+        },
+        {
+          "date": "2026-07-13"
+        }
+      ],
+      "phDates": [],
+      "expected": {
+        "dailyActivity": 1,
+        "dailyHydration": 0,
+        "weeklyStreak": 0,
+        "daysLoggedThisWeek": 0,
+        "daysOnGoal": 0
+      }
+    },
+    {
+      "name": "sleep logged as zero is a real record, not an absence",
+      "today": "2026-07-13",
+      "logs": [
+        {
+          "date": "2026-07-12",
+          "sleepMinutes": 0
+        },
+        {
+          "date": "2026-07-13",
+          "sleepMinutes": 0
+        }
+      ],
+      "phDates": [],
+      "expected": {
+        "dailyActivity": 2,
+        "dailyHydration": 0,
+        "weeklyStreak": 0,
+        "daysLoggedThisWeek": 1,
+        "daysOnGoal": 0
+      }
+    }
+  ]
+}

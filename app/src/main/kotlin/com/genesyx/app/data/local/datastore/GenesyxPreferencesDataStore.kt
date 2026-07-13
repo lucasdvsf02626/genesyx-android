@@ -4,9 +4,12 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import com.genesyx.app.domain.model.FocusMode
 import com.genesyx.app.domain.model.ThemeMode
+import com.genesyx.app.domain.streaks.StreakEngine
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -26,6 +29,9 @@ class GenesyxPreferencesDataStore @Inject constructor(
         val FOCUS = stringPreferencesKey("focus_mode")
         val ONBOARDING_COMPLETE = booleanPreferencesKey("onboarding_complete")
         val LEARN_INTRO_SEEN = booleanPreferencesKey("learn_intro_seen")
+        val BEST_DAILY_STREAK = intPreferencesKey("best_daily_streak")
+        val CELEBRATED_MILESTONES = stringSetPreferencesKey("celebrated_milestones")
+        val HYDRATION_GOAL_ML = intPreferencesKey("hydration_goal_ml")
         val SIGNED_IN = booleanPreferencesKey("signed_in")
         val USER_ID = stringPreferencesKey("user_id")
         val EMAIL = stringPreferencesKey("email")
@@ -44,6 +50,13 @@ class GenesyxPreferencesDataStore @Inject constructor(
     val onboardingComplete: Flow<Boolean> = dataStore.data.map { it[Keys.ONBOARDING_COMPLETE] ?: false }
     val learnIntroSeen: Flow<Boolean> = dataStore.data.map { it[Keys.LEARN_INTRO_SEEN] ?: false }
 
+    /** All-time best daily hydration streak, and the milestone ids already celebrated. */
+    val bestDailyStreak: Flow<Int> = dataStore.data.map { it[Keys.BEST_DAILY_STREAK] ?: 0 }
+    val celebratedMilestones: Flow<Set<String>> = dataStore.data.map { it[Keys.CELEBRATED_MILESTONES] ?: emptySet() }
+
+    /** Her own daily water goal. Absent until she sets one, and then it is hers, not a suggestion. */
+    val hydrationGoalMl: Flow<Int> = dataStore.data.map { it[Keys.HYDRATION_GOAL_ML] ?: StreakEngine.DEFAULT_GOAL_ML }
+
     val signedIn: Flow<Boolean> = dataStore.data.map { it[Keys.SIGNED_IN] ?: false }
     val userId: Flow<String?> = dataStore.data.map { it[Keys.USER_ID] }
     val email: Flow<String?> = dataStore.data.map { it[Keys.EMAIL] }
@@ -54,6 +67,9 @@ class GenesyxPreferencesDataStore @Inject constructor(
     suspend fun setFocus(mode: FocusMode) = dataStore.edit { it[Keys.FOCUS] = mode.name }.let {}
     suspend fun setOnboardingComplete(v: Boolean) = dataStore.edit { it[Keys.ONBOARDING_COMPLETE] = v }.let {}
     suspend fun setLearnIntroSeen(v: Boolean) = dataStore.edit { it[Keys.LEARN_INTRO_SEEN] = v }.let {}
+    suspend fun setBestDailyStreak(days: Int) = dataStore.edit { it[Keys.BEST_DAILY_STREAK] = days }.let {}
+    suspend fun setCelebratedMilestones(ids: Set<String>) = dataStore.edit { it[Keys.CELEBRATED_MILESTONES] = ids }.let {}
+    suspend fun setHydrationGoalMl(ml: Int) = dataStore.edit { it[Keys.HYDRATION_GOAL_ML] = ml }.let {}
 
     suspend fun setSession(userId: String, email: String?, displayName: String?) {
         dataStore.edit {

@@ -131,4 +131,52 @@ class CycleEngineTest {
         assertEquals(1, dayCells.count { it.isToday })
         assertTrue(dayCells.single { it.isToday }.date == today)
     }
+
+    // ── calendar bounds ──
+    //
+    // getCyclePhase's modulo happily projects backwards into months before the last recorded period
+    // and forwards forever. The calendar used to let the user page through all of it, painting
+    // period and ovulation days as confidently as real ones. These pin where it now stops.
+
+    @Test
+    fun `the calendar starts at the month of the last recorded period`() {
+        val settings = CycleSettings(LocalDate.of(2026, 6, 10), cycleLength, periodLength)
+        assertEquals(YearMonth.of(2026, 6), CycleEngine.earliestMonth(settings))
+    }
+
+    @Test
+    fun `the calendar stops a few cycles ahead of today`() {
+        val today = LocalDate.of(2026, 6, 15)
+        assertEquals(
+            YearMonth.of(2026, 6).plusMonths(CycleEngine.FORECAST_MONTHS),
+            CycleEngine.latestMonth(today),
+        )
+    }
+
+    @Test
+    fun `a month before the last period clamps forward to it`() {
+        val settings = CycleSettings(LocalDate.of(2026, 6, 10), cycleLength, periodLength)
+        val today = LocalDate.of(2026, 6, 15)
+        // There is no basis whatsoever for January — it must not be reachable.
+        val clamped = CycleEngine.clampMonth(YearMonth.of(2026, 1), settings, today)
+        assertEquals(YearMonth.of(2026, 6), clamped)
+    }
+
+    @Test
+    fun `a month beyond the forecast horizon clamps back to it`() {
+        val settings = CycleSettings(LocalDate.of(2026, 6, 10), cycleLength, periodLength)
+        val today = LocalDate.of(2026, 6, 15)
+        val clamped = CycleEngine.clampMonth(YearMonth.of(2099, 1), settings, today)
+        assertEquals(CycleEngine.latestMonth(today), clamped)
+    }
+
+    @Test
+    fun `a month inside the range is left alone`() {
+        val settings = CycleSettings(LocalDate.of(2026, 6, 10), cycleLength, periodLength)
+        val today = LocalDate.of(2026, 6, 15)
+        assertEquals(
+            YearMonth.of(2026, 7),
+            CycleEngine.clampMonth(YearMonth.of(2026, 7), settings, today),
+        )
+    }
 }

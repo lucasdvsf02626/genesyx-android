@@ -127,4 +127,34 @@ class AuthRepositoryTest {
         assertTrue(result is DataResult.Error)
         verify(exactly = 0) { session.signIn(any(), any(), any()) }
     }
+
+    @Test
+    fun `signOut ends the remote session, wipes local data, then clears the session`() = runTest {
+        // Sign-out used to clear the DataStore key and nothing else: the provider session survived
+        // (so a later sign-up could inherit it) and every Room row stayed on disk, readable by the
+        // next person to use the device.
+        coEvery { authService.signOut() } returns DataResult.Success(Unit)
+
+        val result = repo(backgroundScope).signOut()
+
+        assertTrue(result is DataResult.Success)
+        coVerifyOrder {
+            authService.signOut()
+            database.clearAllTables()
+            session.signOut()
+        }
+    }
+
+    @Test
+    fun `signOut clears local session and data even when the remote sign-out fails`() = runTest {
+        // Offline: the remote call fails, but "Log out" must still log the user out locally —
+        // otherwise the button silently does nothing and they stay signed in.
+        coEvery { authService.signOut() } returns DataResult.Error(RuntimeException("offline"))
+
+        val result = repo(backgroundScope).signOut()
+
+        assertTrue(result is DataResult.Success)
+        coVerify { database.clearAllTables() }
+        verify { session.signOut() }
+    }
 }

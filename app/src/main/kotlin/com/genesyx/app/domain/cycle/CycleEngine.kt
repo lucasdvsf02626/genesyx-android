@@ -75,6 +75,28 @@ object CycleEngine {
     fun cycleNumberFor(lastPeriodDate: LocalDate, cycleLength: Int, target: LocalDate = LocalDate.now()): Int =
         Math.floorDiv(daysBetween(lastPeriodDate, target).coerceAtLeast(0), cycleLength) + 1
 
+    /**
+     * How far ahead the calendar will project. The model assumes a fixed cycle and a fixed 14-day
+     * luteal phase, which is a reasonable near-term estimate and guesswork beyond a few cycles —
+     * so the calendar stops rather than painting confident phases into next year.
+     */
+    const val FORECAST_MONTHS = 3L
+
+    /**
+     * The oldest month worth showing: the one containing the last recorded period. Nothing before it
+     * is known — [getCyclePhase]'s modulo will happily project *backwards* into months the user has
+     * told us nothing about, and those days would render identically to real ones.
+     */
+    fun earliestMonth(settings: CycleSettings): YearMonth = YearMonth.from(settings.lastPeriodDate)
+
+    /** The furthest month worth showing — see [FORECAST_MONTHS]. */
+    fun latestMonth(today: LocalDate = LocalDate.now()): YearMonth =
+        YearMonth.from(today).plusMonths(FORECAST_MONTHS)
+
+    /** Keeps [month] inside [earliestMonth]..[latestMonth]. */
+    fun clampMonth(month: YearMonth, settings: CycleSettings, today: LocalDate = LocalDate.now()): YearMonth =
+        month.coerceIn(earliestMonth(settings), latestMonth(today))
+
     /** Sunday-first month grid with leading/trailing empty cells. */
     fun buildMonthGrid(
         monthAnchor: YearMonth,

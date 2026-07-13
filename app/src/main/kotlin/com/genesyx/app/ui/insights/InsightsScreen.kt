@@ -34,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -45,11 +46,8 @@ import com.genesyx.app.ui.navigation.Screen
 import com.genesyx.app.ui.theme.ElectricBlue
 import com.genesyx.app.ui.theme.ElectricLavender
 import com.genesyx.app.ui.theme.PowderBlue
-import kotlin.math.sin
 
-// Mock analytics values, ported verbatim from mockData.ts.
-private val insightBars = listOf(82, 78, 90, 85, 88, 80, 92)
-private val nutritionBars = listOf(60, 75, 70, 85, 78, 90, 82)
+private val weekdayLabels = listOf("M", "T", "W", "T", "F", "S", "S")
 
 @Composable
 fun InsightsScreen(
@@ -58,6 +56,8 @@ fun InsightsScreen(
 ) {
     val colors = MaterialTheme.colorScheme
     val ph by viewModel.phInsights.collectAsState()
+    val consistency by viewModel.consistencyInsights.collectAsState()
+    val hydration by viewModel.hydrationInsights.collectAsState()
 
     Column(
         modifier = Modifier
@@ -78,6 +78,9 @@ fun InsightsScreen(
             }
 
             Spacer(Modifier.height(12.dp))
+            ConsistencyCard(consistency)
+
+            Spacer(Modifier.height(12.dp))
             if (com.genesyx.app.core.FeatureFlags.PH_TRACKING) {
                 PhInsightsSection(ph) {
                     navController.navigate(Screen.Track.route) {
@@ -89,29 +92,7 @@ fun InsightsScreen(
             }
 
             Spacer(Modifier.height(12.dp))
-            BarsCard(
-                title = "Cycle regularity",
-                trailing = "Last 7 cycles",
-                values = insightBars,
-                labels = List(7) { "C${it + 1}" },
-                barHeight = 128.dp,
-                brush = Brush.verticalGradient(listOf(ElectricLavender.copy(alpha = 0.8f), ElectricLavender.copy(alpha = 0.4f))),
-                insight = "Your cycles are tracking with steady consistency — a small day-to-day variation is completely typical.",
-            )
-
-            Spacer(Modifier.height(12.dp))
-            SymptomPatternsCard()
-
-            Spacer(Modifier.height(12.dp))
-            BarsCard(
-                title = "Nutrition consistency",
-                trailing = null,
-                values = nutritionBars,
-                labels = listOf("M", "T", "W", "T", "F", "S", "S"),
-                barHeight = 112.dp,
-                brush = Brush.verticalGradient(listOf(ElectricBlue, PowderBlue)),
-                insight = "You've stayed close to your hydration goal four days this week — gentle progress.",
-            )
+            HydrationCard(hydration)
 
             Spacer(Modifier.height(24.dp))
         }
@@ -214,6 +195,17 @@ private fun PhInsightsSection(ph: PhInsights, onOpenTracker: () -> Unit) {
                 AvgTile("30-day avg", ph.avg30, Modifier.weight(1f))
             }
 
+            // How much data the trend rests on, so a two-reading average doesn't read as a verdict.
+            if (ph.readings30 > 0) {
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    if (ph.readings30 == 1) "Based on 1 reading in the last 30 days."
+                    else "Based on ${ph.readings30} readings in the last 30 days.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colors.onSurfaceVariant,
+                )
+            }
+
             Spacer(Modifier.height(16.dp))
             Text(ph.insight, style = MaterialTheme.typography.bodyLarge, color = colors.onSurface.copy(alpha = 0.8f))
             if (ph.recommendation.isNotEmpty()) {
@@ -222,6 +214,90 @@ private fun PhInsightsSection(ph: PhInsights, onOpenTracker: () -> Unit) {
             }
         }
     }
+}
+
+@Composable
+private fun ConsistencyCard(state: ConsistencyInsights) {
+    val colors = MaterialTheme.colorScheme
+    InsightsCard {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
+            Text("Consistency", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+            if (state.daysLoggedThisWeek > 0) {
+                Text(
+                    "${state.daysLoggedThisWeek} of 7 days",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = ElectricLavender,
+                    fontWeight = FontWeight.Medium,
+                )
+            }
+        }
+
+        Spacer(Modifier.height(18.dp))
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            state.weekActivity.forEachIndexed { i, logged ->
+                Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Box(
+                        Modifier
+                            .size(28.dp)
+                            .clip(CircleShape)
+                            .background(if (logged) ElectricLavender else colors.surfaceVariant.copy(alpha = 0.5f)),
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    Text(weekdayLabels[i], fontSize = 10.sp, color = colors.onSurfaceVariant)
+                }
+            }
+        }
+
+        Spacer(Modifier.height(16.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            // "Hydration", not "Daily" — this tile counts water only, and Home's "Streak" counts any
+            // logged activity. Two different numbers; they must not both be called a daily streak.
+            StreakTile("Hydration", state.dailyStreak, "d", Modifier.weight(1f))
+            StreakTile("Weekly streak", state.weeklyStreak, "w", Modifier.weight(1f))
+            StreakTile("Best", state.bestDailyStreak, "d", Modifier.weight(1f))
+        }
+
+        Spacer(Modifier.height(14.dp))
+        Text(state.insight, style = MaterialTheme.typography.bodyMedium, color = colors.onSurface.copy(alpha = 0.8f))
+    }
+}
+
+@Composable
+private fun StreakTile(label: String, value: Int, unit: String, modifier: Modifier = Modifier) {
+    val colors = MaterialTheme.colorScheme
+    Column(
+        modifier = modifier.clip(RoundedCornerShape(16.dp)).background(colors.surfaceVariant.copy(alpha = 0.4f)).padding(14.dp),
+    ) {
+        Eyebrow(label, color = colors.onSurfaceVariant)
+        Spacer(Modifier.height(4.dp))
+        Text(
+            if (value > 0) "$value$unit" else "—",
+            style = MaterialTheme.typography.titleLarge,
+            color = colors.onSurface,
+        )
+    }
+}
+
+@Composable
+private fun HydrationCard(state: HydrationInsights) {
+    val colors = MaterialTheme.colorScheme
+    if (!state.hasData) {
+        InsightsCard {
+            Text("Hydration", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+            Spacer(Modifier.height(12.dp))
+            Text(state.insight, style = MaterialTheme.typography.bodyLarge, color = colors.onSurfaceVariant)
+        }
+        return
+    }
+    BarsCard(
+        title = "Hydration",
+        trailing = state.deltaMlPerDay?.let { if (it >= 0) "+${it}ml/day" else "${it}ml/day" },
+        values = state.bars,
+        labels = weekdayLabels,
+        barHeight = 112.dp,
+        brush = Brush.verticalGradient(listOf(ElectricBlue, PowderBlue)),
+        insight = state.insight,
+    )
 }
 
 @Composable
@@ -268,23 +344,33 @@ private fun BarsCard(
             if (trailing != null) Text(trailing, style = MaterialTheme.typography.bodyMedium, color = ElectricLavender, fontWeight = FontWeight.Medium)
         }
         Spacer(Modifier.height(18.dp))
+        // Bars and labels are separate rows: sharing one fixed-height column let a tall bar (a day
+        // near the hydration goal) push its own label out of view.
         Row(
             modifier = Modifier.fillMaxWidth().height(barHeight),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.Bottom,
         ) {
-            values.forEachIndexed { i, v ->
-                Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Bottom) {
-                    Box(
-                        Modifier
-                            .fillMaxWidth()
-                            .fillMaxHeight(v / 100f)
-                            .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp))
-                            .background(brush),
-                    )
-                    Spacer(Modifier.height(6.dp))
-                    Text(labels[i], fontSize = 10.sp, color = colors.onSurfaceVariant)
-                }
+            values.forEach { v ->
+                Box(
+                    Modifier
+                        .weight(1f)
+                        .fillMaxHeight(v / 100f)
+                        .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp))
+                        .background(brush),
+                )
+            }
+        }
+        Spacer(Modifier.height(6.dp))
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            labels.forEach { label ->
+                Text(
+                    label,
+                    modifier = Modifier.weight(1f),
+                    fontSize = 10.sp,
+                    color = colors.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                )
             }
         }
         Spacer(Modifier.height(14.dp))
@@ -292,40 +378,3 @@ private fun BarsCard(
     }
 }
 
-@Composable
-private fun SymptomPatternsCard() {
-    val colors = MaterialTheme.colorScheme
-    InsightsCard {
-        Text("Symptom patterns", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
-        Spacer(Modifier.height(14.dp))
-        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            repeat(5) { r ->
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    repeat(7) { c ->
-                        val i = r * 7 + c
-                        val intensity = (sin(i * 1.7) + 1) / 2
-                        val alpha = when {
-                            intensity > 0.7 -> 0.5f
-                            intensity > 0.4 -> 0.3f
-                            intensity > 0.15 -> 0.15f
-                            else -> 0.05f
-                        }
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(26.dp)
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(ElectricLavender.tintOnWhite(alpha)),
-                        )
-                    }
-                }
-            }
-        }
-        Spacer(Modifier.height(14.dp))
-        Text(
-            "Fatigue tends to ease in the second half of your cycle — useful to plan rest accordingly.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = colors.onSurface.copy(alpha = 0.8f),
-        )
-    }
-}
