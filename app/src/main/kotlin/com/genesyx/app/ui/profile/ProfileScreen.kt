@@ -131,11 +131,6 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel = hi
                     Text(name, style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
                     Text(email ?: "Sign in to sync your data", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
                 }
-                if (signedIn) {
-                    Box(Modifier.clip(CircleShape).background(ElectricLavender.copy(alpha = 0.10f)).padding(horizontal = 10.dp, vertical = 4.dp)) {
-                        Text("PREMIUM", fontSize = 10.5.sp, fontWeight = FontWeight.SemiBold, color = ElectricLavender)
-                    }
-                }
             }
 
             Spacer(Modifier.height(16.dp))

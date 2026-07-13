@@ -121,7 +121,7 @@ fun PhTrackerCard(
 
             Spacer(Modifier.height(12.dp))
             Text(
-                "pH entries are stored on this device for now.",
+                "pH entries sync to your Genesyx account.",
                 style = MaterialTheme.typography.bodySmall,
                 color = colors.onSurfaceVariant,
             )

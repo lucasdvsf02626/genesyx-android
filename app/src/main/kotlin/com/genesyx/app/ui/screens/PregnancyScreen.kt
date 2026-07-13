@@ -15,7 +15,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.ChildCare
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Restaurant
@@ -47,7 +46,6 @@ import com.genesyx.app.ui.components.GxBackButton
 import com.genesyx.app.ui.components.GxGhostButton
 import com.genesyx.app.ui.components.GxPrimaryButton
 import com.genesyx.app.ui.components.tintOnWhite
-import com.genesyx.app.ui.theme.ElectricLavender
 import com.genesyx.app.ui.theme.ElectricPink
 import com.genesyx.app.ui.theme.PowderPink
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -183,7 +181,6 @@ private fun PregnancyHome(displayName: String, onBackToPrep: () -> Unit) {
         Spacer(Modifier.height(12.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             StatTile(Icons.Filled.ChildCare, "Trimester", "—", ElectricPink, Modifier.weight(1f))
-            StatTile(Icons.Filled.AutoAwesome, "Focus", "Folate", ElectricLavender, Modifier.weight(1f))
         }
 
         Spacer(Modifier.height(20.dp))

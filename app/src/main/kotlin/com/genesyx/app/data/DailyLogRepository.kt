@@ -36,11 +36,26 @@ class DailyLogRepository @Inject constructor(
     private val logger: Logger,
     @ApplicationScope private val scope: CoroutineScope,
 ) {
-    val logByDate: StateFlow<Map<LocalDate, DailyLog>> =
+    private val logsOrNull: StateFlow<Map<LocalDate, DailyLog>?> =
         session.userId
             .flatMapLatest { uid -> dao.observeAll(uid ?: SessionRepository.LOCAL_USER_ID) }
             .map { list -> list.associate { it.date to it.toDomain() } }
+            .stateIn(scope, SharingStarted.Eagerly, null)
+
+    val logByDate: StateFlow<Map<LocalDate, DailyLog>> =
+        logsOrNull
+            .map { it.orEmpty() }
             .stateIn(scope, SharingStarted.Eagerly, emptyMap())
+
+    /**
+     * False until Room's first emission lands. An editor must not seed a form from [logOn] before
+     * this is true: pre-load, an existing log is indistinguishable from no log, so saving that form
+     * would overwrite the real row with blanks.
+     */
+    val loaded: StateFlow<Boolean> =
+        logsOrNull
+            .map { it != null }
+            .stateIn(scope, SharingStarted.Eagerly, false)
 
     fun logOn(date: LocalDate): DailyLog = logByDate.value[date] ?: DailyLog()
 

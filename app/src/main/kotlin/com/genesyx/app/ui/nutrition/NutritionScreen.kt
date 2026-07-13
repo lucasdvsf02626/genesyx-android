@@ -178,7 +178,7 @@ private fun HydrationCard(waterMl: Int, goalMl: Int, weeklyStreak: Int, onAdd: (
                     Row(verticalAlignment = Alignment.Bottom) {
                         Text("%.1f".format(waterMl / 1000f), fontSize = 28.sp, fontWeight = FontWeight.SemiBold, color = colors.onSurface)
                         Spacer(Modifier.size(4.dp))
-                        Text("/ ${"%.1f".format(goalMl / 1000f)} L", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, modifier = Modifier.padding(bottom = 4.dp))
+                        Text("/ ${"%.1f".format(goalMl / 1000f)} L recommended", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, modifier = Modifier.padding(bottom = 4.dp))
                     }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -296,10 +296,10 @@ private fun SupplementPlanCard(onReview: () -> Unit) {
                 ) { Icon(Icons.Filled.Medication, null, tint = ElectricLavender) }
                 Spacer(Modifier.size(16.dp))
                 Column(Modifier.weight(1f)) {
-                    Text("Your supplement plan", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+                    Text("Suggested supplements", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        "Folate, Omega-3, Vitamin D, and Zinc — taken with breakfast.",
+                        "Folate, Omega-3, Vitamin D, and Zinc — best taken with breakfast.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = colors.onSurfaceVariant,
                     )
@@ -308,8 +308,6 @@ private fun SupplementPlanCard(onReview: () -> Unit) {
                         supplementPlan.forEachIndexed { i, s ->
                             Box(Modifier.offset(x = (i * -6).dp)) { SupplementAvatar(s.initial, i, bordered = true) }
                         }
-                        Spacer(Modifier.size(8.dp))
-                        Text("3 of 4 taken today", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
                     }
                 }
             }

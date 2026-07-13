@@ -46,10 +46,6 @@ import com.genesyx.app.ui.navigation.Screen
 import com.genesyx.app.ui.theme.ElectricBlue
 import com.genesyx.app.ui.theme.ElectricLavender
 import com.genesyx.app.ui.theme.PowderBlue
-import kotlin.math.sin
-
-// Mock analytics values, ported verbatim from mockData.ts.
-private val insightBars = listOf(82, 78, 90, 85, 88, 80, 92)
 
 private val weekdayLabels = listOf("M", "T", "W", "T", "F", "S", "S")
 
@@ -94,20 +90,6 @@ fun InsightsScreen(
                     }
                 }
             }
-
-            Spacer(Modifier.height(12.dp))
-            BarsCard(
-                title = "Cycle regularity",
-                trailing = "Last 7 cycles",
-                values = insightBars,
-                labels = List(7) { "C${it + 1}" },
-                barHeight = 128.dp,
-                brush = Brush.verticalGradient(listOf(ElectricLavender.copy(alpha = 0.8f), ElectricLavender.copy(alpha = 0.4f))),
-                insight = "Your cycles are tracking with steady consistency — a small day-to-day variation is completely typical.",
-            )
-
-            Spacer(Modifier.height(12.dp))
-            SymptomPatternsCard()
 
             Spacer(Modifier.height(12.dp))
             HydrationCard(hydration)
@@ -394,40 +376,3 @@ private fun BarsCard(
     }
 }
 
-@Composable
-private fun SymptomPatternsCard() {
-    val colors = MaterialTheme.colorScheme
-    InsightsCard {
-        Text("Symptom patterns", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
-        Spacer(Modifier.height(14.dp))
-        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            repeat(5) { r ->
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    repeat(7) { c ->
-                        val i = r * 7 + c
-                        val intensity = (sin(i * 1.7) + 1) / 2
-                        val alpha = when {
-                            intensity > 0.7 -> 0.5f
-                            intensity > 0.4 -> 0.3f
-                            intensity > 0.15 -> 0.15f
-                            else -> 0.05f
-                        }
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(26.dp)
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(ElectricLavender.tintOnWhite(alpha)),
-                        )
-                    }
-                }
-            }
-        }
-        Spacer(Modifier.height(14.dp))
-        Text(
-            "Fatigue tends to ease in the second half of your cycle — useful to plan rest accordingly.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = colors.onSurface.copy(alpha = 0.8f),
-        )
-    }
-}

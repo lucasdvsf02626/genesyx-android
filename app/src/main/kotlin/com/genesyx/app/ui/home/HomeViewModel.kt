@@ -35,6 +35,7 @@ data class HomeUiState(
     val todayFocusTitle: String? = null,
     val todayFocusBody: String? = null,
     val hydrationLitres: Float? = null,
+    /** A general daily recommendation, not a goal the user set. */
     val hydrationGoalLitres: Float = 2.4f,
     val streakDays: Int? = null,
     val isLoading: Boolean = false,

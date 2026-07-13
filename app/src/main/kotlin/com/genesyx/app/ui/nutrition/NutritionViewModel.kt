@@ -26,6 +26,7 @@ data class NutritionUiState(
     val headlineSub: String = "Set up your cycle to get personalised nutrition guidance.",
     val foods: List<PhaseFood> = emptyList(),
     val waterMl: Int = 0,
+    /** A general daily recommendation, not a goal the user set. Label it as such in the UI. */
     val waterGoalMl: Int = 2400,
     val weeklyStreak: Int = 0,
 )

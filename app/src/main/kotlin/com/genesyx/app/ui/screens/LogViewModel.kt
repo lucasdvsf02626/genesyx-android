@@ -8,6 +8,7 @@ import com.genesyx.app.data.DailyLogRepository
 import com.genesyx.app.domain.model.DailyLog
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.StateFlow
 import java.time.LocalDate
 import javax.inject.Inject
 
@@ -16,6 +17,9 @@ class LogViewModel @Inject constructor(
     private val dailyLogRepository: DailyLogRepository,
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
+
+    /** The form must not seed itself until this is true — see [DailyLogRepository.loaded]. */
+    val loaded: StateFlow<Boolean> = dailyLogRepository.loaded
 
     fun todaysLog(): DailyLog = dailyLogRepository.logOn(LocalDate.now())
 
