@@ -29,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -48,13 +49,18 @@ fun Eyebrow(text: String, color: Color = MaterialTheme.colorScheme.onSurfaceVari
 }
 
 /**
- * Genesyx primary lockup (G mark + wordmark). Theme-aware via `drawable-night` (white wordmark on
- * dark). [height] controls the wordmark height; width scales to keep the aspect ratio.
+ * Genesyx primary lockup (G mark + wordmark). The dark-ink wordmark is unreadable on a dark
+ * background, so the asset is picked from the active color scheme rather than a `drawable-night`
+ * qualifier — the in-app theme toggle never changes the system `uiMode` the qualifier reads.
+ * [height] controls the wordmark height; width scales to keep the aspect ratio.
  */
 @Composable
 fun BrandLockup(modifier: Modifier = Modifier, height: Dp = 30.dp) {
+    val onDarkBackground = MaterialTheme.colorScheme.background.luminance() < 0.5f
     Image(
-        painter = painterResource(R.drawable.brand_lockup),
+        painter = painterResource(
+            if (onDarkBackground) R.drawable.brand_lockup_dark else R.drawable.brand_lockup,
+        ),
         contentDescription = "Genesyx",
         modifier = modifier.height(height),
         contentScale = ContentScale.Fit,
