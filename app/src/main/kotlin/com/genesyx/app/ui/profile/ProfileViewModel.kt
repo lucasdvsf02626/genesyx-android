@@ -45,6 +45,8 @@ class ProfileViewModel @Inject constructor(
     val deleteError: StateFlow<String?> = _deleteError.asStateFlow()
     private val _deleted = MutableStateFlow(false)
     val deleted: StateFlow<Boolean> = _deleted.asStateFlow()
+    private val _signedOut = MutableStateFlow(false)
+    val signedOut: StateFlow<Boolean> = _signedOut.asStateFlow()
 
     fun setTheme(mode: ThemeMode) {
         // Drive the live app theme (DataStore) and sync the profile row (Room + Supabase).
@@ -59,7 +61,17 @@ class ProfileViewModel @Inject constructor(
         sessionRepository.updateDisplayName(name)
         viewModelScope.launch { profileRepository.setDisplayName(name) }
     }
-    fun signOut() = sessionRepository.signOut()
+    /**
+     * Signs out remotely + locally, then signals the screen to leave. The navigation is part of the
+     * fix, not polish: staying on Profile after sign-out leaves the user inside the authenticated
+     * shell writing to the shared guest bucket.
+     */
+    fun signOut() {
+        viewModelScope.launch {
+            authRepository.signOut()
+            _signedOut.value = true
+        }
+    }
 
     /** Permanently delete the account (remote + local), exposing loading/error to the UI. */
     fun deleteAccount() {

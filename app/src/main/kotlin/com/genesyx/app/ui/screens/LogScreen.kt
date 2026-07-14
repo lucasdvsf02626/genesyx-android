@@ -1,5 +1,6 @@
 package com.genesyx.app.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -26,7 +27,6 @@ import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Medication
-import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.SentimentDissatisfied
 import androidx.compose.material.icons.filled.SentimentNeutral
 import androidx.compose.material.icons.filled.SentimentSatisfied
@@ -38,6 +38,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -60,7 +61,6 @@ import com.genesyx.app.ui.components.GxPrimaryButton
 import com.genesyx.app.ui.components.ScreenHeader
 import com.genesyx.app.ui.theme.ElectricBlue
 import com.genesyx.app.ui.theme.ElectricLavender
-import com.genesyx.app.ui.theme.ElectricPink
 
 private val DEFAULT_SYMPTOMS = listOf("Headache", "Fatigue", "Cramps", "Nausea", "Bloating", "Acne", "Backache", "Tender breasts")
 private val SUPPLEMENTS = listOf("Folic acid", "Vitamin D", "Iron", "Omega-3")
@@ -72,11 +72,28 @@ private val moodIcons = mapOf(
     Mood.LOW to Icons.Filled.SentimentDissatisfied,
 )
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun LogScreen(onClose: () -> Unit, viewModel: LogViewModel = hiltViewModel()) {
+    val loaded by viewModel.loaded.collectAsState()
+
+    // Seeding the form from an unloaded store would show blanks over a real log, and saving that
+    // form would overwrite it. Wait for Room instead.
+    if (!loaded) {
+        Column(
+            modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
+        ) {
+            ScreenHeader(title = "Log Today", subtitle = "Quick notes about how you're feeling.", onBack = onClose)
+        }
+        return
+    }
+
+    LogForm(initial = viewModel.todaysLog(), onClose = onClose, viewModel = viewModel)
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun LogForm(initial: DailyLog, onClose: () -> Unit, viewModel: LogViewModel) {
     val colors = MaterialTheme.colorScheme
-    val initial = remember { viewModel.todaysLog() }
 
     var mood by remember { mutableStateOf(initial.mood) }
     var energy by remember { mutableStateOf(initial.energy) }
@@ -91,9 +108,17 @@ fun LogScreen(onClose: () -> Unit, viewModel: LogViewModel = hiltViewModel()) {
     var sleepOpen by remember { mutableStateOf(false) }
     var waterOpen by remember { mutableStateOf(false) }
     var suppOpen by remember { mutableStateOf(false) }
-    var offline by remember { mutableStateOf(false) }
+    var confirmDiscard by remember { mutableStateOf(false) }
 
     val allSymptoms = remember(symptoms) { (DEFAULT_SYMPTOMS + symptoms).distinct() }
+
+    val edited = DailyLog(mood, energy, symptoms, sleepMinutes, supplements, notes.ifBlank { null }, waterMl)
+    val dirty = edited != initial
+
+    // Leaving with unsaved edits used to bin them silently. Ask first — but only when there is
+    // something to lose, so an untouched form still closes on the first tap.
+    fun attemptClose() { if (dirty) confirmDiscard = true else onClose() }
+    BackHandler(enabled = dirty) { confirmDiscard = true }
 
     Column(
         modifier = Modifier
@@ -101,7 +126,7 @@ fun LogScreen(onClose: () -> Unit, viewModel: LogViewModel = hiltViewModel()) {
             .background(colors.background)
             .verticalScroll(rememberScrollState()),
     ) {
-        ScreenHeader(title = "Log Today", subtitle = "Quick notes about how you're feeling.", onBack = onClose)
+        ScreenHeader(title = "Log Today", subtitle = "Quick notes about how you're feeling.", onBack = ::attemptClose)
 
         Column(Modifier.padding(horizontal = 20.dp)) {
             // Mood
@@ -202,7 +227,7 @@ fun LogScreen(onClose: () -> Unit, viewModel: LogViewModel = hiltViewModel()) {
             }
 
             Spacer(Modifier.height(16.dp))
-            // Mini-cards 2x2
+            // Mini-cards
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 MiniCard(Icons.Filled.Bedtime, "Sleep", sleepMinutes?.let { "${it / 60}h ${it % 60}m" } ?: "—", ElectricLavender, Modifier.weight(1f)) { sleepOpen = true }
                 MiniCard(Icons.Outlined.WaterDrop, "Water", if (waterMl > 0) "%.1fL".format(waterMl / 1000f) else "—", ElectricBlue, Modifier.weight(1f)) { waterOpen = true }
@@ -210,7 +235,6 @@ fun LogScreen(onClose: () -> Unit, viewModel: LogViewModel = hiltViewModel()) {
             Spacer(Modifier.height(12.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 MiniCard(Icons.Filled.Medication, "Supplements", "${supplements.size} of ${SUPPLEMENTS.size}", ElectricLavender, Modifier.weight(1f)) { suppOpen = true }
-                MiniCard(Icons.Filled.Restaurant, "Nutrition", "On track", ElectricPink, Modifier.weight(1f)) {}
             }
 
             // Notes
@@ -224,27 +248,43 @@ fun LogScreen(onClose: () -> Unit, viewModel: LogViewModel = hiltViewModel()) {
             )
 
             Spacer(Modifier.height(20.dp))
-            if (offline) {
-                Text(
-                    "You're offline — reconnect to save your log.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = colors.error,
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
-                )
-            }
             GxPrimaryButton(
                 text = "Save log",
                 onClick = {
-                    if (!viewModel.isOnline()) {
-                        offline = true
-                    } else {
-                        viewModel.save(DailyLog(mood, energy, symptoms, sleepMinutes, supplements, notes.ifBlank { null }, waterMl))
-                        onClose()
-                    }
+                    // Saves unconditionally, online or off: the write lands in Room and, if the push
+                    // fails, queues for a WorkManager retry. Nothing is lost, so nothing is blocked.
+                    viewModel.save(edited)
+                    onClose()
                 },
             )
             Spacer(Modifier.height(24.dp))
         }
+    }
+
+    if (confirmDiscard) {
+        AlertDialog(
+            onDismissRequest = { confirmDiscard = false },
+            shape = RoundedCornerShape(20.dp),
+            containerColor = colors.surface,
+            title = { Text("Discard your changes?", style = MaterialTheme.typography.titleLarge, color = colors.onSurface) },
+            text = {
+                Text(
+                    "This log hasn't been saved yet. Leaving now loses what you've entered.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colors.onSurfaceVariant,
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { confirmDiscard = false; onClose() }) {
+                    Text("Discard", color = colors.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmDiscard = false }) {
+                    Text("Keep editing", color = ElectricLavender)
+                }
+            },
+        )
     }
 
     if (sleepOpen) {

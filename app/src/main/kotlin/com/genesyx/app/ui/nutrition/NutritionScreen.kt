@@ -48,12 +48,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.genesyx.app.domain.content.Article
 import com.genesyx.app.domain.content.PhaseFood
-import com.genesyx.app.domain.content.nutritionArticles
+import com.genesyx.app.domain.content.learnArticles
 import com.genesyx.app.domain.content.supplementPlan
+import com.genesyx.app.domain.streaks.StreakEngine
 import com.genesyx.app.ui.components.Eyebrow
 import com.genesyx.app.ui.components.GxPrimaryButton
+import com.genesyx.app.ui.navigation.Screen
 import com.genesyx.app.ui.ph.PhTrackerSection
 import com.genesyx.app.ui.theme.ElectricBlue
 import com.genesyx.app.ui.theme.ElectricLavender
@@ -68,7 +69,7 @@ fun NutritionScreen(
     val state by viewModel.uiState.collectAsState()
     var expandedFood by remember { mutableStateOf<String?>(null) }
     var planOpen by remember { mutableStateOf(false) }
-    var articleOpen by remember { mutableStateOf<Article?>(null) }
+    var goalOpen by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -95,8 +96,11 @@ fun NutritionScreen(
             HydrationCard(
                 waterMl = state.waterMl,
                 goalMl = state.waterGoalMl,
+                weeklyStreak = state.weeklyStreak,
+                daysOnGoal = state.daysOnGoal,
                 onAdd = { viewModel.adjustWater(200) },
                 onRemove = { viewModel.adjustWater(-200) },
+                onEditGoal = { goalOpen = true },
             )
 
             if (com.genesyx.app.core.FeatureFlags.PH_TRACKING) {
@@ -112,13 +116,25 @@ fun NutritionScreen(
 
                 Spacer(Modifier.height(12.dp))
                 SupplementPlanCard(onReview = { planOpen = true })
-
-                Spacer(Modifier.height(16.dp))
-                ArticlesSection(onOpen = { articleOpen = it })
             }
+
+            // Outside the cycle gate: Learn is most useful to someone who hasn't set up a cycle yet.
+            Spacer(Modifier.height(16.dp))
+            ArticlesSection(
+                onOpen = { navController.navigate(Screen.ArticleDetail.create(it)) },
+                onSeeAll = { navController.navigate(Screen.Learn.route) },
+            )
 
             Spacer(Modifier.height(24.dp))
         }
+    }
+
+    if (goalOpen) {
+        GoalDialog(
+            goalMl = state.waterGoalMl,
+            onDismiss = { goalOpen = false },
+            onSave = { viewModel.setWaterGoal(it); goalOpen = false },
+        )
     }
 
     if (planOpen) {
@@ -150,31 +166,18 @@ fun NutritionScreen(
             confirmButton = { TextButton(onClick = { planOpen = false }) { Text("Got it", color = ElectricLavender) } },
         )
     }
-
-    articleOpen?.let { article ->
-        AlertDialog(
-            onDismissRequest = { articleOpen = null },
-            shape = RoundedCornerShape(20.dp),
-            containerColor = colors.surface,
-            title = { Text(article.title, style = MaterialTheme.typography.titleLarge, color = colors.onSurface) },
-            text = {
-                Column {
-                    Eyebrow(article.read, color = colors.onSurfaceVariant)
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        "Keep the focus simple: regular meals, steady hydration, and phase-aware foods. Use your logs and pH tracker to notice patterns over time rather than chasing perfection.",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = colors.onSurfaceVariant,
-                    )
-                }
-            },
-            confirmButton = { TextButton(onClick = { articleOpen = null }) { Text("Done", color = ElectricLavender) } },
-        )
-    }
 }
 
 @Composable
-private fun HydrationCard(waterMl: Int, goalMl: Int, onAdd: () -> Unit, onRemove: () -> Unit) {
+private fun HydrationCard(
+    waterMl: Int,
+    goalMl: Int,
+    weeklyStreak: Int,
+    daysOnGoal: Int,
+    onAdd: () -> Unit,
+    onRemove: () -> Unit,
+    onEditGoal: () -> Unit,
+) {
     val colors = MaterialTheme.colorScheme
     val remaining = (goalMl - waterMl).coerceAtLeast(0)
     Card(
@@ -195,7 +198,7 @@ private fun HydrationCard(waterMl: Int, goalMl: Int, onAdd: () -> Unit, onRemove
                     Row(verticalAlignment = Alignment.Bottom) {
                         Text("%.1f".format(waterMl / 1000f), fontSize = 28.sp, fontWeight = FontWeight.SemiBold, color = colors.onSurface)
                         Spacer(Modifier.size(4.dp))
-                        Text("/ ${"%.1f".format(goalMl / 1000f)} L", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, modifier = Modifier.padding(bottom = 4.dp))
+                        Text("/ ${"%.1f".format(goalMl / 1000f)} L goal", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, modifier = Modifier.padding(bottom = 4.dp))
                     }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -212,17 +215,94 @@ private fun HydrationCard(waterMl: Int, goalMl: Int, onAdd: () -> Unit, onRemove
                 trackColor = colors.surfaceVariant,
             )
             Spacer(Modifier.height(12.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Outlined.WaterDrop, null, tint = colors.onSurfaceVariant, modifier = Modifier.size(14.dp))
-                Spacer(Modifier.size(6.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Outlined.WaterDrop, null, tint = colors.onSurfaceVariant, modifier = Modifier.size(14.dp))
+                    Spacer(Modifier.size(6.dp))
+                    Text(
+                        if (remaining > 0) "${remaining}ml to go" else "Goal reached — nice work",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = colors.onSurfaceVariant,
+                    )
+                }
+                // A TextButton, not a tappable label: it carries Material's 48dp touch target.
+                TextButton(onClick = onEditGoal) {
+                    Text("Edit goal", style = MaterialTheme.typography.bodyMedium, color = ElectricLavender)
+                }
+            }
+            if (daysOnGoal >= 1) {
                 Text(
-                    if (remaining > 0) "${remaining}ml to go" else "Target reached — nice work",
+                    if (daysOnGoal == 1) "1 day on goal this week" else "$daysOnGoal days on goal this week",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = colors.onSurfaceVariant,
+                    color = colors.onSurfaceVariant.copy(alpha = 0.7f),
+                )
+            }
+            if (weeklyStreak >= 1) {
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    if (weeklyStreak == 1) "1 steady week" else "$weeklyStreak steady weeks",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colors.onSurfaceVariant.copy(alpha = 0.7f),
                 )
             }
         }
     }
+}
+
+/**
+ * Sets the goal the whole app measures her against. Steps in [StreakEngine.GOAL_STEP_ML] because
+ * that is the pour the log buttons add, so every reachable goal is one she can land on exactly.
+ */
+@Composable
+private fun GoalDialog(goalMl: Int, onDismiss: () -> Unit, onSave: (Int) -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    var draft by remember(goalMl) { mutableStateOf(goalMl) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(20.dp),
+        containerColor = colors.surface,
+        title = { Text("Daily water goal", style = MaterialTheme.typography.titleLarge, color = colors.onSurface) },
+        text = {
+            Column {
+                Text(
+                    "How much you're aiming for each day. Your streaks are measured against this.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colors.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(20.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    StepperButton(
+                        Icons.Filled.Remove,
+                        "Lower goal",
+                        colors.surfaceVariant,
+                        colors.onSurface,
+                    ) { draft = (draft - StreakEngine.GOAL_STEP_ML).coerceIn(StreakEngine.GOAL_RANGE_ML) }
+                    Text(
+                        "${"%.1f".format(draft / 1000f)} L",
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = colors.onSurface,
+                    )
+                    StepperButton(
+                        Icons.Filled.Add,
+                        "Raise goal",
+                        ElectricLavender,
+                        Color.White,
+                    ) { draft = (draft + StreakEngine.GOAL_STEP_ML).coerceIn(StreakEngine.GOAL_RANGE_ML) }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = { onSave(draft) }) { Text("Save", color = ElectricLavender) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel", color = colors.onSurfaceVariant) } },
+    )
 }
 
 @Composable
@@ -305,10 +385,10 @@ private fun SupplementPlanCard(onReview: () -> Unit) {
                 ) { Icon(Icons.Filled.Medication, null, tint = ElectricLavender) }
                 Spacer(Modifier.size(16.dp))
                 Column(Modifier.weight(1f)) {
-                    Text("Your supplement plan", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+                    Text("Suggested supplements", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        "Folate, Omega-3, Vitamin D, and Zinc — taken with breakfast.",
+                        "Folate, Omega-3, Vitamin D, and Zinc — best taken with breakfast.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = colors.onSurfaceVariant,
                     )
@@ -317,8 +397,6 @@ private fun SupplementPlanCard(onReview: () -> Unit) {
                         supplementPlan.forEachIndexed { i, s ->
                             Box(Modifier.offset(x = (i * -6).dp)) { SupplementAvatar(s.initial, i, bordered = true) }
                         }
-                        Spacer(Modifier.size(8.dp))
-                        Text("3 of 4 taken today", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
                     }
                 }
             }
@@ -347,29 +425,33 @@ private fun SupplementAvatar(initial: String, index: Int, bordered: Boolean = fa
     }
 }
 
+/** Entry point into the Learn section. Each tile opens its own article; "See all" opens the landing. */
 @Composable
-private fun ArticlesSection(onOpen: (Article) -> Unit) {
+private fun ArticlesSection(onOpen: (String) -> Unit, onSeeAll: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     Column {
         Eyebrow("Learn more", color = colors.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp, bottom = 10.dp))
-        nutritionArticles.forEach { a ->
+        learnArticles.forEach { a ->
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 8.dp)
                     .clip(RoundedCornerShape(16.dp))
                     .background(colors.surface)
-                    .clickable { onOpen(a) }
+                    .clickable { onOpen(a.slug) }
                     .padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(Modifier.weight(1f)) {
                     Text(a.title, style = MaterialTheme.typography.labelLarge, color = colors.onSurface)
                     Spacer(Modifier.height(2.dp))
-                    Text(a.read, fontSize = 11.5.sp, color = colors.onSurfaceVariant)
+                    Text(a.readingTime, fontSize = 11.5.sp, color = colors.onSurfaceVariant)
                 }
                 Icon(Icons.Filled.ChevronRight, null, tint = colors.onSurfaceVariant, modifier = Modifier.size(18.dp))
             }
+        }
+        TextButton(onClick = onSeeAll, modifier = Modifier.padding(start = 4.dp)) {
+            Text("See all articles", style = MaterialTheme.typography.bodyMedium, color = ElectricLavender)
         }
     }
 }

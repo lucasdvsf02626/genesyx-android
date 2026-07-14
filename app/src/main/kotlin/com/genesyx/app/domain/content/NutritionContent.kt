@@ -5,7 +5,7 @@ import com.genesyx.app.domain.model.Phase
 
 /**
  * Nutrition-screen content, ported verbatim from the web `screens/Nutrition.tsx` (`PHASE_FOODS`,
- * `PHASE_DESCRIPTION`) + the supplement plan + `mockData.articles`. Note: the Nutrition screen uses
+ * `PHASE_DESCRIPTION`) + the supplement plan. Note: the Nutrition screen uses
  * this richer per-phase data, NOT the shorter `phaseFoods` in CycleContent.
  */
 
@@ -132,13 +132,4 @@ val supplementPlan = listOf(
     SupplementPlanItem("O", "Omega-3 (DHA/EPA)", "Hormone balance and reduced inflammation."),
     SupplementPlanItem("D", "Vitamin D (600–1000 IU)", "Supports ovulation and overall wellbeing."),
     SupplementPlanItem("Z", "Zinc (8–11 mg)", "Supports the LH surge that triggers ovulation."),
-)
-
-/** Learn-more article tiles (title + read time), from `mockData.articles`. */
-data class Article(val title: String, val read: String)
-
-val nutritionArticles = listOf(
-    Article("Eating for your luteal phase", "4 min read"),
-    Article("How hydration shapes fertility", "3 min read"),
-    Article("A gentle guide to supplements", "6 min read"),
 )

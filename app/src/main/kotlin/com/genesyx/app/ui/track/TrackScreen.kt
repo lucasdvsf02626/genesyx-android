@@ -33,6 +33,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -54,10 +55,13 @@ import com.genesyx.app.domain.cycle.CycleEngine
 import com.genesyx.app.domain.model.CalendarCell
 import com.genesyx.app.domain.model.CycleSettings
 import com.genesyx.app.domain.model.DayType
+import com.genesyx.app.domain.model.LogDay
 import com.genesyx.app.domain.model.Phase
 import com.genesyx.app.ui.components.CycleSettingsDialog
+import com.genesyx.app.ui.components.DailyLogSummary
 import com.genesyx.app.ui.components.Eyebrow
 import com.genesyx.app.ui.components.GxPrimaryButton
+import com.genesyx.app.ui.components.PhReadingRow
 import com.genesyx.app.ui.components.tintOnWhite
 import com.genesyx.app.ui.navigation.Screen
 import com.genesyx.app.ui.ph.PhTrackerSection
@@ -80,8 +84,10 @@ fun TrackScreen(
     viewModel: TrackViewModel = hiltViewModel(),
 ) {
     val settings by viewModel.settings.collectAsState()
+    val logDays by viewModel.logDays.collectAsState()
     TrackContent(
         settings = settings,
+        logDays = logDays,
         onNavigate = { navController.navigate(it) },
         onSaveCycle = { viewModel.saveCycleSettings(it) },
     )
@@ -90,6 +96,7 @@ fun TrackScreen(
 @Composable
 fun TrackContent(
     settings: CycleSettings?,
+    logDays: Map<LocalDate, LogDay> = emptyMap(),
     onNavigate: (String) -> Unit,
     onSaveCycle: (CycleSettings) -> Unit,
 ) {
@@ -99,6 +106,12 @@ fun TrackContent(
     var monthAnchor by remember { mutableStateOf(YearMonth.now()) }
     var showCycleDialog by remember { mutableStateOf(false) }
     var selectedDay by remember { mutableStateOf<CalendarCell.Day?>(null) }
+
+    // Settings arrive asynchronously, and editing them moves the earliest month. Pull the anchor
+    // back in range rather than leaving it stranded on a month the calendar no longer covers.
+    LaunchedEffect(settings) {
+        settings?.let { monthAnchor = CycleEngine.clampMonth(monthAnchor, it, today) }
+    }
 
     Column(
         modifier = Modifier
@@ -154,12 +167,21 @@ fun TrackContent(
         ) {
             Column(Modifier.padding(20.dp)) {
                 // Month nav
+                // The calendar only spans what is actually knowable: from the month of the last
+                // recorded period (before it, there is no basis at all) to a few cycles ahead.
+                // Unbounded nav let the user page to 2099 or to years before she ever logged, with
+                // every day painted as confidently as today.
+                val earliest = settings?.let { CycleEngine.earliestMonth(it) }
+                val latest = remember(today) { CycleEngine.latestMonth(today) }
+                val canGoBack = earliest != null && monthAnchor > earliest
+                val canGoForward = monthAnchor < latest
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    MonthNavButton(Icons.Filled.ChevronLeft, "Previous month") {
+                    MonthNavButton(Icons.Filled.ChevronLeft, "Previous month", enabled = canGoBack) {
                         monthAnchor = monthAnchor.minusMonths(1)
                     }
                     Text(
@@ -167,7 +189,7 @@ fun TrackContent(
                         style = MaterialTheme.typography.bodyMedium,
                         color = colors.onSurfaceVariant,
                     )
-                    MonthNavButton(Icons.Filled.ChevronRight, "Next month") {
+                    MonthNavButton(Icons.Filled.ChevronRight, "Next month", enabled = canGoForward) {
                         monthAnchor = monthAnchor.plusMonths(1)
                     }
                 }
@@ -201,7 +223,7 @@ fun TrackContent(
                                 Box(Modifier.weight(1f).padding(2.dp)) {
                                     when (cell) {
                                         is CalendarCell.Empty -> Spacer(Modifier.aspectRatio(1f))
-                                        is CalendarCell.Day -> DayCell(cell) { selectedDay = cell }
+                                        is CalendarCell.Day -> DayCell(cell, today) { selectedDay = cell }
                                     }
                                 }
                             }
@@ -277,40 +299,69 @@ fun TrackContent(
     }
 
     selectedDay?.let { day ->
-        DayDetailDialog(day = day, today = today, onDismiss = { selectedDay = null })
+        DayDetailDialog(
+            day = day,
+            logDay = logDays[day.date],
+            today = today,
+            onDismiss = { selectedDay = null },
+        )
     }
 }
 
 @Composable
-private fun MonthNavButton(icon: androidx.compose.ui.graphics.vector.ImageVector, cd: String, onClick: () -> Unit) {
+private fun MonthNavButton(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    cd: String,
+    enabled: Boolean = true,
+    onClick: () -> Unit,
+) {
     val colors = MaterialTheme.colorScheme
     Box(
         modifier = Modifier
             .size(32.dp)
             .clip(CircleShape)
-            .background(colors.surfaceVariant)
-            .clickable(onClick = onClick),
+            .background(colors.surfaceVariant.copy(alpha = if (enabled) 1f else 0.4f))
+            .clickable(enabled = enabled, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(icon, cd, tint = colors.onSurface, modifier = Modifier.size(20.dp))
+        Icon(
+            icon,
+            cd,
+            tint = if (enabled) colors.onSurface else colors.onSurface.copy(alpha = 0.3f),
+            modifier = Modifier.size(20.dp),
+        )
     }
 }
 
+/**
+ * A day of the cycle. Days after [today] are **predictions** from a fixed-length model, not
+ * something the user recorded, so they are drawn faded and outlined rather than solid — the grid
+ * used to render a projected ovulation day exactly as confidently as one that had already happened.
+ */
 @Composable
-private fun DayCell(cell: CalendarCell.Day, onClick: () -> Unit) {
+private fun DayCell(cell: CalendarCell.Day, today: LocalDate, onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     val type = CycleEngine.dayTypeFor(cell.info)
+    val predicted = cell.date.isAfter(today)
 
-    val bg = when (type) {
+    val base = when (type) {
         DayType.PERIOD -> PowderPink.tintOnWhite(0.55f)
         DayType.FERTILE -> PowderBlue.tintOnWhite(0.55f)
         DayType.OVULATION -> ElectricLavender
         DayType.LUTEAL -> BabyLavender.tintOnWhite(0.25f)
         DayType.FOLLICULAR -> colors.surface
     }
-    val fg = if (type == DayType.OVULATION) Color.White else colors.onSurface
+    val bg = if (predicted) base.copy(alpha = 0.3f) else base
+
+    // White-on-lavender only reads on the solid ovulation fill; a faded one needs normal ink.
+    val fg = when {
+        predicted -> colors.onSurface.copy(alpha = 0.65f)
+        type == DayType.OVULATION -> Color.White
+        else -> colors.onSurface
+    }
     val border = when {
         cell.isToday -> BorderStroke(2.dp, colors.onSurface)
+        predicted -> BorderStroke(1.dp, colors.outline)
         type == DayType.FOLLICULAR -> BorderStroke(1.dp, colors.outline)
         else -> null
     }
@@ -382,11 +433,27 @@ private fun Legend() {
                 }
             }
         }
+        Spacer(Modifier.height(8.dp))
+        Text(
+            "Faded days are predictions — they shift as you log.",
+            fontSize = 11.5.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
+/**
+ * [logDay] is what the user actually logged on [day] — null when nothing was. A future day has
+ * nothing to show but the prediction; a past day shows its log, and only claims there isn't one
+ * after the store has been asked.
+ */
 @Composable
-private fun DayDetailDialog(day: CalendarCell.Day, today: LocalDate, onDismiss: () -> Unit) {
+private fun DayDetailDialog(
+    day: CalendarCell.Day,
+    logDay: LogDay?,
+    today: LocalDate,
+    onDismiss: () -> Unit,
+) {
     val colors = MaterialTheme.colorScheme
     val phase = day.info.phase
     val isFuture = day.date.isAfter(today)
@@ -398,19 +465,42 @@ private fun DayDetailDialog(day: CalendarCell.Day, today: LocalDate, onDismiss: 
         containerColor = colors.surface,
         title = { Text(day.date.format(dayTitleFormat), style = MaterialTheme.typography.titleLarge, color = colors.onSurface) },
         text = {
-            Column {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 Eyebrow("Day ${day.info.dayOfCycle} · ${phaseLabel.getValue(phase)}", color = ElectricLavender)
                 Spacer(Modifier.height(8.dp))
-                Text(
-                    text = when {
-                        isFuture && phase == Phase.OVULATORY -> "Predicted: ovulation day — peak fertility."
-                        isFuture && isFertile -> "Predicted: fertile window."
-                        isFuture -> "Predicted: ${phaseLabel.getValue(phase).lowercase()}."
-                        else -> "No log yet for this day."
-                    },
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = colors.onSurfaceVariant,
-                )
+
+                if (isFuture) {
+                    Text(
+                        text = when {
+                            phase == Phase.OVULATORY -> "Predicted: ovulation day — peak fertility."
+                            isFertile -> "Predicted: fertile window."
+                            else -> "Predicted: ${phaseLabel.getValue(phase).lowercase()}."
+                        },
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = colors.onSurfaceVariant,
+                    )
+                    return@Column
+                }
+
+                val hasLog = logDay != null && !logDay.isEmpty
+                if (!hasLog) {
+                    Text(
+                        "Nothing logged on this day.",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = colors.onSurfaceVariant,
+                    )
+                    return@Column
+                }
+
+                if (logDay!!.hasDailyContent) {
+                    DailyLogSummary(logDay.dailyLog!!)
+                }
+                if (logDay.phReadings.isNotEmpty()) {
+                    if (logDay.hasDailyContent) Spacer(Modifier.height(12.dp))
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        logDay.phReadings.forEach { PhReadingRow(it) }
+                    }
+                }
             }
         },
         confirmButton = {

@@ -27,6 +27,7 @@ object PhInsightLogic {
         }
 
         val last7 = sorted.filter { it.recordedAt.isAfter(now.minusDays(7)) }
+        val last30 = sorted.filter { it.recordedAt.isAfter(now.minusDays(30)) }
         val avg7 = avgWithin(7)
         val avg30 = avgWithin(30)
 
@@ -63,6 +64,7 @@ object PhInsightLogic {
             trend = trend,
             avg7 = avg7,
             avg30 = avg30,
+            readings30 = last30.size,
             insight = insight,
             recommendation = recommendation,
         )

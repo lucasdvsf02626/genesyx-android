@@ -36,7 +36,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.genesyx.app.ui.components.BrandOrb
+import com.genesyx.app.ui.components.BrandLockup
 import com.genesyx.app.ui.components.Eyebrow
 import com.genesyx.app.ui.components.GxGhostButton
 import com.genesyx.app.ui.components.GxPrimaryButton
@@ -71,7 +71,7 @@ fun ReadinessSummaryScreen(onUnlockGuide: () -> Unit, onContinue: () -> Unit, on
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Spacer(Modifier.height(24.dp))
-        BrandOrb(size = 80.dp)
+        BrandLockup(height = 32.dp)
         Spacer(Modifier.height(20.dp))
         Box(
             modifier = Modifier
@@ -155,7 +155,7 @@ fun ReadinessSummaryScreen(onUnlockGuide: () -> Unit, onContinue: () -> Unit, on
             leadingIcon = Icons.Outlined.MenuBook,
         )
         Spacer(Modifier.height(4.dp))
-        GxGhostButton(text = "Continue to dashboard", onClick = onContinue)
+        GxGhostButton(text = "Register / Login to continue", onClick = onContinue)
     }
 }
 

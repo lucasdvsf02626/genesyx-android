@@ -69,7 +69,12 @@ fun CycleSettingsDialog(
     val colors = MaterialTheme.colorScheme
     val today = remember { LocalDate.now() }
 
-    var lastPeriod by remember { mutableStateOf(current?.lastPeriodDate ?: today) }
+    // Null until the user actually picks one. It used to default to `today`, so opening the dialog
+    // and tapping Save silently committed "my period started today" — a date she never entered —
+    // and Home then rendered "DAY 1 · PERIOD" from it with complete confidence. Every phase,
+    // fertile window and prediction in the app is derived from this one value, so it must come
+    // from her or not exist.
+    var lastPeriod by remember { mutableStateOf(current?.lastPeriodDate) }
     var cycleLength by remember { mutableStateOf(current?.cycleLength ?: CycleEngine.DEFAULT_CYCLE_LENGTH) }
     var periodLength by remember { mutableStateOf(current?.periodLength ?: CycleEngine.DEFAULT_PERIOD_LENGTH) }
     var showDatePicker by remember { mutableStateOf(false) }
@@ -102,9 +107,9 @@ fun CycleSettingsDialog(
                     contentAlignment = Alignment.CenterStart,
                 ) {
                     Text(
-                        lastPeriod.format(dateLabelFormat),
+                        lastPeriod?.format(dateLabelFormat) ?: "Select date",
                         style = MaterialTheme.typography.bodyLarge,
-                        color = colors.onSurface,
+                        color = if (lastPeriod != null) colors.onSurface else colors.onSurfaceVariant,
                     )
                 }
 
@@ -128,10 +133,17 @@ fun CycleSettingsDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = {
-                onSave(CycleSettings(lastPeriod, cycleLength, periodLength))
-            }) {
-                Text("Save", color = ElectricLavender, fontWeight = FontWeight.SemiBold)
+            // No date, no save — there is nothing to derive a cycle from.
+            val chosen = lastPeriod
+            TextButton(
+                enabled = chosen != null,
+                onClick = { if (chosen != null) onSave(CycleSettings(chosen, cycleLength, periodLength)) },
+            ) {
+                Text(
+                    "Save",
+                    color = if (chosen != null) ElectricLavender else colors.onSurfaceVariant.copy(alpha = 0.5f),
+                    fontWeight = FontWeight.SemiBold,
+                )
             }
         },
         dismissButton = {
@@ -143,7 +155,9 @@ fun CycleSettingsDialog(
 
     if (showDatePicker) {
         val state = rememberDatePickerState(
-            initialSelectedDateMillis = lastPeriod.toUtcMillis(),
+            // Nothing pre-selected when she has never set one: pre-selecting today would let two
+            // taps recreate the very default this fix removes.
+            initialSelectedDateMillis = lastPeriod?.toUtcMillis(),
             selectableDates = object : SelectableDates {
                 override fun isSelectableDate(utcTimeMillis: Long): Boolean =
                     utcTimeMillis <= today.toUtcMillis()
@@ -152,10 +166,19 @@ fun CycleSettingsDialog(
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
-                TextButton(onClick = {
-                    state.selectedDateMillis?.let { lastPeriod = it.utcMillisToLocalDate() }
-                    showDatePicker = false
-                }) { Text("OK", color = ElectricLavender) }
+                val picked = state.selectedDateMillis
+                TextButton(
+                    enabled = picked != null,
+                    onClick = {
+                        picked?.let { lastPeriod = it.utcMillisToLocalDate() }
+                        showDatePicker = false
+                    },
+                ) {
+                    Text(
+                        "OK",
+                        color = if (picked != null) ElectricLavender else colors.onSurfaceVariant.copy(alpha = 0.5f),
+                    )
+                }
             },
             dismissButton = {
                 TextButton(onClick = { showDatePicker = false }) {

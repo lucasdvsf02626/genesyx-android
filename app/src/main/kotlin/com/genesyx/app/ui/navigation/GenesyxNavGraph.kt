@@ -12,6 +12,9 @@ import com.genesyx.app.ui.clients.ClientsScreen
 import com.genesyx.app.ui.history.LogHistoryScreen
 import com.genesyx.app.ui.home.HomeScreen
 import com.genesyx.app.ui.insights.InsightsScreen
+import com.genesyx.app.ui.learn.ArticleDetailScreen
+import com.genesyx.app.ui.learn.LearnScreen
+import com.genesyx.app.ui.learn.LearnSearchScreen
 import com.genesyx.app.ui.onboarding.OnboardingIntroScreen
 import com.genesyx.app.ui.onboarding.OnboardingQuizScreen
 import com.genesyx.app.ui.onboarding.ReadinessSummaryScreen
@@ -66,21 +69,15 @@ fun GenesyxNavGraph(
         composable(Screen.ReadinessSummary.route) {
             ReadinessSummaryScreen(
                 onUnlockGuide = { navController.navigate(Screen.Waitlist.route) },
-                onContinue = {
-                    navController.navigate(Screen.Home.route) {
-                        popUpTo(Screen.ReadinessSummary.route) { inclusive = true }
-                    }
-                },
+                // Dashboard is gated behind an account: send guests to register/login, not Home.
+                onContinue = { navController.navigate(Screen.Auth.route) },
                 onBack = { navController.popBackStack() },
             )
         }
         composable(Screen.Waitlist.route) {
             WaitlistScreen(
-                onContinue = {
-                    navController.navigate(Screen.Home.route) {
-                        popUpTo(Screen.ReadinessSummary.route) { inclusive = true }
-                    }
-                },
+                // Same gate: the free-guide path must also register/login before the dashboard.
+                onContinue = { navController.navigate(Screen.Auth.route) },
                 onBack = { navController.popBackStack() },
             )
         }
@@ -105,11 +102,23 @@ fun GenesyxNavGraph(
         composable(Screen.Clients.route) {
             ClientsScreen(onBack = { navController.popBackStack() })
         }
+
+        // ── Learn
+        composable(Screen.Learn.route) { LearnScreen(navController) }
+        composable(Screen.LearnSearch.route) { LearnSearchScreen(navController) }
+        composable(
+            route = Screen.ArticleDetail.route,
+            arguments = listOf(navArgument(Screen.ArticleDetail.ARG_SLUG) { type = NavType.StringType }),
+        ) { backStackEntry ->
+            val slug = backStackEntry.arguments?.getString(Screen.ArticleDetail.ARG_SLUG).orEmpty()
+            ArticleDetailScreen(slug = slug, navController = navController)
+        }
         composable(Screen.Auth.route) {
             AuthScreen(
                 onSignedIn = {
+                    // Clear the whole onboarding/auth stack so back can't return to the gate.
                     navController.navigate(Screen.Home.route) {
-                        popUpTo(Screen.Splash.route) { inclusive = true }
+                        popUpTo(0) { inclusive = true }
                     }
                 },
                 onBack = { navController.popBackStack() },

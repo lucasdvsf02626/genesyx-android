@@ -25,48 +25,27 @@ class SupabaseAuthService @Inject constructor(
 ) : AuthService {
 
     override suspend fun signUp(email: String, password: String, displayName: String?): DataResult<AuthSession> =
-        try {
+        establishSession("sign-up", expectedEmail = email) {
             client.auth.signUpWith(Email) {
                 this.email = email
                 this.password = password
             }
-            DataResult.Success(requireSession())
-        } catch (t: Throwable) {
-            logger.e("Auth", "sign-up failed", t)
-            DataResult.Error(t, t.message)
         }
 
     override suspend fun signInWithPassword(email: String, password: String): DataResult<AuthSession> =
-        try {
+        establishSession("sign-in", expectedEmail = email) {
             client.auth.signInWith(Email) {
                 this.email = email
                 this.password = password
             }
-            // Verify the sign-in actually established a session for THIS account. Without this,
-            // a prior still-valid session (e.g. an existing Google login) is returned by
-            // currentSessionOrNull() and reported as success — a failed sign-in would silently
-            // land the user back in the previous session. Reject that stale-session masquerade.
-            val session = client.auth.currentSessionOrNull()
-                ?: throw IllegalStateException("Sign-in failed — no session established.")
-            if (!session.user?.email.equals(email.trim(), ignoreCase = true)) {
-                throw IllegalStateException("Sign-in did not establish a session for this account.")
-            }
-            DataResult.Success(session.toAuthSession())
-        } catch (t: Throwable) {
-            logger.e("Auth", "sign-in failed", t)
-            DataResult.Error(t, t.message)
         }
 
     override suspend fun signInWithIdToken(googleIdToken: String): DataResult<AuthSession> =
-        try {
+        establishSession("google-sign-in", expectedEmail = null) {
             client.auth.signInWith(IDToken) {
                 idToken = googleIdToken
                 provider = Google
             }
-            DataResult.Success(requireSession())
-        } catch (t: Throwable) {
-            logger.e("Auth", "google sign-in failed", t)
-            DataResult.Error(t, t.message)
         }
 
     override suspend fun signOut(): DataResult<Unit> =
@@ -96,9 +75,46 @@ class SupabaseAuthService @Inject constructor(
             DataResult.Error(t, t.message)
         }
 
-    private fun requireSession(): AuthSession =
-        client.auth.currentSessionOrNull()?.toAuthSession()
-            ?: throw IllegalStateException("No active session — email confirmation may be required.")
+    /**
+     * Runs an auth [attempt] and returns the session it established — never an ambient one.
+     *
+     * supabase-kt persists the current session, so `currentSessionOrNull()` happily returns a
+     * *previous* user's still-valid session. Reading it straight after an attempt means a failed
+     * sign-in, or a sign-up that establishes no session (email confirmation on), falls through to
+     * whoever was signed in last: they are reported as Success and the app then scopes every Room
+     * row and every RLS-backed write to that stale uid. That is one user silently seated in
+     * another's account, so the checks below are all-or-nothing:
+     *
+     *  - a session must exist afterwards;
+     *  - its access token must differ from the one held before the attempt (proving this attempt,
+     *    not a leftover, minted it);
+     *  - for the email flows, it must belong to the address that was actually typed.
+     *
+     * Google carries no [expectedEmail] — the id token is opaque here — but the token-change check
+     * still rules out the stale-session masquerade.
+     */
+    private suspend fun establishSession(
+        op: String,
+        expectedEmail: String?,
+        attempt: suspend () -> Unit,
+    ): DataResult<AuthSession> =
+        try {
+            val previousToken = client.auth.currentSessionOrNull()?.accessToken
+            attempt()
+
+            val session = client.auth.currentSessionOrNull()
+                ?: throw IllegalStateException("No active session — email confirmation may be required.")
+            if (session.accessToken == previousToken) {
+                throw IllegalStateException("$op did not establish a new session.")
+            }
+            if (expectedEmail != null && !session.user?.email.equals(expectedEmail.trim(), ignoreCase = true)) {
+                throw IllegalStateException("$op did not establish a session for this account.")
+            }
+            DataResult.Success(session.toAuthSession())
+        } catch (t: Throwable) {
+            logger.e("Auth", "$op failed", t)
+            DataResult.Error(t, t.message)
+        }
 
     private fun UserSession.toAuthSession(): AuthSession {
         val u = user

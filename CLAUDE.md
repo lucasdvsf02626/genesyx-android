@@ -2,124 +2,171 @@
 
 Project Name: Genesyx Android
 
-Release-candidate handoff. Read this first. Honest state as of the commit below.
+v1.1 in progress. Read this first. Honest state, verified against the tree on **2026-07-13**.
 
-## Build identity
-- **Shipping build:** versionCode `6`, versionName `1.0.0`  (`app/build.gradle.kts:38-39`) — `main` = `1da07f9` (PR #5, ghost-session sign-in fix; versionCode unchanged at 6). See "Release build v6" below. (History: RC was v5; earlier v6 tag was `27c2ac0`.)
-- **Release artifacts** (built & signed with `genesyx-release.jks` via `keystore.properties`; `clean bundleRelease assembleRelease` all GREEN, R8/minify clean):
-  - AAB (Play upload): `app/build/outputs/bundle/release/app-release.aab` — 8.1 MB
-  - APK (on-device test): `app/build/outputs/apk/release/app-release.apk` — 4.3 MB
-  - Install: `adb install -r app/build/outputs/apk/release/app-release.apk`
-- **Release env:** `GENESYX_ENV=PROD` — the `release` buildType overrides the `DEV` default (`app/build.gradle.kts:84`). Confirmed in the compiled `BuildConfig.java` (release) → `GENESYX_ENV = "PROD"`, `VERSION_CODE = 4`. Release logging (`Logger.d`) is suppressed outside DEV.
-- **Signing verified (v3):** APK signer cert SHA-256 `c3d51f4b…a446c17d` matches the `genesyx-release.jks` cert (CN=Lucas Valenca, OU=Genesyx). APK verifies under v2 scheme; `android:debuggable` absent (release = not debuggable). (v4 rebuilt with the same signing config.)
+> **⚠️ If you read an older copy of this file, three things it told you are now FALSE:**
+> 1. **pH is NOT local-only.** pH readings sync to Supabase. Never restore "stored on this device"
+>    copy — see "pH sync is live" below. It is the single most dangerous stale claim here.
+> 2. **Code is NOT frozen at versionCode 6.** `main` is at versionCode 7, and `feature/streaks-v2`
+>    is ahead of `main` at versionCode 8.
+> 3. **`main` is NOT `1da07f9`.** It is `d7be924`.
 
-## v4 — two scoped changes (Sat Jul 4), built + smoke-tested on-device
-- **FIX A — dev "Clients" screen gated OFF (blocker).** The admin/dev Clients screen (add client + "Seed 100 demo clients" → `ClientsViewModel.seedDemo(100)`) was reachable in release via **Profile → "Manage clients"** (`ProfileScreen.kt`, the only entry point — no gesture/deep-link, not in bottom tabs). Now gated behind new `FeatureFlags.ADMIN_CLIENTS = false` (same pattern as `PH_TRACKING`): the Profile "Clients" section is wrapped in `if (…ADMIN_CLIENTS)`, so the screen and its seed action are unreachable. Route composable left dormant. Dev sweep found no other dev/debug screens or seed actions (`Environment.DEV` only gates debug logcat verbosity, not a screen).
-- **FIX B — Home hero banner brand image.** Replaced the gradient-bubble decorations on Home (`FloatingBubbles()` full-screen + `BrandOrb` on the cycle card) with the brand crescent artwork. Asset `~/Desktop/genesyx-brand/home-hero.jpg` (5375×11650) downscaled to `res/drawable-nodpi/home_hero_bg.jpg` (1080×2341, 82 KB). `HomeScreen.kt`: theme-aware — light theme shows the hero image (the art is light), dark theme keeps `FloatingBubbles` so text stays AA-readable; the cycle card is now a translucent surface (`surface.copy(alpha=0.72f)`) acting as a subtle scrim, `BrandOrb` removed. Card copy verified AA-readable over the image on-device. `BrandOrb` still used by onboarding screens (not dead).
-- **On-device smoke (v4, emulator-5554, all PASS, 0 FATAL):** cold-start signed-out → **intro** ✓; sign-up/sign-in flow reachable (created gx03) ✓; Home renders the new brand background, card text readable ✓; all 5 tabs open (Home/Track/Nutrition/Insights/Profile) ✓; **no Clients screen reachable** (Profile has no "Manage clients") ✓; delete flow works (gx03 deleted → Splash) ✓; logcat 0 FATAL ✓. Before/after Home shots in scratchpad `t4e/` (`FIXB_06_before_home`, `FIXB_07_after_home_v4`).
+## 🔖 STOPPED HERE — resume from this (2026-07-13)
 
-## v5 — pH restore + quiz back-arrow fix + intro logo (Sat Jul 4), versionCode 5
-- **pH tracking restored, LOCAL-ONLY.** `FeatureFlags.PH_TRACKING = true` → pH tracker card, log dialog and insights section return to Track/Nutrition/Insights. **No network call fires for pH:** `PhRepository` remote upsert/delete/refresh are guarded/no-op'd with `// v1.1: enable when ph_readings table exists` (Room is the only store). Caption added to the pH card: "pH entries are stored on this device for now." (`PhTrackerCard.kt`). Deletion wipes pH via existing `database.clearAllTables()` (`AuthRepository.kt:58`). Onboarding grep = **zero** pH/sex-selection content.
-- **Quiz back-arrow fix.** Root cause: `GxBackButton` was a 44dp target (< 48dp min) — onClick/nav were correct. Fixed to 48dp (`CommonUi.kt`) + added step-aware `BackHandler` to `OnboardingQuizScreen.kt` (system/gesture back mirrors the arrow; answers preserved in the `mutableStateMap`).
-- **Intro logo swap.** Replaced the `Text("GENESYX")` wordmark with the L1 lockup image via a shared `BrandLockup` composable, on **Splash + Auth + Invite** (old text mark gone everywhere). Asset fixed: `L1.png` had an opaque white background → flood-filled to **transparent**; `drawable-nodpi/brand_lockup.png` = black wordmark (light), `drawable-night-nodpi/brand_lockup.png` = recolored **white wordmark** (dark). `logo_g.png` is dead (unused); system splash uses `@mipmap/ic_launcher` (unchanged).
-- **v5 smoke — PARTIAL (emulator-5554):**
-  - PASS: intro logo = L1 lockup in **both light + dark** (transparent-bg verified); quiz back-arrow (step 0 → intro; step 3 → back ×2, answers preserved; gesture-back parity); pH section shows below a **populated** phase card; pH log dialog + caption; pH 6.5 saved to Room with **zero pH network calls / no `E Ph`** (logcat `saved … locally`); cold-start routing → **Home** for signed-in gx05.
-  - NOT YET RUN / unconfirmed: pH **persistence across restart** (logcat had no network errors on the restart read, but the reading was not re-viewed); **airplane-mode** pH test; all 5 tabs on v5; **no-Clients-screen** on v5; full-session **FATAL scan**; **deletion wipes pH + login fails**.
-  - Shots in scratchpad `v5/`.
+**All engineering is done, committed and pushed. `PR #9` is open** (`feature/streaks-v2` → `main`,
+versionCode 8 / 1.1.0): offline log queue, streak engine v2 + vectors, user-set hydration goal,
+log-screen discard guard, CHANGELOG, deletion-verification script. Tests green, signed AAB builds.
 
-## What THIS session fixed (device test found 4 blockers; all fixed, verified in source + compiled into the RC)
-- **FIX 1 — pH sex-selection claim in onboarding quiz (blocker, content).** The "Did you know?" modal on quiz Q4 claimed "…even pH balance can subtly influence the likelihood of conceiving a boy or girl." Removed the entire `fact = DidYouKnow(...)` block. `domain/content/QuizContent.kt` (gender question, ~line 58). The earlier pH audit only covered Home/Profile/Track/Nutrition/Insights and missed onboarding. Repo-wide grep for `boy or girl` / `conceiving a boy|girl` / `sex-selection` / `sway` now returns **zero** user-visible hits.
-- **FIX 2 — offline save must not lie (blocker, data-loss).** There is no sync queue in v1.0: an offline daily-log write lands in Room but is silently overwritten by the server on the next read-through (data loss). Now the log Save is gated on connectivity — offline, it does **not** save/close; it shows `"You're offline — reconnect to save your log."`
-  - `ui/screens/LogViewModel.kt` — added `isOnline()` (ConnectivityManager point-in-time check; injects `@ApplicationContext`). `ACCESS_NETWORK_STATE` already in the manifest.
-  - `ui/screens/LogScreen.kt:227-243` — Save `onClick` calls `viewModel.isOnline()`; offline → sets `offline=true` (shows the error string), online → saves + `onClose()`.
-- **FIX 3 — don't re-onboard signed-in users (high, UX).** Cold start forced a signed-in user through intro → 5-question quiz → readiness summary before Home. Now the start destination is resolved from the persisted session before the graph is built; onboarding shows only for new/signed-out users. Quiz screens left dormant, not deleted.
-  - `data/SessionRepository.kt:48` — `suspend fun awaitSignedIn() = store.signedIn.first()` (reads the real persisted value; avoids the eagerly-seeded `isSignedIn` StateFlow that reads `false` until DataStore loads).
-  - `ui/AppViewModel.kt` — `startRoute: StateFlow<String?>` (null until resolved); `init` awaits `awaitSignedIn()` → `Home` or `Splash`.
-  - `MainActivity.kt` — activity-scoped `AppViewModel`; `splash.setKeepOnScreenCondition { startRoute.value == null }` holds the system splash until resolved; NavHost built only when `route != null`, passing `startDestination = route`.
-  - `ui/navigation/GenesyxNavGraph.kt` — added `startDestination: String` param (defaults to `Splash.route`).
-- **FIX 4 — softened gender question copy (content).** `domain/content/QuizContent.kt` gender question → "When it comes to your baby's sex, what feels right for you?"; options "I have a hope in mind" / "I'm happy either way" / "I'd rather not say". Same `id = "gender"`.
-- `app/build.gradle.kts:38` — `versionCode 2 → 3`.
+**Session-by-session history lives in `CHANGELOG.md`.** Read it before anything else.
 
-## Prior session (context, already true before tonight)
-- pH tracking is compile-time gated OFF for 1.0 via `core/FeatureFlags.PH_TRACKING = false`. To re-enable later: flip the single flag.
-- `ph_readings` is **irrelevant** to v1.0 (pH hidden, no table needed). Do not chase it.
-- `delete_current_user` RPC is **deployed and REST-verified**; no Edge Function needed. Delete flow (`SupabaseAuthService`/`AuthRepository`) calls RPC → clears Room → signs out → navigates to Splash.
-- In-app "Privacy & Data" row opens `AppLinks.PRIVACY_POLICY_URL` (`https://genesyx.co.uk/pages/privacy-policy`) via `ACTION_VIEW`.
-- P0 on-device script previously ran steps 1–11 clean (see `docs/GENESYX_P0_TEST_SCRIPT.md`).
+**Next actions, in order:**
+1. **Fill the `[OWNER]` placeholders** in `docs/DATA_SAFETY_AND_PRIVACY_v1.1.md` — legal entity,
+   Supabase hosting region, retention period, ICO/DPO contact, publication date. That file is
+   **local-only and git-excluded** (via `.git/info/exclude`), so it is on the machine but not in the
+   repo. It holds the Play Data Safety answers + privacy-policy copy drafted for v1.1.
+2. **Publish the privacy copy** to `genesyx.co.uk/pages/privacy-policy`, and **submit the Data Safety
+   answers** in Play Console. Both need to reflect that pH readings sync to the server in v1.1.
+3. **Finish the deletion proof for pH** — see "Pre-release checks" #3. Step 1 of
+   `docs/supabase/verify_deletion.sql` was run against production on 2026-07-13 and came back clean
+   (deployed function covers `ph_readings`; orphan rows 0/0/0/0). The remaining piece is the
+   end-to-end pass (step 4) **with a pH reading in play** — the daily-log half is already proven: a
+   synced log from a throwaway account was erased by an in-app delete, which is why the orphan counts
+   are zero.
+4. **Merge PR #9**, upload the AAB, promote.
 
-## Verified this session
-- All 4 fixes present in source (greps + pasted lines).
-- `./gradlew clean bundleRelease assembleRelease` → BUILD SUCCESSFUL, R8/minify clean (only a pre-existing `MenuBook` deprecation warning, unrelated).
-- APK signed with the release keystore (cert SHA-256 match) and not debuggable.
+## Where the code actually is
 
-## On-device re-test — versionCode 3 APK on emulator-5554 (all PASS, no FATAL in the whole run)
-1. **Cold-start routing (FIX 3): PASS.** Force-stop cold start → signed-in `lucas+gx01` landed on **Home**, no onboarding; second force-close→reopen still Home. Signed-out relaunch showed **Splash**. New gx02 signup → Home.
-2. **Offline save (FIX 2): PASS.** `svc` offline (`Active default network: none`) → Save did **not** close and showed exact copy "You're offline — reconnect to save your log." Reconnect → Save closed to Home; logcat `DailyLog: synced daily log 2026-07-04`.
-3. **No pH claim in quiz (FIX 1): PASS.** Walked onboarding Q1–Q5; only "Did you know?" shown was the legit cycle-length fact on Q2. Answering the gender question advanced **straight to Q5** — no pH modal.
-4. **Softened gender copy (FIX 4): PASS.** Q4 shows "When it comes to your baby's sex, what feels right for you?" + helper + the 3 new options; old boy/girl options gone.
-- Note: after each sign-in `PhRepository.refresh()` queries the absent `ph_readings` table and logs a non-fatal `E Ph` error — expected, irrelevant (pH flagged off), does not crash.
+| | |
+|---|---|
+| `main` | `d7be924` (PR #6, theme toggle). versionCode **7**, versionName **"1.0.0"** |
+| Working branch | `feature/streaks-v2` — ahead of `main`, 0 behind. **versionCode 8, versionName "1.1.0"**. Not merged, not released |
+| Unit tests | **132 passing, 17 classes, 0 failures** (`./gradlew :app:testDebugUnitTest`) |
+| Instrumented | **14 passing, 0 failures** (`./gradlew :app:connectedDebugAndroidTest`) |
+| Release build | `./gradlew :app:assembleRelease` GREEN, R8/minify clean |
 
-## T4 — deletion lifecycle (a–e ALL PASS on-device)
-- **(a) gx02 in-app delete: PASS.** Profile → Delete account → confirm → signed out → **Splash** (shots `T4_00`–`T4_03`), no crash.
-- **(b) gx02 login must fail: PASS.** Re-login with `lucas+gx02` (password on file with owner) returned **"Invalid login credentials"** and stayed on Auth (shot `T4_13`). Server rejected the deleted account's credentials.
-- **(c) re-signup same email: PASS.** Created `lucas+gx02` again → landed on a **fresh Home** ("Set up your cycle", 0-day streak, no old data) (shot `T4_15`). Re-using the email proves the prior account was genuinely freed.
-- **(d) delete gx02 again: PASS.** Profile → Delete account → confirm → **Splash**, no crash (shots `T4_16`–`T4_18`).
-- **(e) gx01 delete: PASS (Sat Jul 4).** Password supplied by owner (not recorded here). Signed in as `lucas+gx01` → landed on **Home** with existing cycle data ("DAY 2 · PERIOD", not onboarding) (shot `T4e_07_home`). Profile → **Delete account** → confirm dialog "This will permanently delete your account and all your data. This cannot be undone." → **Delete** → signed out → **Splash/intro**, no FATAL in logcat (shot `T4e_11_after_delete`). Re-login with the **same** gx01 creds returned **"Invalid login credentials"** in red and stayed on Auth (shot `T4e_13_relogin_result`); logcat: `AuthRestException: Invalid login credentials`. Server rejected the deleted account. Shots in scratchpad `t4e/`.
-- **Deletion evidence:** T4(b)+(e) rejection + (c) same-email re-signup are strong app/auth-level proof deletion works for **both** accounts. The remaining piece is the **Supabase server-side DB check** (below), which requires dashboard access.
+All verified 2026-07-13.
 
-## Device state (accurate, mid v5 smoke, Sat Jul 4)
-- emulator-5554 runs **v5** (versionCode 5), **LIGHT** theme, **signed IN** as **`lucas+gx05`** (throwaway: cycle set up, 1 pH reading 6.5), on **Home**.
-- Test accounts `lucas+gx01/02/03` all **deleted**. **`lucas+gx05`** is live — delete it at the end of the v5 smoke. (Passwords held by the owner, not recorded here.)
+### On `main` (shipped or shippable)
+- pH tracking + **sync** (see below), theme follows system + Profile toggle (PR #6), the PR #5
+  ghost-session sign-in fix.
+- `FeatureFlags` on `main`: `PH_TRACKING = true`, `ADMIN_CLIENTS = false`.
 
-## PR #5 — sign-in ghost-session fix (Mon Jul 6, versionCode unchanged 6)
-- **Bug:** `signInWithPassword` returned `DataResult.Success` off the *ambient* session — `requireSession()` read `currentSessionOrNull()`, so with a still-valid prior session (e.g. an existing Google login) a **wrong-password attempt fell through to a false Success and navigated Home as the OLD user**, no error shown.
-- **Fix (`auth/SupabaseAuthService.kt`):** after `signInWith`, read `currentSessionOrNull()`; throw if null, and throw if `session.user.email` ≠ the attempted email (case-insensitive) → surfaces `DataResult.Error`, form shows the error and stays put. Regression test added (`AuthRepositoryTest`: failed sign-in persists no session). No schema/API/nav changes; **versionCode stays 6**.
-- **`delete_current_user` redeployed server-side** (Jul 6) with the `delete from auth.users where id = uid;` line (deployed body matches `docs/schema.sql`). **S6 verified 0+0** — post-delete rows gone across `auth.users`/`profiles`/`daily_logs`/`cycle_settings` (checklist #2).
-- Merged as **PR #5** (`fix/auth-stale-session-signin`) → `main` = **`1da07f9`**.
+### On `feature/streaks-v2` only (NOT on `main`, NOT released)
+- **Daily-log offline sync queue (the headline v1.1 item — DONE).** Offline log saves now QUEUE
+  instead of being refused. See "The offline queue" below.
+- **Log-screen Back no longer discards unsaved edits** — confirm dialog + `BackHandler`.
+- **Streak engine v2** + the cross-platform vector contract (below).
+- **User-set hydration goal** — persisted in DataStore, read by the engine, Nutrition and Home.
+- Learn section (10 articles), auth hardening, Track/calendar fixes, brand/launcher fixes, and the
+  `PARTNER_INVITES` / `PUSH_NOTIFICATIONS` gates (these two flags exist **only** on this branch).
+- `docs/APP_INVENTORY.md` — screens, features, journeys, gaps.
 
-## Release build v6 — AAB built, signing-verified & UPLOADED (Jul 6)
-- **P9 (build + AAB): AAB built, signing-verified, and UPLOADED + PUBLISHED to Internal testing** on the existing `com.genesyx.app` Play app. Testers attached; all three OAuth clients registered incl. Google's Play app-signing key **E0:CE**.
-  - Final AAB **rebuilt from merged `main` = `1da07f9`** (incl. the PR #5 fix), **Mon Jul 6 14:48**.
-  - AAB = `app/build/outputs/bundle/release/app-release.aab`.
-  - **versionCode 6**, versionName **1.0.0**. `./gradlew clean bundleRelease` GREEN (CI on the source also green).
-  - Signing SHA1 = **`8D:EB:47:63:5F:10:2A:DA:7C:93:AA:27:15:E3:37:C6:49:B2:CC:73`** (matches `genesyx-release.jks` and the fingerprint registered in Google Cloud). SHA256 `C3:D5:1F:4B…A4:46:C1:7D`.
-- **Branch/merge reconciliation:**
-  - `main` was **force-reset to the release line** (`main` → `27c2ac0`). Previously `origin/main` held a divergent scaffold (`586533c`, versionCode 1) that was **not** the release app.
-  - Old scaffold **preserved** at `origin/backup/old-main` (recoverable; nothing lost).
-  - `claude/rc-v3` **deleted** (was fully merged into main via PR #2; no unique commits).
-  - **PR #3 / #4 merge steps are complete** — all their content (v1.1 pH sync + Google sign-in + the full app) is now in `main`. PR #4 is MERGED (its base was `feature/v1.1-sync-hardening`); PR #3 left open but redundant. `feature/log-history` and `feature/v1.1-sync-hardening` kept as-is.
-  - `main` is the **GitHub default branch**, so all new PRs base off it (no more wrong-base risk).
+## The offline queue (daily logs) — Room schema v4
 
-## LAUNCH CHECKLIST — where we are (updated Mon)
+v1.0 refused to save a log while offline ("You're offline — reconnect to save your log") because an
+offline write would be silently overwritten by the server on the next read-through. That gate is
+**gone**, replaced by the same shape pH already used:
 
-**Engineering (DONE):** 4 RC fixes + v4 FIX A (Clients gate) + FIX B (Home hero), v4 built/signed, PR #2, T1–T3 PASS, T4(a–e) PASS, v4 smoke PASS. `GENESYX_ENV=PROD` verified.
+- `daily_logs.syncStatus` (`LogSyncStatus`, Room **v4**, `MIGRATION_3_4`) — an offline write lands as
+  `PENDING_UPSERT`; `DailyLogSyncWorker` drains it with WorkManager backoff.
+- **`DailyLogRepository.refresh` skips rows with unsynced local changes.** That one rule is what makes
+  offline writes safe — without it the pull stamps the server's copy over her edit. It is covered by
+  `a_pull_must_not_overwrite_an_unsynced_local_edit`; deleting the guard fails that test.
+- **Guest writes are never queued** (no server target under RLS) — they are written `SYNCED`.
+- Verified on-device 2026-07-13: airplane-mode save → `push failed — queued for retry` → network back
+  → `WM-WorkerWrapper: Worker result SUCCESS for … DailyLogSyncWorker`. No FATAL.
 
-| # | Item | Status | Detail / evidence |
-|---|---|---|---|
-| 1 | T4(e) gx01 delete | ✅ DONE | PASS on-device Sat Jul 4: delete → Splash (no FATAL); re-login rejected with "Invalid login credentials" (`AuthRestException`). Shots in scratchpad `t4e/` |
-| 2 | Supabase server-side delete proof | ✅ DONE | **S6 verified 0+0** (Mon Jul 6): after delete, deleted rows confirmed gone in `auth.users` + `profiles`/`daily_logs`/`cycle_settings`. `delete_current_user` **redeployed server-side** with the `delete from auth.users where id = uid;` line (schema.sql body matches deployed) |
-| 3a | Shopify `/pages/privacy-policy` | ✅ DONE | verified LIVE clean — H1 ok, 0 `[CONTACT_EMAIL]`, 0 `genesxy`, no `.html`, only `info@genesyx.co.uk` |
-| 3b | Shopify `/pages/delete-account` | ✅ DONE | verified LIVE clean (Sun Jul 6): H1 "Delete account", 0 `[CONTACT_EMAIL]`, 0 `genesxy`, no `.html` links, only `info@genesyx.co.uk`. The old broken draft has been replaced — page now matches the clean `delete-account-FINAL.html`. |
-| 4 | Store assets | ⛔ OWNER | feature graphic 1024×500 + phone + 7"/10" tablet screenshots |
-| 5a | AAB upload → Internal testing | ✅ DONE | Final AAB **rebuilt from merged `main` (1da07f9, Mon Jul 6 14:48, versionCode 6)** and **UPLOADED + PUBLISHED to Internal testing** on the existing **`com.genesyx.app`** Play app. Testers attached. All three OAuth clients registered incl. Google's Play app-signing key **E0:CE** |
-| 5b | Play Console forms + submit | ⛔ OWNER | internal smoke on the **Play-delivered** build, Data Safety form, content rating, reviewer/test account, privacy + deletion URLs, **promote to Production, submit** |
-| P9 | Release AAB build | ✅ DONE (uploaded) | AAB built, signing-verified, **uploaded + published to Internal testing**. `main` `1da07f9`, versionCode 6, SHA1 `8D:EB:47:63…B2:CC:73`. See "Release build v6" above |
+## pH sync is live — the most important thing on this page
 
-**Overall: ~98%.** All engineering is done — v6 AAB (from merged `main` incl. the PR #5 ghost-session fix) is **live on Internal testing**, server-side delete proven (S6 0+0), both Shopify pages LIVE clean. Remaining = owner-only Play Console finishing: internal smoke on the delivered build, store assets, Data Safety/rating/reviewer forms, promote to Production, submit.
+`FeatureFlags.PH_TRACKING = true`, and pH is **no longer local-only**. `PhRepository` write-throughs
+to the Supabase `ph_readings` table, with a WorkManager retry queue (`data/sync/PhSyncWorker.kt`,
+`PhSyncScheduler.kt`) and pull-merge on sign-in. Guests (`LOCAL_USER_ID`) stay on-device.
 
-> **CODE FROZEN at versionCode 6 (`main` = `1da07f9`).** No further source edits — only docs/evidence and owner store/console steps.
->
-> **NEXT ACTION (owner):** run the internal smoke test on the **Play-delivered** Internal-testing build, then complete store assets + Data Safety/content-rating/reviewer-account forms, **promote to Production and submit**.
+**Consequences you must not get wrong:**
+- The pH card copy (`ui/components/PhTrackerCard.kt:124`) says *"pH entries sync to your Genesyx
+  account."* **Keep it.** pH is intimate health data; the sync has to be disclosed, not buried.
+  Restoring the old "stored on this device for now" line would make the app lie to users.
+- pH syncing changes what the app stores server-side, so the store disclosures and privacy copy must
+  be reviewed against it before release. See "Pre-release checks" — owner work, and it gates release.
 
-## v1.1 backlog (deferred, do NOT build for 1.0)
-- **pH backend + sync (headline v1.1 task):** create the Supabase `ph_readings` table, then un-guard the `PhRepository` remote calls (search `// v1.1: enable when ph_readings table exists`) so pH write-through/read-through works. pH is LOCAL-ONLY in v1.0.
-- **Real offline-first sync queue** so offline edits persist and reconcile on reconnect (removes the FIX 2 offline block).
-- **Log-screen Back discards unsaved edits** — add a trivial confirm/guard.
-- **Track/Nutrition UI polish** — owner reviewing; findings TBD, **do not act** yet.
+## The tracking contract (cross-platform)
+
+`domain/tracking/tracking_test_vectors.json` — 16 cases, **mirrored verbatim into the iOS repo**.
+`TrackingVectorTest` runs them against the real `StreakEngine`, so a metric that drifts on either
+platform fails the build. The JSON is put on the unit-test classpath from where it lives beside the
+engine (`app/build.gradle.kts`, `test` sourceSet), so there is one canonical copy that cannot drift.
+
+If a vector and the engine disagree, **the spec wins and the engine changes.**
+
+Contract decisions baked in: a week counts at **4 of 7 logged days** (`WEEK_COMPLETE_DAYS`); the
+hydration goal is **user-set** (`GOAL_RANGE_ML = 1000..5000`, default `DEFAULT_GOAL_ML = 2400`);
+`daysOnGoal` (days she actually hit the goal) is deliberately **not** `daysLoggedThisWeek` (days she
+logged anything). `PreferencesRepository` is the only writer of the goal and clamps to range there —
+so no reader can ever see a goal of zero and divide by it.
+
+## Pre-release checks — what stands between here and shipping
+
+**OWNER-ONLY (these gate release; no code change can close them). v1.1 changes what the app stores
+server-side, so each of these needs a fresh review against the current behaviour — do not assume the
+v1.0 answers still hold:**
+1. **Store data-disclosure review.** Re-check the Play Console Data Safety answers against what v1.1
+   actually syncs (pH readings now go to Supabase; see "pH sync is live").
+2. **Privacy copy review.** Re-check `genesyx.co.uk/pages/privacy-policy` against the same.
+3. **Re-run the server-side deletion check (S6).** `docs/schema.sql` hard-deletes `ph_readings` on
+   `delete_current_user` (GDPR erase must remove rows, not tombstone them). The last server-side
+   verification predates pH sync, so confirm the deployed function body matches the schema file and
+   that a deleted account leaves no rows behind.
+
+Detailed status for these lives with the owner, not in this repo.
+
+**CODE — the v1.1 backlog is now DONE:**
+- ~~No offline sync queue for daily logs~~ → **built and verified on-device** (see "The offline queue").
+- ~~Log-screen Back discards unsaved edits~~ → **fixed** (confirm dialog + `BackHandler`).
+- `PARTNER_INVITES` and `PUSH_NOTIFICATIONS` remain gated **off**, and their code is UI-only stubs (no
+  FCM, no invite email, no cross-account linking). Shipping them off is fine — but their comments
+  saying "until v1.1" are now aspirational and should be reworded, not believed.
+
+**KNOWN FLAKE (pre-existing, not from this work):** `CycleSettingsDialogTest.an_untouched_dialog_cannot_save`
+failed once in ~6 full instrumented runs and passes 3/3 in isolation. It is a Compose UI timing flake;
+nothing on this branch touches `CycleSettings*`.
+
+## Build identity & release ops
+- **Release env:** `GENESYX_ENV=PROD` — the `release` buildType overrides the `DEV` default
+  (`app/build.gradle.kts`). Release logging (`Logger.d`) is suppressed outside DEV.
+- **Signing:** `genesyx-release.jks` via `keystore.properties` → `storeFile=/Users/lucasvalenca_sf/Documents/genesyx-release.jks`.
+  SHA1 `8D:EB:47:63:5F:10:2A:DA:7C:93:AA:27:15:E3:37:C6:49:B2:CC:73`, SHA256 `C3:D5:1F:4B…A4:46:C1:7D`
+  (matches the fingerprint registered in Google Cloud; Google's Play app-signing key is **E0:CE**).
+- **Artifacts:** AAB `app/build/outputs/bundle/release/app-release.aab` (Play upload); APK
+  `app/build/outputs/apk/release/app-release.apk` (on-device). Install:
+  `adb install -r app/build/outputs/apk/release/app-release.apk`.
+- **Java:** `JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"`.
+- **Secrets** in `local.properties` (git-ignored): `genesyx.supabaseUrl`, `genesyx.supabaseAnonKey`,
+  `genesyx.googleWebClientId`, `genesyx.apiBaseUrl`. Never commit real values.
+- **Architecture** is local-first: Room = source of truth, Supabase read-through on sign-in +
+  write-through. See `ARCHITECTURE.md`, `docs/DATA_LAYER.md`, `docs/schema.sql`.
+
+## v1.0 release history (context — all of this is DONE, don't redo it)
+- **v6 AAB was uploaded + published to Internal testing** on `com.genesyx.app` (versionCode 6, from
+  `main` = `1da07f9`, Mon Jul 6). Testers attached; all three OAuth clients registered.
+  *Whether v6 was ever promoted to Production is not recorded here — confirm in Play Console.*
+- **Account deletion proven (T4 a–e, on-device):** delete → Splash, no FATAL; re-login rejected with
+  "Invalid login credentials"; same-email re-signup lands a fresh account. **S6 verified 0+0**
+  server-side (rows gone from `auth.users`/`profiles`/`daily_logs`/`cycle_settings`). That check
+  predates pH sync — see pre-release check #3.
+- **Shopify pages LIVE:** `/pages/privacy-policy` and `/pages/delete-account` (H1 correct, no
+  `[CONTACT_EMAIL]` placeholders, no `genesxy` typos, only `info@genesyx.co.uk`). Content to be
+  re-reviewed against v1.1 — see pre-release check #2.
+- Earlier RC fixes (all shipped): offline-save block, don't-re-onboard-signed-in-users, the dev
+  "Clients" screen gated off, Home hero brand image, quiz back-arrow, intro logo lockup.
+- P0 on-device script: `docs/GENESYX_P0_TEST_SCRIPT.md`. Release runbook:
+  `docs/GENESYX_RELEASE_VERIFICATION_RUNBOOK.md`.
 
 ## Notes
-- Secrets in `local.properties` (git-ignored): `genesyx.supabaseUrl`, `genesyx.supabaseAnonKey`, `genesyx.googleWebClientId`, `genesyx.apiBaseUrl`. Never commit real values.
-- `keystore.properties` → `storeFile=/Users/lucasvalenca_sf/Documents/genesyx-release.jks`.
-- Java: `JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"`.
-- Architecture is local-first: Room = source of truth, Supabase read-through on sign-in + write-through. Details in `ARCHITECTURE.md`, `docs/DATA_LAYER.md`, `docs/schema.sql`.
-- Remaining release ops: upload the AAB to Play Console, complete Data Safety form + store listing; ensure `genesyx.co.uk/pages/privacy-policy` has live content.
+- `delete_current_user` RPC is deployed and REST-verified (see blocker #3 for the pH caveat). No Edge
+  Function needed.
+- In-app "Privacy & Data" row opens `AppLinks.PRIVACY_POLICY_URL` via `ACTION_VIEW`.
+- A `TODO(post-launch)` remains on `delete_current_user`: pin `set search_path = public, auth, pg_temp`
+  to prevent search_path hijacking on the SECURITY DEFINER function. Deliberately not applied for the
+  launch redeploy; worth doing in v1.1.
+- Stale comment worth fixing sometime: `StreakEngineTest`'s class doc says "5-of-7 weekly streak" but
+  `WEEK_COMPLETE_DAYS` is 4. The code is right; the comment is wrong.

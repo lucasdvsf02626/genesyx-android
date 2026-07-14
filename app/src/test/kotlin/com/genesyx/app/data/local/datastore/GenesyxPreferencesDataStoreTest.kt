@@ -4,6 +4,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import com.genesyx.app.domain.model.ThemeMode
+import com.genesyx.app.domain.streaks.StreakEngine
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -39,5 +40,17 @@ class GenesyxPreferencesDataStoreTest {
             store.setTheme(mode)
             assertEquals(mode, store.themeMode.first())
         }
+    }
+
+    @Test
+    fun `hydration goal defaults to the engine's default until she sets one`() = runTest {
+        assertEquals(StreakEngine.DEFAULT_GOAL_ML, newStore().hydrationGoalMl.first())
+    }
+
+    @Test
+    fun `hydration goal round-trips through DataStore`() = runTest {
+        val store = newStore()
+        store.setHydrationGoalMl(3000)
+        assertEquals(3000, store.hydrationGoalMl.first())
     }
 }

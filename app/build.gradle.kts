@@ -27,6 +27,14 @@ val localProperties = Properties().apply {
     if (f.exists()) FileInputStream(f).use { load(it) }
 }
 
+fun secret(name: String): String =
+    localProperties.getProperty(name) ?: providers.gradleProperty(name).getOrElse("")
+
+val supabaseUrl = secret("genesyx.supabaseUrl")
+val supabaseAnonKey = secret("genesyx.supabaseAnonKey")
+val googleWebClientId = secret("genesyx.googleWebClientId")
+val apiBaseUrl = secret("genesyx.apiBaseUrl")
+
 android {
     namespace = "com.genesyx.app"
     compileSdk = 35
@@ -35,35 +43,19 @@ android {
         applicationId = "com.genesyx.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 7
-        versionName = "1.0.0"
+        versionCode = 8
+        versionName = "1.1.0"
 
         testInstrumentationRunner = "com.genesyx.app.HiltTestRunner"
 
         // Supabase + Google config from local.properties (git-ignored); fallback to gradle properties.
-        buildConfigField(
-            "String",
-            "SUPABASE_URL",
-            "\"${localProperties.getProperty("genesyx.supabaseUrl") ?: providers.gradleProperty("genesyx.supabaseUrl").getOrElse("")}\"",
-        )
-        buildConfigField(
-            "String",
-            "SUPABASE_ANON_KEY",
-            "\"${localProperties.getProperty("genesyx.supabaseAnonKey") ?: providers.gradleProperty("genesyx.supabaseAnonKey").getOrElse("")}\"",
-        )
-        buildConfigField(
-            "String",
-            "GOOGLE_WEB_CLIENT_ID",
-            "\"${localProperties.getProperty("genesyx.googleWebClientId") ?: providers.gradleProperty("genesyx.googleWebClientId").getOrElse("")}\"",
-        )
+        buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
+        buildConfigField("String", "SUPABASE_ANON_KEY", "\"$supabaseAnonKey\"")
+        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"$googleWebClientId\"")
 
         // Environment + Google Cloud / backend API base. Dev default; release overrides env to PROD.
         buildConfigField("String", "GENESYX_ENV", "\"DEV\"")
-        buildConfigField(
-            "String",
-            "GENESYX_API_BASE_URL",
-            "\"${localProperties.getProperty("genesyx.apiBaseUrl") ?: providers.gradleProperty("genesyx.apiBaseUrl").getOrElse("")}\"",
-        )
+        buildConfigField("String", "GENESYX_API_BASE_URL", "\"$apiBaseUrl\"")
     }
 
     signingConfigs {
@@ -115,6 +107,11 @@ android {
     // MigrationTestHelper can validate them. Also expose it to androidTest as assets.
     sourceSets {
         getByName("androidTest").assets.srcDir("$projectDir/schemas")
+
+        // The cross-platform tracking vectors live next to the engine they define, and are mirrored
+        // verbatim into the iOS repo. Putting them on the unit-test classpath from there — rather
+        // than copying them into test resources — keeps one canonical copy that cannot drift.
+        getByName("test").resources.srcDir("$projectDir/src/main/kotlin/com/genesyx/app/domain/tracking")
     }
 }
 
@@ -193,4 +190,27 @@ dependencies {
     androidTestImplementation(libs.hilt.android.testing)
     kspAndroidTest(libs.hilt.compiler)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+}
+
+// NetworkModule binds LocalAuthService — which ignores the password entirely and mints a fresh
+// random user id per sign-in — whenever the Supabase creds are blank. That selector keys off the
+// creds, not the build type, so a release cut on a machine without local.properties would ship
+// password-free auth and look completely normal. Fail the release build instead.
+//
+// Checked on the task graph, not in the release {} block: that block is configured on every
+// invocation, so throwing there would break debug builds too (which are meant to run local-first
+// without creds).
+gradle.taskGraph.whenReady {
+    val buildingRelease = allTasks.any { task ->
+        task.project.name == "app" &&
+            (task.name.startsWith("assemble") || task.name.startsWith("bundle")) &&
+            task.name.contains("Release")
+    }
+    if (buildingRelease && (supabaseUrl.isBlank() || supabaseAnonKey.isBlank())) {
+        throw GradleException(
+            "Release build requires genesyx.supabaseUrl and genesyx.supabaseAnonKey " +
+                "(local.properties or gradle properties). Without them the app falls back to " +
+                "LocalAuthService, which accepts any password.",
+        )
+    }
 }

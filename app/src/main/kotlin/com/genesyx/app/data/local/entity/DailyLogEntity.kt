@@ -1,12 +1,17 @@
 package com.genesyx.app.data.local.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import com.genesyx.app.domain.model.DailyLog
 import com.genesyx.app.domain.model.EnergyLevel
 import com.genesyx.app.domain.model.Mood
 import java.time.LocalDate
 
-/** Room mirror of Supabase `daily_logs` — UNIQUE(user_id, date) → composite primary key. */
+/**
+ * Room mirror of Supabase `daily_logs` — UNIQUE(user_id, date) → composite primary key.
+ * v4 adds [syncStatus]: offline writes land here as PENDING_UPSERT and are drained by
+ * [com.genesyx.app.data.sync.DailyLogSyncWorker]. It is a local-only concern, not in the domain model.
+ */
 @Entity(tableName = "daily_logs", primaryKeys = ["userId", "date"])
 data class DailyLogEntity(
     val userId: String,
@@ -18,6 +23,7 @@ data class DailyLogEntity(
     val supplements: List<String>,
     val notes: String?,
     val waterMl: Int,
+    @ColumnInfo(defaultValue = "SYNCED") val syncStatus: LogSyncStatus = LogSyncStatus.SYNCED,
 )
 
 fun DailyLogEntity.toDomain(): DailyLog =
@@ -31,7 +37,11 @@ fun DailyLogEntity.toDomain(): DailyLog =
         waterMl = waterMl,
     )
 
-fun DailyLog.toEntity(userId: String, date: LocalDate): DailyLogEntity =
+fun DailyLog.toEntity(
+    userId: String,
+    date: LocalDate,
+    syncStatus: LogSyncStatus = LogSyncStatus.SYNCED,
+): DailyLogEntity =
     DailyLogEntity(
         userId = userId,
         date = date,
@@ -42,4 +52,5 @@ fun DailyLog.toEntity(userId: String, date: LocalDate): DailyLogEntity =
         supplements = supplements.toList(),
         notes = notes,
         waterMl = waterMl,
+        syncStatus = syncStatus,
     )

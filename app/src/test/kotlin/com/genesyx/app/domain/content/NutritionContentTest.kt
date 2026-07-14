@@ -57,15 +57,6 @@ class NutritionContentTest {
         }
     }
 
-    @Test
-    fun `there are three learn-more articles with copy`() {
-        assertEquals(3, nutritionArticles.size)
-        nutritionArticles.forEach {
-            assertTrue(it.title.isNotBlank())
-            assertTrue(it.read.isNotBlank())
-        }
-    }
-
     // ── Cycle content (lib/cycle.ts phaseHeroCopy / phaseFoods / phaseLabel) ──
 
     @Test
