@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -39,15 +40,23 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.genesyx.app.domain.model.DayType
 import com.genesyx.app.ui.components.Eyebrow
 import com.genesyx.app.ui.components.ScreenHeader
 import com.genesyx.app.ui.components.tintOnWhite
 import com.genesyx.app.ui.navigation.Screen
+import com.genesyx.app.ui.theme.BabyLavender
 import com.genesyx.app.ui.theme.ElectricBlue
 import com.genesyx.app.ui.theme.ElectricLavender
 import com.genesyx.app.ui.theme.PowderBlue
+import com.genesyx.app.ui.theme.PowderPink
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 private val weekdayLabels = listOf("M", "T", "W", "T", "F", "S", "S")
+
+/** "24 Jul" — British order, and short enough to sit two-up in a tile. */
+private val dayMonth: DateTimeFormatter = DateTimeFormatter.ofPattern("d MMM", Locale.UK)
 
 @Composable
 fun InsightsScreen(
@@ -59,6 +68,10 @@ fun InsightsScreen(
     val consistency by viewModel.consistencyInsights.collectAsState()
     val hydration by viewModel.hydrationInsights.collectAsState()
     val supplements by viewModel.supplementInsights.collectAsState()
+    val sleep by viewModel.sleepInsights.collectAsState()
+    val cycleRegularity by viewModel.cycleRegularityInsights.collectAsState()
+    val symptoms by viewModel.symptomInsights.collectAsState()
+    val ovulation by viewModel.ovulationInsights.collectAsState()
 
     Column(
         modifier = Modifier
@@ -98,6 +111,19 @@ fun InsightsScreen(
             // Directly after Hydration: the two nutrition signals sit together.
             Spacer(Modifier.height(12.dp))
             SupplementCard(supplements)
+
+            Spacer(Modifier.height(12.dp))
+            SleepCard(sleep)
+
+            // The two cycle cards close the screen, both reading the one saved setup.
+            Spacer(Modifier.height(12.dp))
+            CycleRegularityCard(cycleRegularity)
+
+            Spacer(Modifier.height(12.dp))
+            SymptomPatternsCard(symptoms)
+
+            Spacer(Modifier.height(12.dp))
+            OvulationCard(ovulation)
 
             Spacer(Modifier.height(24.dp))
         }
@@ -338,6 +364,230 @@ private fun SupplementCard(state: SupplementInsights) {
             StreakTile("Days logged", state.daysLogged, "/7", Modifier.weight(1f))
             StreakTile("Supplements taken", state.suppTotal, "", Modifier.weight(1f))
         }
+    }
+}
+
+@Composable
+private fun SleepCard(state: SleepInsights) {
+    val colors = MaterialTheme.colorScheme
+    if (!state.hasData) {
+        EmptyInsightsCard("Sleep", state.insight)
+        return
+    }
+
+    Column {
+        // No goal line, and no trailing figure: there is no "right" amount of sleep to score her
+        // against, so the card shows the week and the average and makes no judgement.
+        BarsCard(
+            title = "Sleep",
+            trailing = null,
+            values = state.bars,
+            labels = weekdayLabels,
+            barHeight = 112.dp,
+            brush = Brush.verticalGradient(listOf(BabyLavender, PowderBlue)),
+            insight = state.insight,
+        )
+        Spacer(Modifier.height(12.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            TextTile(
+                "Nightly average",
+                SleepInsightLogic.formatDuration(state.nightlyAverageMinutes ?: 0),
+                Modifier.weight(1f),
+            )
+            TextTile("Nights logged", "${state.nightsLogged}/7", Modifier.weight(1f))
+        }
+    }
+}
+
+@Composable
+private fun CycleRegularityCard(state: CycleRegularityInsights) {
+    val colors = MaterialTheme.colorScheme
+    if (!state.hasData) {
+        EmptyInsightsCard("Cycle regularity", state.insight)
+        return
+    }
+
+    val length = state.cycleLength!!
+    InsightsCard {
+        Text("Cycle regularity", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+
+        Spacer(Modifier.height(16.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            TextTile("Your cycle", "$length days", Modifier.weight(1f))
+            TextTile(
+                "Typical",
+                "${CycleRegularityLogic.typicalMin}–${CycleRegularityLogic.typicalMax} days",
+                Modifier.weight(1f),
+            )
+        }
+
+        // One point against a range — NOT a trend line. The app stores a single cycle length and no
+        // history at all, so there is nothing here that could honestly be plotted over time.
+        Spacer(Modifier.height(16.dp))
+        val position = ((length - CycleRegularityLogic.typicalMin).toFloat() /
+            (CycleRegularityLogic.typicalMax - CycleRegularityLogic.typicalMin))
+            .coerceIn(0f, 1f)
+        Box(Modifier.fillMaxWidth()) {
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(6.dp)
+                    .align(Alignment.Center)
+                    .clip(CircleShape)
+                    .background(
+                        if (state.inTypicalRange) PowderBlue.copy(alpha = 0.35f)
+                        else colors.surfaceVariant.copy(alpha = 0.6f),
+                    ),
+            )
+            Row(Modifier.fillMaxWidth()) {
+                // Weights must be strictly positive, so a marker at either end still lays out.
+                Spacer(Modifier.weight(position.coerceIn(0.001f, 0.999f)))
+                Box(
+                    Modifier
+                        .size(14.dp)
+                        .clip(CircleShape)
+                        .background(if (state.inTypicalRange) ElectricLavender else PowderPink),
+                )
+                Spacer(Modifier.weight((1f - position).coerceIn(0.001f, 0.999f)))
+            }
+        }
+
+        Spacer(Modifier.height(14.dp))
+        Text(state.insight, style = MaterialTheme.typography.bodyMedium, color = colors.onSurface.copy(alpha = 0.8f))
+    }
+}
+
+@Composable
+private fun SymptomPatternsCard(state: SymptomPatternInsights) {
+    val colors = MaterialTheme.colorScheme
+    InsightsCard {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
+            Text("Symptom patterns", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+            Text("Last 28 days", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+        }
+
+        // The grid is drawn even when empty — an empty grid is the truth, and it shows her the shape
+        // the card will take. It is never seeded with anything she didn't log.
+        Spacer(Modifier.height(16.dp))
+        state.heatmapValues.chunked(7).forEach { week ->
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                week.forEach { count ->
+                    Box(
+                        Modifier
+                            .weight(1f)
+                            .aspectRatio(1f)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(
+                                when {
+                                    count <= 0 -> colors.surfaceVariant.copy(alpha = 0.45f)
+                                    count == 1 -> ElectricLavender.copy(alpha = 0.35f)
+                                    count == 2 -> ElectricLavender.copy(alpha = 0.6f)
+                                    else -> ElectricLavender.copy(alpha = 0.9f)
+                                },
+                            ),
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.height(8.dp))
+        Text(state.insight, style = MaterialTheme.typography.bodyMedium, color = colors.onSurface.copy(alpha = 0.8f))
+    }
+}
+
+@Composable
+private fun OvulationCard(state: OvulationInsights) {
+    val colors = MaterialTheme.colorScheme
+    if (!state.hasData) {
+        EmptyInsightsCard("Ovulation", state.insight)
+        return
+    }
+
+    InsightsCard {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
+            Text("Ovulation", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+            // The card's headline word. Everything below it is arithmetic on her last period date.
+            Text("Predicted", style = MaterialTheme.typography.bodyMedium, color = ElectricLavender, fontWeight = FontWeight.Medium)
+        }
+
+        Spacer(Modifier.height(16.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            TextTile("Ovulation day", state.ovulationDate?.format(dayMonth) ?: "—", Modifier.weight(1f))
+            TextTile(
+                "Fertile window",
+                if (state.fertileWindowStart != null && state.fertileWindowEnd != null) {
+                    "${state.fertileWindowStart.format(dayMonth)} – ${state.fertileWindowEnd.format(dayMonth)}"
+                } else {
+                    "—"
+                },
+                Modifier.weight(1f),
+            )
+        }
+
+        // The cycle as a ribbon, coloured by the same DayType the Track calendar uses. Today is the
+        // tall segment — a position in the cycle, not a measurement of it.
+        Spacer(Modifier.height(18.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth().height(28.dp),
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
+            verticalAlignment = Alignment.Bottom,
+        ) {
+            state.dayTypes.forEachIndexed { index, type ->
+                val isToday = index + 1 == state.currentDayOfCycle
+                Box(
+                    Modifier
+                        .weight(1f)
+                        .fillMaxHeight(if (isToday) 1f else 0.6f)
+                        .clip(RoundedCornerShape(3.dp))
+                        .background(
+                            when (type) {
+                                DayType.PERIOD -> PowderPink
+                                DayType.FERTILE -> PowderBlue
+                                DayType.OVULATION -> ElectricLavender
+                                DayType.LUTEAL -> BabyLavender.copy(alpha = 0.45f)
+                                DayType.FOLLICULAR -> colors.surfaceVariant
+                            },
+                        ),
+                )
+            }
+        }
+
+        Spacer(Modifier.height(8.dp))
+        Text(
+            "Day 1 to day ${state.cycleLength} — today is the tall marker.",
+            fontSize = 10.sp,
+            color = colors.onSurfaceVariant,
+        )
+
+        Spacer(Modifier.height(14.dp))
+        Text(state.insight, style = MaterialTheme.typography.bodyMedium, color = colors.onSurface.copy(alpha = 0.8f))
+    }
+}
+
+/** The one empty-state shape: the card's real title, and a line that says plainly what is missing. */
+@Composable
+private fun EmptyInsightsCard(title: String, message: String) {
+    val colors = MaterialTheme.colorScheme
+    InsightsCard {
+        Text(title, style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+        Spacer(Modifier.height(12.dp))
+        Text(message, style = MaterialTheme.typography.bodyLarge, color = colors.onSurfaceVariant)
+    }
+}
+
+/** [StreakTile]'s sibling, for values that are text rather than a count with a unit. */
+@Composable
+private fun TextTile(label: String, value: String, modifier: Modifier = Modifier) {
+    val colors = MaterialTheme.colorScheme
+    Column(
+        modifier = modifier.clip(RoundedCornerShape(16.dp)).background(colors.surfaceVariant.copy(alpha = 0.4f)).padding(14.dp),
+    ) {
+        Eyebrow(label, color = colors.onSurfaceVariant)
+        Spacer(Modifier.height(4.dp))
+        Text(value, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
     }
 }
 
