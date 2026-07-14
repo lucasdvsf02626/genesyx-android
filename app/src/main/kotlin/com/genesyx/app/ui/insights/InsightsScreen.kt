@@ -58,6 +58,7 @@ fun InsightsScreen(
     val ph by viewModel.phInsights.collectAsState()
     val consistency by viewModel.consistencyInsights.collectAsState()
     val hydration by viewModel.hydrationInsights.collectAsState()
+    val supplements by viewModel.supplementInsights.collectAsState()
 
     Column(
         modifier = Modifier
@@ -93,6 +94,10 @@ fun InsightsScreen(
 
             Spacer(Modifier.height(12.dp))
             HydrationCard(hydration)
+
+            // Directly after Hydration: the two nutrition signals sit together.
+            Spacer(Modifier.height(12.dp))
+            SupplementCard(supplements)
 
             Spacer(Modifier.height(24.dp))
         }
@@ -298,6 +303,42 @@ private fun HydrationCard(state: HydrationInsights) {
         brush = Brush.verticalGradient(listOf(ElectricBlue, PowderBlue)),
         insight = state.insight,
     )
+}
+
+@Composable
+private fun SupplementCard(state: SupplementInsights) {
+    val colors = MaterialTheme.colorScheme
+
+    // Neither of these is a failure state, so neither reads like one.
+    if (!state.hasPlan || !state.hasData) {
+        InsightsCard {
+            Text("Supplements", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+            Spacer(Modifier.height(12.dp))
+            Text(
+                if (state.hasPlan) state.insight else "Choose the supplements you're taking and this card will follow along.",
+                style = MaterialTheme.typography.bodyLarge,
+                color = colors.onSurfaceVariant,
+            )
+        }
+        return
+    }
+
+    Column {
+        BarsCard(
+            title = "Supplements",
+            trailing = "of ${state.planSize} a day",
+            values = state.bars,
+            labels = weekdayLabels,
+            barHeight = 112.dp,
+            brush = Brush.verticalGradient(listOf(ElectricLavender, PowderBlue)),
+            insight = state.insight,
+        )
+        Spacer(Modifier.height(12.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            StreakTile("Days logged", state.daysLogged, "/7", Modifier.weight(1f))
+            StreakTile("Supplements taken", state.suppTotal, "", Modifier.weight(1f))
+        }
+    }
 }
 
 @Composable

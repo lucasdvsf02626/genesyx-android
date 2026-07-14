@@ -4,11 +4,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.genesyx.app.data.DailyLogRepository
 import com.genesyx.app.data.PhRepository
+import com.genesyx.app.data.PreferencesRepository
 import com.genesyx.app.data.StreakRepository
+import com.genesyx.app.domain.model.Supplement
 import com.genesyx.app.domain.ph.PhStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
@@ -45,11 +48,24 @@ data class HydrationInsights(
     val insight: String = "Log your water for a few days and your hydration pattern will show up here.",
 )
 
+data class SupplementInsights(
+    /** False only if her plan is empty — the card then invites her to set one rather than show 0/0. */
+    val hasPlan: Boolean = true,
+    val hasData: Boolean = false,
+    /** Mon..Sun of the current week, as a percentage of her plan taken that day. */
+    val bars: List<Int> = List(7) { 0 },
+    val daysLogged: Int = 0,
+    val suppTotal: Int = 0,
+    val planSize: Int = Supplement.defaultPlan.size,
+    val insight: String = "No supplements logged yet this week — even one, whenever you remember, is a gentle start.",
+)
+
 @HiltViewModel
 class InsightsViewModel @Inject constructor(
     phRepository: PhRepository,
     dailyLogRepository: DailyLogRepository,
     streakRepository: StreakRepository,
+    preferencesRepository: PreferencesRepository,
 ) : ViewModel() {
 
     val phInsights: StateFlow<PhInsights> =
@@ -70,12 +86,23 @@ class InsightsViewModel @Inject constructor(
                 initialValue = ConsistencyInsights(),
             )
 
+    // Her goal, not a constant. The bars are a percentage of what she asked for.
     val hydrationInsights: StateFlow<HydrationInsights> =
-        dailyLogRepository.logByDate
-            .map { logs -> HydrationInsightLogic.compute(logs) }
+        combine(dailyLogRepository.logByDate, preferencesRepository.hydrationGoalMl) { logs, goalMl ->
+            HydrationInsightLogic.compute(logs, goalMl = goalMl)
+        }
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5_000),
                 initialValue = HydrationInsights(),
+            )
+
+    val supplementInsights: StateFlow<SupplementInsights> =
+        dailyLogRepository.logByDate
+            .map { logs -> SupplementInsightLogic.compute(logs) }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = SupplementInsights(),
             )
 }

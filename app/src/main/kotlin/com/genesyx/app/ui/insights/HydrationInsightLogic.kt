@@ -1,6 +1,7 @@
 package com.genesyx.app.ui.insights
 
 import com.genesyx.app.domain.model.DailyLog
+import com.genesyx.app.domain.streaks.StreakEngine
 import com.genesyx.app.domain.time.WeekBuckets
 import java.time.LocalDate
 import kotlin.math.abs
@@ -16,9 +17,18 @@ import kotlin.math.abs
  */
 object HydrationInsightLogic {
 
-    const val GOAL_ML = 2400
-
-    fun compute(logsByDate: Map<LocalDate, DailyLog>, today: LocalDate = LocalDate.now()): HydrationInsights {
+    /**
+     * [goalMl] is her goal, not a constant. This used to hold a private `GOAL_ML = 2400` that
+     * shadowed the goal she had actually set, so a woman on a 3000ml goal still had her bars scored
+     * against 2400 — the two numbers happened to be equal by default, which is why it went unseen.
+     * [PreferencesRepository][com.genesyx.app.data.PreferencesRepository] clamps to
+     * [StreakEngine.GOAL_RANGE_ML], so this can never be zero and the division below is safe.
+     */
+    fun compute(
+        logsByDate: Map<LocalDate, DailyLog>,
+        today: LocalDate = LocalDate.now(),
+        goalMl: Int = StreakEngine.DEFAULT_GOAL_ML,
+    ): HydrationInsights {
         fun waterOn(date: LocalDate) = logsByDate[date]?.waterMl ?: 0
         fun windowTotal(endingDaysAgo: Long) =
             (0L until 7L).sumOf { waterOn(today.minusDays(endingDaysAgo + it)) }
@@ -28,7 +38,7 @@ object HydrationInsightLogic {
 
         val weekStart = WeekBuckets.weekStart(today)
         val bars = (0L until 7L).map { day ->
-            (waterOn(weekStart.plusDays(day)) * 100 / GOAL_ML).coerceIn(0, 100)
+            (waterOn(weekStart.plusDays(day)) * 100 / goalMl).coerceIn(0, 100)
         }
 
         val avgMlPerDay = thisWindow / 7
