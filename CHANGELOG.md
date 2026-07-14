@@ -6,9 +6,29 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ---
 
-## [Unreleased] — 1.1.0 (versionCode 8)
+## [Unreleased] — 1.2.0
 
-Branch `feature/streaks-v2` → **PR #9**, open against `main`. Not merged, not uploaded to Play.
+Branch `feature/v1.2-supplement-card`, off `main`. Not merged, not uploaded to Play.
+
+### Added
+- **Supplement adherence card on Insights** — the current Monday-to-Sunday week, one bar per day
+  showing how much of your supplement plan you took, with tiles for days logged and supplements
+  taken. Live from your own logs. Sits directly beneath Hydration.
+- **Zinc is now loggable.** The Log screen offers five supplements: Folic acid, Vitamin D, Omega-3,
+  Zinc and Iron.
+
+### Fixed
+- **Your hydration goal is now used on the Insights card.** If you set a goal of 3000 ml, the
+  Insights bars were still scored against 2400 ml and read higher than they should have. They now
+  follow the goal you set. (Home, Nutrition and the streak engine were already correct.)
+
+### Notes
+- Iron can be logged but is not part of the four-item plan the card scores against, so taking it is
+  recorded without inflating adherence — and not taking it is not counted against you.
+
+---
+
+## [1.1.0] — versionCode 8 — merged to `main` (PR #9), not yet uploaded to Play
 
 ### Added
 - **Offline sync queue for daily logs** — the headline v1.1 item. A log saved offline now lands in
