@@ -1,9 +1,8 @@
 package com.genesyx.app.ui.insights
 
 import com.genesyx.app.domain.model.DailyLog
-import java.time.DayOfWeek
+import com.genesyx.app.domain.time.WeekBuckets
 import java.time.LocalDate
-import java.time.temporal.TemporalAdjusters
 import kotlin.math.abs
 
 /**
@@ -27,7 +26,7 @@ object HydrationInsightLogic {
         val thisWindow = windowTotal(0)
         if (thisWindow == 0) return HydrationInsights()
 
-        val weekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+        val weekStart = WeekBuckets.weekStart(today)
         val bars = (0L until 7L).map { day ->
             (waterOn(weekStart.plusDays(day)) * 100 / GOAL_ML).coerceIn(0, 100)
         }

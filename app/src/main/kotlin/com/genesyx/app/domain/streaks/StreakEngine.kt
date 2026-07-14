@@ -1,9 +1,8 @@
 package com.genesyx.app.domain.streaks
 
 import com.genesyx.app.domain.model.DailyLog
-import java.time.DayOfWeek
+import com.genesyx.app.domain.time.WeekBuckets
 import java.time.LocalDate
-import java.time.temporal.TemporalAdjusters
 
 /** A one-shot celebration. The ids are stable — they persist in preferences. */
 enum class Milestone(val id: String) {
@@ -145,8 +144,7 @@ object StreakEngine {
     private fun isCompleteWeek(activeDates: Set<LocalDate>, weekStart: LocalDate): Boolean =
         (0L until 7L).count { weekStart.plusDays(it) in activeDates } >= WEEK_COMPLETE_DAYS
 
-    private fun weekStart(date: LocalDate): LocalDate =
-        date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+    private fun weekStart(date: LocalDate): LocalDate = WeekBuckets.weekStart(date)
 
     /**
      * Any tracked field counts — water, mood, energy, a symptom, sleep, supplements or a note.
