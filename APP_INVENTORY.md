@@ -1,8 +1,60 @@
 # Genesyx — Product Inventory
 
-Derived from the codebase at `release/learn-v1` (`ac59b3a`), versionCode 7 / versionName 1.0.0 [`app/build.gradle.kts:38-39`].
+The **baseline** below (§1–§6) describes the v1.0 codebase at `release/learn-v1` (`ac59b3a`),
+versionCode 7 / versionName 1.0.0. **Current `main` is versionCode 9 / versionName 1.2.0** — the v1.1
+and v1.2 additions are summarised in **§0** and layered on top of the baseline. Where the baseline
+below conflicts with §0, §0 wins.
 
-Nineteen navigable destinations; six appear as bottom tabs [`ui/navigation/Screen.kt:46`]. Four compile-time feature gates control what a user can reach [`core/FeatureFlags.kt`].
+Six bottom tabs [`ui/navigation/Screen.kt`]. `FeatureFlags` on `main`: `PH_TRACKING` **on**,
+`PUSH_NOTIFICATIONS` **on** (v1.2 local reminders), `ADMIN_CLIENTS` off, `PARTNER_INVITES` off
+[`core/FeatureFlags.kt`].
+
+---
+
+## 0. What's changed since v1.0 (v1.1 + v1.2 — current `main`)
+
+**v1.1 (PR #9):** offline daily-log sync queue (Room v4, `PENDING_UPSERT` + `DailyLogSyncWorker`);
+streak engine v2 + the cross-platform `tracking_test_vectors.json` contract; user-set hydration goal
+(`GOAL_RANGE_ML = 1000..5000`, persisted in DataStore, read by engine/Nutrition/Home); log-screen
+Back discard-guard; Learn section (10 articles).
+
+**v1.2 (PR #10):**
+
+- **Local reminders** (`FeatureFlags.PUSH_NOTIFICATIONS = true`). Strictly on-device — WorkManager,
+  no FCM/token. Package `notifications/`: 6 `ReminderKind`s (daily log, missed-log, hydration, weekly
+  insights, re-engagement; nutrition reserved) across 4 channels, a self-rescheduling one-time-work
+  chain (`ReminderScheduler`/`ReminderWorker`), a pure/tested `ReminderPolicy` (quiet-hours wrap,
+  already-logged-today, daily cap, re-engagement pacing) + `NotificationPermission` state machine,
+  and a `BootReceiver`. New screen **Reminder Settings** (`Screen.ReminderSettings`) reached from
+  Profile → Reminders, with a pre-permission sheet. `cancelAll()` on sign-out/delete.
+- **Track "Your Trackers" + six detail screens** (`ui/track/detail/`). A card of six rows (Cycle,
+  Hydration, Urine pH, Sleep, Symptoms, Nutrition) with real per-signal summaries + spark dots
+  (`TrackerSummaryLogic`), each opening a typed detail destination:
+  - **Hydration** — the canonical editor (quick-add + manual entry, clamped; 7-day bars; days-on-goal;
+    streak; daily history). Writes only through `DailyLogRepository`.
+  - **Cycle** — phase + metrics + explicitly-estimated fertile window / ovulation, edit settings.
+  - **Urine pH** — wraps the existing `PhTrackerSection` (4.5–9.0 validation); the embedded Track pH
+    section moved here.
+  - **Sleep** — week summary + hours/minutes editor.
+  - **Symptoms** — 4-week heatmap + dated history into the log flow.
+  - **Nutrition** — supplement summary into the logging flow.
+- **Home summary cards (iOS parity).** Hydration-ring card (60dp ring, status pill, streak flame,
+  coaching, 7 day-dots, "X of 7 on goal") deep-linking to Track hydration; pH-nudge card (real last
+  reading / prompt) deep-linking to Track pH; first-run "Welcome to Genesyx" setup card; cycle-hero
+  divider + 3 metrics; 44dp gradient avatar. **Pregnancy entry removed from Home** (route/feature
+  kept).
+- **Insights are now all real-data** (the baseline §6 "fixed sample data" gaps are closed): sleep,
+  cycle regularity, symptom patterns, ovulation, consistency, urine pH, hydration, and
+  nutrition-consistency (renamed from "Supplements") — plus a **Weekly Summary** extra after *My logs*.
+- **Supplement adherence card** on Insights, loggable Zinc, one supplement vocabulary, one
+  week-bucketing impl (`domain/time/WeekBuckets`), hydration scored against the user-set goal, and
+  **intraday hydration coaching** (`HydrationCoach`) on Home + Nutrition.
+
+**Deep links:** `genesyx://{home,track,nutrition,insights,log}`, `genesyx://tracker/{hydration,ph}`
+(Home cards → Track detail), plus the reminder-tap routes.
+
+**Tests/builds:** 233 unit tests pass; debug + release (R8/lintVital) green. `SeedTestData` is a
+manual emulator seeder guarded by `@SeedOnly` (excluded from every gradle/CI run).
 
 ---
 
