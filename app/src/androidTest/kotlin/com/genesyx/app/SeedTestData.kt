@@ -31,6 +31,7 @@ import javax.inject.Inject
  *     -Pandroid.testInstrumentationRunnerArguments.class=com.genesyx.app.SeedTestData
  */
 @HiltAndroidTest
+@SeedOnly
 @RunWith(AndroidJUnit4::class)
 class SeedTestData {
 

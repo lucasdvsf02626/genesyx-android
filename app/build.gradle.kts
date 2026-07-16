@@ -47,6 +47,10 @@ android {
         versionName = "1.2.0"
 
         testInstrumentationRunner = "com.genesyx.app.HiltTestRunner"
+        // Exclude @SeedOnly utilities (e.g. SeedTestData) from every gradle/CI instrumentation run.
+        // They remain runnable via an explicit `adb shell am instrument -e class ...` (which does
+        // not pass this argument), so manual emulator seeding still works.
+        testInstrumentationRunnerArguments["notAnnotation"] = "com.genesyx.app.SeedOnly"
 
         // Supabase + Google config from local.properties (git-ignored); fallback to gradle properties.
         buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
