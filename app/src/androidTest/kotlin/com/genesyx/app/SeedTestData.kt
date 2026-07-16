@@ -1,9 +1,12 @@
 package com.genesyx.app
 
+import android.util.Log
 import com.genesyx.app.data.CycleRepository
 import com.genesyx.app.data.DailyLogRepository
 import com.genesyx.app.data.PhRepository
 import com.genesyx.app.data.PreferencesRepository
+import com.genesyx.app.data.SessionRepository
+import kotlinx.coroutines.withTimeoutOrNull
 import com.genesyx.app.domain.model.CycleSettings
 import com.genesyx.app.domain.model.DailyLog
 import com.genesyx.app.domain.model.EnergyLevel
@@ -41,12 +44,19 @@ class SeedTestData {
     @Inject lateinit var logs: DailyLogRepository
     @Inject lateinit var ph: PhRepository
     @Inject lateinit var prefs: PreferencesRepository
+    @Inject lateinit var session: SessionRepository
 
     @Before fun setup() = hilt.inject()
 
     @Test
     fun seed() = runBlocking<Unit> {
         val today = LocalDate.now()
+
+        // Seed for whoever is signed in — the repositories scope every write to session.currentUserId().
+        // Wait for the shared session to load first, or an early write could race to the guest bucket.
+        val uid = withTimeoutOrNull(5_000) { session.userId.first { it != null } }
+        Log.i("SeedTestData", "seeding for uid=${uid ?: "guest/LOCAL_USER_ID"} signedIn=${session.awaitSignedIn()}")
+
         prefs.setHydrationGoalMl(2400)
         cycle.upsert(CycleSettings(lastPeriodDate = today.minusDays(8), cycleLength = 28, periodLength = 5))
 
