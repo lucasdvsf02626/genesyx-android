@@ -11,6 +11,7 @@ import com.genesyx.app.domain.content.nutritionPhaseDescription
 import com.genesyx.app.domain.content.nutritionPhaseFoods
 import com.genesyx.app.domain.content.phaseLabel
 import com.genesyx.app.domain.cycle.CycleEngine
+import com.genesyx.app.domain.hydration.HydrationCoach
 import com.genesyx.app.domain.model.Phase
 import com.genesyx.app.domain.streaks.StreakEngine
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -19,6 +20,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import java.time.LocalDate
+import java.time.LocalTime
 import javax.inject.Inject
 
 data class NutritionUiState(
@@ -30,6 +32,8 @@ data class NutritionUiState(
     val waterMl: Int = 0,
     /** Her goal, from preferences — [StreakEngine.DEFAULT_GOAL_ML] only until she sets her own. */
     val waterGoalMl: Int = StreakEngine.DEFAULT_GOAL_ML,
+    /** Time-of-day pacing line for the hydration card — how today is going, right now. */
+    val hydrationCoaching: String = "",
     val weeklyStreak: Int = 0,
     /** Days this week she actually hit [waterGoalMl], which is not the same as days she logged. */
     val daysOnGoal: Int = 0,
@@ -52,10 +56,12 @@ class NutritionViewModel @Inject constructor(
         ) { settings, _, streaks, goalMl ->
             val today = LocalDate.now()
             val waterMl = dailyLogRepository.waterMlOn(today)
+            val coaching = HydrationCoach.coach(waterMl, goalMl, LocalTime.now()).message
             if (settings == null) {
                 NutritionUiState(
                     waterMl = waterMl,
                     waterGoalMl = goalMl,
+                    hydrationCoaching = coaching,
                     weeklyStreak = streaks.weeklyStreak,
                     daysOnGoal = streaks.daysOnGoal,
                 )
@@ -69,6 +75,7 @@ class NutritionViewModel @Inject constructor(
                     foods = nutritionPhaseFoods.getValue(phase),
                     waterMl = waterMl,
                     waterGoalMl = goalMl,
+                    hydrationCoaching = coaching,
                     weeklyStreak = streaks.weeklyStreak,
                     daysOnGoal = streaks.daysOnGoal,
                 )

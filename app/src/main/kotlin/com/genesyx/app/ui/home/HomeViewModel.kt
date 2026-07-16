@@ -13,6 +13,7 @@ import com.genesyx.app.domain.content.phaseHeroText
 import com.genesyx.app.domain.content.phaseSubLabel
 import com.genesyx.app.domain.content.phaseTags
 import com.genesyx.app.domain.cycle.CycleEngine
+import com.genesyx.app.domain.hydration.HydrationCoach
 import com.genesyx.app.domain.model.CycleSettings
 import com.genesyx.app.domain.streaks.StreakEngine
 import com.genesyx.app.domain.streaks.StreakState
@@ -41,6 +42,8 @@ data class HomeUiState(
     val hydrationLitres: Float? = null,
     /** Her goal, from preferences — the default only until she sets her own. */
     val hydrationGoalLitres: Float = StreakEngine.DEFAULT_GOAL_ML / 1000f,
+    /** Time-of-day pacing line for the hydration tile — how today is going, right now. */
+    val hydrationCoaching: String? = null,
     val streakDays: Int? = null,
     val isLoading: Boolean = false,
 )
@@ -100,6 +103,7 @@ class HomeViewModel @Inject constructor(
             settings = settings,
             hydrationLitres = if (waterMl > 0) waterMl / 1000f else null,
             hydrationGoalLitres = goalMl / 1000f,
+            hydrationCoaching = HydrationCoach.coach(waterMl, goalMl, LocalTime.now()).message,
             // Any logged activity, not water alone — the card is labelled "Streak", so it has to
             // count everything she tracks, and it must not reset at midnight.
             streakDays = streaks.dailyActivity,

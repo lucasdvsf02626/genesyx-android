@@ -11,6 +11,26 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 Branch `feature/v1.2-supplement-card`, off `main`. Not merged, not uploaded to Play.
 
 ### Added
+- **Weekly summary card on Insights** (iOS parity) — opens the Insights screen with the current
+  Mon–Sun week set against the one before: days logged vs last week, a mood/energy tally, and
+  hydration/sleep/supplement deltas shown *only* when both weeks hold the data to compare (last
+  week's silence is not treated as a week of zeros). Copy never scolds a quieter week. The
+  "meaningful log" definition was extracted from `StreakEngine` into one shared `DailyLog.isMeaningful()`
+  so the summary and the streak engine count days identically. `WeeklySummaryLogicTest` (9 cases);
+  `StreakEngineTest` + `TrackingVectorTest` unchanged, so the cross-platform contract is intact.
+- **Local reminders** (iOS parity; `FeatureFlags.PUSH_NOTIFICATIONS` on) — WorkManager-scheduled,
+  strictly on-device (no FCM, no server push, no token). Six reminder kinds (daily log, missed-log,
+  hydration, weekly insights, re-engagement; nutrition reserved) across four notification channels,
+  a self-rescheduling one-time-work chain, a Profile → **Reminders** settings screen (per-category
+  toggles, time pickers, day chips, quiet hours), a pre-permission sheet, and full `POST_NOTIFICATIONS`
+  handling incl. the Android-13 "dialog shows twice" trap. All scheduling and suppression logic is a
+  pure, tested `ReminderPolicy` (quiet-hours overnight wrap, already-logged-today, daily cap,
+  re-engagement pacing) + `NotificationPermission` state machine — 27 tests. Reminders `cancelAll()`
+  on sign-out and account deletion, so one can never deep-link a signed-out user past the auth gate.
+- **Intraday hydration coaching** (iOS parity) — a time-of-day pacing line on the Home hydration tile
+  and the Nutrition hydration card: it compares how much you've drunk with how much of the day has
+  passed and frames it by morning/afternoon/evening, never as a grade. Pure `HydrationCoach`
+  (8 tests); a fresh morning is never "behind", and being behind reads as an invitation, not a miss.
 - **Supplement adherence card on Insights** — the current Monday-to-Sunday week, one bar per day
   showing how much of your supplement plan you took, with tiles for days logged and supplements
   taken. Live from your own logs. Sits directly beneath Hydration.

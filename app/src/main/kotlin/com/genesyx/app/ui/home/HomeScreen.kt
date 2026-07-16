@@ -277,6 +277,17 @@ fun HomeContent(
                 )
             }
 
+            // Intraday hydration pacing — how today is going, framed by the time of day.
+            state.hydrationCoaching?.let { coaching ->
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    coaching,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 4.dp),
+                )
+            }
+
             Spacer(Modifier.height(20.dp))
 
             GxPrimaryButton(text = "Log today", onClick = { onNavigate(Screen.Log.route) }, leadingIcon = Icons.Filled.Add)
