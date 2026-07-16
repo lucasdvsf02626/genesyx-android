@@ -56,6 +56,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.genesyx.app.domain.model.DailyLog
 import com.genesyx.app.domain.model.EnergyLevel
 import com.genesyx.app.domain.model.Mood
+import com.genesyx.app.domain.model.Supplement
 import com.genesyx.app.ui.components.Eyebrow
 import com.genesyx.app.ui.components.GxPrimaryButton
 import com.genesyx.app.ui.components.ScreenHeader
@@ -63,7 +64,6 @@ import com.genesyx.app.ui.theme.ElectricBlue
 import com.genesyx.app.ui.theme.ElectricLavender
 
 private val DEFAULT_SYMPTOMS = listOf("Headache", "Fatigue", "Cramps", "Nausea", "Bloating", "Acne", "Backache", "Tender breasts")
-private val SUPPLEMENTS = listOf("Folic acid", "Vitamin D", "Iron", "Omega-3")
 
 private val moodIcons = mapOf(
     Mood.GREAT to Icons.Filled.Favorite,
@@ -234,7 +234,7 @@ private fun LogForm(initial: DailyLog, onClose: () -> Unit, viewModel: LogViewMo
             }
             Spacer(Modifier.height(12.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                MiniCard(Icons.Filled.Medication, "Supplements", "${supplements.size} of ${SUPPLEMENTS.size}", ElectricLavender, Modifier.weight(1f)) { suppOpen = true }
+                MiniCard(Icons.Filled.Medication, "Supplements", "${supplements.size} of ${Supplement.loggable.size}", ElectricLavender, Modifier.weight(1f)) { suppOpen = true }
             }
 
             // Notes
@@ -383,8 +383,10 @@ private fun SupplementsDialog(selected: Set<String>, onToggle: (String) -> Unit,
         title = { Text("Supplements") },
         text = {
             Column {
-                SUPPLEMENTS.forEach { s ->
-                    val checked = s in selected
+                Supplement.loggable.forEach { s ->
+                    // Toggles the wire name, shows the display name. The set she edits is the set that
+                    // is stored and synced, so the strings crossing that boundary never change.
+                    val checked = s.wireName in selected
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -392,11 +394,11 @@ private fun SupplementsDialog(selected: Set<String>, onToggle: (String) -> Unit,
                             .clip(RoundedCornerShape(12.dp))
                             .background(if (checked) ElectricLavender.copy(alpha = 0.08f) else Color.Transparent)
                             .border(1.dp, if (checked) ElectricLavender else colors.outline, RoundedCornerShape(12.dp))
-                            .clickable { onToggle(s) }
+                            .clickable { onToggle(s.wireName) }
                             .padding(14.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text(s, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, color = colors.onSurface, modifier = Modifier.weight(1f))
+                        Text(s.displayName, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, color = colors.onSurface, modifier = Modifier.weight(1f))
                         if (checked) Icon(Icons.Filled.Check, null, tint = ElectricLavender, modifier = Modifier.size(18.dp))
                     }
                 }

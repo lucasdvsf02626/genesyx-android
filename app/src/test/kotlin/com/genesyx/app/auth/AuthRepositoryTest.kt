@@ -33,6 +33,7 @@ class AuthRepositoryTest {
     private val dailyLogRepo = mockk<DailyLogRepository>(relaxed = true)
     private val phRepo = mockk<PhRepository>(relaxed = true)
     private val database = mockk<GenesyxDatabase>(relaxed = true)
+    private val reminderScheduler = mockk<com.genesyx.app.notifications.ReminderScheduler>(relaxed = true)
     private val logger = mockk<Logger>(relaxed = true)
 
     private fun repo(scope: CoroutineScope): AuthRepository {
@@ -44,7 +45,7 @@ class AuthRepositoryTest {
         }
         return AuthRepository(
             authService, session, profileRepo, cycleRepo, dailyLogRepo, phRepo, database,
-            dispatchers, scope, logger,
+            reminderScheduler, dispatchers, scope, logger,
         )
     }
 

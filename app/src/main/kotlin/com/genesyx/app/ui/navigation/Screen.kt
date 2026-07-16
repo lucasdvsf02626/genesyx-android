@@ -22,6 +22,15 @@ sealed class Screen(val route: String) {
     data object Pregnancy : Screen("pregnancy")
     data object Auth : Screen("auth")
     data object Clients : Screen("clients")
+    data object ReminderSettings : Screen("reminder_settings")
+
+    // Tracker detail destinations, reached from Track's "Your Trackers" list and Home deep links.
+    data object CycleDetail : Screen("tracker/cycle")
+    data object HydrationDetail : Screen("tracker/hydration")
+    data object PhDetail : Screen("tracker/ph")
+    data object SleepDetail : Screen("tracker/sleep")
+    data object SymptomsDetail : Screen("tracker/symptoms")
+    data object NutritionDetail : Screen("tracker/nutrition")
 
     // Learn. Bottom tab (took Profile's slot); also entered from Nutrition's "Learn more" section.
     data object Learn : Screen("learn")
@@ -59,6 +68,15 @@ sealed class Screen(val route: String) {
             Auth.route,
             Invite.route,
             Clients.route,
+            ReminderSettings.route,
+            // Tracker details are immersive editors reached from Track; the bar is hidden so back
+            // returns to Track (or to Home when deep-linked from a Home summary card).
+            CycleDetail.route,
+            HydrationDetail.route,
+            PhDetail.route,
+            SleepDetail.route,
+            SymptomsDetail.route,
+            NutritionDetail.route,
             // Reading and searching are immersive. `Learn` itself keeps the bar (it's a tab).
             ArticleDetail.route,
             LearnSearch.route,

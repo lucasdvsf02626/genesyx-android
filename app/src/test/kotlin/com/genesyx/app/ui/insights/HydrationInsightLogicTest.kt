@@ -86,4 +86,13 @@ class HydrationInsightLogicTest {
         val r = HydrationInsightLogic.compute(week, today)
         assertEquals(listOf(50, 0, 0, 0, 0, 0, 100), r.bars)
     }
+
+    @Test
+    fun `bars are a percentage of HER goal, not of a constant`() {
+        // The bug this closes: a private GOAL_ML = 2400 shadowed the goal she had actually set, so a
+        // 3000ml goal still scored her against 2400 and every bar read high.
+        val week = mapOf(monday to DailyLog(waterMl = 1500))
+        assertEquals(50, HydrationInsightLogic.compute(week, today, goalMl = 3000).bars.first())
+        assertEquals(75, HydrationInsightLogic.compute(week, today, goalMl = 2000).bars.first())
+    }
 }

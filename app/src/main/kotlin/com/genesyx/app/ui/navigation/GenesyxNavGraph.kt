@@ -24,6 +24,13 @@ import com.genesyx.app.ui.screens.AuthScreen
 import com.genesyx.app.ui.screens.InviteScreen
 import com.genesyx.app.ui.screens.LogScreen
 import com.genesyx.app.ui.nutrition.NutritionScreen
+import com.genesyx.app.ui.settings.ReminderSettingsScreen
+import com.genesyx.app.ui.track.detail.CycleDetailScreen
+import com.genesyx.app.ui.track.detail.HydrationDetailScreen
+import com.genesyx.app.ui.track.detail.NutritionDetailScreen
+import com.genesyx.app.ui.track.detail.PhDetailScreen
+import com.genesyx.app.ui.track.detail.SleepDetailScreen
+import com.genesyx.app.ui.track.detail.SymptomsDetailScreen
 import com.genesyx.app.ui.profile.ProfileScreen
 import com.genesyx.app.ui.screens.PregnancyScreen
 import com.genesyx.app.ui.track.TrackScreen
@@ -82,16 +89,67 @@ fun GenesyxNavGraph(
             )
         }
 
-        // ── Main tabs
-        composable(Screen.Home.route) { HomeScreen(navController) }
-        composable(Screen.Track.route) { TrackScreen(navController) }
-        composable(Screen.Nutrition.route) { NutritionScreen(navController) }
-        composable(Screen.Insights.route) { InsightsScreen(navController) }
+        // ── Main tabs. Reminder taps deep-link straight to the relevant tab (genesyx://<host>).
+        composable(
+            Screen.Home.route,
+            deepLinks = listOf(navDeepLink { uriPattern = "genesyx://home" }),
+        ) { HomeScreen(navController) }
+        composable(
+            Screen.Track.route,
+            deepLinks = listOf(navDeepLink { uriPattern = "genesyx://track" }),
+        ) { TrackScreen(navController) }
+        composable(
+            Screen.Nutrition.route,
+            deepLinks = listOf(navDeepLink { uriPattern = "genesyx://nutrition" }),
+        ) { NutritionScreen(navController) }
+        composable(
+            Screen.Insights.route,
+            deepLinks = listOf(navDeepLink { uriPattern = "genesyx://insights" }),
+        ) { InsightsScreen(navController) }
         composable(Screen.Profile.route) { ProfileScreen(navController) }
 
         // ── Secondary / modal destinations
-        composable(Screen.Log.route) {
+        composable(
+            Screen.Log.route,
+            deepLinks = listOf(navDeepLink { uriPattern = "genesyx://log" }),
+        ) {
             LogScreen(onClose = { navController.popBackStack() })
+        }
+        composable(Screen.ReminderSettings.route) {
+            ReminderSettingsScreen(onBack = { navController.popBackStack() })
+        }
+
+        // ── Tracker details (reached from Track's "Your Trackers" list + Home deep links)
+        composable(Screen.CycleDetail.route) {
+            CycleDetailScreen(onBack = { navController.popBackStack() })
+        }
+        composable(
+            Screen.HydrationDetail.route,
+            deepLinks = listOf(navDeepLink { uriPattern = "genesyx://tracker/hydration" }),
+        ) {
+            HydrationDetailScreen(onBack = { navController.popBackStack() })
+        }
+        composable(
+            Screen.PhDetail.route,
+            deepLinks = listOf(navDeepLink { uriPattern = "genesyx://tracker/ph" }),
+        ) {
+            PhDetailScreen(onBack = { navController.popBackStack() })
+        }
+        composable(Screen.SleepDetail.route) {
+            SleepDetailScreen(onBack = { navController.popBackStack() })
+        }
+        composable(Screen.SymptomsDetail.route) {
+            SymptomsDetailScreen(
+                onBack = { navController.popBackStack() },
+                onEditToday = { navController.navigate(Screen.Log.route) },
+                onOpenHistory = { navController.navigate(Screen.LogHistory.route) },
+            )
+        }
+        composable(Screen.NutritionDetail.route) {
+            NutritionDetailScreen(
+                onBack = { navController.popBackStack() },
+                onLog = { navController.navigate(Screen.Log.route) },
+            )
         }
         composable(Screen.LogHistory.route) {
             LogHistoryScreen(onBack = { navController.popBackStack() })

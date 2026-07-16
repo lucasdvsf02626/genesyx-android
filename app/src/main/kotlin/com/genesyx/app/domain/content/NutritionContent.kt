@@ -2,6 +2,7 @@ package com.genesyx.app.domain.content
 
 import androidx.compose.ui.graphics.Color
 import com.genesyx.app.domain.model.Phase
+import com.genesyx.app.domain.model.Supplement
 
 /**
  * Nutrition-screen content, ported verbatim from the web `screens/Nutrition.tsx` (`PHASE_FOODS`,
@@ -124,12 +125,21 @@ val nutritionPhaseDescription: Map<Phase, String> = mapOf(
     Phase.LUTEAL to "Foods to ease PMS and support your winding-down phase.",
 )
 
-/** Supplement-plan item shown as the F/O/D/Z stack + "Review Plan" dialog. */
-data class SupplementPlanItem(val initial: String, val name: String, val rationale: String)
+/**
+ * Supplement-plan item shown as the F/O/D/Z stack + "Review Plan" dialog.
+ *
+ * Points at [Supplement] so the plan and the Log now speak one vocabulary. [initial] stays explicit
+ * because the stack reads D for Vitamin D, not V. [name] recomposes the dosage the display wants
+ * from the two fields the model keeps apart.
+ */
+data class SupplementPlanItem(val supplement: Supplement, val initial: String, val rationale: String) {
+    val name: String
+        get() = supplement.dosageNote?.let { "${supplement.displayName} ($it)" } ?: supplement.displayName
+}
 
 val supplementPlan = listOf(
-    SupplementPlanItem("F", "Folate (400–800 mcg)", "Supports egg quality and early cell development."),
-    SupplementPlanItem("O", "Omega-3 (DHA/EPA)", "Hormone balance and reduced inflammation."),
-    SupplementPlanItem("D", "Vitamin D (600–1000 IU)", "Supports ovulation and overall wellbeing."),
-    SupplementPlanItem("Z", "Zinc (8–11 mg)", "Supports the LH surge that triggers ovulation."),
+    SupplementPlanItem(Supplement.FOLATE, "F", "Supports egg quality and early cell development."),
+    SupplementPlanItem(Supplement.OMEGA_3, "O", "Hormone balance and reduced inflammation."),
+    SupplementPlanItem(Supplement.VITAMIN_D, "D", "Supports ovulation and overall wellbeing."),
+    SupplementPlanItem(Supplement.ZINC, "Z", "Supports the LH surge that triggers ovulation."),
 )

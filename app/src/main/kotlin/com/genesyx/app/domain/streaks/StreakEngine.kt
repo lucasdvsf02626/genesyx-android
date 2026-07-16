@@ -1,9 +1,9 @@
 package com.genesyx.app.domain.streaks
 
 import com.genesyx.app.domain.model.DailyLog
-import java.time.DayOfWeek
+import com.genesyx.app.domain.model.isMeaningful
+import com.genesyx.app.domain.time.WeekBuckets
 import java.time.LocalDate
-import java.time.temporal.TemporalAdjusters
 
 /** A one-shot celebration. The ids are stable — they persist in preferences. */
 enum class Milestone(val id: String) {
@@ -77,7 +77,7 @@ object StreakEngine {
         bestSoFar: Int = 0,
         goalMl: Int = DEFAULT_GOAL_ML,
     ): StreakState {
-        val activeDates = logsByDate.filterValues { it.hasActivity() }.keys + phByDate
+        val activeDates = logsByDate.filterValues { it.isMeaningful() }.keys + phByDate
 
         val dailyActivity = runEndingToday(today) { it in activeDates }
         val dailyHydration = runEndingToday(today) { (logsByDate[it]?.waterMl ?: 0) > 0 }
@@ -145,23 +145,6 @@ object StreakEngine {
     private fun isCompleteWeek(activeDates: Set<LocalDate>, weekStart: LocalDate): Boolean =
         (0L until 7L).count { weekStart.plusDays(it) in activeDates } >= WEEK_COMPLETE_DAYS
 
-    private fun weekStart(date: LocalDate): LocalDate =
-        date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+    private fun weekStart(date: LocalDate): LocalDate = WeekBuckets.weekStart(date)
 
-    /**
-     * Any tracked field counts — water, mood, energy, a symptom, sleep, supplements or a note.
-     * The single definition of a "meaningful log"; the cross-platform contract points here.
-     *
-     * Sleep is `!= null`, deliberately, not `> 0`: null means "not entered", so an explicitly
-     * logged zero is a real record. Someone logging an all-nighter *is* logging, and that is
-     * exactly the day she most deserves credit for tracking — `> 0` would silently discount it.
-     */
-    private fun DailyLog.hasActivity(): Boolean =
-        waterMl > 0 ||
-            mood != null ||
-            energy != null ||
-            symptoms.isNotEmpty() ||
-            sleepMinutes != null ||
-            supplements.isNotEmpty() ||
-            !notes.isNullOrBlank()
 }

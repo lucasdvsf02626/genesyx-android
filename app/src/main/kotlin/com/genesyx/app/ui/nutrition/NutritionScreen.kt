@@ -96,6 +96,7 @@ fun NutritionScreen(
             HydrationCard(
                 waterMl = state.waterMl,
                 goalMl = state.waterGoalMl,
+                coaching = state.hydrationCoaching,
                 weeklyStreak = state.weeklyStreak,
                 daysOnGoal = state.daysOnGoal,
                 onAdd = { viewModel.adjustWater(200) },
@@ -172,6 +173,7 @@ fun NutritionScreen(
 private fun HydrationCard(
     waterMl: Int,
     goalMl: Int,
+    coaching: String,
     weeklyStreak: Int,
     daysOnGoal: Int,
     onAdd: () -> Unit,
@@ -233,6 +235,11 @@ private fun HydrationCard(
                 TextButton(onClick = onEditGoal) {
                     Text("Edit goal", style = MaterialTheme.typography.bodyMedium, color = ElectricLavender)
                 }
+            }
+            // Intraday pacing — framed by the time of day, a nudge rather than a verdict.
+            if (coaching.isNotEmpty()) {
+                Spacer(Modifier.height(4.dp))
+                Text(coaching, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant.copy(alpha = 0.8f))
             }
             if (daysOnGoal >= 1) {
                 Text(
