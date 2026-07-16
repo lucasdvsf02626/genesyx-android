@@ -25,6 +25,12 @@ import com.genesyx.app.ui.screens.InviteScreen
 import com.genesyx.app.ui.screens.LogScreen
 import com.genesyx.app.ui.nutrition.NutritionScreen
 import com.genesyx.app.ui.settings.ReminderSettingsScreen
+import com.genesyx.app.ui.track.detail.CycleDetailScreen
+import com.genesyx.app.ui.track.detail.HydrationDetailScreen
+import com.genesyx.app.ui.track.detail.NutritionDetailScreen
+import com.genesyx.app.ui.track.detail.PhDetailScreen
+import com.genesyx.app.ui.track.detail.SleepDetailScreen
+import com.genesyx.app.ui.track.detail.SymptomsDetailScreen
 import com.genesyx.app.ui.profile.ProfileScreen
 import com.genesyx.app.ui.screens.PregnancyScreen
 import com.genesyx.app.ui.track.TrackScreen
@@ -111,6 +117,39 @@ fun GenesyxNavGraph(
         }
         composable(Screen.ReminderSettings.route) {
             ReminderSettingsScreen(onBack = { navController.popBackStack() })
+        }
+
+        // ── Tracker details (reached from Track's "Your Trackers" list + Home deep links)
+        composable(Screen.CycleDetail.route) {
+            CycleDetailScreen(onBack = { navController.popBackStack() })
+        }
+        composable(
+            Screen.HydrationDetail.route,
+            deepLinks = listOf(navDeepLink { uriPattern = "genesyx://tracker/hydration" }),
+        ) {
+            HydrationDetailScreen(onBack = { navController.popBackStack() })
+        }
+        composable(
+            Screen.PhDetail.route,
+            deepLinks = listOf(navDeepLink { uriPattern = "genesyx://tracker/ph" }),
+        ) {
+            PhDetailScreen(onBack = { navController.popBackStack() })
+        }
+        composable(Screen.SleepDetail.route) {
+            SleepDetailScreen(onBack = { navController.popBackStack() })
+        }
+        composable(Screen.SymptomsDetail.route) {
+            SymptomsDetailScreen(
+                onBack = { navController.popBackStack() },
+                onEditToday = { navController.navigate(Screen.Log.route) },
+                onOpenHistory = { navController.navigate(Screen.LogHistory.route) },
+            )
+        }
+        composable(Screen.NutritionDetail.route) {
+            NutritionDetailScreen(
+                onBack = { navController.popBackStack() },
+                onLog = { navController.navigate(Screen.Log.route) },
+            )
         }
         composable(Screen.LogHistory.route) {
             LogHistoryScreen(onBack = { navController.popBackStack() })

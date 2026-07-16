@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -24,6 +25,12 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.outlined.Bedtime
+import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.MonitorHeart
+import androidx.compose.material.icons.outlined.Restaurant
+import androidx.compose.material.icons.outlined.Science
+import androidx.compose.material.icons.outlined.WaterDrop
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -42,6 +49,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -64,10 +74,11 @@ import com.genesyx.app.ui.components.GxPrimaryButton
 import com.genesyx.app.ui.components.PhReadingRow
 import com.genesyx.app.ui.components.tintOnWhite
 import com.genesyx.app.ui.navigation.Screen
-import com.genesyx.app.ui.ph.PhTrackerSection
 import com.genesyx.app.ui.theme.BabyLavender
+import com.genesyx.app.ui.theme.ElectricBlue
 import com.genesyx.app.ui.theme.ElectricLavender
 import com.genesyx.app.ui.theme.GenesyxTheme
+import com.genesyx.app.ui.theme.PhOptimal
 import com.genesyx.app.ui.theme.PowderBlue
 import com.genesyx.app.ui.theme.PowderPink
 import java.time.LocalDate
@@ -85,9 +96,11 @@ fun TrackScreen(
 ) {
     val settings by viewModel.settings.collectAsState()
     val logDays by viewModel.logDays.collectAsState()
+    val summaries by viewModel.trackerSummaries.collectAsState()
     TrackContent(
         settings = settings,
         logDays = logDays,
+        summaries = summaries,
         onNavigate = { navController.navigate(it) },
         onSaveCycle = { viewModel.saveCycleSettings(it) },
     )
@@ -97,6 +110,7 @@ fun TrackScreen(
 fun TrackContent(
     settings: CycleSettings?,
     logDays: Map<LocalDate, LogDay> = emptyMap(),
+    summaries: TrackerSummaries = emptyTrackerSummaries(),
     onNavigate: (String) -> Unit,
     onSaveCycle: (CycleSettings) -> Unit,
 ) {
@@ -277,13 +291,14 @@ fun TrackContent(
             leadingIcon = Icons.Filled.Add,
         )
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(20.dp))
 
-        // ── pH Tracker section — gated off for 1.0 (FeatureFlags.PH_TRACKING)
-        if (com.genesyx.app.core.FeatureFlags.PH_TRACKING) {
-            PhTrackerSection()
-            Spacer(Modifier.height(24.dp))
-        }
+        // ── Your Trackers — the canonical entry into inspecting/editing each tracked signal.
+        Eyebrow("Your trackers", color = colors.onSurfaceVariant)
+        Spacer(Modifier.height(10.dp))
+        YourTrackersCard(summaries = summaries, onNavigate = onNavigate)
+
+        Spacer(Modifier.height(24.dp))
     }
 
     // ── Dialogs
@@ -507,6 +522,107 @@ private fun DayDetailDialog(
             TextButton(onClick = onDismiss) { Text("Close", color = ElectricLavender) }
         },
     )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Your Trackers
+// ─────────────────────────────────────────────────────────────────────────────
+
+private data class TrackerRowSpec(
+    val title: String,
+    val icon: ImageVector,
+    val tint: Color,
+    val route: String,
+    val summary: TrackerSummary,
+)
+
+@Composable
+private fun YourTrackersCard(summaries: TrackerSummaries, onNavigate: (String) -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    val rows = listOf(
+        TrackerRowSpec("Cycle", Icons.Outlined.CalendarMonth, ElectricLavender, Screen.CycleDetail.route, summaries.cycle),
+        TrackerRowSpec("Hydration", Icons.Outlined.WaterDrop, ElectricBlue, Screen.HydrationDetail.route, summaries.hydration),
+        TrackerRowSpec("Urine pH", Icons.Outlined.Science, PhOptimal, Screen.PhDetail.route, summaries.ph),
+        TrackerRowSpec("Sleep", Icons.Outlined.Bedtime, BabyLavender, Screen.SleepDetail.route, summaries.sleep),
+        TrackerRowSpec("Symptoms", Icons.Outlined.MonitorHeart, PowderPink, Screen.SymptomsDetail.route, summaries.symptoms),
+        TrackerRowSpec("Nutrition", Icons.Outlined.Restaurant, PowderBlue, Screen.NutritionDetail.route, summaries.nutrition),
+    )
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = colors.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    ) {
+        Column {
+            rows.forEachIndexed { i, row ->
+                TrackerRow(row, onClick = { onNavigate(row.route) })
+                if (i < rows.lastIndex) {
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(start = 66.dp, end = 16.dp)
+                            .height(1.dp)
+                            .background(colors.outline.copy(alpha = 0.5f)),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TrackerRow(spec: TrackerRowSpec, onClick: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 56.dp)
+            .clickable(onClick = onClick)
+            .clearAndSetSemantics { contentDescription = "${spec.title}. ${spec.summary.value}" }
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(38.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(spec.tint.copy(alpha = 0.15f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(spec.icon, null, tint = spec.tint, modifier = Modifier.size(20.dp))
+        }
+        Spacer(Modifier.size(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(spec.title, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+            Spacer(Modifier.height(2.dp))
+            Text(
+                spec.summary.value,
+                style = MaterialTheme.typography.bodySmall,
+                color = colors.onSurfaceVariant,
+            )
+        }
+        if (spec.summary.spark.isNotEmpty()) {
+            SparkDots(spec.summary.spark, spec.tint)
+            Spacer(Modifier.size(8.dp))
+        }
+        Icon(Icons.Filled.ChevronRight, null, tint = colors.onSurfaceVariant, modifier = Modifier.size(20.dp))
+    }
+}
+
+/** Seven compact day dots — filled where that day has data, muted where it doesn't. */
+@Composable
+private fun SparkDots(spark: List<Boolean>, tint: Color) {
+    val colors = MaterialTheme.colorScheme
+    Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+        spark.forEach { on ->
+            Box(
+                Modifier
+                    .size(5.dp)
+                    .clip(CircleShape)
+                    .background(if (on) tint else colors.onSurfaceVariant.copy(alpha = 0.25f)),
+            )
+        }
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

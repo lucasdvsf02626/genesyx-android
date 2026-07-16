@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.genesyx.app.data.CycleRepository
 import com.genesyx.app.data.DailyLogRepository
 import com.genesyx.app.data.PhRepository
+import com.genesyx.app.data.PreferencesRepository
 import com.genesyx.app.domain.model.CycleSettings
 import com.genesyx.app.domain.model.LogDay
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -20,9 +21,20 @@ class TrackViewModel @Inject constructor(
     private val cycleRepository: CycleRepository,
     dailyLogRepository: DailyLogRepository,
     phRepository: PhRepository,
+    preferencesRepository: PreferencesRepository,
 ) : ViewModel() {
 
     val settings: StateFlow<CycleSettings?> = cycleRepository.settings
+
+    /** Real-data summaries for the "Your Trackers" rows — same repositories every other screen reads. */
+    val trackerSummaries: StateFlow<TrackerSummaries> = combine(
+        dailyLogRepository.logByDate,
+        phRepository.readings,
+        cycleRepository.settings,
+        preferencesRepository.hydrationGoalMl,
+    ) { logs, readings, settings, goalMl ->
+        TrackerSummaryLogic.compute(logs, readings, settings, goalMl)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyTrackerSummaries())
 
     /**
      * What the user actually logged, keyed by day, so tapping a calendar date can show it. The
