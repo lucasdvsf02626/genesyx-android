@@ -5,6 +5,12 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
+    <!-- Local reminders (WorkManager + NotificationManager). No FCM, no server push. -->
+    <!-- API 33+ runtime notification permission; harmless on 26-32. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Re-arm the reminder chain after reboot (self-healing; WorkManager already persists). -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
     <application
         android:name=".GenesyxApplication"
         android:allowBackup="true"
@@ -19,6 +25,7 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:launchMode="singleTop"
             android:theme="@style/Theme.Genesyx.Starting"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
@@ -45,6 +52,16 @@
                     android:pathPrefix="/invite" />
             </intent-filter>
         </activity>
+
+        <!-- Re-arms reminder chains after reboot. -->
+        <receiver
+            android:name=".notifications.BootReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

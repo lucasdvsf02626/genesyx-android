@@ -22,6 +22,7 @@ sealed class Screen(val route: String) {
     data object Pregnancy : Screen("pregnancy")
     data object Auth : Screen("auth")
     data object Clients : Screen("clients")
+    data object ReminderSettings : Screen("reminder_settings")
 
     // Learn. Bottom tab (took Profile's slot); also entered from Nutrition's "Learn more" section.
     data object Learn : Screen("learn")
@@ -59,6 +60,7 @@ sealed class Screen(val route: String) {
             Auth.route,
             Invite.route,
             Clients.route,
+            ReminderSettings.route,
             // Reading and searching are immersive. `Learn` itself keeps the bar (it's a tab).
             ArticleDetail.route,
             LearnSearch.route,

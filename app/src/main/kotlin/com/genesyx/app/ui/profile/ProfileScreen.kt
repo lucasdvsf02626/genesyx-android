@@ -82,7 +82,6 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel = hi
     val displayName by viewModel.displayName.collectAsState()
     val email by viewModel.email.collectAsState()
     val dark by viewModel.themeMode.collectAsState()
-    val push by viewModel.pushEnabled.collectAsState()
     val focus by viewModel.focusMode.collectAsState()
     val partner by viewModel.partner.collectAsState()
     val invites by viewModel.invites.collectAsState()
@@ -194,13 +193,14 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel = hi
                 }
             }
 
-            // ── Push notifications — gated off for 1.0 (FeatureFlags.PUSH_NOTIFICATIONS): the toggle
-            // is UI-only; there is no notification infrastructure yet (lands in v1.1). Section dormant.
+            // ── Reminders. A single master switch can't express per-category schedules, so this is a
+            // navigation row into the Reminders screen; the `push_enabled` flag stays the master kill
+            // switch behind it. (FeatureFlags.PUSH_NOTIFICATIONS gates the whole feature.)
             if (com.genesyx.app.core.FeatureFlags.PUSH_NOTIFICATIONS) {
                 Spacer(Modifier.height(16.dp))
                 GroupLabel("Preferences")
                 CardGroup {
-                    SwitchRow("Push Notifications", push) { viewModel.setPush(it) }
+                    RowItem("Reminders", onClick = { navController.navigate(Screen.ReminderSettings.route) })
                 }
             }
 
@@ -369,19 +369,6 @@ private fun RowItem(label: String, onClick: () -> Unit) {
     ) {
         Text(label, fontSize = 14.5.sp, color = colors.onSurface)
         Icon(Icons.Filled.ChevronRight, null, tint = colors.onSurfaceVariant, modifier = Modifier.size(16.dp))
-    }
-}
-
-@Composable
-private fun SwitchRow(label: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
-    val colors = MaterialTheme.colorScheme
-    Row(
-        modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(horizontal = 16.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(label, fontSize = 14.5.sp, color = colors.onSurface)
-        Switch(checked = checked, onCheckedChange = onCheckedChange, colors = SwitchDefaults.colors(checkedTrackColor = ElectricLavender))
     }
 }
 

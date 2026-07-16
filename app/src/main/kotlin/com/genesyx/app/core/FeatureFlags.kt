@@ -27,11 +27,12 @@ object FeatureFlags {
     const val PARTNER_INVITES = false
 
     /**
-     * "Push Notifications" toggle on Profile. Disabled for 1.0: it is UI-only — the switch persists a
-     * `push_enabled` boolean but nothing consumes it. There is NO notification infrastructure (no FCM/
-     * Firebase, no NotificationManager/channel, no POST_NOTIFICATIONS permission, no reminder
-     * scheduling), so toggling it does nothing. Hidden until notifications land in v1.1. Code kept
-     * dormant (like [PARTNER_INVITES]); flip to re-enable.
+     * Local reminders ("Reminders" in user-facing copy). Enabled in v1.1: WorkManager schedules
+     * self-rescheduling one-time chains, [com.genesyx.app.notifications.NotificationChannels] owns
+     * four channels, [com.genesyx.app.notifications.ReminderNotifier] posts under the pure
+     * [com.genesyx.app.notifications.ReminderPolicy], and Profile → Reminders opens
+     * [com.genesyx.app.ui.settings.ReminderSettingsScreen]. Strictly local: no FCM, no server push,
+     * no device token. The `push_enabled` DataStore flag is the master kill switch behind the screen.
      */
-    const val PUSH_NOTIFICATIONS = false
+    const val PUSH_NOTIFICATIONS = true
 }

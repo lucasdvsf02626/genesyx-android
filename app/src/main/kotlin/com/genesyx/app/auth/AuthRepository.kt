@@ -10,6 +10,7 @@ import com.genesyx.app.data.PhRepository
 import com.genesyx.app.data.ProfileRepository
 import com.genesyx.app.data.SessionRepository
 import com.genesyx.app.data.local.GenesyxDatabase
+import com.genesyx.app.notifications.ReminderScheduler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -32,6 +33,7 @@ class AuthRepository @Inject constructor(
     private val dailyLogRepository: DailyLogRepository,
     private val phRepository: PhRepository,
     private val database: GenesyxDatabase,
+    private val reminderScheduler: ReminderScheduler,
     private val dispatchers: DispatcherProvider,
     @ApplicationScope private val appScope: CoroutineScope,
     private val logger: Logger,
@@ -70,6 +72,8 @@ class AuthRepository @Inject constructor(
         if (remote is DataResult.Error) {
             logger.w("Auth", "remote sign-out failed; clearing local session anyway")
         }
+        // Reminders deep-link into the gated dashboard, so they must never outlive the session.
+        reminderScheduler.cancelAll()
         withContext(dispatchers.io) { database.clearAllTables() }
         session.signOut()
         return DataResult.Success(Unit)
@@ -79,6 +83,7 @@ class AuthRepository @Inject constructor(
     suspend fun deleteAccount(): DataResult<Unit> =
         when (val result = authService.deleteAccount()) {
             is DataResult.Success -> {
+                reminderScheduler.cancelAll()
                 withContext(dispatchers.io) { database.clearAllTables() }
                 session.signOut()
                 DataResult.Success(Unit)
