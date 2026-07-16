@@ -23,6 +23,20 @@ import javax.inject.Inject
 
 enum class Trend { UP, DOWN, FLAT }
 
+data class WeeklySummaryInsights(
+    val hasData: Boolean = false,
+    /** Meaningful days this week (0..7) and the same figure for the week before. */
+    val daysLogged: Int = 0,
+    val prevDaysLogged: Int = 0,
+    /** Each delta is null when either week lacks the data to compare — the card then omits it. */
+    val hydrationDeltaMlPerDay: Int? = null,
+    val sleepDeltaMinutes: Int? = null,
+    val supplementDaysDelta: Int? = null,
+    /** "Mostly good, energy often high" — empty when neither mood nor energy was logged. */
+    val moodEnergyLine: String = "",
+    val insight: String = "Log a day or two and your week in review will appear here.",
+)
+
 data class PhInsights(
     val hasReadings: Boolean = false,
     val currentValue: Double? = null,
@@ -116,6 +130,15 @@ class InsightsViewModel @Inject constructor(
     streakRepository: StreakRepository,
     preferencesRepository: PreferencesRepository,
 ) : ViewModel() {
+
+    val weeklySummary: StateFlow<WeeklySummaryInsights> =
+        dailyLogRepository.logByDate
+            .map { logs -> WeeklySummaryLogic.compute(logs) }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = WeeklySummaryInsights(),
+            )
 
     val phInsights: StateFlow<PhInsights> =
         phRepository.readings

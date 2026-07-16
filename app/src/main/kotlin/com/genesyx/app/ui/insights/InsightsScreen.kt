@@ -64,6 +64,7 @@ fun InsightsScreen(
     viewModel: InsightsViewModel = hiltViewModel(),
 ) {
     val colors = MaterialTheme.colorScheme
+    val weekly by viewModel.weeklySummary.collectAsState()
     val ph by viewModel.phInsights.collectAsState()
     val consistency by viewModel.consistencyInsights.collectAsState()
     val hydration by viewModel.hydrationInsights.collectAsState()
@@ -90,6 +91,9 @@ fun InsightsScreen(
             LogHistoryEntryCard {
                 navController.navigate(Screen.LogHistory.route)
             }
+
+            Spacer(Modifier.height(12.dp))
+            WeeklySummaryCard(weekly)
 
             Spacer(Modifier.height(12.dp))
             ConsistencyCard(consistency)
@@ -245,6 +249,81 @@ private fun PhInsightsSection(ph: PhInsights, onOpenTracker: () -> Unit) {
             }
         }
     }
+}
+
+@Composable
+private fun WeeklySummaryCard(state: WeeklySummaryInsights) {
+    val colors = MaterialTheme.colorScheme
+    if (!state.hasData) {
+        EmptyInsightsCard("Weekly summary", state.insight)
+        return
+    }
+
+    InsightsCard {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
+            Text("Weekly summary", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+            Text("This week", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+        }
+
+        Spacer(Modifier.height(16.dp))
+        Row(verticalAlignment = Alignment.Bottom) {
+            Text("${state.daysLogged}", fontSize = 34.sp, fontWeight = FontWeight.SemiBold, color = colors.onSurface)
+            Spacer(Modifier.size(6.dp))
+            Text("of 7 days logged", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, modifier = Modifier.padding(bottom = 6.dp))
+            if (state.prevDaysLogged > 0) {
+                Spacer(Modifier.weight(1f))
+                Text(
+                    "vs ${state.prevDaysLogged} last week",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = ElectricLavender,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.padding(bottom = 6.dp),
+                )
+            }
+        }
+
+        if (state.moodEnergyLine.isNotEmpty()) {
+            Spacer(Modifier.height(6.dp))
+            Text(state.moodEnergyLine, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+        }
+
+        // Deltas against last week, only for metrics both weeks can support — see WeeklySummaryLogic.
+        val deltas = buildList {
+            state.hydrationDeltaMlPerDay?.let { add("Hydration" to signedMl(it)) }
+            state.sleepDeltaMinutes?.let { add("Sleep" to signedDuration(it)) }
+            state.supplementDaysDelta?.let { add("Supplements" to signedDays(it)) }
+        }
+        if (deltas.isNotEmpty()) {
+            Spacer(Modifier.height(16.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                deltas.forEach { (label, value) ->
+                    TextTile("$label vs last wk", value, Modifier.weight(1f))
+                }
+            }
+        }
+
+        Spacer(Modifier.height(14.dp))
+        Text(state.insight, style = MaterialTheme.typography.bodyMedium, color = colors.onSurface.copy(alpha = 0.8f))
+    }
+}
+
+/** Signed, human deltas for the weekly-summary tiles. A flat delta reads "level", never "±0". */
+private fun signedMl(delta: Int): String = when {
+    delta > 0 -> "+${delta}ml"
+    delta < 0 -> "-${-delta}ml"
+    else -> "level"
+}
+
+private fun signedDuration(delta: Int): String = when {
+    delta > 0 -> "+${SleepInsightLogic.formatDuration(delta)}"
+    delta < 0 -> "-${SleepInsightLogic.formatDuration(-delta)}"
+    else -> "level"
+}
+
+private fun signedDays(delta: Int): String = when {
+    delta > 0 -> "+$delta ${if (delta == 1) "day" else "days"}"
+    delta < 0 -> "-${-delta} ${if (delta == -1) "day" else "days"}"
+    else -> "level"
 }
 
 @Composable
