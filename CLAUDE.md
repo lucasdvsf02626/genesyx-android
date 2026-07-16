@@ -2,63 +2,74 @@
 
 Project Name: Genesyx Android
 
-v1.1 in progress. Read this first. Honest state, verified against the tree on **2026-07-13**.
+**v1.2 is merged to `main` (PR #10).** Read this first. Honest state, verified against the tree on **2026-07-16**.
 
 > **⚠️ If you read an older copy of this file, three things it told you are now FALSE:**
 > 1. **pH is NOT local-only.** pH readings sync to Supabase. Never restore "stored on this device"
 >    copy — see "pH sync is live" below. It is the single most dangerous stale claim here.
-> 2. **Code is NOT frozen at versionCode 6.** `main` is at versionCode 7, and `feature/streaks-v2`
->    is ahead of `main` at versionCode 8.
-> 3. **`main` is NOT `1da07f9`.** It is `d7be924`.
+> 2. **`main` is at versionCode 9, versionName "1.2.0".** Both v1.1 (PR #9) and v1.2 (PR #10) are
+>    merged. There is no active feature branch — `feature/v1.2-supplement-card` was merged and deleted.
+> 3. **Reminders are LIVE and local-only.** `FeatureFlags.PUSH_NOTIFICATIONS = true` on `main`:
+>    WorkManager-scheduled on-device reminders (no FCM/token). See "What landed in v1.2" below.
 
-## 🔖 STOPPED HERE — resume from this (2026-07-13)
+## 🔖 STOPPED HERE — resume from this (2026-07-16)
 
-**All engineering is done, committed and pushed. `PR #9` is open** (`feature/streaks-v2` → `main`,
-versionCode 8 / 1.1.0): offline log queue, streak engine v2 + vectors, user-set hydration goal,
-log-screen discard guard, CHANGELOG, deletion-verification script. Tests green, signed AAB builds.
+**v1.2 is merged to `main` via PR #10** (merge commit `ee739c9`), versionCode 9 / versionName 1.2.0.
+The feature branch is deleted. Nothing is uploaded to Play yet.
 
 **Session-by-session history lives in `CHANGELOG.md`.** Read it before anything else.
 
-**Next actions, in order:**
-1. **Fill the `[OWNER]` placeholders** in `docs/DATA_SAFETY_AND_PRIVACY_v1.1.md` — legal entity,
-   Supabase hosting region, retention period, ICO/DPO contact, publication date. That file is
-   **local-only and git-excluded** (via `.git/info/exclude`), so it is on the machine but not in the
-   repo. It holds the Play Data Safety answers + privacy-policy copy drafted for v1.1.
-2. **Publish the privacy copy** to `genesyx.co.uk/pages/privacy-policy`, and **submit the Data Safety
-   answers** in Play Console. Both need to reflect that pH readings sync to the server in v1.1.
-3. **Finish the deletion proof for pH** — see "Pre-release checks" #3. Step 1 of
-   `docs/supabase/verify_deletion.sql` was run against production on 2026-07-13 and came back clean
-   (deployed function covers `ph_readings`; orphan rows 0/0/0/0). The remaining piece is the
-   end-to-end pass (step 4) **with a pH reading in play** — the daily-log half is already proven: a
-   synced log from a throwaway account was erased by an in-app delete, which is why the orphan counts
-   are zero.
-4. **Merge PR #9**, upload the AAB, promote.
+### What landed in v1.2 (all on `main`)
+- **Local reminders** — `FeatureFlags.PUSH_NOTIFICATIONS = true`. On-device only (WorkManager, no
+  FCM/token): 6 reminder kinds, 4 channels, self-rescheduling chain, Profile → Reminders screen,
+  pre-permission sheet, full `POST_NOTIFICATIONS` handling. Pure/tested `ReminderPolicy` +
+  `NotificationPermission` (`notifications/`). `cancelAll()` on sign-out/delete. Verified firing
+  on-device. **No new server surface — strictly local.**
+- **Home / Track / Insights iOS parity** — Track "Your Trackers" list + six detail screens
+  (`ui/track/detail/`); Home hydration-ring + pH-nudge cards deep-linking into Track detail; first-run
+  setup card; cycle-hero metrics; gradient avatar; pregnancy entry hidden (route/feature kept). All
+  Insights cards are real-data now (sleep, cycle regularity, symptom patterns, ovulation, consistency,
+  pH, hydration, nutrition-consistency) plus a Weekly Summary extra.
+- **Supplement adherence card**, loggable Zinc, one supplement vocabulary, one week-bucketing impl
+  (`domain/time/WeekBuckets`), hydration scored against the user-set goal, intraday hydration coaching.
+- **`SeedTestData`** — a manual emulator seeder guarded by `@SeedOnly` (gradle/CI never runs it; run
+  by hand via `am instrument`).
+
+**Next actions, in order (release prep — the OWNER gates in "Pre-release checks" still apply):**
+1. Re-check Play Data Safety + `genesyx.co.uk/pages/privacy-policy` against what v1.2 stores
+   server-side (pH still syncs; reminders add nothing — on-device only).
+2. Finish the pH server-side deletion proof — see "Pre-release checks" #3.
+3. Build/sign the AAB (versionCode 9), upload to Internal testing, promote.
 
 ## Where the code actually is
 
 | | |
 |---|---|
-| `main` | `d7be924` (PR #6, theme toggle). versionCode **7**, versionName **"1.0.0"** |
-| Working branch | `feature/streaks-v2` — ahead of `main`, 0 behind. **versionCode 8, versionName "1.1.0"**. Not merged, not released |
-| Unit tests | **132 passing, 17 classes, 0 failures** (`./gradlew :app:testDebugUnitTest`) |
-| Instrumented | **14 passing, 0 failures** (`./gradlew :app:connectedDebugAndroidTest`) |
+| `main` | `ee739c9` (merge of PR #10). versionCode **9**, versionName **"1.2.0"** |
+| Working branch | none — v1.2 merged and the branch deleted |
+| Unit tests | **233 passing, 0 failures** (`./gradlew :app:testDebugUnitTest`) |
+| Instrumented | GREEN (`./gradlew :app:connectedDebugAndroidTest`); the `@SeedOnly` seeder is excluded. Pre-existing `CycleSettingsDialogTest` timing flake still noted below |
 | Release build | `./gradlew :app:assembleRelease` GREEN, R8/minify clean |
 
-All verified 2026-07-13.
+Unit tests + builds verified 2026-07-16.
 
 ### On `main` (shipped or shippable)
 - pH tracking + **sync** (see below), theme follows system + Profile toggle (PR #6), the PR #5
   ghost-session sign-in fix.
-- `FeatureFlags` on `main`: `PH_TRACKING = true`, `ADMIN_CLIENTS = false`.
+- `FeatureFlags` on `main`: `PH_TRACKING = true`, `PUSH_NOTIFICATIONS = true` (local reminders, v1.2),
+  `ADMIN_CLIENTS = false`, `PARTNER_INVITES = false`.
 
-### On `feature/streaks-v2` only (NOT on `main`, NOT released)
+### Now on `main` (v1.1 via PR #9, v1.2 via PR #10 — all merged)
 - **Daily-log offline sync queue (the headline v1.1 item — DONE).** Offline log saves now QUEUE
   instead of being refused. See "The offline queue" below.
 - **Log-screen Back no longer discards unsaved edits** — confirm dialog + `BackHandler`.
 - **Streak engine v2** + the cross-platform vector contract (below).
 - **User-set hydration goal** — persisted in DataStore, read by the engine, Nutrition and Home.
-- Learn section (10 articles), auth hardening, Track/calendar fixes, brand/launcher fixes, and the
-  `PARTNER_INVITES` / `PUSH_NOTIFICATIONS` gates (these two flags exist **only** on this branch).
+- Learn section (10 articles), auth hardening, Track/calendar fixes, brand/launcher fixes.
+- **v1.2 (PR #10):** local reminders (`PUSH_NOTIFICATIONS = true`), Home/Track/Insights iOS parity
+  (Track "Your Trackers" + six detail screens, Home hydration-ring + pH-nudge cards, deep links),
+  real-data Insights + Weekly Summary, supplement adherence card, intraday hydration coaching. See
+  "What landed in v1.2" above. `PARTNER_INVITES` remains gated **off** (still a UI-only stub).
 - `docs/APP_INVENTORY.md` — screens, features, journeys, gaps.
 
 ## The offline queue (daily logs) — Room schema v4
@@ -122,9 +133,9 @@ Detailed status for these lives with the owner, not in this repo.
 **CODE — the v1.1 backlog is now DONE:**
 - ~~No offline sync queue for daily logs~~ → **built and verified on-device** (see "The offline queue").
 - ~~Log-screen Back discards unsaved edits~~ → **fixed** (confirm dialog + `BackHandler`).
-- `PARTNER_INVITES` and `PUSH_NOTIFICATIONS` remain gated **off**, and their code is UI-only stubs (no
-  FCM, no invite email, no cross-account linking). Shipping them off is fine — but their comments
-  saying "until v1.1" are now aspirational and should be reworded, not believed.
+- `PUSH_NOTIFICATIONS` is now **`true`** — local reminders shipped in v1.2 (WorkManager, on-device,
+  no FCM). `PARTNER_INVITES` remains gated **off**: still a UI-only stub (no invite email, no
+  cross-account linking). Shipping partner invites off is fine.
 
 **KNOWN FLAKE (pre-existing, not from this work):** `CycleSettingsDialogTest.an_untouched_dialog_cannot_save`
 failed once in ~6 full instrumented runs and passes 3/3 in isolation. It is a Compose UI timing flake;
