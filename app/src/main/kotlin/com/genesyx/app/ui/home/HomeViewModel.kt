@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.genesyx.app.data.CycleRepository
 import com.genesyx.app.data.DailyLogRepository
+import com.genesyx.app.data.PhRepository
 import com.genesyx.app.data.PreferencesRepository
 import com.genesyx.app.data.SessionRepository
 import com.genesyx.app.data.StreakRepository
@@ -14,9 +15,12 @@ import com.genesyx.app.domain.content.phaseSubLabel
 import com.genesyx.app.domain.content.phaseTags
 import com.genesyx.app.domain.cycle.CycleEngine
 import com.genesyx.app.domain.hydration.HydrationCoach
+import com.genesyx.app.domain.hydration.HydrationPace
 import com.genesyx.app.domain.model.CycleSettings
+import com.genesyx.app.domain.model.PhReading
 import com.genesyx.app.domain.streaks.StreakEngine
 import com.genesyx.app.domain.streaks.StreakState
+import com.genesyx.app.domain.time.WeekBuckets
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -37,13 +41,25 @@ data class HomeUiState(
     val cycleHeadline: String = "Set up your cycle",
     val cycleSub: String = "Add your last period date to get personalised insights.",
     val cycleTags: List<String> = emptyList(),
+    // Cycle-hero metric row (only meaningful once cycle is set up).
+    val cycleDay: Int? = null,
+    val daysToNextLabel: String? = null,
+    val ovulationDayLabel: String? = null,
     val todayFocusTitle: String? = null,
     val todayFocusBody: String? = null,
+    // Hydration summary card.
     val hydrationLitres: Float? = null,
     /** Her goal, from preferences — the default only until she sets her own. */
     val hydrationGoalLitres: Float = StreakEngine.DEFAULT_GOAL_ML / 1000f,
-    /** Time-of-day pacing line for the hydration tile — how today is going, right now. */
+    val hydrationPercent: Int = 0,
+    val hydrationPace: HydrationPace = HydrationPace.NOT_STARTED,
+    val hydrationStreak: Int = 0,
+    /** Mon..Sun of the current week: true where that day hit the goal. */
+    val weekOnGoal: List<Boolean> = List(7) { false },
+    val daysOnGoal: Int = 0,
     val hydrationCoaching: String? = null,
+    // pH nudge card — the latest reading value, or null when none exists.
+    val phLatest: Double? = null,
     val streakDays: Int? = null,
     val isLoading: Boolean = false,
 )
@@ -54,34 +70,36 @@ class HomeViewModel @Inject constructor(
     private val dailyLogRepository: DailyLogRepository,
     private val sessionRepository: SessionRepository,
     private val preferencesRepository: PreferencesRepository,
+    private val phRepository: PhRepository,
     streakRepository: StreakRepository,
 ) : ViewModel() {
 
-    // Paired rather than passed as a sixth flow: combine is only typed up to five, and the streak
-    // state and the goal it was computed against belong together anyway.
+    // Paired rather than passed as separate flows: combine is only typed up to five.
     private val streaksWithGoal =
-        combine(streakRepository.state, preferencesRepository.hydrationGoalMl) { streaks, goalMl ->
-            streaks to goalMl
-        }
+        combine(streakRepository.state, preferencesRepository.hydrationGoalMl) { streaks, goalMl -> streaks to goalMl }
+    private val sessionInfo =
+        combine(sessionRepository.displayName, sessionRepository.isSignedIn) { name, signed -> name to signed }
 
     val uiState: StateFlow<HomeUiState> =
         combine(
             cycleRepository.settings,
             dailyLogRepository.logByDate,
-            sessionRepository.displayName,
-            sessionRepository.isSignedIn,
+            sessionInfo,
             streaksWithGoal,
-        ) { settings, _, displayName, signedIn, (streaks, goalMl) ->
-            buildState(settings, displayName, signedIn, streaks, goalMl)
+            phRepository.readings,
+        ) { settings, logs, (displayName, signedIn), (streaks, goalMl), readings ->
+            buildState(settings, logs, displayName, signedIn, streaks, goalMl, readings)
         }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
             initialValue = buildState(
                 cycleRepository.settings.value,
+                dailyLogRepository.logByDate.value,
                 sessionRepository.displayName.value,
                 sessionRepository.isSignedIn.value,
                 streakRepository.state.value,
                 preferencesRepository.hydrationGoalMl.value,
+                phRepository.readings.value,
             ),
         )
 
@@ -89,13 +107,18 @@ class HomeViewModel @Inject constructor(
 
     private fun buildState(
         settings: CycleSettings?,
+        logs: Map<LocalDate, com.genesyx.app.domain.model.DailyLog>,
         displayName: String?,
         signedIn: Boolean,
         streaks: StreakState,
         goalMl: Int,
+        readings: List<PhReading>,
     ): HomeUiState {
         val today = LocalDate.now()
-        val waterMl = dailyLogRepository.waterMlOn(today)
+        val waterMl = logs[today]?.waterMl ?: 0
+        val coaching = HydrationCoach.coach(waterMl, goalMl, LocalTime.now())
+        val weekOnGoal = WeekBuckets.weekDays(today).map { (logs[it]?.waterMl ?: 0) >= goalMl }
+
         val base = HomeUiState(
             userName = displayName ?: "Guest",
             signedIn = signedIn,
@@ -103,7 +126,13 @@ class HomeViewModel @Inject constructor(
             settings = settings,
             hydrationLitres = if (waterMl > 0) waterMl / 1000f else null,
             hydrationGoalLitres = goalMl / 1000f,
-            hydrationCoaching = HydrationCoach.coach(waterMl, goalMl, LocalTime.now()).message,
+            hydrationPercent = (waterMl * 100 / goalMl).coerceIn(0, 100),
+            hydrationPace = coaching.pace,
+            hydrationStreak = streaks.dailyHydration,
+            weekOnGoal = weekOnGoal,
+            daysOnGoal = streaks.daysOnGoal,
+            hydrationCoaching = coaching.message,
+            phLatest = readings.maxByOrNull { it.recordedAt }?.phValue,
             // Any logged activity, not water alone — the card is labelled "Streak", so it has to
             // count everything she tracks, and it must not reset at midnight.
             streakDays = streaks.dailyActivity,
@@ -119,6 +148,9 @@ class HomeViewModel @Inject constructor(
             cycleHeadline = phaseHeroText(info.phase, inFertile),
             cycleSub = phaseHeroSubtext(info.phase, inFertile),
             cycleTags = phaseTags(info.phase, inFertile),
+            cycleDay = info.dayOfCycle,
+            daysToNextLabel = if (info.daysUntilNextPeriod == 0) "Today" else "${info.daysUntilNextPeriod} days",
+            ovulationDayLabel = "Day ${info.ovulationDay}",
             todayFocusTitle = focus.title,
             todayFocusBody = focus.body,
         )

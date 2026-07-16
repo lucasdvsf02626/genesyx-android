@@ -1,10 +1,6 @@
 package com.genesyx.app.ui.home
 
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -18,7 +14,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -29,9 +24,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.outlined.Eco
+import androidx.compose.material.icons.outlined.Science
 import androidx.compose.material.icons.outlined.WaterDrop
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -48,13 +45,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -63,27 +63,23 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import android.content.res.Configuration
 import com.genesyx.app.R
+import com.genesyx.app.domain.hydration.HydrationPace
 import com.genesyx.app.domain.model.CycleSettings
 import com.genesyx.app.ui.components.CycleSettingsDialog
 import com.genesyx.app.ui.components.Eyebrow
 import com.genesyx.app.ui.components.GxPrimaryButton
+import com.genesyx.app.ui.components.HydrationStatusPill
+import com.genesyx.app.ui.components.PastDatePickerDialog
+import com.genesyx.app.ui.components.hydrationStatusLabel
 import com.genesyx.app.ui.components.tintOnWhite
 import com.genesyx.app.ui.navigation.Screen
+import com.genesyx.app.ui.theme.BabyLavender
 import com.genesyx.app.ui.theme.ElectricBlue
 import com.genesyx.app.ui.theme.ElectricLavender
-import com.genesyx.app.ui.theme.GenesyxTheme
+import com.genesyx.app.ui.theme.ElectricPink
+import com.genesyx.app.ui.theme.PhOptimal
 import com.genesyx.app.ui.theme.PowderBlue
 import java.time.LocalDate
-
-private data class Bubble(val x: Int, val y: Int, val size: Int, val a: Color, val b: Color, val durationMs: Int, val drift: Float)
-
-private val bubbles = listOf(
-    Bubble(300, 96, 112, Color(0xFFC4B5FD), Color(0xFFA78BFA), 5000, -14f),
-    Bubble(-32, 224, 80, Color(0xFFBAE6FD), Color(0xFF7DD3FC), 7000, -10f),
-    Bubble(280, 360, 96, Color(0xFFE9D5FF), Color(0xFFC084FC), 6000, -18f),
-    Bubble(16, 420, 64, Color(0xFFFBCFE8), Color(0xFFF472B6), 4500, -12f),
-    Bubble(300, 540, 56, Color(0xFFBFDBFE), Color(0xFF60A5FA), 8000, -10f),
-)
 
 @Composable
 fun HomeScreen(
@@ -91,9 +87,21 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
+    // "Select Track, then open the detail": the tab switch makes Track the surface underneath, so
+    // Back from the detail lands on Track rather than Home.
+    fun openTrackerDetail(route: String) {
+        navController.navigate(Screen.Track.route) {
+            popUpTo(Screen.Home.route) { saveState = true }
+            launchSingleTop = true
+            restoreState = true
+        }
+        navController.navigate(route)
+    }
     HomeContent(
         state = state,
         onNavigate = { navController.navigate(it) },
+        onOpenHydration = { openTrackerDetail(Screen.HydrationDetail.route) },
+        onOpenPh = { openTrackerDetail(Screen.PhDetail.route) },
         onSaveCycle = { viewModel.saveCycleSettings(it) },
     )
 }
@@ -103,15 +111,16 @@ fun HomeScreen(
 fun HomeContent(
     state: HomeUiState,
     onNavigate: (String) -> Unit,
+    onOpenHydration: () -> Unit = {},
+    onOpenPh: () -> Unit = {},
     onSaveCycle: (CycleSettings) -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
     var showCycleDialog by remember { mutableStateOf(false) }
+    var cycleSeed by remember { mutableStateOf<CycleSettings?>(null) }
     var menuOpen by remember { mutableStateOf(false) }
 
     Box(Modifier.fillMaxSize().background(colors.background)) {
-        // Brand hero background. The artwork is light, so it only reads on a light surface —
-        // in dark theme fall back to the animated bubbles so text stays AA-readable.
         if (colors.background.luminance() > 0.5f) {
             Image(
                 painter = painterResource(R.drawable.home_hero_bg),
@@ -120,8 +129,6 @@ fun HomeContent(
                 contentScale = ContentScale.Crop,
                 alignment = Alignment.TopCenter,
             )
-        } else {
-            FloatingBubbles()
         }
 
         Column(
@@ -132,7 +139,7 @@ fun HomeContent(
         ) {
             Spacer(Modifier.height(20.dp))
 
-            // ── Greeting header
+            // ── Greeting header + avatar (44dp lavender→pink gradient)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -145,16 +152,17 @@ fun HomeContent(
                 Box {
                     Box(
                         modifier = Modifier
-                            .size(40.dp)
+                            .size(44.dp)
                             .clip(CircleShape)
-                            .background(colors.surface)
+                            .background(Brush.linearGradient(listOf(BabyLavender, ElectricPink)))
                             .clickable { menuOpen = true },
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
                             state.userName.firstOrNull()?.uppercase() ?: "G",
                             style = MaterialTheme.typography.labelLarge,
-                            color = colors.onSurface,
+                            color = Color.White,
+                            fontWeight = FontWeight.SemiBold,
                         )
                     }
                     DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
@@ -173,13 +181,12 @@ fun HomeContent(
                         DropdownMenuItem(
                             text = { Text("Cycle setup") },
                             leadingIcon = { Icon(Icons.Filled.Settings, null) },
-                            onClick = { menuOpen = false; showCycleDialog = true },
+                            onClick = { menuOpen = false; cycleSeed = state.settings; showCycleDialog = true },
                         )
                     }
                 }
             }
 
-            // ── Sign-in banner (signed-out)
             if (!state.signedIn) {
                 Spacer(Modifier.height(16.dp))
                 Row(
@@ -202,110 +209,28 @@ fun HomeContent(
 
             Spacer(Modifier.height(24.dp))
 
-            // ── Cycle hero card. Translucent surface acts as a subtle scrim so the brand hero
-            //    reads through behind the copy while keeping the dynamic text AA-readable.
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(28.dp),
-                colors = CardDefaults.cardColors(containerColor = colors.surface.copy(alpha = 0.72f)),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                onClick = { showCycleDialog = true },
-            ) {
-                Column(Modifier.padding(24.dp)) {
-                    Text(state.cycleEyebrow, style = MaterialTheme.typography.labelSmall, color = ElectricLavender)
-                    Spacer(Modifier.height(10.dp))
-                    Text(
-                        state.cycleHeadline,
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = colors.onSurface,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    Text(state.cycleSub, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
-                    if (state.cycleTags.isNotEmpty()) {
-                        Spacer(Modifier.height(16.dp))
-                        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            state.cycleTags.forEachIndexed { i, tag -> TagChip(tag, primary = i == 0) }
-                        }
-                    }
-                }
+            if (state.cycleSetUp) {
+                CycleHeroCard(state) { cycleSeed = state.settings; showCycleDialog = true }
+                Spacer(Modifier.height(12.dp))
+                TodayFocusCard(state)
+            } else {
+                // First-run: an honest setup card in place of the phase/focus content.
+                FirstRunSetupCard(onStart = { seed ->
+                    cycleSeed = seed
+                    showCycleDialog = true
+                })
             }
 
             Spacer(Modifier.height(12.dp))
+            HydrationSummaryCard(state, onOpenHydration)
 
-            // ── Today's focus card
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = colors.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-            ) {
-                Column(Modifier.padding(20.dp)) {
-                    Eyebrow("Today's focus", color = colors.onSurfaceVariant)
-                    Spacer(Modifier.height(6.dp))
-                    if (state.todayFocusTitle != null) {
-                        Text(state.todayFocusTitle!!, style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
-                        Spacer(Modifier.height(4.dp))
-                        Text(state.todayFocusBody.orEmpty(), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
-                    } else {
-                        Text(
-                            "Complete your cycle setup to see focus foods.",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = colors.onSurfaceVariant,
-                        )
-                    }
-                }
-            }
-
-            Spacer(Modifier.height(12.dp))
-
-            // ── Stat grid
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                StatCard(
-                    modifier = Modifier.weight(1f),
-                    icon = { Icon(Icons.Outlined.WaterDrop, null, tint = ElectricBlue) },
-                    label = "Hydration",
-                    value = state.hydrationLitres?.let { "%.1fL".format(it) } ?: "—",
-                    suffix = "/ ${"%.1f".format(state.hydrationGoalLitres)}L",
-                )
-                StatCard(
-                    modifier = Modifier.weight(1f),
-                    icon = { Icon(Icons.Outlined.Eco, null, tint = ElectricLavender) },
-                    label = "Streak",
-                    value = state.streakDays?.toString() ?: "—",
-                    suffix = "days",
-                )
-            }
-
-            // Intraday hydration pacing — how today is going, framed by the time of day.
-            state.hydrationCoaching?.let { coaching ->
-                Spacer(Modifier.height(10.dp))
-                Text(
-                    coaching,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = colors.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 4.dp),
-                )
+            if (com.genesyx.app.core.FeatureFlags.PH_TRACKING) {
+                Spacer(Modifier.height(12.dp))
+                PhNudgeCard(state.phLatest, onOpenPh)
             }
 
             Spacer(Modifier.height(20.dp))
-
             GxPrimaryButton(text = "Log today", onClick = { onNavigate(Screen.Log.route) }, leadingIcon = Icons.Filled.Add)
-
-            Spacer(Modifier.height(12.dp))
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .clickable { onNavigate(Screen.Pregnancy.route) }
-                    .padding(horizontal = 4.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text("Preview pregnancy pathway", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
-                Icon(Icons.AutoMirrored.Filled.ArrowForward, null, tint = colors.onSurfaceVariant, modifier = Modifier.size(16.dp))
-            }
 
             Spacer(Modifier.height(24.dp))
         }
@@ -313,33 +238,267 @@ fun HomeContent(
 
     if (showCycleDialog) {
         CycleSettingsDialog(
-            current = state.settings,
+            current = cycleSeed ?: state.settings,
             onDismiss = { showCycleDialog = false },
             onSave = { onSaveCycle(it); showCycleDialog = false },
         )
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun FloatingBubbles() {
-    val transition = rememberInfiniteTransition(label = "bubbles")
-    Box(Modifier.fillMaxSize()) {
-        bubbles.forEach { b ->
-            val dy by transition.animateFloat(
-                initialValue = 0f,
-                targetValue = b.drift,
-                animationSpec = infiniteRepeatable(tween(b.durationMs), RepeatMode.Reverse),
-                label = "bubble",
-            )
-            Box(
-                modifier = Modifier
-                    .offset(x = b.x.dp, y = (b.y + dy).dp)
-                    .size(b.size.dp)
-                    .blur(18.dp)
-                    .clip(CircleShape)
-                    .background(Brush.radialGradient(listOf(b.a, b.b))),
+private fun CycleHeroCard(state: HomeUiState, onEdit: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.cardColors(containerColor = colors.surface.copy(alpha = 0.72f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        onClick = onEdit,
+    ) {
+        Column(Modifier.padding(24.dp)) {
+            Text(state.cycleEyebrow, style = MaterialTheme.typography.labelSmall, color = ElectricLavender)
+            Spacer(Modifier.height(10.dp))
+            Text(state.cycleHeadline, style = MaterialTheme.typography.headlineMedium, color = colors.onSurface, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.height(8.dp))
+            Text(state.cycleSub, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+            if (state.cycleTags.isNotEmpty()) {
+                Spacer(Modifier.height(16.dp))
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    state.cycleTags.forEachIndexed { i, tag -> TagChip(tag, primary = i == 0) }
+                }
+            }
+            // Divider + three metrics
+            Spacer(Modifier.height(18.dp))
+            Box(Modifier.fillMaxWidth().height(1.dp).background(colors.outline.copy(alpha = 0.5f)))
+            Spacer(Modifier.height(16.dp))
+            Row(Modifier.fillMaxWidth()) {
+                HeroMetric("Cycle day", state.cycleDay?.let { "Day $it" } ?: "—", Modifier.weight(1f))
+                HeroMetric("Next period", state.daysToNextLabel ?: "—", Modifier.weight(1f))
+                HeroMetric("Ovulation", state.ovulationDayLabel ?: "—", Modifier.weight(1f))
+            }
+        }
+    }
+}
+
+@Composable
+private fun HeroMetric(label: String, value: String, modifier: Modifier = Modifier) {
+    val colors = MaterialTheme.colorScheme
+    Column(modifier) {
+        Eyebrow(label, color = colors.onSurfaceVariant)
+        Spacer(Modifier.height(4.dp))
+        Text(value, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+    }
+}
+
+@Composable
+private fun TodayFocusCard(state: HomeUiState) {
+    val colors = MaterialTheme.colorScheme
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = colors.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    ) {
+        Column(Modifier.padding(20.dp)) {
+            Eyebrow("Today's focus", color = colors.onSurfaceVariant)
+            Spacer(Modifier.height(6.dp))
+            if (state.todayFocusTitle != null) {
+                Text(state.todayFocusTitle, style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+                Spacer(Modifier.height(4.dp))
+                Text(state.todayFocusBody.orEmpty(), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+            } else {
+                Text("Complete your cycle setup to see focus foods.", style = MaterialTheme.typography.bodyLarge, color = colors.onSurfaceVariant)
+            }
+        }
+    }
+}
+
+@Composable
+private fun HydrationSummaryCard(state: HomeUiState, onOpen: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    val litres = state.hydrationLitres ?: 0f
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onOpen)
+            .clearAndSetSemantics {
+                contentDescription = "Hydration. ${"%.1f".format(litres)} of ${"%.1f".format(state.hydrationGoalLitres)} litres. ${hydrationStatusLabel(state.hydrationPace)}. Opens hydration tracker."
+            },
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = colors.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    ) {
+        Column(Modifier.padding(20.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Eyebrow("Hydration", color = ElectricBlue)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Track", style = MaterialTheme.typography.bodyMedium, color = ElectricBlue, fontWeight = FontWeight.Medium)
+                    Icon(Icons.Filled.ChevronRight, null, tint = ElectricBlue, modifier = Modifier.size(18.dp))
+                }
+            }
+            Spacer(Modifier.height(14.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                HydrationRing(state.hydrationPercent)
+                Spacer(Modifier.size(16.dp))
+                Column(Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        Text("${state.hydrationLitres?.let { "%.1f".format(it) } ?: "0.0"} L", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+                        Spacer(Modifier.size(4.dp))
+                        Text("/ ${"%.1f".format(state.hydrationGoalLitres)} L", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, modifier = Modifier.padding(bottom = 2.dp))
+                    }
+                    Spacer(Modifier.height(6.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        StatusPill(state.hydrationPace)
+                        if (state.hydrationStreak > 0) {
+                            Spacer(Modifier.size(8.dp))
+                            Icon(Icons.Filled.LocalFireDepartment, null, tint = ElectricPink, modifier = Modifier.size(14.dp))
+                            Text("${state.hydrationStreak}d", style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+                        }
+                    }
+                }
+            }
+            state.hydrationCoaching?.let {
+                Spacer(Modifier.height(12.dp))
+                Text(it, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+            }
+            Spacer(Modifier.height(12.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                state.weekOnGoal.forEach { on ->
+                    Box(
+                        Modifier
+                            .weight(1f)
+                            .height(6.dp)
+                            .clip(CircleShape)
+                            .background(if (on) ElectricBlue else colors.surfaceVariant.copy(alpha = 0.6f)),
+                    )
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            Text("${state.daysOnGoal} of 7 days on goal", style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+        }
+    }
+}
+
+@Composable
+private fun HydrationRing(percent: Int) {
+    val colors = MaterialTheme.colorScheme
+    val track = colors.surfaceVariant
+    Box(contentAlignment = Alignment.Center, modifier = Modifier.size(60.dp)) {
+        Canvas(Modifier.size(60.dp)) {
+            val stroke = 6.dp.toPx()
+            val inset = stroke / 2
+            val arcSize = androidx.compose.ui.geometry.Size(size.width - stroke, size.height - stroke)
+            val topLeft = androidx.compose.ui.geometry.Offset(inset, inset)
+            drawArc(color = track, startAngle = -90f, sweepAngle = 360f, useCenter = false, topLeft = topLeft, size = arcSize, style = Stroke(stroke, cap = StrokeCap.Round))
+            drawArc(
+                brush = Brush.verticalGradient(listOf(ElectricBlue, PowderBlue)),
+                startAngle = -90f,
+                sweepAngle = 360f * (percent.coerceIn(0, 100) / 100f),
+                useCenter = false,
+                topLeft = topLeft,
+                size = arcSize,
+                style = Stroke(stroke, cap = StrokeCap.Round),
             )
         }
+        Text("$percent%", style = MaterialTheme.typography.labelMedium, color = colors.onSurface, fontWeight = FontWeight.SemiBold)
+    }
+}
+
+@Composable
+private fun StatusPill(pace: HydrationPace) {
+    HydrationStatusPill(pace)
+}
+
+@Composable
+private fun PhNudgeCard(latest: Double?, onOpen: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onOpen)
+            .clearAndSetSemantics {
+                contentDescription = "Check your pH. " + (latest?.let { "Last reading %.1f".format(it) } ?: "No reading yet") + ". Opens pH tracker."
+            },
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = colors.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(20.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                Modifier.size(38.dp).clip(RoundedCornerShape(12.dp)).background(PhOptimal.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center,
+            ) { Icon(Icons.Outlined.Science, null, tint = PhOptimal, modifier = Modifier.size(20.dp)) }
+            Spacer(Modifier.size(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text("Check your pH", style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+                Text(
+                    latest?.let { "Last reading %.1f — tap to log again".format(it) } ?: "Log today's reading in the pH tracker",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.onSurfaceVariant,
+                )
+            }
+            Icon(Icons.Filled.ChevronRight, null, tint = colors.onSurfaceVariant, modifier = Modifier.size(20.dp))
+        }
+    }
+}
+
+@Composable
+private fun FirstRunSetupCard(onStart: (CycleSettings) -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    var lastPeriod by remember { mutableStateOf<LocalDate?>(null) }
+    var showPicker by remember { mutableStateOf(false) }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.cardColors(containerColor = colors.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    ) {
+        Column(Modifier.padding(24.dp)) {
+            Text("Welcome to Genesyx", style = MaterialTheme.typography.headlineSmall, color = colors.onSurface, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "When did your last period start? Next we'll confirm your cycle length — every prediction is built from it.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = colors.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(16.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(colors.surfaceVariant.copy(alpha = 0.5f))
+                    .clickable { showPicker = true }
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    lastPeriod?.let { "Last period: ${it.format(java.time.format.DateTimeFormatter.ofPattern("d MMM yyyy"))}" } ?: "Choose last period date",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = if (lastPeriod != null) colors.onSurface else colors.onSurfaceVariant,
+                )
+            }
+            Spacer(Modifier.height(16.dp))
+            GxPrimaryButton(
+                text = "Start tracking",
+                enabled = lastPeriod != null,
+                onClick = {
+                    lastPeriod?.let { onStart(CycleSettings(lastPeriodDate = it)) }
+                },
+            )
+        }
+    }
+
+    if (showPicker) {
+        PastDatePickerDialog(
+            initial = lastPeriod ?: LocalDate.now(),
+            onDismiss = { showPicker = false },
+            onPick = { lastPeriod = it; showPicker = false },
+        )
     }
 }
 
@@ -361,38 +520,8 @@ private fun TagChip(text: String, primary: Boolean) {
     }
 }
 
-@Composable
-private fun StatCard(
-    modifier: Modifier = Modifier,
-    icon: @Composable () -> Unit,
-    label: String,
-    value: String,
-    suffix: String,
-) {
-    val colors = MaterialTheme.colorScheme
-    Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = colors.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-    ) {
-        Column(Modifier.padding(16.dp)) {
-            icon()
-            Spacer(Modifier.height(8.dp))
-            Eyebrow(label, color = colors.onSurfaceVariant)
-            Spacer(Modifier.height(4.dp))
-            Row(verticalAlignment = Alignment.Bottom) {
-                Text(value, style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
-                Spacer(Modifier.size(4.dp))
-                Text(suffix, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, modifier = Modifier.padding(bottom = 2.dp))
-            }
-        }
-    }
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
-// Compose Previews — render the Home UI live in Android Studio, no emulator needed.
-// HomeContent is stateless, so we feed it sample data and no-op callbacks.
+// Previews
 // ─────────────────────────────────────────────────────────────────────────────
 
 private val sampleHomeState = HomeUiState(
@@ -405,37 +534,42 @@ private val sampleHomeState = HomeUiState(
     cycleHeadline = "Your body is preparing",
     cycleSub = "Energy is climbing toward your fertile window.",
     cycleTags = listOf("Follicular", "Rising energy", "Prep foods"),
+    cycleDay = 9,
+    daysToNextLabel = "19 days",
+    ovulationDayLabel = "Day 14",
     todayFocusTitle = "Leafy greens & folate",
     todayFocusBody = "Spinach, lentils and citrus support the follicular build-up.",
     hydrationLitres = 1.6f,
+    hydrationPercent = 67,
+    hydrationPace = HydrationPace.ON_TRACK,
+    hydrationStreak = 4,
+    weekOnGoal = listOf(true, true, false, true, false, false, false),
+    daysOnGoal = 3,
+    hydrationCoaching = "This afternoon you're right on pace, about 800ml to go.",
+    phLatest = 6.8,
     streakDays = 4,
 )
 
 @Preview(name = "Home — light", showBackground = true, showSystemUi = true)
 @Composable
 private fun HomeContentLightPreview() {
-    GenesyxTheme(darkTheme = false) {
+    com.genesyx.app.ui.theme.GenesyxTheme(darkTheme = false) {
         HomeContent(state = sampleHomeState, onNavigate = {}, onSaveCycle = {})
     }
 }
 
-@Preview(
-    name = "Home — dark",
-    showBackground = true,
-    showSystemUi = true,
-    uiMode = Configuration.UI_MODE_NIGHT_YES,
-)
+@Preview(name = "Home — dark", showBackground = true, showSystemUi = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun HomeContentDarkPreview() {
-    GenesyxTheme(darkTheme = true) {
+    com.genesyx.app.ui.theme.GenesyxTheme(darkTheme = true) {
         HomeContent(state = sampleHomeState, onNavigate = {}, onSaveCycle = {})
     }
 }
 
-@Preview(name = "Home — not set up", showBackground = true, showSystemUi = true)
+@Preview(name = "Home — first run", showBackground = true, showSystemUi = true)
 @Composable
 private fun HomeContentEmptyPreview() {
-    GenesyxTheme(darkTheme = false) {
+    com.genesyx.app.ui.theme.GenesyxTheme(darkTheme = false) {
         HomeContent(state = HomeUiState(), onNavigate = {}, onSaveCycle = {})
     }
 }
