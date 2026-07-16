@@ -417,7 +417,7 @@ private fun SupplementCard(state: SupplementInsights) {
     // Neither of these is a failure state, so neither reads like one.
     if (!state.hasPlan || !state.hasData) {
         InsightsCard {
-            Text("Supplements", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+            Text("Nutrition consistency", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
             Spacer(Modifier.height(12.dp))
             Text(
                 if (state.hasPlan) state.insight else "Choose the supplements you're taking and this card will follow along.",
@@ -430,7 +430,7 @@ private fun SupplementCard(state: SupplementInsights) {
 
     Column {
         BarsCard(
-            title = "Supplements",
+            title = "Nutrition consistency",
             trailing = "of ${state.planSize} a day",
             values = state.bars,
             labels = weekdayLabels,
