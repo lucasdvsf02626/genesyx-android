@@ -6,6 +6,23 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ---
 
+## [1.2.1] — versionCode 10 — corrective release
+
+### Why
+The versionCode 9 / 1.2.0 binary that reached Google Play Production was an **earlier** build than
+the current `main` source: it predates the completed Track work. The current source is the intended
+1.2 UI — the "Your trackers" list (Cycle, Hydration, Urine pH, Sleep, Symptoms, Nutrition, activity
+dots) and its six tracker-detail screens (`ui/track/detail/`). Because Play will not accept another
+artifact at an already-used versionCode, the fixed build cannot ship as code 9. This release bumps
+the version so the complete current build can be published.
+
+### Changed
+- `versionCode 9 → 10`, `versionName "1.2.0" → "1.2.1"` (`app/build.gradle.kts`). No code or UI
+  changes — this publishes the existing `main` source, which already contains the full Track
+  implementation that the Play-served code-9 binary was missing.
+
+---
+
 ## [Unreleased] — 1.2.0
 
 Branch `feature/v1.2-supplement-card`, off `main`. Not merged, not uploaded to Play.

@@ -43,8 +43,8 @@ android {
         applicationId = "com.genesyx.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 9
-        versionName = "1.2.0"
+        versionCode = 10
+        versionName = "1.2.1"
 
         testInstrumentationRunner = "com.genesyx.app.HiltTestRunner"
         // Exclude @SeedOnly utilities (e.g. SeedTestData) from every gradle/CI instrumentation run.
