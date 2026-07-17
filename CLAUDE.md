@@ -2,20 +2,26 @@
 
 Project Name: Genesyx Android
 
-**v1.2 is merged to `main` (PR #10).** Read this first. Honest state, verified against the tree on **2026-07-16**.
+**v1.2.1 (versionCode 10) is merged to `main` (PR #14).** Read this first. Honest state, verified against the tree on **2026-07-17**.
 
 > **⚠️ If you read an older copy of this file, three things it told you are now FALSE:**
 > 1. **pH is NOT local-only.** pH readings sync to Supabase. Never restore "stored on this device"
 >    copy — see "pH sync is live" below. It is the single most dangerous stale claim here.
-> 2. **`main` is at versionCode 9, versionName "1.2.0".** Both v1.1 (PR #9) and v1.2 (PR #10) are
->    merged. There is no active feature branch — `feature/v1.2-supplement-card` was merged and deleted.
+> 2. **`main` is at versionCode 10, versionName "1.2.1".** v1.1 (PR #9), v1.2 (PR #10), and the
+>    v1.2.1 corrective bump (PR #14) are all merged. There is no active feature branch.
 > 3. **Reminders are LIVE and local-only.** `FeatureFlags.PUSH_NOTIFICATIONS = true` on `main`:
 >    WorkManager-scheduled on-device reminders (no FCM/token). See "What landed in v1.2" below.
 
-## 🔖 STOPPED HERE — resume from this (2026-07-16)
+## 🔖 STOPPED HERE — resume from this (2026-07-17)
 
-**v1.2 is merged to `main` via PR #10** (merge commit `ee739c9`), versionCode 9 / versionName 1.2.0.
-The feature branch is deleted. Nothing is uploaded to Play yet.
+**v1.2.1 is merged to `main` via PR #14** (versionCode 10 / versionName 1.2.1); the changelog note is
+PR #15. There is no active feature branch. Nothing is uploaded to Play yet.
+
+**Why 1.2.1 exists (version-9 collision):** the versionCode 9 / 1.2.0 binary that reached Play
+Production predated the completed Track work, and Play won't accept another artifact at an
+already-used versionCode — so the complete current build ships as code 10. The release AAB/APK are
+already built, signed, and archived at `~/Documents/Genesyx Releases/1.2.1-code10/`
+(`genesyx-1.2.1-code10.aab`, `genesyx-1.2.1-code10.apk`, `SHA256SUMS.txt`).
 
 **Session-by-session history lives in `CHANGELOG.md`.** Read it before anything else.
 
@@ -39,13 +45,14 @@ The feature branch is deleted. Nothing is uploaded to Play yet.
 1. Re-check Play Data Safety + `genesyx.co.uk/pages/privacy-policy` against what v1.2 stores
    server-side (pH still syncs; reminders add nothing — on-device only).
 2. Finish the pH server-side deletion proof — see "Pre-release checks" #3.
-3. Build/sign the AAB (versionCode 9), upload to Internal testing, promote.
+3. Upload the archived `genesyx-1.2.1-code10.aab` (versionCode 10) to Internal testing, verify Track
+   from the Play install, promote. (AAB/APK already built + signed + archived — see above.)
 
 ## Where the code actually is
 
 | | |
 |---|---|
-| `main` | `ee739c9` (merge of PR #10). versionCode **9**, versionName **"1.2.0"** |
+| `main` | `6043d33` (PR #15; release bump PR #14). versionCode **10**, versionName **"1.2.1"** |
 | Working branch | none — v1.2 merged and the branch deleted |
 | Unit tests | **233 passing, 0 failures** (`./gradlew :app:testDebugUnitTest`) |
 | Instrumented | GREEN (`./gradlew :app:connectedDebugAndroidTest`); the `@SeedOnly` seeder is excluded. Pre-existing `CycleSettingsDialogTest` timing flake still noted below |
