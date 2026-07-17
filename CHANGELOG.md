@@ -6,7 +6,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ---
 
-## [1.2.1] — versionCode 10 — corrective release
+## [1.2.1] — versionCode 10 — merged to `main` (PR #14), not yet uploaded to Play
 
 ### Why
 The versionCode 9 / 1.2.0 binary that reached Google Play Production was an **earlier** build than
@@ -20,6 +20,20 @@ the version so the complete current build can be published.
 - `versionCode 9 → 10`, `versionName "1.2.0" → "1.2.1"` (`app/build.gradle.kts`). No code or UI
   changes — this publishes the existing `main` source, which already contains the full Track
   implementation that the Play-served code-9 binary was missing.
+
+### Verified
+- Unit tests **233 passing, 0 failures**. `bundleRelease` + `assembleRelease` GREEN, R8 clean.
+- Release APK `apksigner verify` → **Verifies** (release keystore SHA-1 `8DEB4763…B2CC73`), not
+  debuggable, `com.genesyx.app`, versionCode **10** / versionName **1.2.1**.
+- Installed + launched on emulator-5554 (fresh install — the prior code-9 copy was signed with a
+  different key, forcing an uninstall): no FATAL/ANR/ClassNotFound; onboarding renders. The Track
+  "Your trackers" walk-through is to be verified from the Play Internal-testing install.
+- Artifacts archived outside the build dir: `~/Documents/Genesyx Releases/1.2.1-code10/`
+  (`genesyx-1.2.1-code10.aab`, `genesyx-1.2.1-code10.apk`, `SHA256SUMS.txt`).
+
+### Next
+Upload `genesyx-1.2.1-code10.aab` to Play Internal testing, verify Track from the Play install,
+then promote to Production. Nothing uploaded yet.
 
 ---
 
