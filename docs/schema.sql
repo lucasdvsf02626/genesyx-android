@@ -106,7 +106,8 @@ CREATE TABLE public.ph_readings (
   recorded_at  timestamptz NOT NULL DEFAULT now(),
   notes        text,
   created_at   timestamptz NOT NULL DEFAULT now(),
-  updated_at   timestamptz NOT NULL DEFAULT now()
+  updated_at   timestamptz NOT NULL DEFAULT now(),
+  deleted_at   timestamptz                            -- soft-delete tombstone: null = live, set = deleted (app writes it; see PhReadingDto). delete_current_user() hard-deletes regardless.
 );
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.ph_readings TO authenticated;
