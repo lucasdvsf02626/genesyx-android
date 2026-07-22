@@ -4,6 +4,7 @@ import com.genesyx.app.domain.content.phaseLabel
 import com.genesyx.app.domain.cycle.CycleEngine
 import com.genesyx.app.domain.model.CycleSettings
 import com.genesyx.app.domain.model.DailyLog
+import com.genesyx.app.domain.model.PhMeasurement
 import com.genesyx.app.domain.model.PhReading
 import com.genesyx.app.domain.model.Supplement
 import com.genesyx.app.domain.ph.PhStatus
@@ -89,8 +90,10 @@ object TrackerSummaryLogic {
         val spark = week.map { byDay.containsKey(it) }
         val latest = readings.maxByOrNull { it.recordedAt }
         return if (latest != null) {
-            val status = PhStatus.classify(latest.phValue)
-            TrackerSummary("Last reading %.1f · ${status.label}".format(latest.phValue), spark, hasData = true)
+            // Legacy urine readings aren't on the vaginal scale, so they show a neutral marker, not a status.
+            val label = if (latest.measurementType == PhMeasurement.URINE) "urine (legacy)"
+            else PhStatus.classify(latest.phValue).label
+            TrackerSummary("Last reading %.1f · $label".format(latest.phValue), spark, hasData = true)
         } else {
             TrackerSummary("No readings yet — log your first", spark, hasData = false)
         }

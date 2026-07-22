@@ -33,9 +33,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.genesyx.app.domain.model.PhMeasurement
 import com.genesyx.app.domain.model.PhReading
 import com.genesyx.app.domain.ph.PhStatus
 import com.genesyx.app.ui.theme.ElectricLavender
@@ -49,9 +51,9 @@ private enum class PhRange(val label: String, val days: Long?) {
 private val latestFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("d MMM · HH:mm")
 
 /**
- * Urine pH tracker card — latest reading, range filter, and a line chart with status bands.
- * Recharts has no native equivalent, so the chart is drawn with a Compose Canvas.
- * Mirrors the web PhTrackerCard (docs/SCREEN_LAYOUTS.md Track §).
+ * Vaginal pH tracker card — latest reading, range filter, and a line chart with status bands.
+ * Legacy urine readings (pre-migration) render muted/hollow and don't join the line; the y-axis and
+ * bands are the vaginal scale only. The chart is drawn with a Compose Canvas.
  */
 @Composable
 fun PhTrackerCard(
@@ -87,7 +89,7 @@ fun PhTrackerCard(
                 Column {
                     Eyebrow("Track your pH", color = ElectricLavender)
                     Spacer(Modifier.height(2.dp))
-                    Text("Urine Tracker", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+                    Text("Vaginal pH Tracker", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
                 }
                 Row(
                     modifier = Modifier
@@ -132,7 +134,11 @@ fun PhTrackerCard(
 @Composable
 private fun LatestReadingPanel(latest: PhReading) {
     val colors = MaterialTheme.colorScheme
-    val status = PhStatus.classify(latest.phValue)
+    // Legacy urine readings are on a different scale, so we don't classify them as Healthy/Elevated —
+    // they show a neutral "urine (legacy)" marker instead.
+    val isLegacy = latest.measurementType == PhMeasurement.URINE
+    val accent = if (isLegacy) colors.onSurfaceVariant else PhStatus.classify(latest.phValue).color
+    val pillLabel = if (isLegacy) "Urine (legacy)".uppercase() else PhStatus.classify(latest.phValue).label.uppercase()
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -145,10 +151,10 @@ private fun LatestReadingPanel(latest: PhReading) {
             modifier = Modifier
                 .size(48.dp)
                 .clip(RoundedCornerShape(16.dp))
-                .background(status.color.copy(alpha = 0.18f)),
+                .background(accent.copy(alpha = 0.18f)),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(Icons.Outlined.WaterDrop, null, tint = status.color)
+            Icon(Icons.Outlined.WaterDrop, null, tint = accent)
         }
         Spacer(Modifier.size(14.dp))
         Column(Modifier.weight(1f)) {
@@ -168,14 +174,14 @@ private fun LatestReadingPanel(latest: PhReading) {
         Box(
             modifier = Modifier
                 .clip(CircleShape)
-                .background(status.color.copy(alpha = 0.18f))
+                .background(accent.copy(alpha = 0.18f))
                 .padding(horizontal = 12.dp, vertical = 4.dp),
         ) {
             Text(
-                status.label.uppercase(),
+                pillLabel,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = status.color,
+                color = accent,
             )
         }
     }
@@ -218,37 +224,48 @@ private fun RangeSelector(selected: PhRange, onSelect: (PhRange) -> Unit) {
 private fun PhChart(readings: List<PhReading>, modifier: Modifier = Modifier) {
     val min = PhStatus.MIN.toFloat()
     val max = PhStatus.MAX.toFloat()
-    val acidic = PhStatus.ACIDIC.color
-    val optimal = PhStatus.OPTIMAL.color
-    val alkaline = PhStatus.ALKALINE.color
+    val healthyLow = PhStatus.HEALTHY_MIN.toFloat()
+    val healthyHigh = PhStatus.HEALTHY_MAX.toFloat()
+    val healthy = PhStatus.HEALTHY.color
+    val elevated = PhStatus.ELEVATED.color
+    val legacy = MaterialTheme.colorScheme.onSurfaceVariant
 
     Canvas(modifier = modifier) {
         val w = size.width
         val h = size.height
-        fun yFor(v: Float) = h - ((v - min) / (max - min)) * h
+        // Off-scale legacy urine values (up to 9.0) are clamped to the vaginal axis so they stay visible.
+        fun yFor(v: Float) = h - ((v.coerceIn(min, max) - min) / (max - min)) * h
 
-        // Status bands (acidic <6.0, optimal 6.0–7.5, alkaline >7.5)
-        drawRect(acidic.copy(alpha = 0.06f), topLeft = Offset(0f, yFor(6.0f)), size = androidx.compose.ui.geometry.Size(w, h - yFor(6.0f)))
-        drawRect(optimal.copy(alpha = 0.08f), topLeft = Offset(0f, yFor(7.5f)), size = androidx.compose.ui.geometry.Size(w, yFor(6.0f) - yFor(7.5f)))
-        drawRect(alkaline.copy(alpha = 0.06f), topLeft = Offset(0f, 0f), size = androidx.compose.ui.geometry.Size(w, yFor(7.5f)))
+        // Two bands: healthy (3.8–4.5) and elevated (above 4.5). Provisional — see PhStatus.
+        drawRect(healthy.copy(alpha = 0.10f), topLeft = Offset(0f, yFor(healthyHigh)), size = androidx.compose.ui.geometry.Size(w, yFor(healthyLow) - yFor(healthyHigh)))
+        drawRect(elevated.copy(alpha = 0.06f), topLeft = Offset(0f, 0f), size = androidx.compose.ui.geometry.Size(w, yFor(healthyHigh)))
 
         val n = readings.size
         val points = readings.mapIndexed { i, r ->
             val x = if (n == 1) w / 2 else w * i / (n - 1)
-            Offset(x, yFor(r.phValue.toFloat()))
+            val isVaginal = r.measurementType == PhMeasurement.VAGINAL
+            Pair(Offset(x, yFor(r.phValue.toFloat())), isVaginal)
         }
+        // Connect the line only between consecutive vaginal readings — legacy points stay standalone.
         for (i in 0 until points.size - 1) {
-            drawLine(
-                color = ElectricLavender,
-                start = points[i],
-                end = points[i + 1],
-                strokeWidth = 4f,
-                cap = StrokeCap.Round,
-            )
+            if (points[i].second && points[i + 1].second) {
+                drawLine(
+                    color = ElectricLavender,
+                    start = points[i].first,
+                    end = points[i + 1].first,
+                    strokeWidth = 4f,
+                    cap = StrokeCap.Round,
+                )
+            }
         }
-        points.forEach { p ->
-            drawCircle(ElectricLavender, radius = 5f, center = p)
-            drawCircle(Color.White, radius = 2f, center = p)
+        points.forEach { (p, isVaginal) ->
+            if (isVaginal) {
+                drawCircle(ElectricLavender, radius = 5f, center = p)
+                drawCircle(Color.White, radius = 2f, center = p)
+            } else {
+                // Legacy urine reading: muted, hollow ring.
+                drawCircle(legacy, radius = 4.5f, center = p, style = Stroke(width = 2f))
+            }
         }
     }
 }

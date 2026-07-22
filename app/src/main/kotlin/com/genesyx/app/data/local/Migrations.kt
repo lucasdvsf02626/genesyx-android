@@ -28,7 +28,17 @@ val MIGRATION_3_4 = object : Migration(3, 4) {
     }
 }
 
+/** v4 -> v5: pH measurement type. Every existing row predates the "Vaginal pH" switch, so it is a
+ *  urine reading — the 'urine' default stamps them all, keeping legacy values distinguishable from
+ *  vaginal readings (which are on a different scale). New writes use 'vaginal'. */
+val MIGRATION_4_5 = object : Migration(4, 5) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE ph_readings ADD COLUMN measurementType TEXT NOT NULL DEFAULT 'urine'")
+    }
+}
+
 val GENESYX_MIGRATIONS: Array<Migration> = arrayOf(
     MIGRATION_2_3,
     MIGRATION_3_4,
+    MIGRATION_4_5,
 )

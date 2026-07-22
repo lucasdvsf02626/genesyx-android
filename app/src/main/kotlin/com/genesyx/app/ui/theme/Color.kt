@@ -14,10 +14,10 @@ val BabyLavender = Color(0xFF8888D3) // luteal tint / avatar gradient start
 val ElectricPink = Color(0xFFC782D8) // avatar gradient end / pregnancy accent
 val BabyPink = Color(0xFFDEBED2)
 
-// pH status colors (use-ph.ts)
-val PhAcidic = Color(0xFFD85A8A)
-val PhOptimal = Color(0xFF3FA37A)
-val PhAlkaline = Color(0xFF4D4DAA)
+// pH status colors — two-band vaginal model. PhOptimal (green) doubles as a generic "good" accent
+// (hydration reached, Home/Track pH row icon). PhElevated is a calm amber, deliberately not an alarm red.
+val PhOptimal = Color(0xFF3FA37A) // Healthy
+val PhElevated = Color(0xFFC98A3C) // Elevated
 
 // Nutrition focus-food accents (per phase, hardcoded in web)
 val FoodPeriod = Color(0xFFF48FB1)

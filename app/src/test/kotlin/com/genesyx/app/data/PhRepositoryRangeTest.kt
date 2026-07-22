@@ -45,39 +45,49 @@ class PhRepositoryRangeTest {
         return PhRepository(dao, remote, session, scheduler, logger, scope)
     }
 
+    // Boundaries are the PROVISIONAL vaginal range 3.5–7.0 (see PhStatus).
+
     @Test
-    fun `lower boundary 4-5 is accepted and persisted`() = runTest {
+    fun `lower boundary 3-5 is accepted and persisted`() = runTest {
         val scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler))
-        val result = repo(scope).create(reading(4.5))
+        val result = repo(scope).create(reading(3.5))
         assertTrue(result is PhWriteResult.Accepted)
-        coVerify(exactly = 1) { dao.upsert(match { it.phValue == 4.5 }) }
+        coVerify(exactly = 1) { dao.upsert(match { it.phValue == 3.5 }) }
         scope.cancel()
     }
 
     @Test
-    fun `upper boundary 9-0 is accepted and persisted`() = runTest {
+    fun `upper boundary 7-0 is accepted and persisted`() = runTest {
         val scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler))
-        val result = repo(scope).create(reading(9.0))
+        val result = repo(scope).create(reading(7.0))
         assertTrue(result is PhWriteResult.Accepted)
-        coVerify(exactly = 1) { dao.upsert(match { it.phValue == 9.0 }) }
+        coVerify(exactly = 1) { dao.upsert(match { it.phValue == 7.0 }) }
         scope.cancel()
     }
 
     @Test
-    fun `below range 4-4 is rejected and never persisted`() = runTest {
+    fun `below range 3-4 is rejected and never persisted`() = runTest {
         val scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler))
-        val result = repo(scope).create(reading(4.4))
-        assertEquals(PhWriteResult.OutOfRange(4.4), result)
+        val result = repo(scope).create(reading(3.4))
+        assertEquals(PhWriteResult.OutOfRange(3.4), result)
         coVerify(exactly = 0) { dao.upsert(any()) }
         scope.cancel()
     }
 
     @Test
-    fun `above range 9-1 is rejected and never persisted`() = runTest {
+    fun `above range 7-1 is rejected and never persisted`() = runTest {
         val scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler))
-        val result = repo(scope).create(reading(9.1))
-        assertEquals(PhWriteResult.OutOfRange(9.1), result)
+        val result = repo(scope).create(reading(7.1))
+        assertEquals(PhWriteResult.OutOfRange(7.1), result)
         coVerify(exactly = 0) { dao.upsert(any()) }
+        scope.cancel()
+    }
+
+    @Test
+    fun `a new reading defaults to a vaginal measurement`() = runTest {
+        val scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler))
+        repo(scope).create(reading(4.2))
+        coVerify(exactly = 1) { dao.upsert(match { it.measurementType == "vaginal" }) }
         scope.cancel()
     }
 }

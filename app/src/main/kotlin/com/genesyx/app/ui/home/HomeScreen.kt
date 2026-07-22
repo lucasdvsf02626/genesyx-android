@@ -226,7 +226,7 @@ fun HomeContent(
 
             if (com.genesyx.app.core.FeatureFlags.PH_TRACKING) {
                 Spacer(Modifier.height(12.dp))
-                PhNudgeCard(state.phLatest, onOpenPh)
+                PhNudgeCard(state.phLatest, state.phLatestIsLegacy, onOpenPh)
             }
 
             Spacer(Modifier.height(20.dp))
@@ -411,14 +411,25 @@ private fun StatusPill(pace: HydrationPace) {
 }
 
 @Composable
-private fun PhNudgeCard(latest: Double?, onOpen: () -> Unit) {
+private fun PhNudgeCard(latest: Double?, isLegacy: Boolean, onOpen: () -> Unit) {
     val colors = MaterialTheme.colorScheme
+    // A pre-migration urine reading is on a different scale, so it's marked legacy, never shown as a
+    // current vaginal reading. "Check your pH" is measurement-neutral and stays.
+    val body = when {
+        latest == null -> "Log today's reading in the pH tracker"
+        isLegacy -> "Last reading %.1f (urine, legacy) — tap to log a vaginal reading".format(latest)
+        else -> "Last reading %.1f — tap to log again".format(latest)
+    }
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onOpen)
             .clearAndSetSemantics {
-                contentDescription = "Check your pH. " + (latest?.let { "Last reading %.1f".format(it) } ?: "No reading yet") + ". Opens pH tracker."
+                contentDescription = "Check your pH. " + when {
+                    latest == null -> "No reading yet"
+                    isLegacy -> "Last reading %.1f, urine, legacy".format(latest)
+                    else -> "Last reading %.1f".format(latest)
+                } + ". Opens pH tracker."
             },
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = colors.surface),
@@ -436,7 +447,7 @@ private fun PhNudgeCard(latest: Double?, onOpen: () -> Unit) {
             Column(Modifier.weight(1f)) {
                 Text("Check your pH", style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
                 Text(
-                    latest?.let { "Last reading %.1f — tap to log again".format(it) } ?: "Log today's reading in the pH tracker",
+                    body,
                     style = MaterialTheme.typography.bodySmall,
                     color = colors.onSurfaceVariant,
                 )
@@ -546,7 +557,7 @@ private val sampleHomeState = HomeUiState(
     weekOnGoal = listOf(true, true, false, true, false, false, false),
     daysOnGoal = 3,
     hydrationCoaching = "This afternoon you're right on pace, about 800ml to go.",
-    phLatest = 6.8,
+    phLatest = 4.2,
     streakDays = 4,
 )
 

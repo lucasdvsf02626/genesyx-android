@@ -28,13 +28,14 @@ import javax.inject.Singleton
 import kotlin.math.roundToInt
 
 /**
- * Urine-pH store — local-first (Room is the source of truth) with offline-first Supabase sync.
+ * Vaginal-pH store — local-first (Room is the source of truth) with offline-first Supabase sync.
  *
  * Writes land in Room immediately (instant UI) as PENDING, then push to Supabase; on failure the row
  * stays PENDING and a WorkManager job ([PhSyncScheduler]) retries with backoff — offline writes QUEUE,
  * never block. Deletes are soft (deletedAt tombstone) so they sync safely. [refresh] pulls on sign-in
  * / manual refresh, merging by id (no duplicates) with last-write-wins on updatedAt, and never
- * clobbering locally-pending edits. pH values are rounded to 1 dp and range-checked (4.5–9.0).
+ * clobbering locally-pending edits. pH values are rounded to 1 dp and range-checked (3.5–7.0,
+ * provisional — see PhStatus). New writes are vaginal; legacy urine rows are never re-validated.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @Singleton
@@ -59,7 +60,7 @@ class PhRepository @Inject constructor(
     fun update(reading: PhReading): PhWriteResult = write(reading)
 
     private fun write(reading: PhReading): PhWriteResult {
-        // Enforce the trackable urine-pH range in the data layer (defense-in-depth beyond the UI
+        // Enforce the trackable vaginal-pH range in the data layer (defense-in-depth beyond the UI
         // slider). Out-of-range values are rejected, never persisted. Boundaries are inclusive.
         val value = reading.phValue.round1()
         if (value < PhStatus.MIN || value > PhStatus.MAX) {

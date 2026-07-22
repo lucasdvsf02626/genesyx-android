@@ -42,6 +42,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.genesyx.app.domain.model.PhReading
+import com.genesyx.app.domain.ph.PhCopy
 import com.genesyx.app.domain.ph.PhStatus
 import com.genesyx.app.ui.theme.ElectricLavender
 import java.time.Instant
@@ -53,9 +54,9 @@ import kotlin.math.roundToInt
 private val whenFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("d MMM yyyy · HH:mm")
 
 /**
- * Log / edit a urine-pH reading. Mirrors the web PhLogDialog (docs/SCREEN_LAYOUTS.md):
- * big value tile coloured by status, slider 4.5–9.0 step 0.1 with ± buttons, when picker,
- * notes, Save (+ Delete when editing).
+ * Log / edit a vaginal-pH reading: big value tile coloured by status, slider 3.5–7.0 step 0.1
+ * (provisional range — see PhStatus) with ± buttons, when picker, notes, Save (+ Delete when
+ * editing). Editing preserves the reading's measurement type (a legacy urine reading stays urine).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -67,7 +68,7 @@ fun PhLogDialog(
 ) {
     val colors = MaterialTheme.colorScheme
 
-    var value by remember { mutableStateOf(existing?.phValue ?: 6.5) }
+    var value by remember { mutableStateOf(existing?.phValue ?: 4.2) }
     var recordedAt by remember { mutableStateOf(existing?.recordedAt ?: LocalDateTime.now()) }
     var notes by remember { mutableStateOf(existing?.notes.orEmpty()) }
     var showDatePicker by remember { mutableStateOf(false) }
@@ -91,7 +92,7 @@ fun PhLogDialog(
         text = {
             Column {
                 Text(
-                    "Track your urine pH from 4.5 to 9.0.",
+                    "Track your vaginal pH from 3.5 to 7.0.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = colors.onSurfaceVariant,
                 )
@@ -174,6 +175,13 @@ fun PhLogDialog(
                     onValueChange = { if (it.length <= 500) notes = it },
                     label = { Text("Notes (optional)") },
                     modifier = Modifier.fillMaxWidth(),
+                )
+
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    PhCopy.DISCLAIMER,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.onSurfaceVariant,
                 )
             }
         },

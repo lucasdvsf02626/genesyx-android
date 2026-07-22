@@ -393,7 +393,7 @@ val learnArticles: List<Article> = listOf(
             ArticleBlock.Heading("How much data is enough"),
             ArticleBlock.BulletList(
                 listOf(
-                    "Three weeks: almost nothing. Treat every pattern as coincidence.",
+                    "Three weeks: almost nothing. Take every pattern as coincidence.",
                     "Three months: something. Patterns that survive this long are worth noticing.",
                     "A year: enough to see how you change across seasons and circumstances.",
                 ),

@@ -100,14 +100,15 @@ CREATE POLICY "Users delete own daily_logs" ON public.daily_logs FOR DELETE TO a
 -- ph_readings   — ph_readings_user_recorded_idx (user_id, recorded_at DESC)
 -- ============================================================
 CREATE TABLE public.ph_readings (
-  id           uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id      uuid        NOT NULL,
-  ph_value     numeric     NOT NULL,                 -- app rounds to 1 decimal, range 4.5–9.0
-  recorded_at  timestamptz NOT NULL DEFAULT now(),
-  notes        text,
-  created_at   timestamptz NOT NULL DEFAULT now(),
-  updated_at   timestamptz NOT NULL DEFAULT now(),
-  deleted_at   timestamptz                            -- soft-delete tombstone: null = live, set = deleted (app writes it; see PhReadingDto). delete_current_user() hard-deletes regardless.
+  id               uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id          uuid        NOT NULL,
+  ph_value         numeric     NOT NULL,                 -- app rounds to 1 decimal. Vaginal range 3.5–7.0 (PROVISIONAL, pending clinical sign-off); legacy urine rows may hold 4.5–9.0.
+  recorded_at      timestamptz NOT NULL DEFAULT now(),
+  notes            text,
+  measurement_type text        NOT NULL DEFAULT 'urine', -- 'urine' (legacy, pre-1.2.x) or 'vaginal'. Apply via the ALTER flagged in CHANGELOG before deploying the client; existing rows are urine.
+  created_at       timestamptz NOT NULL DEFAULT now(),
+  updated_at       timestamptz NOT NULL DEFAULT now(),
+  deleted_at       timestamptz                            -- soft-delete tombstone: null = live, set = deleted (app writes it; see PhReadingDto). delete_current_user() hard-deletes regardless.
 );
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.ph_readings TO authenticated;

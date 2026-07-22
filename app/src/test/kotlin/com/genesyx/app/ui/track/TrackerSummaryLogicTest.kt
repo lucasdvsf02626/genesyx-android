@@ -2,6 +2,7 @@ package com.genesyx.app.ui.track
 
 import com.genesyx.app.domain.model.CycleSettings
 import com.genesyx.app.domain.model.DailyLog
+import com.genesyx.app.domain.model.PhMeasurement
 import com.genesyx.app.domain.model.PhReading
 import com.genesyx.app.domain.model.Supplement
 import org.junit.Assert.assertEquals
@@ -49,14 +50,28 @@ class TrackerSummaryLogicTest {
     }
 
     @Test
-    fun `ph summary shows the latest reading and status`() {
+    fun `ph summary shows the latest vaginal reading and status`() {
         val readings = listOf(
-            PhReading(phValue = 5.5, recordedAt = LocalDateTime.of(2026, 6, 19, 9, 0)),
-            PhReading(phValue = 6.8, recordedAt = LocalDateTime.of(2026, 6, 21, 8, 0)),
+            PhReading(phValue = 4.0, recordedAt = LocalDateTime.of(2026, 6, 19, 9, 0)),
+            PhReading(phValue = 4.8, recordedAt = LocalDateTime.of(2026, 6, 21, 8, 0)),
         )
         val s = TrackerSummaryLogic.compute(emptyMap(), readings, null, goal, today = today)
         assertTrue(s.ph.hasData)
-        assertEquals("Last reading 6.8 · Optimal", s.ph.value)
+        assertEquals("Last reading 4.8 · Elevated", s.ph.value)
+    }
+
+    @Test
+    fun `ph summary marks a legacy urine reading rather than classifying it`() {
+        val readings = listOf(
+            PhReading(
+                phValue = 6.5,
+                recordedAt = LocalDateTime.of(2026, 6, 21, 8, 0),
+                measurementType = PhMeasurement.URINE,
+            ),
+        )
+        val s = TrackerSummaryLogic.compute(emptyMap(), readings, null, goal, today = today)
+        assertTrue(s.ph.hasData)
+        assertEquals("Last reading 6.5 · urine (legacy)", s.ph.value)
     }
 
     @Test

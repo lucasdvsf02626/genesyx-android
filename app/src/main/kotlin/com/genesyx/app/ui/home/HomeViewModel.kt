@@ -17,6 +17,7 @@ import com.genesyx.app.domain.cycle.CycleEngine
 import com.genesyx.app.domain.hydration.HydrationCoach
 import com.genesyx.app.domain.hydration.HydrationPace
 import com.genesyx.app.domain.model.CycleSettings
+import com.genesyx.app.domain.model.PhMeasurement
 import com.genesyx.app.domain.model.PhReading
 import com.genesyx.app.domain.streaks.StreakEngine
 import com.genesyx.app.domain.streaks.StreakState
@@ -60,6 +61,8 @@ data class HomeUiState(
     val hydrationCoaching: String? = null,
     // pH nudge card — the latest reading value, or null when none exists.
     val phLatest: Double? = null,
+    /** True when that latest reading is a pre-migration urine reading, so the card marks it legacy. */
+    val phLatestIsLegacy: Boolean = false,
     val streakDays: Int? = null,
     val isLoading: Boolean = false,
 )
@@ -133,6 +136,7 @@ class HomeViewModel @Inject constructor(
             daysOnGoal = streaks.daysOnGoal,
             hydrationCoaching = coaching.message,
             phLatest = readings.maxByOrNull { it.recordedAt }?.phValue,
+            phLatestIsLegacy = readings.maxByOrNull { it.recordedAt }?.measurementType == PhMeasurement.URINE,
             // Any logged activity, not water alone — the card is labelled "Streak", so it has to
             // count everything she tracks, and it must not reset at midnight.
             streakDays = streaks.dailyActivity,

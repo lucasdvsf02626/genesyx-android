@@ -4,14 +4,15 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.genesyx.app.domain.model.PhMeasurement
 import com.genesyx.app.domain.model.PhReading
 import java.time.LocalDateTime
 
 /**
  * Room mirror of Supabase `ph_readings` — index (userId, recordedAt) matches the server index.
  * v3 adds offline-sync bookkeeping: [syncStatus], [updatedAt] (last-write-wins clock) and
- * [deletedAt] (soft delete / tombstone). These are local-only concerns and are NOT surfaced in the
- * [PhReading] domain model.
+ * [deletedAt] (soft delete / tombstone). v5 adds [measurementType] ('urine' legacy / 'vaginal').
+ * The sync columns are local-only concerns and are NOT surfaced in the [PhReading] domain model.
  */
 @Entity(tableName = "ph_readings", indices = [Index(value = ["userId", "recordedAt"])])
 data class PhReadingEntity(
@@ -20,13 +21,15 @@ data class PhReadingEntity(
     val phValue: Double,
     val recordedAt: LocalDateTime,
     val notes: String?,
+    // Rows created before the vaginal-pH migration default to 'urine' (see MIGRATION_4_5).
+    @ColumnInfo(defaultValue = "urine") val measurementType: String = PhMeasurement.VAGINAL,
     @ColumnInfo(defaultValue = "SYNCED") val syncStatus: PhSyncStatus = PhSyncStatus.SYNCED,
     val updatedAt: LocalDateTime? = null,
     val deletedAt: LocalDateTime? = null,
 )
 
 fun PhReadingEntity.toDomain(): PhReading =
-    PhReading(id = id, phValue = phValue, recordedAt = recordedAt, notes = notes)
+    PhReading(id = id, phValue = phValue, recordedAt = recordedAt, notes = notes, measurementType = measurementType)
 
 fun PhReading.toEntity(
     userId: String,
@@ -39,6 +42,7 @@ fun PhReading.toEntity(
     phValue = phValue,
     recordedAt = recordedAt,
     notes = notes,
+    measurementType = measurementType,
     syncStatus = syncStatus,
     updatedAt = updatedAt,
     deletedAt = deletedAt,

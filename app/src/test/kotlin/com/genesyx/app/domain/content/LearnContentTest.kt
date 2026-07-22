@@ -150,6 +150,8 @@ class LearnContentTest {
         val banned = listOf(
             "boy or girl", "sex-selection", "sway", "alkaline diet", "alkaline water",
             "douch", "optimize your ph", "balance your ph", "conceiving a boy", "conceiving a girl",
+            // Extended for the vaginal-pH migration: no condition-naming, treatment, or diagnosis framing.
+            "bacterial vaginosis", "bv", "infection", "thrush", "candida", "yeast", "treat", "cure", "diagnos",
         )
         learnArticles.forEach { article ->
             val text = article.searchableText()

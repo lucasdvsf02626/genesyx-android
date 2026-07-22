@@ -34,6 +34,8 @@ class PreferencesRepository @Inject constructor(
         store.onboardingComplete.stateIn(scope, SharingStarted.Eagerly, false)
     val learnIntroSeen: StateFlow<Boolean> =
         store.learnIntroSeen.stateIn(scope, SharingStarted.Eagerly, false)
+    val phVaginalNoticeSeen: StateFlow<Boolean> =
+        store.phVaginalNoticeSeen.stateIn(scope, SharingStarted.Eagerly, false)
     val bestDailyStreak: StateFlow<Int> =
         store.bestDailyStreak.stateIn(scope, SharingStarted.Eagerly, 0)
     val celebratedMilestones: StateFlow<Set<String>> =
@@ -46,6 +48,7 @@ class PreferencesRepository @Inject constructor(
     fun setFocus(mode: FocusMode) { scope.launch { store.setFocus(mode) } }
     fun setOnboardingComplete(complete: Boolean) { scope.launch { store.setOnboardingComplete(complete) } }
     fun setLearnIntroSeen(seen: Boolean) { scope.launch { store.setLearnIntroSeen(seen) } }
+    fun setPhVaginalNoticeSeen(seen: Boolean) { scope.launch { store.setPhVaginalNoticeSeen(seen) } }
     fun setBestDailyStreak(days: Int) { scope.launch { store.setBestDailyStreak(days) } }
     fun setCelebratedMilestones(ids: Set<String>) { scope.launch { store.setCelebratedMilestones(ids) } }
 

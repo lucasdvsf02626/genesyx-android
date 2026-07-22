@@ -3,7 +3,7 @@ package com.genesyx.app.core
 /** Compile-time feature gates. A disabled feature is fully hidden from the UI. */
 object FeatureFlags {
     /**
-     * Urine-pH tracking. Room is the source of truth and, for a signed-in user,
+     * Vaginal-pH tracking. Room is the source of truth and, for a signed-in user,
      * [com.genesyx.app.data.PhRepository] write-throughs to the Supabase `ph_readings` table (with a
      * WorkManager retry queue). Guests (`LOCAL_USER_ID`) stay on-device. The card copy must keep
      * saying so — pH is intimate health data and the sync has to be disclosed, not buried.

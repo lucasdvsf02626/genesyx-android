@@ -194,7 +194,7 @@ private fun PhInsightsSection(ph: PhInsights, onOpenTracker: () -> Unit) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("Urine pH", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+                Text("Vaginal pH", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
                 Text("Open tracker", style = MaterialTheme.typography.bodyMedium, color = ElectricLavender, fontWeight = FontWeight.Medium)
             }
 

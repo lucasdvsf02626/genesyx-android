@@ -20,6 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.genesyx.app.domain.model.DailyLog
 import com.genesyx.app.domain.model.EnergyLevel
+import com.genesyx.app.domain.model.PhMeasurement
 import com.genesyx.app.domain.model.PhReading
 import com.genesyx.app.domain.ph.PhStatus
 import java.time.format.DateTimeFormatter
@@ -49,9 +50,12 @@ fun DailyLogSummary(log: DailyLog, modifier: Modifier = Modifier) {
 @Composable
 fun PhReadingRow(reading: PhReading) {
     val colors = MaterialTheme.colorScheme
-    val status = PhStatus.classify(reading.phValue)
+    // Legacy urine readings are on a different scale, so they aren't classified Healthy/Elevated.
+    val isLegacy = reading.measurementType == PhMeasurement.URINE
+    val accent = if (isLegacy) colors.onSurfaceVariant else PhStatus.classify(reading.phValue).color
+    val statusLabel = if (isLegacy) "urine (legacy)" else PhStatus.classify(reading.phValue).label
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.size(10.dp).clip(CircleShape).background(status.color))
+        Box(Modifier.size(10.dp).clip(CircleShape).background(accent))
         Spacer(Modifier.size(10.dp))
         Text(
             "pH %.1f".format(reading.phValue),
@@ -60,7 +64,7 @@ fun PhReadingRow(reading: PhReading) {
             color = colors.onSurface,
         )
         Spacer(Modifier.size(8.dp))
-        Text(status.label, style = MaterialTheme.typography.bodyMedium, color = status.color)
+        Text(statusLabel, style = MaterialTheme.typography.bodyMedium, color = accent)
         Spacer(Modifier.weight(1f))
         Text(
             reading.recordedAt.format(TIME_FMT),

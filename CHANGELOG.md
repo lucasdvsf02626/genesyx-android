@@ -6,6 +6,67 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ---
 
+## [Unreleased] — Vaginal pH migration (Urine pH → Vaginal pH)
+
+⚠️ **RELEASE IS GATED ON CLIENT SIGN-OFF.** The vaginal-pH range and thresholds below are
+**PROVISIONAL** (marked in `domain/ph/PhStatus.kt`): healthy band **3.8–4.5**, elevated **> 4.5**,
+input range **MIN 3.5 / MAX 7.0**, step 0.1, slider default 4.2 — the standard published healthy
+vaginal-pH range. Genesyx is a wellness app, not a medical device. No `versionCode` change here;
+not built as a release. See the **Release gates** table below for the full pre-ship checklist.
+
+### Changed — the pH feature is now Vaginal pH, not Urine pH
+- **Two-band model (Healthy / Elevated)** replaces urine acidic/optimal/alkaline (`PhStatus`). The
+  duplicated hardcoded chart-band literals (`6.0f`/`7.5f`) were removed and the chart now derives its
+  bands from `PhStatus` constants.
+- **All user-facing copy** relabelled to "Vaginal pH" (British English): tracker card, log dialog,
+  detail screen, Track "Your Trackers" row, Insights section, log-day rows.
+- **Insight copy rewritten (clinical, not re-ranged):** two states only. Elevated copy is neutral and
+  descriptive, names no condition, gives no dietary advice, and signposts a GP or pharmacist for
+  persistently elevated readings. Healthy copy is brief and factual. All new copy lives in
+  `domain/ph/PhCopy.kt` and passes the extended banned-phrase guard.
+- **Banned-phrase guard extended** (`LearnContentTest`) with: bacterial vaginosis, bv, infection,
+  thrush, candida, yeast, treat, cure, diagnos — and a new `PhCopyBannedPhraseTest` scans all pH copy.
+  One benign Learn article line ("**Treat** every pattern as coincidence") was reworded to "Take …"
+  so the extended `treat` term stays green — unrelated to pH, flagged for review.
+
+### Historical data (E1 + E2, no silent relabelling)
+- **Room v4 → v5** (`MIGRATION_4_5`): adds `measurementType TEXT NOT NULL DEFAULT 'urine'` to
+  `ph_readings`; every existing row is stamped `urine` (legacy). New writes are `vaginal`.
+- **Legacy readings stay distinguishable:** pre-migration entries show a neutral "urine (legacy)"
+  marker (latest panel, log-day rows, Track summary) and are **excluded** from vaginal insight/status
+  computation; on the chart they render muted/hollow and don't join the line. The y-axis/bands are the
+  vaginal scale only.
+- **One-time notice** (dismissible, DataStore-gated) explains the switch on first open of the tracker.
+- **Supabase — DONE (production, 22 Jul 2026).** `measurement_type` column added to
+  `public.ph_readings`; all **31** existing rows stamped `'urine'`; CHECK constraint
+  `ph_measurement_type_check` (`'urine'`, `'vaginal'`) applied. The DTO sends/reads `measurement_type`;
+  rows without it decode as legacy urine.
+
+### Disclaimer
+- The existing `MEDICAL_DISCLAIMER` mechanism is echoed by a pH-specific `PhCopy.DISCLAIMER` on the pH
+  detail screen and the log dialog. **No citation infrastructure** in this release.
+- **TODO:** Android citation surface — separate task.
+
+### Release gates (all must clear before this ships)
+1. **Client sign-off of the ranges** — healthy 3.8–4.5, elevated >4.5, input 3.5–7.0, default 4.2. **OPEN.**
+2. **Client sign-off of the user-visible copy** (`domain/ph/PhCopy.kt`). **OPEN.**
+3. **Supabase migration** — **DONE 22 Jul 2026** (production): `measurement_type` added to
+   `public.ph_readings`, all 31 existing rows stamped `'urine'`, CHECK constraint
+   `ph_measurement_type_check` (`'urine'`, `'vaginal'`) applied.
+4. **`PhMigrationTest` v4→v5 on-device run** — compiles; needs a device/emulator. **OPEN.**
+5. **iOS parity fix scheduled** — labels, two-band range/thresholds, `measurement_type`, copy. **OPEN.**
+6. **Store / compliance updates. OPEN:** (a) Play Data Safety form review; (b) `docs/DATA_SAFETY_AND_PRIVACY`
+   "Urine pH" → "Vaginal pH" (file updated in this commit; owner to review/submit); (c) `genesyx.co.uk`
+   privacy-policy wording; (d) **re-submit the Play Console Health apps declaration** (Policy → App
+   content) — a changed health feature requires re-declaration under the Jan 2026 enforcement; category
+   stays wellness / menstrual health, **not** Medical.
+
+### Verified
+- Unit suite green (see report). `PhMigrationTest` extended with a v4 → v5 case (rows preserved,
+  stamped `urine`).
+
+---
+
 ## [1.2.1] — versionCode 11 — API 35 → 36 target migration (not yet uploaded to Play)
 
 ### Why
