@@ -65,6 +65,7 @@ import android.content.res.Configuration
 import com.genesyx.app.R
 import com.genesyx.app.domain.hydration.HydrationPace
 import com.genesyx.app.domain.model.CycleSettings
+import com.genesyx.app.domain.ph.PhCopy
 import com.genesyx.app.ui.components.CycleSettingsDialog
 import com.genesyx.app.ui.components.Eyebrow
 import com.genesyx.app.ui.components.GxPrimaryButton
@@ -417,7 +418,7 @@ private fun PhNudgeCard(latest: Double?, isLegacy: Boolean, onOpen: () -> Unit) 
     // current vaginal reading. "Check your pH" is measurement-neutral and stays.
     val body = when {
         latest == null -> "Log today's reading in the pH tracker"
-        isLegacy -> "Last reading %.1f (urine, legacy) — tap to log a vaginal reading".format(latest)
+        isLegacy -> "Last reading %.1f · ${PhCopy.LEGACY_MARKER} — tap to log a vaginal reading".format(latest)
         else -> "Last reading %.1f — tap to log again".format(latest)
     }
     Card(
@@ -427,7 +428,7 @@ private fun PhNudgeCard(latest: Double?, isLegacy: Boolean, onOpen: () -> Unit) 
             .clearAndSetSemantics {
                 contentDescription = "Check your pH. " + when {
                     latest == null -> "No reading yet"
-                    isLegacy -> "Last reading %.1f, urine, legacy".format(latest)
+                    isLegacy -> "Last reading %.1f, ${PhCopy.LEGACY_MARKER}".format(latest)
                     else -> "Last reading %.1f".format(latest)
                 } + ". Opens pH tracker."
             },

@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.genesyx.app.domain.model.PhMeasurement
 import com.genesyx.app.domain.model.PhReading
+import com.genesyx.app.domain.ph.PhCopy
 import com.genesyx.app.domain.ph.PhStatus
 import com.genesyx.app.ui.theme.ElectricLavender
 import java.time.LocalDateTime
@@ -135,10 +136,10 @@ fun PhTrackerCard(
 private fun LatestReadingPanel(latest: PhReading) {
     val colors = MaterialTheme.colorScheme
     // Legacy urine readings are on a different scale, so we don't classify them as Healthy/Elevated —
-    // they show a neutral "urine (legacy)" marker instead.
+    // they show the neutral canonical "urine (legacy)" marker instead (lowercase, not uppercased).
     val isLegacy = latest.measurementType == PhMeasurement.URINE
     val accent = if (isLegacy) colors.onSurfaceVariant else PhStatus.classify(latest.phValue).color
-    val pillLabel = if (isLegacy) "Urine (legacy)".uppercase() else PhStatus.classify(latest.phValue).label.uppercase()
+    val pillLabel = if (isLegacy) PhCopy.LEGACY_MARKER else PhStatus.classify(latest.phValue).label.uppercase()
     Row(
         modifier = Modifier
             .fillMaxWidth()

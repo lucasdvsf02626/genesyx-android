@@ -24,6 +24,9 @@ enum class PhStatus(val label: String, val color: Color) {
         const val MAX = 7.0
         const val STEP = 0.1
 
+        /** Value a fresh log entry opens on (mid healthy band). Provisional, like the range. */
+        const val DEFAULT = 4.2
+
         /** Typical healthy vaginal-pH band (provisional). Readings above [HEALTHY_MAX] are ELEVATED. */
         const val HEALTHY_MIN = 3.8
         const val HEALTHY_MAX = 4.5

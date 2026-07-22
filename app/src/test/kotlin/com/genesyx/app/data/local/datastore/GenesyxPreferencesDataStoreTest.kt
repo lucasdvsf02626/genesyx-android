@@ -53,4 +53,16 @@ class GenesyxPreferencesDataStoreTest {
         store.setHydrationGoalMl(3000)
         assertEquals(3000, store.hydrationGoalMl.first())
     }
+
+    @Test
+    fun `ph vaginal notice defaults to unseen so it fires once`() = runTest {
+        assertEquals(false, newStore().phVaginalNoticeSeen.first())
+    }
+
+    @Test
+    fun `dismissing the ph vaginal notice persists so it does not re-fire`() = runTest {
+        val store = newStore()
+        store.setPhVaginalNoticeSeen(true)
+        assertEquals(true, store.phVaginalNoticeSeen.first())
+    }
 }

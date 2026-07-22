@@ -43,6 +43,14 @@ class PhInsightLogicTest {
         assertEquals(4.5, PhStatus.HEALTHY_MAX, 0.0)
     }
 
+    @Test
+    fun `the log-entry default is 4_2 and a healthy in-range value`() {
+        // PhLogDialog opens a new reading on PhStatus.DEFAULT.
+        assertEquals(4.2, PhStatus.DEFAULT, 0.0)
+        assertTrue(PhStatus.DEFAULT in PhStatus.MIN..PhStatus.MAX)
+        assertEquals(PhStatus.HEALTHY, PhStatus.classify(PhStatus.DEFAULT))
+    }
+
     // ── PhInsightLogic.compute ──
 
     @Test

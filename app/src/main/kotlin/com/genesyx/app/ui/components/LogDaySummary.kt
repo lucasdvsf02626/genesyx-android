@@ -22,6 +22,7 @@ import com.genesyx.app.domain.model.DailyLog
 import com.genesyx.app.domain.model.EnergyLevel
 import com.genesyx.app.domain.model.PhMeasurement
 import com.genesyx.app.domain.model.PhReading
+import com.genesyx.app.domain.ph.PhCopy
 import com.genesyx.app.domain.ph.PhStatus
 import java.time.format.DateTimeFormatter
 
@@ -53,7 +54,7 @@ fun PhReadingRow(reading: PhReading) {
     // Legacy urine readings are on a different scale, so they aren't classified Healthy/Elevated.
     val isLegacy = reading.measurementType == PhMeasurement.URINE
     val accent = if (isLegacy) colors.onSurfaceVariant else PhStatus.classify(reading.phValue).color
-    val statusLabel = if (isLegacy) "urine (legacy)" else PhStatus.classify(reading.phValue).label
+    val statusLabel = if (isLegacy) PhCopy.LEGACY_MARKER else PhStatus.classify(reading.phValue).label
     Row(verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(10.dp).clip(CircleShape).background(accent))
         Spacer(Modifier.size(10.dp))

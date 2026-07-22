@@ -7,6 +7,7 @@ import com.genesyx.app.domain.model.DailyLog
 import com.genesyx.app.domain.model.PhMeasurement
 import com.genesyx.app.domain.model.PhReading
 import com.genesyx.app.domain.model.Supplement
+import com.genesyx.app.domain.ph.PhCopy
 import com.genesyx.app.domain.ph.PhStatus
 import com.genesyx.app.ui.insights.SleepInsightLogic
 import java.time.LocalDate
@@ -91,7 +92,7 @@ object TrackerSummaryLogic {
         val latest = readings.maxByOrNull { it.recordedAt }
         return if (latest != null) {
             // Legacy urine readings aren't on the vaginal scale, so they show a neutral marker, not a status.
-            val label = if (latest.measurementType == PhMeasurement.URINE) "urine (legacy)"
+            val label = if (latest.measurementType == PhMeasurement.URINE) PhCopy.LEGACY_MARKER
             else PhStatus.classify(latest.phValue).label
             TrackerSummary("Last reading %.1f · $label".format(latest.phValue), spark, hasData = true)
         } else {

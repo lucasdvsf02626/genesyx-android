@@ -14,6 +14,8 @@ class PhCopyBannedPhraseTest {
         "boy or girl", "sex-selection", "sway", "alkaline diet", "alkaline water",
         "douch", "optimize your ph", "balance your ph", "conceiving a boy", "conceiving a girl",
         "bacterial vaginosis", "bv", "infection", "thrush", "candida", "yeast", "treat", "cure", "diagnos",
+        // No dietary advice in pH copy (audit 22 Jul 2026).
+        "leafy greens", "whole grains", "mineral water",
     )
 
     @Test

@@ -15,6 +15,10 @@ object PhCopy {
         "This tracker is for your own record and isn't medical advice. If a reading worries you, " +
             "or a pattern persists, please speak to a GP, nurse, or pharmacist."
 
+    // The one canonical marker for a pre-migration urine reading. Rendered verbatim (lowercase) on
+    // every surface — card pill, log-day row, Track summary, Home nudge — so casing never diverges.
+    const val LEGACY_MARKER = "urine (legacy)"
+
     // One-time notice shown after the update that switched the tracker to vaginal pH.
     const val NOTICE_TITLE = "Vaginal pH tracking"
     const val NOTICE_BODY =
@@ -32,7 +36,7 @@ object PhCopy {
 
     /** Every health-framed string here, for the banned-phrase guard. */
     fun all(): List<String> = listOf(
-        DISCLAIMER, NOTICE_TITLE, NOTICE_BODY, NOTICE_DISMISS,
+        DISCLAIMER, LEGACY_MARKER, NOTICE_TITLE, NOTICE_BODY, NOTICE_DISMISS,
         INSIGHT_DEFAULT, INSIGHT_HEALTHY, INSIGHT_ELEVATED, RECOMMENDATION_ELEVATED,
     )
 }

@@ -14,6 +14,26 @@ input range **MIN 3.5 / MAX 7.0**, step 0.1, slider default 4.2 — the standard
 vaginal-pH range. Genesyx is a wellness app, not a medical device. No `versionCode` change here;
 not built as a release. See the **Release gates** table below for the full pre-ship checklist.
 
+### Audit follow-up (22 Jul 2026) — vaginal-pH audit flags closed
+Closes the five non-blocking flags raised in the 22 Jul vaginal-pH audit. Docs/tests + a small
+constant extraction; no behaviour change beyond the marker casing. Unit suite **245 passing, 0
+failures / 0 errors** (was 236; +9). Not pushed.
+- **Legacy marker is now one canonical constant** — `PhCopy.LEGACY_MARKER = "urine (legacy)"`,
+  rendered verbatim (lowercase) on every surface. The card pill no longer uppercases it to
+  "URINE (LEGACY)" and the Home nudge/accessibility strings no longer say "urine, legacy"
+  (`PhTrackerCard`, `LogDaySummary`, `TrackerSummaryLogic`, `HomeScreen`).
+- **Verbatim copy assertions** — new `PhCopyTest` pins the Healthy/Elevated/signpost/disclaimer/notice
+  strings to hardcoded expected text (not via `PhCopy` constants), so an accidental copy edit fails
+  the build.
+- **Banned-phrase guard extended** with `leafy greens`, `whole grains`, `mineral water`
+  (`PhCopyBannedPhraseTest`) — no dietary advice may appear in pH copy.
+- **Entry default extracted + tested** — `PhStatus.DEFAULT = 4.2` (was an inline literal in
+  `PhLogDialog`); `PhInsightLogicTest` pins it to 4.2, in-range, and Healthy.
+- **One-time notice covered** — `GenesyxPreferencesDataStoreTest` now asserts the vaginal-notice flag
+  defaults to unseen (fires once) and that dismissal persists (no re-fire).
+- **Stale comment removed** — `Color.kt` `ElectricBlue` no longer references the retired "pH alkaline"
+  scheme.
+
 ### Changed — the pH feature is now Vaginal pH, not Urine pH
 - **Two-band model (Healthy / Elevated)** replaces urine acidic/optimal/alkaline (`PhStatus`). The
   duplicated hardcoded chart-band literals (`6.0f`/`7.5f`) were removed and the chart now derives its

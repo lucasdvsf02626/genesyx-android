@@ -68,7 +68,7 @@ fun PhLogDialog(
 ) {
     val colors = MaterialTheme.colorScheme
 
-    var value by remember { mutableStateOf(existing?.phValue ?: 4.2) }
+    var value by remember { mutableStateOf(existing?.phValue ?: PhStatus.DEFAULT) }
     var recordedAt by remember { mutableStateOf(existing?.recordedAt ?: LocalDateTime.now()) }
     var notes by remember { mutableStateOf(existing?.notes.orEmpty()) }
     var showDatePicker by remember { mutableStateOf(false) }
