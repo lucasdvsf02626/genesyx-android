@@ -43,7 +43,16 @@ not built as a release. See the **Release gates** table below for the full pre-s
 - **Supabase — DONE (production, 22 Jul 2026).** `measurement_type` column added to
   `public.ph_readings`; all **31** existing rows stamped `'urine'`; CHECK constraint
   `ph_measurement_type_check` (`'urine'`, `'vaginal'`) applied. The DTO sends/reads `measurement_type`;
-  rows without it decode as legacy urine.
+  rows without it decode as legacy urine. Applied via:
+  ```sql
+  ALTER TABLE public.ph_readings
+    ADD COLUMN IF NOT EXISTS measurement_type text NOT NULL DEFAULT 'urine';
+  ALTER TABLE public.ph_readings
+    ADD CONSTRAINT ph_measurement_type_check CHECK (measurement_type IN ('urine', 'vaginal'));
+  ```
+  The `DEFAULT 'urine'` stamps existing rows on add (no separate backfill). To re-run against a DB
+  that lacks the constraint, guard with `... DROP CONSTRAINT IF EXISTS ph_measurement_type_check;`
+  first, since `ADD CONSTRAINT` is not idempotent.
 
 ### Disclaimer
 - The existing `MEDICAL_DISCLAIMER` mechanism is echoed by a pH-specific `PhCopy.DISCLAIMER` on the pH
