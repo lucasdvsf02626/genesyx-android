@@ -20,7 +20,10 @@ not built as a release. See the **Release gates** table below for the full pre-s
   bands from `PhStatus` constants.
 - **All user-facing copy** relabelled to "Vaginal pH" (British English): tracker card, log dialog,
   detail screen, Track "Your Trackers" row, Insights section, log-day rows.
-- **Insight copy rewritten (clinical, not re-ranged):** two states only. Elevated copy is neutral and
+- **Home "Check your pH" card made legacy-aware** — a pre-migration urine reading now surfaces as
+  "urine (legacy)" and nudges a fresh vaginal reading, instead of presenting the old value as current
+  (`ui/home/HomeScreen.kt`, `HomeViewModel.kt`). Found in a post-implementation Home audit.
+- **Insight copy rewritten (neutral, not re-ranged):** two states only. Elevated copy is neutral and
   descriptive, names no condition, gives no dietary advice, and signposts a GP or pharmacist for
   persistently elevated readings. Healthy copy is brief and factual. All new copy lives in
   `domain/ph/PhCopy.kt` and passes the extended banned-phrase guard.
@@ -53,21 +56,26 @@ not built as a release. See the **Release gates** table below for the full pre-s
 3. **Supabase migration** — **DONE 22 Jul 2026** (production): `measurement_type` added to
    `public.ph_readings`, all 31 existing rows stamped `'urine'`, CHECK constraint
    `ph_measurement_type_check` (`'urine'`, `'vaginal'`) applied.
-4. **`PhMigrationTest` v4→v5 on-device run** — compiles; needs a device/emulator. **OPEN.**
+4. **`PhMigrationTest` v4→v5 on-device run** — **DONE 22 Jul 2026** (emulator-5554, 2/2 pass).
 5. **iOS parity fix scheduled** — labels, two-band range/thresholds, `measurement_type`, copy. **OPEN.**
 6. **Store / compliance updates. OPEN:** (a) Play Data Safety form review; (b) `docs/DATA_SAFETY_AND_PRIVACY`
-   "Urine pH" → "Vaginal pH" (file updated in this commit; owner to review/submit); (c) `genesyx.co.uk`
+   "Urine pH" → "Vaginal pH" (draft updated locally — gitignored; owner to review/submit); (c) `genesyx.co.uk`
    privacy-policy wording; (d) **re-submit the Play Console Health apps declaration** (Policy → App
    content) — a changed health feature requires re-declaration under the Jan 2026 enforcement; category
    stays wellness / menstrual health, **not** Medical.
 
-### Verified
-- Unit suite green (see report). `PhMigrationTest` extended with a v4 → v5 case (rows preserved,
-  stamped `urine`).
+### Verified (commit `3713374`, 33 files)
+- Unit suite **236 passing, 0 failures / 0 errors** (`./gradlew :app:testDebugUnitTest`).
+- **On-device (emulator-5554):** `PhMigrationTest` v4→v5 **2/2 pass** (rows preserved, stamped
+  `urine`); legacy display confirmed live — Track shows "Vaginal pH · Last reading 6.8 · urine (legacy)".
+- Banned-phrase guards green: `LearnContentTest` (extended) + new `PhCopyBannedPhraseTest`.
 
 ---
 
 ## [1.2.1] — versionCode 11 — API 35 → 36 target migration (not yet uploaded to Play)
+
+**Status:** AAB built and verified (targetSdk 36, versionCode 11) — pending emulator edge-to-edge pass
+and Play Console upload. Committed `b713937` (on `main`).
 
 ### Why
 Google Play requires apps to target Android 16 (API 36) or higher to keep publishing updates after

@@ -1,9 +1,10 @@
 # Genesyx — Product Inventory
 
 The **baseline** below (§1–§6) describes the v1.0 codebase at `release/learn-v1` (`ac59b3a`),
-versionCode 7 / versionName 1.0.0. **Current `main` is versionCode 9 / versionName 1.2.0** — the v1.1
-and v1.2 additions are summarised in **§0** and layered on top of the baseline. Where the baseline
-below conflicts with §0, §0 wins.
+versionCode 7 / versionName 1.0.0. **Current `main` is versionCode 11 / versionName 1.2.1**, targeting
+**Android 16 (compileSdk/targetSdk 36, minSdk 26)** on **Room schema v5** — the v1.1, v1.2, the API-36
+bump, and the Vaginal pH migration are summarised in **§0** and layered on top of the baseline. Where
+the baseline below conflicts with §0, §0 wins.
 
 Six bottom tabs [`ui/navigation/Screen.kt`]. `FeatureFlags` on `main`: `PH_TRACKING` **on**,
 `PUSH_NOTIFICATIONS` **on** (v1.2 local reminders), `ADMIN_CLIENTS` off, `PARTNER_INVITES` off
@@ -28,13 +29,14 @@ Back discard-guard; Learn section (10 articles).
   and a `BootReceiver`. New screen **Reminder Settings** (`Screen.ReminderSettings`) reached from
   Profile → Reminders, with a pre-permission sheet. `cancelAll()` on sign-out/delete.
 - **Track "Your Trackers" + six detail screens** (`ui/track/detail/`). A card of six rows (Cycle,
-  Hydration, Urine pH, Sleep, Symptoms, Nutrition) with real per-signal summaries + spark dots
+  Hydration, Vaginal pH, Sleep, Symptoms, Nutrition) with real per-signal summaries + spark dots
   (`TrackerSummaryLogic`), each opening a typed detail destination:
   - **Hydration** — the canonical editor (quick-add + manual entry, clamped; 7-day bars; days-on-goal;
     streak; daily history). Writes only through `DailyLogRepository`.
   - **Cycle** — phase + metrics + explicitly-estimated fertile window / ovulation, edit settings.
-  - **Urine pH** — wraps the existing `PhTrackerSection` (4.5–9.0 validation); the embedded Track pH
-    section moved here.
+  - **Vaginal pH** — wraps the existing `PhTrackerSection` (3.5–7.0 validation, provisional two-band
+    Healthy/Elevated); the embedded Track pH section moved here. *(Relabelled from Urine pH — see §0
+    Post-v1.2.)*
   - **Sleep** — week summary + hours/minutes editor.
   - **Symptoms** — 4-week heatmap + dated history into the log flow.
   - **Nutrition** — supplement summary into the logging flow.
@@ -44,11 +46,26 @@ Back discard-guard; Learn section (10 articles).
   divider + 3 metrics; 44dp gradient avatar. **Pregnancy entry removed from Home** (route/feature
   kept).
 - **Insights are now all real-data** (the baseline §6 "fixed sample data" gaps are closed): sleep,
-  cycle regularity, symptom patterns, ovulation, consistency, urine pH, hydration, and
+  cycle regularity, symptom patterns, ovulation, consistency, vaginal pH, hydration, and
   nutrition-consistency (renamed from "Supplements") — plus a **Weekly Summary** extra after *My logs*.
 - **Supplement adherence card** on Insights, loggable Zinc, one supplement vocabulary, one
   week-bucketing impl (`domain/time/WeekBuckets`), hydration scored against the user-set goal, and
   **intraday hydration coaching** (`HydrationCoach`) on Home + Nutrition.
+
+**Post-v1.2 (current `main`, 2026-07-22):**
+
+- **Android 16 target** (`b713937`): `compileSdk`/`targetSdk` 35 → 36, `versionCode` 10 → 11 (`minSdk`
+  26 unchanged); `Icons.Outlined.MenuBook` → AutoMirrored. Toolchain unchanged (AGP 8.13.2 / Gradle
+  8.13). AAB built + verified (targetSdk 36); pending edge-to-edge pass + Play upload.
+- **Vaginal pH migration** (`3713374`) — the pH feature is now **Vaginal pH**, not Urine pH.
+  **Two-band model** (Healthy / Elevated) replaces acidic/optimal/alkaline: healthy band **3.8–4.5**,
+  elevated **> 4.5**, input range **3.5–7.0**, default 4.2 — **PROVISIONAL, pending client sign-off**
+  (`domain/ph/PhStatus.kt`; wellness app, not a medical device). All copy relabelled; neutral insight
+  copy (`domain/ph/PhCopy.kt`) + a disclaimer + one-time notice. **Room v4 → v5** adds a
+  `measurement_type` column; existing rows are stamped `urine` and shown as **"urine (legacy)"**
+  (excluded from insights, muted/hollow on the chart). Supabase `measurement_type` migration applied to
+  production 22 Jul 2026 (`ph_measurement_type_check`). Unit **236/0**; on-device `PhMigrationTest`
+  v4→v5 2/2 (emulator-5554). Release gated on client sign-off — see `CHANGELOG.md`.
 
 **Deep links:** `genesyx://{home,track,nutrition,insights,log}`, `genesyx://tracker/{hydration,ph}`
 (Home cards → Track detail), plus the reminder-tap routes.
@@ -95,7 +112,7 @@ The bottom bar hides on every screen except the six tabs [`ui/navigation/Screen.
 | Daily log (mood, energy, symptoms, sleep, water, supplements, notes) | Log, Home, Nutrition, Insights, Log History | Both — Room is truth, written through to Supabase [`data/DailyLogRepository.kt:49-96`] | No | live |
 | Hydration tracking + streak | Home, Nutrition, Log | Both — a facet of the daily log [`data/DailyLogRepository.kt:62-82`] | No | live |
 | Log history | Insights → Log History | Both — merges daily logs and pH readings by day [`ui/history/LogHistoryViewModel.kt:25-29`] | No | live |
-| Urine pH tracking | Track, Nutrition, Insights, Log History | Both — Room is truth, syncs to Supabase with a retry queue [`data/PhRepository.kt:61-148`] | Yes — `PH_TRACKING`, **on** [`core/FeatureFlags.kt:11`] | live |
+| Vaginal pH tracking (two-band, 3.5–7.0, provisional) | Track, Nutrition, Insights, Log History | Both — Room is truth, syncs to Supabase with a retry queue [`data/PhRepository.kt:61-148`] | Yes — `PH_TRACKING`, **on** [`core/FeatureFlags.kt:11`] | live |
 | pH background sync | (none — invisible) | Both — drains pending writes when the network returns [`data/sync/PhSyncWorker.kt:22-26`] | Follows `PH_TRACKING` | live |
 | Learn articles (10, bundled) | Learn, Learn Search, Article Detail, Nutrition | Neither — compiled into the app [`domain/content/LearnContent.kt:86`] | No | live |
 | Article search | Learn Search | Neither — matches title, excerpt, tags in memory [`domain/content/LearnContent.kt:76-84`] | No | live |
@@ -164,10 +181,13 @@ The bottom bar hides on every screen except the six tabs [`ui/navigation/Screen.
 8. Related articles replace the current one rather than stacking, so three taps through Related need one back press, not three [`ui/learn/ArticleDetailScreen.kt:146-150`].
 9. Share sends the title, excerpt, and the site root — not a per-article link, which does not exist [`core/AppLinks.kt`].
 
-### D. Tracking urine pH
+### D. Tracking vaginal pH
+
+*(Relabelled from urine pH in the Post-v1.2 migration; pre-migration readings persist as "urine
+(legacy)" and are excluded from insights. Range/thresholds are PROVISIONAL, pending client sign-off.)*
 
 1. A pH section sits on Track and Nutrition; a summary card sits on Insights [`ui/track/TrackScreen.kt:261-264`, `ui/nutrition/NutritionScreen.kt:101-104`].
-2. "Log pH" opens a dialog to record a value; readings outside 4.5–9.0 are rejected and never stored [`data/PhRepository.kt:64-68`, `domain/ph/PhStatus.kt:15-16`].
+2. "Log pH" opens a dialog to record a value; readings outside 3.5–7.0 are rejected and never stored [`data/PhRepository.kt:64-68`, `domain/ph/PhStatus.kt`].
 3. Values round to one decimal place, then save to the device immediately [`data/PhRepository.kt:72-80`].
 4. For a signed-in user the reading also pushes to the server; if that fails the reading stays queued and a background job retries when the network returns [`data/PhRepository.kt:99-108`].
 5. For a signed-out user nothing is queued and nothing is pushed [`data/PhRepository.kt:76`].
