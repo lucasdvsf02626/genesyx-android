@@ -37,13 +37,13 @@ val apiBaseUrl = secret("genesyx.apiBaseUrl")
 
 android {
     namespace = "com.genesyx.app"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.genesyx.app"
         minSdk = 26
-        targetSdk = 35
-        versionCode = 10
+        targetSdk = 36
+        versionCode = 11
         versionName = "1.2.1"
 
         testInstrumentationRunner = "com.genesyx.app.HiltTestRunner"

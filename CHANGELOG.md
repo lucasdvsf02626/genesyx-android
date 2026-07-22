@@ -6,6 +6,49 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ---
 
+## [1.2.1] — versionCode 11 — API 35 → 36 target migration (not yet uploaded to Play)
+
+### Why
+Google Play requires apps to target Android 16 (API 36) or higher to keep publishing updates after
+**31 Aug 2026**. This bumps `compileSdk`/`targetSdk` 35 → 36 for compliance. `versionCode 10` (the
+archived `1.2.1-code10` build) was never uploaded, so the API-36 build supersedes it as
+`versionCode 11`; `versionName` stays `1.2.1` (no user-facing feature change).
+
+### Changed
+- `compileSdk = 35 → 36`, `targetSdk = 35 → 36`, `versionCode = 10 → 11` (`app/build.gradle.kts`).
+  `minSdk` unchanged at 26.
+- Fixed a deprecation surfaced by the build: `Icons.Outlined.MenuBook` →
+  `Icons.AutoMirrored.Outlined.MenuBook` (`ui/onboarding/ReadinessSummaryScreen.kt`). No new
+  dependency (AutoMirrored ships in `material-icons-extended`).
+
+### Deferred
+- `LocalLifecycleOwner` (`ui/settings/ReminderSettingsScreen.kt`) is deprecated in favour of
+  `androidx.lifecycle.compose.LocalLifecycleOwner`, which requires adding the
+  `lifecycle-runtime-compose` dependency. The current API still works; left for a dedicated
+  Compose-library upgrade rather than bundling a dependency change into a compliance release.
+
+### Toolchain
+- **Unchanged** — built on committed **AGP 8.13.2 / Gradle 8.13** (which already fully support
+  `compileSdk 36`; no AGP/Gradle bump is needed for API 36). API 36 platform (`android-36`) was
+  already installed.
+- An exploratory **AGP 9.2.1 / Gradle 9.4.1 / Kotlin 2.2.10** upgrade (with associated `gradle.properties`
+  opt-out flags) was deliberately kept **out** of this release to keep the compliance change
+  isolated and trivially attributable. It is preserved in a local git stash on this machine
+  (`agp-9.2.1-gradle-9.4.1-kotlin-2.2.10-upgrade`) for a separate branch/session.
+
+### Verified
+- Unit tests **233 passing, 0 failures / 0 errors / 0 skipped** (`./gradlew :app:testDebugUnitTest`).
+- `bundleRelease` GREEN, `lintVitalRelease` clean, R8/minify clean.
+- Packaged release manifest reports `targetSdkVersion="36"`, `versionCode="11"`, `minSdkVersion="26"`,
+  `versionName="1.2.1"` (`app/build/outputs/bundle/release/app-release.aab`).
+
+### Next
+- On-device test on an API 36 device, focused on **edge-to-edge enforcement** (the target-36 opt-out
+  is gone) across all screens + IME insets, and predictive-back on the log-screen confirm dialog.
+- Then upload `app-release.aab` (versionCode 11) to Play Internal testing. Nothing uploaded yet.
+
+---
+
 ## [1.2.1] — versionCode 10 — merged to `main` (PR #14), not yet uploaded to Play
 
 ### Why

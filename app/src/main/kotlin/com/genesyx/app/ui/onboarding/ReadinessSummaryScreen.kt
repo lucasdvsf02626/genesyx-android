@@ -21,7 +21,7 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Eco
-import androidx.compose.material.icons.outlined.MenuBook
+import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -152,7 +152,7 @@ fun ReadinessSummaryScreen(onUnlockGuide: () -> Unit, onContinue: () -> Unit, on
         GxPrimaryButton(
             text = "Unlock My Free Guide",
             onClick = onUnlockGuide,
-            leadingIcon = Icons.Outlined.MenuBook,
+            leadingIcon = Icons.AutoMirrored.Outlined.MenuBook,
         )
         Spacer(Modifier.height(4.dp))
         GxGhostButton(text = "Register / Login to continue", onClick = onContinue)
