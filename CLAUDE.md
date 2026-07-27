@@ -2,189 +2,131 @@
 
 Project Name: Genesyx Android
 
-**v1.2.1 (versionCode 10) is merged to `main` (PR #14).** Read this first. Honest state, verified against the tree on **2026-07-17**.
+**v1.3.0 (versionCode 11) is on `main` and LIVE on Play Internal testing (uploaded 2026-07-27).**
+Read this first. Honest state, verified against the tree on **2026-07-27**.
 
-> **⚠️ If you read an older copy of this file, three things it told you are now FALSE:**
+> **⚠️ If you read an older copy of this file, four things it told you are now FALSE:**
 > 1. **pH is NOT local-only.** pH readings sync to Supabase. Never restore "stored on this device"
->    copy — see "pH sync is live" below. It is the single most dangerous stale claim here.
-> 2. **`main` is at versionCode 10, versionName "1.2.1".** v1.1 (PR #9), v1.2 (PR #10), and the
->    v1.2.1 corrective bump (PR #14) are all merged. There is no active feature branch.
-> 3. **Reminders are LIVE and local-only.** `FeatureFlags.PUSH_NOTIFICATIONS = true` on `main`:
->    WorkManager-scheduled on-device reminders (no FCM/token). See "What landed in v1.2" below.
+>    copy — see "pH sync is live" below.
+> 2. **pH is VAGINAL pH now, not urine pH.** Two-band model (Healthy 3.8–4.5 / Elevated > 4.5),
+>    Room v5, pre-migration readings shown as "urine (legacy)". Ranges are PROVISIONAL pending
+>    client sign-off.
+> 3. **`main` is at versionCode 11, versionName "1.3.0"**, targeting Android 16 (SDK 36). The
+>    `1.2.1-code10` archive is **superseded — never upload it** (predates API 36 and vaginal pH).
+> 4. **The app IS uploaded to Play** — 1.3.0 (11) rolled out to Internal testing 2026-07-27, with
+>    the Health apps declaration re-submitted (wellness / menstrual health, not Medical).
 
-## 🔖 STOPPED HERE — resume from this (2026-07-17)
+## 🔖 STOPPED HERE — resume from this (2026-07-27)
 
-**v1.2.1 is merged to `main` via PR #14** (versionCode 10 / versionName 1.2.1); the changelog note is
-PR #15. There is no active feature branch. Nothing is uploaded to Play yet.
-
-**Why 1.2.1 exists (version-9 collision):** the versionCode 9 / 1.2.0 binary that reached Play
-Production predated the completed Track work, and Play won't accept another artifact at an
-already-used versionCode — so the complete current build ships as code 10. The release AAB/APK are
-already built, signed, and archived at `~/Documents/Genesyx Releases/1.2.1-code10/`
-(`genesyx-1.2.1-code10.aab`, `genesyx-1.2.1-code10.apk`, `SHA256SUMS.txt`).
+**1.3.0 (versionCode 11) is built, signed, archived, and live on Play Internal testing.** Artifacts:
+`~/Documents/Genesyx Releases/1.3.0-code11/` (`genesyx-1.3.0-code11.aab`, `.apk`, `SHA256SUMS.txt`).
+The Health apps declaration was re-submitted and accepted 27 Jul (Release-gates item 6d — DONE).
 
 **Session-by-session history lives in `CHANGELOG.md`.** Read it before anything else.
+**Product state lives in `APP_INVENTORY.md`** (repo root) — fully rewritten 2026-07-27 against the
+tree: all 26 routes, the tracker matrix, live-vs-dormant features, data/sync behaviour, gaps.
 
-### What landed in v1.2 (all on `main`)
-- **Local reminders** — `FeatureFlags.PUSH_NOTIFICATIONS = true`. On-device only (WorkManager, no
-  FCM/token): 6 reminder kinds, 4 channels, self-rescheduling chain, Profile → Reminders screen,
-  pre-permission sheet, full `POST_NOTIFICATIONS` handling. Pure/tested `ReminderPolicy` +
-  `NotificationPermission` (`notifications/`). `cancelAll()` on sign-out/delete. Verified firing
-  on-device. **No new server surface — strictly local.**
-- **Home / Track / Insights iOS parity** — Track "Your Trackers" list + six detail screens
-  (`ui/track/detail/`); Home hydration-ring + pH-nudge cards deep-linking into Track detail; first-run
-  setup card; cycle-hero metrics; gradient avatar; pregnancy entry hidden (route/feature kept). All
-  Insights cards are real-data now (sleep, cycle regularity, symptom patterns, ovulation, consistency,
-  pH, hydration, nutrition-consistency) plus a Weekly Summary extra.
-- **Supplement adherence card**, loggable Zinc, one supplement vocabulary, one week-bucketing impl
-  (`domain/time/WeekBuckets`), hydration scored against the user-set goal, intraday hydration coaching.
-- **`SeedTestData`** — a manual emulator seeder guarded by `@SeedOnly` (gradle/CI never runs it; run
-  by hand via `am instrument`).
-
-**Next actions, in order (release prep — the OWNER gates in "Pre-release checks" still apply):**
-1. Re-check Play Data Safety + `genesyx.co.uk/pages/privacy-policy` against what v1.2 stores
-   server-side (pH still syncs; reminders add nothing — on-device only).
-2. Finish the pH server-side deletion proof — see "Pre-release checks" #3.
-3. Upload the archived `genesyx-1.2.1-code10.aab` (versionCode 10) to Internal testing, verify Track
-   from the Play install, promote. (AAB/APK already built + signed + archived — see above.)
+**Next actions, in order:**
+1. **Smoke-test the Play Internal-testing install** on-device: Track → Vaginal pH (two-band display,
+   "urine (legacy)" on pre-migration readings), Home hydration-ring + pH-nudge deep links, a
+   reminder firing.
+2. **Close the remaining Release gates** (see `CHANGELOG.md` gates table — OWNER items):
+   client sign-off on the PROVISIONAL vaginal-pH ranges + copy; Play Data Safety form review;
+   `genesyx.co.uk` privacy-policy wording ("Urine pH" → "Vaginal pH"); the pH server-side deletion
+   re-check (S6) — confirm the deployed `delete_current_user` matches `docs/schema.sql` and leaves
+   no `ph_readings` rows behind.
+3. **Promote to Production** once 1–2 clear.
+4. Schedule the iOS parity fix (labels, two-band thresholds, `measurement_type`, copy).
 
 ## Where the code actually is
 
 | | |
 |---|---|
-| `main` | `6043d33` (PR #15; release bump PR #14). versionCode **10**, versionName **"1.2.1"** |
-| Working branch | none — v1.2 merged and the branch deleted |
-| Unit tests | **233 passing, 0 failures** (`./gradlew :app:testDebugUnitTest`) |
-| Instrumented | GREEN (`./gradlew :app:connectedDebugAndroidTest`); the `@SeedOnly` seeder is excluded. Pre-existing `CycleSettingsDialogTest` timing flake still noted below |
-| Release build | `./gradlew :app:assembleRelease` GREEN, R8/minify clean |
+| `main` | versionCode **11**, versionName **"1.3.0"**, compile/targetSdk **36**, Room **v5** |
+| Working branch | none |
+| Unit tests | **245 passing, 0 failures** (`./gradlew :app:testDebugUnitTest`) |
+| Release build | `:app:bundleRelease` + `:app:assembleRelease` GREEN (2026-07-27), R8/minify clean |
+| Play status | 1.3.0 (11) on **Internal testing** since 2026-07-27; Production promotion pending gates |
 
-Unit tests + builds verified 2026-07-16.
+`FeatureFlags` on `main`: `PH_TRACKING = true`, `PUSH_NOTIFICATIONS = true` (local reminders),
+`ADMIN_CLIENTS = false`, `PARTNER_INVITES = false`.
 
-### On `main` (shipped or shippable)
-- pH tracking + **sync** (see below), theme follows system + Profile toggle (PR #6), the PR #5
-  ghost-session sign-in fix.
-- `FeatureFlags` on `main`: `PH_TRACKING = true`, `PUSH_NOTIFICATIONS = true` (local reminders, v1.2),
-  `ADMIN_CLIENTS = false`, `PARTNER_INVITES = false`.
+### Shipped feature summary (details in `APP_INVENTORY.md` and `CHANGELOG.md`)
+- **v1.1:** daily-log offline sync queue; streak engine v2 + cross-platform vector contract;
+  user-set hydration goal; log back-guard; Learn (10 articles).
+- **v1.2:** local reminders (WorkManager, on-device, no FCM); Track "Your Trackers" + six detail
+  screens; Home hydration-ring/pH-nudge cards + deep links; all-real-data Insights + Weekly Summary;
+  supplement adherence; intraday hydration coaching.
+- **1.3.0:** Android 16 target; **Vaginal pH migration** — two-band model, Room v4→v5
+  (`measurement_type`, legacy rows stamped `urine`), Supabase production migration applied 22 Jul,
+  neutral `PhCopy` insight copy with banned-phrase guards.
 
-### Now on `main` (v1.1 via PR #9, v1.2 via PR #10 — all merged)
-- **Daily-log offline sync queue (the headline v1.1 item — DONE).** Offline log saves now QUEUE
-  instead of being refused. See "The offline queue" below.
-- **Log-screen Back no longer discards unsaved edits** — confirm dialog + `BackHandler`.
-- **Streak engine v2** + the cross-platform vector contract (below).
-- **User-set hydration goal** — persisted in DataStore, read by the engine, Nutrition and Home.
-- Learn section (10 articles), auth hardening, Track/calendar fixes, brand/launcher fixes.
-- **v1.2 (PR #10):** local reminders (`PUSH_NOTIFICATIONS = true`), Home/Track/Insights iOS parity
-  (Track "Your Trackers" + six detail screens, Home hydration-ring + pH-nudge cards, deep links),
-  real-data Insights + Weekly Summary, supplement adherence card, intraday hydration coaching. See
-  "What landed in v1.2" above. `PARTNER_INVITES` remains gated **off** (still a UI-only stub).
-- `docs/APP_INVENTORY.md` — screens, features, journeys, gaps.
+## The offline queue (daily logs) — Room schema v5
 
-## The offline queue (daily logs) — Room schema v4
+Offline log saves QUEUE instead of being refused: `daily_logs.syncStatus` (`LogSyncStatus`) — an
+offline write lands as `PENDING_UPSERT`; `DailyLogSyncWorker` drains it with WorkManager backoff.
+**`DailyLogRepository.refresh` skips rows with unsynced local changes** — that one rule makes
+offline writes safe; it is covered by `a_pull_must_not_overwrite_an_unsynced_local_edit`. Guest
+writes are never queued (no server target under RLS) — written `SYNCED`. Verified on-device
+2026-07-13.
 
-v1.0 refused to save a log while offline ("You're offline — reconnect to save your log") because an
-offline write would be silently overwritten by the server on the next read-through. That gate is
-**gone**, replaced by the same shape pH already used:
+Known remaining offline gap: **cycle settings** have no retry queue — a failed remote push is only
+logged, and a later refresh can overwrite a never-pushed offline edit (`data/CycleRepository.kt`).
 
-- `daily_logs.syncStatus` (`LogSyncStatus`, Room **v4**, `MIGRATION_3_4`) — an offline write lands as
-  `PENDING_UPSERT`; `DailyLogSyncWorker` drains it with WorkManager backoff.
-- **`DailyLogRepository.refresh` skips rows with unsynced local changes.** That one rule is what makes
-  offline writes safe — without it the pull stamps the server's copy over her edit. It is covered by
-  `a_pull_must_not_overwrite_an_unsynced_local_edit`; deleting the guard fails that test.
-- **Guest writes are never queued** (no server target under RLS) — they are written `SYNCED`.
-- Verified on-device 2026-07-13: airplane-mode save → `push failed — queued for retry` → network back
-  → `WM-WorkerWrapper: Worker result SUCCESS for … DailyLogSyncWorker`. No FATAL.
+## pH sync is live — do not get this wrong
 
-## pH sync is live — the most important thing on this page
+`FeatureFlags.PH_TRACKING = true`; pH is **not local-only**. `PhRepository` write-throughs to the
+Supabase `ph_readings` table, with a WorkManager retry queue (`data/sync/PhSyncWorker.kt`) and
+pull-merge on sign-in. Guests (`LOCAL_USER_ID`) stay on-device (and do not migrate on sign-in).
 
-`FeatureFlags.PH_TRACKING = true`, and pH is **no longer local-only**. `PhRepository` write-throughs
-to the Supabase `ph_readings` table, with a WorkManager retry queue (`data/sync/PhSyncWorker.kt`,
-`PhSyncScheduler.kt`) and pull-merge on sign-in. Guests (`LOCAL_USER_ID`) stay on-device.
-
-**Consequences you must not get wrong:**
-- The pH card copy (`ui/components/PhTrackerCard.kt:124`) says *"pH entries sync to your Genesyx
-  account."* **Keep it.** pH is intimate health data; the sync has to be disclosed, not buried.
-  Restoring the old "stored on this device for now" line would make the app lie to users.
-- pH syncing changes what the app stores server-side, so the store disclosures and privacy copy must
-  be reviewed against it before release. See "Pre-release checks" — owner work, and it gates release.
+- The pH card copy (`ui/components/PhTrackerCard.kt`) says *"pH entries sync to your Genesyx
+  account."* **Keep it** — the sync must be disclosed, not buried.
+- The feature is **Vaginal pH**: input 3.5–7.0, step 0.1, default 4.2; Healthy 3.8–4.5, Elevated
+  > 4.5 (`domain/ph/PhStatus.kt` — PROVISIONAL, pending client sign-off). Copy lives in
+  `domain/ph/PhCopy.kt` and is pinned by verbatim + banned-phrase tests — no condition names, no
+  dietary advice, GP/pharmacist signposting only. Genesyx is a wellness app, not a medical device.
 
 ## The tracking contract (cross-platform)
 
 `domain/tracking/tracking_test_vectors.json` — 16 cases, **mirrored verbatim into the iOS repo**.
-`TrackingVectorTest` runs them against the real `StreakEngine`, so a metric that drifts on either
-platform fails the build. The JSON is put on the unit-test classpath from where it lives beside the
-engine (`app/build.gradle.kts`, `test` sourceSet), so there is one canonical copy that cannot drift.
-
-If a vector and the engine disagree, **the spec wins and the engine changes.**
-
-Contract decisions baked in: a week counts at **4 of 7 logged days** (`WEEK_COMPLETE_DAYS`); the
-hydration goal is **user-set** (`GOAL_RANGE_ML = 1000..5000`, default `DEFAULT_GOAL_ML = 2400`);
-`daysOnGoal` (days she actually hit the goal) is deliberately **not** `daysLoggedThisWeek` (days she
-logged anything). `PreferencesRepository` is the only writer of the goal and clamps to range there —
-so no reader can ever see a goal of zero and divide by it.
-
-## Pre-release checks — what stands between here and shipping
-
-**OWNER-ONLY (these gate release; no code change can close them). v1.1 changes what the app stores
-server-side, so each of these needs a fresh review against the current behaviour — do not assume the
-v1.0 answers still hold:**
-1. **Store data-disclosure review.** Re-check the Play Console Data Safety answers against what v1.1
-   actually syncs (pH readings now go to Supabase; see "pH sync is live").
-2. **Privacy copy review.** Re-check `genesyx.co.uk/pages/privacy-policy` against the same.
-3. **Re-run the server-side deletion check (S6).** `docs/schema.sql` hard-deletes `ph_readings` on
-   `delete_current_user` (GDPR erase must remove rows, not tombstone them). The last server-side
-   verification predates pH sync, so confirm the deployed function body matches the schema file and
-   that a deleted account leaves no rows behind.
-
-Detailed status for these lives with the owner, not in this repo.
-
-**CODE — the v1.1 backlog is now DONE:**
-- ~~No offline sync queue for daily logs~~ → **built and verified on-device** (see "The offline queue").
-- ~~Log-screen Back discards unsaved edits~~ → **fixed** (confirm dialog + `BackHandler`).
-- `PUSH_NOTIFICATIONS` is now **`true`** — local reminders shipped in v1.2 (WorkManager, on-device,
-  no FCM). `PARTNER_INVITES` remains gated **off**: still a UI-only stub (no invite email, no
-  cross-account linking). Shipping partner invites off is fine.
-
-**KNOWN FLAKE (pre-existing, not from this work):** `CycleSettingsDialogTest.an_untouched_dialog_cannot_save`
-failed once in ~6 full instrumented runs and passes 3/3 in isolation. It is a Compose UI timing flake;
-nothing on this branch touches `CycleSettings*`.
+`TrackingVectorTest` runs them against the real `StreakEngine`. If a vector and the engine disagree,
+**the spec wins and the engine changes.** Baked in: weeks count at **4 of 7 logged days**; hydration
+goal is **user-set** (`GOAL_RANGE_ML = 1000..5000`, default 2400, step 200); `daysOnGoal` ≠
+`daysLoggedThisWeek`. `PreferencesRepository` is the only writer of the goal and clamps to range.
 
 ## Build identity & release ops
-- **Release env:** `GENESYX_ENV=PROD` — the `release` buildType overrides the `DEV` default
-  (`app/build.gradle.kts`). Release logging (`Logger.d`) is suppressed outside DEV.
+- **Release env:** `GENESYX_ENV=PROD` — the `release` buildType overrides the `DEV` default.
+  Release logging (`Logger.d`) suppressed outside DEV.
 - **Signing:** `genesyx-release.jks` via `keystore.properties` → `storeFile=/Users/lucasvalenca_sf/Documents/genesyx-release.jks`.
   SHA1 `8D:EB:47:63:5F:10:2A:DA:7C:93:AA:27:15:E3:37:C6:49:B2:CC:73`, SHA256 `C3:D5:1F:4B…A4:46:C1:7D`
   (matches the fingerprint registered in Google Cloud; Google's Play app-signing key is **E0:CE**).
-- **Artifacts:** AAB `app/build/outputs/bundle/release/app-release.aab` (Play upload); APK
-  `app/build/outputs/apk/release/app-release.apk` (on-device). Install:
-  `adb install -r app/build/outputs/apk/release/app-release.apk`.
+- **Artifacts:** raw at `app/build/outputs/bundle/release/app-release.aab` (Play) and
+  `app/build/outputs/apk/release/app-release.apk` (on-device, `adb install -r …`); release archives
+  under `~/Documents/Genesyx Releases/<version>-code<N>/` with `SHA256SUMS.txt`.
 - **Java:** `JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"`.
 - **Secrets** in `local.properties` (git-ignored): `genesyx.supabaseUrl`, `genesyx.supabaseAnonKey`,
   `genesyx.googleWebClientId`, `genesyx.apiBaseUrl`. Never commit real values.
 - **Architecture** is local-first: Room = source of truth, Supabase read-through on sign-in +
   write-through. See `ARCHITECTURE.md`, `docs/DATA_LAYER.md`, `docs/schema.sql`.
 
-## v1.0 release history (context — all of this is DONE, don't redo it)
-- **v6 AAB was uploaded + published to Internal testing** on `com.genesyx.app` (versionCode 6, from
-  `main` = `1da07f9`, Mon Jul 6). Testers attached; all three OAuth clients registered.
-  *Whether v6 was ever promoted to Production is not recorded here — confirm in Play Console.*
-- **Account deletion proven (T4 a–e, on-device):** delete → Splash, no FATAL; re-login rejected with
-  "Invalid login credentials"; same-email re-signup lands a fresh account. **S6 verified 0+0**
-  server-side (rows gone from `auth.users`/`profiles`/`daily_logs`/`cycle_settings`). That check
-  predates pH sync — see pre-release check #3.
-- **Shopify pages LIVE:** `/pages/privacy-policy` and `/pages/delete-account` (H1 correct, no
-  `[CONTACT_EMAIL]` placeholders, no `genesxy` typos, only `info@genesyx.co.uk`). Content to be
-  re-reviewed against v1.1 — see pre-release check #2.
-- Earlier RC fixes (all shipped): offline-save block, don't-re-onboard-signed-in-users, the dev
-  "Clients" screen gated off, Home hero brand image, quiz back-arrow, intro logo lockup.
+## Release history (context — DONE, don't redo)
+- **v1.0:** v6 AAB published to Internal testing Jul 6 (`com.genesyx.app`); account deletion proven
+  on-device (T4 a–e) and server-side (S6, 0+0 — predates pH sync, hence the re-check in Next
+  actions); Shopify privacy/delete-account pages LIVE (`info@genesyx.co.uk`).
+- **versionCode 9 collision:** a 1.2.0/code-9 binary reached Play Production before the Track work
+  completed; Play won't reuse a versionCode, forcing the corrective 1.2.1/code-10 → superseded in
+  turn by 1.3.0/code-11 (API 36 + vaginal pH).
+- **1.3.0 (11) uploaded + rolled out to Internal testing 2026-07-27**; Health apps declaration
+  re-submitted the same day.
 - P0 on-device script: `docs/GENESYX_P0_TEST_SCRIPT.md`. Release runbook:
   `docs/GENESYX_RELEASE_VERIFICATION_RUNBOOK.md`.
 
 ## Notes
-- `delete_current_user` RPC is deployed and REST-verified (see blocker #3 for the pH caveat). No Edge
-  Function needed.
+- `delete_current_user` RPC is deployed and REST-verified; the post-pH-sync re-verification is in
+  Next actions. A `TODO(post-launch)` remains: pin `set search_path = public, auth, pg_temp` on the
+  SECURITY DEFINER function.
 - In-app "Privacy & Data" row opens `AppLinks.PRIVACY_POLICY_URL` via `ACTION_VIEW`.
-- A `TODO(post-launch)` remains on `delete_current_user`: pin `set search_path = public, auth, pg_temp`
-  to prevent search_path hijacking on the SECURITY DEFINER function. Deliberately not applied for the
-  launch redeploy; worth doing in v1.1.
-- Stale comment worth fixing sometime: `StreakEngineTest`'s class doc says "5-of-7 weekly streak" but
-  `WEEK_COMPLETE_DAYS` is 4. The code is right; the comment is wrong.
+- **KNOWN FLAKE (pre-existing):** `CycleSettingsDialogTest.an_untouched_dialog_cannot_save` —
+  Compose UI timing flake in instrumented runs; passes in isolation.
+- Stale comment worth fixing sometime: `StreakEngineTest`'s class doc says "5-of-7 weekly streak"
+  but `WEEK_COMPLETE_DAYS` is 4. The code is right; the comment is wrong.
