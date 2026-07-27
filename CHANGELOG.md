@@ -6,6 +6,27 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ---
 
+## [1.3.2 (13)] — Waitlist joins via RPC (1.3.1's waitlist was broken)
+
+### Fixed (27 Jul 2026) — every waitlist join failed in 1.3.1, not just duplicates
+Server-side verification of the 1.3.1 waitlist found that PostgREST's targeted-conflict upsert
+(`on_conflict=email` + ignore-duplicates) requires SELECT privilege on the table — which is
+deliberately withheld so the email list can never be read or enumerated with the anon key. Result:
+**every** join through the 1.3.1 client returned 401 (shown as the graceful "couldn't join" error).
+The two requirements — silent duplicate no-op and an unreadable list — cannot both be met through
+direct table access.
+
+- Client now calls the **`join_waitlist(p_email)` SECURITY DEFINER RPC** (execute-only for
+  anon/authenticated, `search_path` pinned); the function does an untargeted
+  `on conflict do nothing` insert, lowercased/trimmed server-side.
+- `docs/schema.sql` updated: table grants are now REVOKE ALL for clients (Supabase's default
+  wide public-schema grants must be explicitly revoked — they had silently granted
+  SELECT/UPDATE/DELETE, held back only by RLS), function DDL added.
+- Deployed to production Supabase 27 Jul 2026 and verified over the anon REST path: fresh join
+  201-equivalent, duplicate join no-op, SELECT/UPDATE/DELETE all rejected.
+- 1.3.1 (12) was uploaded to Internal testing with the broken flow; **1.3.2 (13) supersedes it** —
+  no other behaviour change.
+
 ## [1.3.1 (12)] — Three dormant features made real
 
 ### Fixed (27 Jul 2026) — change password, guest pH adoption, waitlist storage

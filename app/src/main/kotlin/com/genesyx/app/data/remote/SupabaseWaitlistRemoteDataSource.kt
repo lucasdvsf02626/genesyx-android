@@ -3,23 +3,19 @@ package com.genesyx.app.data.remote
 import com.genesyx.app.core.log.Logger
 import com.genesyx.app.core.result.DataResult
 import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.postgrest.from
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
+import io.github.jan.supabase.postgrest.postgrest
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** Wire model for the Supabase `waitlist_emails` row. Server fills id/created_at defaults. */
-@Serializable
-private data class WaitlistEmailDto(
-    @SerialName("email") val email: String,
-)
-
 /**
- * Real Supabase (`waitlist_emails`) implementation. Runs pre-auth: RLS on the table allows anon
- * INSERT only (no select/update/delete), so the anon key can add a row but never read the list.
- * Duplicate joins are swallowed server-side (`on conflict do nothing` via ignoreDuplicates) so
- * re-submitting the same address still reads as success.
+ * Real Supabase implementation, via the `join_waitlist` SECURITY DEFINER RPC (execute granted to
+ * anon/authenticated). The function — not the client — inserts into `waitlist_emails` with an
+ * untargeted `on conflict do nothing`, because the table is deliberately unreadable to clients
+ * (insert-only grants) and PostgREST's targeted-conflict upsert requires SELECT privilege. The RPC
+ * keeps both properties: duplicate joins no-op silently, and the email list can never be read or
+ * enumerated with the anon key. The function lowercases/trims server-side; the client mirrors it.
  */
 @Singleton
 class SupabaseWaitlistRemoteDataSource @Inject constructor(
@@ -29,10 +25,10 @@ class SupabaseWaitlistRemoteDataSource @Inject constructor(
 
     override suspend fun join(email: String): DataResult<Unit> =
         try {
-            client.from("waitlist_emails").upsert(WaitlistEmailDto(email = email.trim().lowercase())) {
-                onConflict = "email"
-                ignoreDuplicates = true
-            }
+            client.postgrest.rpc(
+                "join_waitlist",
+                buildJsonObject { put("p_email", email.trim().lowercase()) },
+            )
             DataResult.Success(Unit)
         } catch (t: Throwable) {
             logger.e("Waitlist", "join failed", t)

@@ -97,22 +97,31 @@ CREATE POLICY "Users update own daily_logs" ON public.daily_logs FOR UPDATE TO a
 CREATE POLICY "Users delete own daily_logs" ON public.daily_logs FOR DELETE TO authenticated USING (auth.uid() = user_id);
 
 -- ============================================================
--- waitlist_emails — pre-auth onboarding signups (1.3.1+). INSERT-ONLY for clients:
--- anon/authenticated may add a row but never read, change, or enumerate the list.
--- Duplicates are absorbed by UNIQUE(email) + the app's `on conflict do nothing`.
+-- waitlist_emails — pre-auth onboarding signups (1.3.1+). Clients never touch the table
+-- directly: they call join_waitlist() below. The table is unreadable/unwritable to
+-- anon/authenticated (Supabase's default wide grants on public must be REVOKEd — deployed
+-- 27 Jul 2026); only the SECURITY DEFINER function inserts. The untargeted
+-- `on conflict do nothing` lives in the function because PostgREST's targeted-conflict
+-- upsert requires SELECT privilege, which would make the email list enumerable.
 -- delete_current_user() does NOT touch this table (no user_id; signup predates the account).
 -- ============================================================
 CREATE TABLE public.waitlist_emails (
   id          uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
-  email       text        NOT NULL UNIQUE,                -- app lowercases + trims before insert
+  email       text        NOT NULL UNIQUE,                -- function lowercases + trims
   created_at  timestamptz NOT NULL DEFAULT now()
 );
 
-GRANT INSERT ON public.waitlist_emails TO anon, authenticated;  -- no SELECT: the list is not client-readable
+REVOKE ALL ON public.waitlist_emails FROM anon, authenticated;  -- undo Supabase's default public-schema grants
 GRANT ALL ON public.waitlist_emails TO service_role;
-ALTER TABLE public.waitlist_emails ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.waitlist_emails ENABLE ROW LEVEL SECURITY;    -- belt-and-braces; no client policy needed
 
-CREATE POLICY "Anyone may join the waitlist" ON public.waitlist_emails FOR INSERT TO anon, authenticated WITH CHECK (true);
+CREATE OR REPLACE FUNCTION public.join_waitlist(p_email text)
+RETURNS void LANGUAGE sql SECURITY DEFINER SET search_path = public AS $$
+  INSERT INTO public.waitlist_emails (email) VALUES (lower(btrim(p_email)))
+  ON CONFLICT (email) DO NOTHING;
+$$;
+REVOKE ALL ON FUNCTION public.join_waitlist(text) FROM public;
+GRANT EXECUTE ON FUNCTION public.join_waitlist(text) TO anon, authenticated;
 
 -- ============================================================
 -- ph_readings   — ph_readings_user_recorded_idx (user_id, recorded_at DESC)
