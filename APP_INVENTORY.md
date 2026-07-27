@@ -207,7 +207,6 @@ tombstones).
   equivalent remains open).
 - **An offline cycle-settings change can still be lost server-side** — see §5; unlike daily logs
   there is no pending status or retry.
-- **"PREMIUM" is a label, not a tier** — no subscription, billing, or entitlement code exists.
 
 **Environment-dependent.**
 
