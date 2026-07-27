@@ -2,7 +2,7 @@
 
 Project Name: Genesyx Android
 
-**v1.3.0 (versionCode 11) is on `main` and LIVE on Play Internal testing (uploaded 2026-07-27).**
+**v1.3.2 (versionCode 13) is on `main` and LIVE on Play Internal testing (uploaded 2026-07-27).**
 Read this first. Honest state, verified against the tree on **2026-07-27**.
 
 > **⚠️ If you read an older copy of this file, four things it told you are now FALSE:**
@@ -11,42 +11,51 @@ Read this first. Honest state, verified against the tree on **2026-07-27**.
 > 2. **pH is VAGINAL pH now, not urine pH.** Two-band model (Healthy 3.8–4.5 / Elevated > 4.5),
 >    Room v5, pre-migration readings shown as "urine (legacy)". Ranges are PROVISIONAL pending
 >    client sign-off.
-> 3. **`main` is at versionCode 11, versionName "1.3.0"**, targeting Android 16 (SDK 36). The
->    `1.2.1-code10` archive is **superseded — never upload it** (predates API 36 and vaginal pH).
-> 4. **The app IS uploaded to Play** — 1.3.0 (11) rolled out to Internal testing 2026-07-27, with
->    the Health apps declaration re-submitted (wellness / menstrual health, not Medical).
+> 3. **`main` is at versionCode 13, versionName "1.3.2"**, targeting Android 16 (SDK 36). The
+>    archived `1.2.1-code10`, `1.3.0-code11` and `1.3.1-code12` builds are all **superseded — never
+>    upload them** (code10 predates API 36 + vaginal pH; code11 predates the 1.3.1 features; code12's
+>    waitlist flow is broken — see CHANGELOG 1.3.2).
+> 4. **The app IS uploaded to Play** — 1.3.2 (13) on Internal testing 2026-07-27, with the Health
+>    apps declaration re-submitted (wellness / menstrual health, not Medical).
 
-## 🔖 STOPPED HERE — resume from this (2026-07-27)
+## 🔖 STOPPED HERE — resume from this (2026-07-27, evening)
 
-**1.3.0 (versionCode 11) is built, signed, archived, and live on Play Internal testing.** Artifacts:
-`~/Documents/Genesyx Releases/1.3.0-code11/` (`genesyx-1.3.0-code11.aab`, `.apk`, `SHA256SUMS.txt`).
-The Health apps declaration was re-submitted and accepted 27 Jul (Release-gates item 6d — DONE).
+**1.3.2 (versionCode 13) is built, archived, and live on Play Internal testing.** Artifacts:
+`~/Documents/Genesyx Releases/1.3.2-code13/`. One dense release day: 1.3.0 (API 36 + vaginal pH) →
+Health declaration cleared → 1.3.1 (change password, guest pH adoption, waitlist storage) → 1.3.2
+(waitlist rewired to the `join_waitlist` RPC after server-side verification proved 1.3.1's direct
+upsert failed every join). The `join_waitlist` SECURITY DEFINER function is **deployed to production
+Supabase and verified over the anon REST path** (trim/lowercase, duplicate no-op, table fully
+unreadable/unwritable to clients — zero policies, no client grants).
 
 **Session-by-session history lives in `CHANGELOG.md`.** Read it before anything else.
-**Product state lives in `APP_INVENTORY.md`** (repo root) — fully rewritten 2026-07-27 against the
-tree: all 26 routes, the tracker matrix, live-vs-dormant features, data/sync behaviour, gaps.
+**Product state lives in `APP_INVENTORY.md`** (repo root) — rewritten 2026-07-27 against the tree:
+all 26 routes, the tracker matrix, live-vs-dormant features, data/sync behaviour, gaps.
 
 **Next actions, in order:**
-1. **Smoke-test the Play Internal-testing install** on-device: Track → Vaginal pH (two-band display,
-   "urine (legacy)" on pre-migration readings), Home hydration-ring + pH-nudge deep links, a
+1. **Smoke-test the 1.3.2 Internal-testing install on-device** — especially the three flows new
+   today, which unit tests can't exercise against real Supabase: change password (incl. wrong
+   current password), waitlist join (incl. duplicate), guest pH reading → sign-in → reading appears.
+   Plus the 1.3.0 checks: vaginal pH two-band display, "urine (legacy)" markers, Home deep links, a
    reminder firing.
-2. **Close the remaining Release gates** (see `CHANGELOG.md` gates table — OWNER items):
-   client sign-off on the PROVISIONAL vaginal-pH ranges + copy; Play Data Safety form review;
-   `genesyx.co.uk` privacy-policy wording ("Urine pH" → "Vaginal pH"); the pH server-side deletion
-   re-check (S6) — confirm the deployed `delete_current_user` matches `docs/schema.sql` and leaves
-   no `ph_readings` rows behind.
-3. **Promote to Production** once 1–2 clear.
-4. Schedule the iOS parity fix (labels, two-band thresholds, `measurement_type`, copy).
+2. **Play Data Safety form** — must now ALSO declare email-address collection (the waitlist),
+   besides the pH-sync review.
+3. **Close the remaining Release gates** (see `CHANGELOG.md` gates table — OWNER items):
+   client sign-off on the PROVISIONAL vaginal-pH ranges + copy; `genesyx.co.uk` privacy-policy
+   wording (vaginal pH + waitlist email); the pH server-side deletion re-check (S6).
+4. **Promote to Production** once 1–3 clear.
+5. Schedule the iOS parity fix (labels, two-band thresholds, `measurement_type`, copy — and the
+   waitlist RPC if iOS gains the screen).
 
 ## Where the code actually is
 
 | | |
 |---|---|
-| `main` | versionCode **11**, versionName **"1.3.0"**, compile/targetSdk **36**, Room **v5** |
+| `main` | versionCode **13**, versionName **"1.3.2"**, compile/targetSdk **36**, Room **v5** |
 | Working branch | none |
-| Unit tests | **245 passing, 0 failures** (`./gradlew :app:testDebugUnitTest`) |
+| Unit tests | **247 passing, 0 failures** (`./gradlew :app:testDebugUnitTest`) |
 | Release build | `:app:bundleRelease` + `:app:assembleRelease` GREEN (2026-07-27), R8/minify clean |
-| Play status | 1.3.0 (11) on **Internal testing** since 2026-07-27; Production promotion pending gates |
+| Play status | 1.3.2 (13) on **Internal testing** since 2026-07-27; Production promotion pending gates |
 
 `FeatureFlags` on `main`: `PH_TRACKING = true`, `PUSH_NOTIFICATIONS = true` (local reminders),
 `ADMIN_CLIENTS = false`, `PARTNER_INVITES = false`.

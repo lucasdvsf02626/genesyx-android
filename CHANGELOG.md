@@ -22,10 +22,12 @@ direct table access.
 - `docs/schema.sql` updated: table grants are now REVOKE ALL for clients (Supabase's default
   wide public-schema grants must be explicitly revoked — they had silently granted
   SELECT/UPDATE/DELETE, held back only by RLS), function DDL added.
-- Deployed to production Supabase 27 Jul 2026 and verified over the anon REST path: fresh join
-  201-equivalent, duplicate join no-op, SELECT/UPDATE/DELETE all rejected.
-- 1.3.1 (12) was uploaded to Internal testing with the broken flow; **1.3.2 (13) supersedes it** —
-  no other behaviour change.
+- Deployed to production Supabase and verified over the anon REST path 27 Jul 2026: fresh join 204
+  (trim/lowercase confirmed server-side), duplicate join silent no-op collapsing onto one row,
+  direct table POST/GET/DELETE all 401. Final table state: RLS on, **zero policies, no client
+  grants** — only the execute-only RPC touches it.
+- 1.3.1 (12) was uploaded to Internal testing with the broken flow; **1.3.2 (13) supersedes it and
+  is on Internal testing since 27 Jul 2026** — no other behaviour change.
 
 ## [1.3.1 (12)] — Three dormant features made real
 
