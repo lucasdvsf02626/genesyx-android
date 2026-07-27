@@ -1,6 +1,6 @@
 # Genesyx — Product Inventory
 
-Describes **current `main` at 1.3.0 (versionCode 11)**, targeting **Android 16**
+Describes **current `main` at 1.3.1 (versionCode 12)**, targeting **Android 16**
 (compileSdk/targetSdk 36, minSdk 26), **Room schema v5**. Every claim below was verified against the
 tree on **2026-07-27** (file:line references throughout). Source root:
 `app/src/main/kotlin/com/genesyx/app/`.
@@ -87,10 +87,11 @@ Start destination is Splash [`ui/navigation/GenesyxNavGraph.kt:41`].
 | Session persistence + launch routing | Stored session decides the first screen | No | live |
 | Account deletion (remote-first) | Server delete must succeed before local wipe [`auth/AuthRepository.kt`] | No | live |
 | Theme (system/light/dark), display name, focus mode | Persisted preferences | No | live |
-| Waitlist email capture | Validated, then **discarded** — never stored or sent [`ui/onboarding/WaitlistScreen.kt:163-169`] | No | dormant |
+| Waitlist email capture | Stored server-side (`waitlist_emails`, insert-only RLS) before the success screen shows; offline shows an error [`ui/onboarding/WaitlistViewModel.kt`] | No | live (1.3.1) |
+| Password change | Re-verifies the current password, then updates via Supabase Auth; loading/error/success in the dialog [`auth/SupabaseAuthService.kt`] | No | live (1.3.1) |
+| Guest pH adoption on sign-in | Guest readings are reassigned to the account and queued for push [`data/PhRepository.kt` `adoptGuestReadings`] | Follows `PH_TRACKING` | live (1.3.1) |
 | Onboarding quiz answers | Held in memory, discarded on completion [`ui/onboarding/OnboardingQuizScreen.kt:53`] | No | dormant |
 | Pregnancy mode | Static placeholder copy | No | dormant |
-| Password change | Validates, then closes — changes nothing [`ui/profile/ProfileScreen.kt:509-516`] | No | dormant |
 | Partner invites and linking | Writes a Room row, sends no email, links a placeholder | `PARTNER_INVITES` **off** | dormant |
 | Client management + demo seeding | Remote source is a stub | `ADMIN_CLIENTS` **off** | dormant |
 
@@ -178,7 +179,8 @@ leave the device. Reminders add no server surface — strictly local.
   with the server's older copy [`data/CycleRepository.kt:44-66`]. The one remaining offline gap.
 
 **Guests** (`LOCAL_USER_ID`): daily-log and pH writes are marked `SYNCED` without a push (no server
-target under RLS) and there is **no migration** of guest rows to an account on sign-in.
+target under RLS). Since 1.3.1, guest **pH readings** are adopted into the account on sign-in
+(reassigned + queued for push); guest **daily logs** still are not — that migration remains open.
 
 **Deletion.** Account deletion is remote-first. pH deletions tombstone locally so they propagate;
 the server-side `delete_current_user` hard-deletes `ph_readings` rows (GDPR erase removes rows, not
@@ -197,15 +199,12 @@ tombstones).
 
 **Reachable, but not doing what the interface implies.**
 
-- **Change password validates and then does nothing** [`ui/profile/ProfileScreen.kt:509-516`].
-- **The waitlist email is discarded** after a success screen promising delivery
-  [`ui/onboarding/WaitlistScreen.kt:163-169`].
 - **Quiz answers are never used** — the readiness summary is identical for every answer set.
 - **Pregnancy mode is a placeholder** — static copy, "—" trimester, no due-date entry.
 - **The onboarding-complete preference has no callers** — persisted plumbing exists, nothing writes
   or reads it.
-- **Guest pH readings never sync and don't migrate on sign-in** — they vanish from view once a real
-  account signs in (rows keyed by user id).
+- **Guest daily logs don't migrate on sign-in** (guest pH readings do, since 1.3.1 — the daily-log
+  equivalent remains open).
 - **An offline cycle-settings change can still be lost server-side** — see §5; unlike daily logs
   there is no pending status or retry.
 - **"PREMIUM" is a label, not a tier** — no subscription, billing, or entitlement code exists.
@@ -227,4 +226,5 @@ tombstones).
 | v1.1 (PR #9) | Daily-log offline queue; streak engine v2 + cross-platform vector contract; user-set hydration goal; log back-guard; auth hardening. |
 | v1.2 (PR #10) | Local reminders (`PUSH_NOTIFICATIONS` on); Track "Your Trackers" + six detail screens; Home hydration-ring/pH-nudge cards + deep links; all-real-data Insights + Weekly Summary; supplement adherence; intraday hydration coaching. |
 | 1.2.1 (code 10) | Corrective versionCode bump after the code-9 Play collision. Archived, never uploaded — **superseded, do not upload**. |
-| **1.3.0 (code 11)** | **Current.** Android 16 target (SDK 36); Vaginal pH migration (two-band model, Room v5, legacy "urine (legacy)" handling, Supabase `measurement_type`). Built, signed and archived 2026-07-27; uploaded to Play **Internal testing** 2026-07-27 with the Health apps declaration re-submitted. |
+| 1.3.0 (code 11) | Android 16 target (SDK 36); Vaginal pH migration (two-band model, Room v5, legacy "urine (legacy)" handling, Supabase `measurement_type`). Uploaded to Play **Internal testing** 2026-07-27; Health apps declaration re-submitted. |
+| **1.3.1 (code 12)** | **Current.** Change password works (Supabase Auth + re-verification); guest pH readings adopted on sign-in; waitlist email stored server-side (`waitlist_emails`, insert-only RLS — table must exist in Supabase before rollout). |

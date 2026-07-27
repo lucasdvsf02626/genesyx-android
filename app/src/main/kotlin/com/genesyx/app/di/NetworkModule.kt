@@ -16,7 +16,10 @@ import com.genesyx.app.data.remote.SupabaseCycleRemoteDataSource
 import com.genesyx.app.data.remote.SupabaseDailyLogRemoteDataSource
 import com.genesyx.app.data.remote.SupabasePhRemoteDataSource
 import com.genesyx.app.data.remote.StubProfileRemoteDataSource
+import com.genesyx.app.data.remote.StubWaitlistRemoteDataSource
 import com.genesyx.app.data.remote.SupabaseProfileRemoteDataSource
+import com.genesyx.app.data.remote.SupabaseWaitlistRemoteDataSource
+import com.genesyx.app.data.remote.WaitlistRemoteDataSource
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -98,4 +101,13 @@ object NetworkModule {
         supabaseImpl: Provider<SupabasePhRemoteDataSource>,
         stub: Provider<StubPhRemoteDataSource>,
     ): PhRemoteDataSource = if (config.hasSupabase) supabaseImpl.get() else stub.get()
+
+    /** Waitlist remote source: real Supabase when configured, else local-first stub. */
+    @Provides
+    @Singleton
+    fun provideWaitlistRemoteDataSource(
+        config: AppConfig,
+        supabaseImpl: Provider<SupabaseWaitlistRemoteDataSource>,
+        stub: Provider<StubWaitlistRemoteDataSource>,
+    ): WaitlistRemoteDataSource = if (config.hasSupabase) supabaseImpl.get() else stub.get()
 }

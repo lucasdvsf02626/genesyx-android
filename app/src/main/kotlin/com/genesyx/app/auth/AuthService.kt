@@ -30,4 +30,10 @@ interface AuthService {
 
     /** Permanently delete the current account (auth user + owned rows) — Play requirement. */
     suspend fun deleteAccount(): DataResult<Unit>
+
+    /**
+     * Change the signed-in user's password. [currentPassword] is re-verified against the provider
+     * first so a borrowed unlocked phone can't silently take over the account.
+     */
+    suspend fun changePassword(currentPassword: String, newPassword: String): DataResult<Unit>
 }

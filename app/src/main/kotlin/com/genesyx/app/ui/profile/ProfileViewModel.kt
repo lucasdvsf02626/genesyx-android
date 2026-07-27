@@ -92,6 +92,36 @@ class ProfileViewModel @Inject constructor(
 
     fun clearDeleteError() { _deleteError.value = null }
 
+    private val _pwChanging = MutableStateFlow(false)
+    val pwChanging: StateFlow<Boolean> = _pwChanging.asStateFlow()
+    private val _pwError = MutableStateFlow<String?>(null)
+    val pwError: StateFlow<String?> = _pwError.asStateFlow()
+    private val _pwChanged = MutableStateFlow(false)
+    val pwChanged: StateFlow<Boolean> = _pwChanged.asStateFlow()
+
+    /** Change the account password, exposing loading/error/success to the dialog. */
+    fun changePassword(current: String, new: String) {
+        if (_pwChanging.value) return
+        _pwError.value = null
+        _pwChanging.value = true
+        viewModelScope.launch {
+            val result = authRepository.changePassword(current, new)
+            _pwChanging.value = false
+            when (result) {
+                is DataResult.Success -> _pwChanged.value = true
+                is DataResult.Error ->
+                    _pwError.value = result.message ?: "Couldn't change your password. Please try again."
+                DataResult.Loading -> Unit
+            }
+        }
+    }
+
+    /** Reset the dialog state when it opens or closes. */
+    fun resetPasswordState() {
+        _pwError.value = null
+        _pwChanged.value = false
+    }
+
     fun sendInvite(email: String) = partnerRepository.sendInvite(email)
     fun revokeInvite(id: String) = partnerRepository.revoke(id)
     fun unlinkPartner() = partnerRepository.unlink()

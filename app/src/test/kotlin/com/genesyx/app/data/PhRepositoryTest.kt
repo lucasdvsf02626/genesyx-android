@@ -129,6 +129,38 @@ class PhRepositoryTest {
     }
 
     @Test
+    fun `sign-in adopts guest readings and schedules a push`() = runTest {
+        every { session.userId } returns MutableStateFlow<String?>("user-a")
+        every { dao.observeAll(any()) } returns flowOf(emptyList())
+        coEvery { dao.adoptGuestRows(SessionRepository.LOCAL_USER_ID, "user-a", any()) } returns 2
+        val scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler))
+
+        val adopted = PhRepository(dao, remote, session, scheduler, logger, scope)
+            .adoptGuestReadings("user-a")
+
+        assertEquals(2, adopted)
+        coVerify { dao.adoptGuestRows(SessionRepository.LOCAL_USER_ID, "user-a", any()) }
+        verify(exactly = 1) { scheduler.schedule() }   // push survives a failed sign-in refresh
+        scope.cancel()
+    }
+
+    @Test
+    fun `adoption is a no-op with nothing to adopt, and never runs for the guest bucket`() = runTest {
+        every { session.userId } returns MutableStateFlow<String?>("user-a")
+        every { dao.observeAll(any()) } returns flowOf(emptyList())
+        coEvery { dao.adoptGuestRows(any(), any(), any()) } returns 0
+        val scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler))
+        val repo = PhRepository(dao, remote, session, scheduler, logger, scope)
+
+        assertEquals(0, repo.adoptGuestReadings("user-a"))
+        verify(exactly = 0) { scheduler.schedule() }   // nothing adopted -> nothing queued
+
+        assertEquals(0, repo.adoptGuestReadings(SessionRepository.LOCAL_USER_ID))
+        coVerify(exactly = 1) { dao.adoptGuestRows(any(), any(), any()) } // guest call never hit the DAO
+        scope.cancel()
+    }
+
+    @Test
     fun `readings re-scopes to the DAO query when the signed-in user changes`() = runTest {
         val userId = MutableStateFlow<String?>("user-a")
         every { session.userId } returns userId

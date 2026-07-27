@@ -57,6 +57,7 @@ import androidx.navigation.NavController
 import com.genesyx.app.core.AppLinks
 import com.genesyx.app.domain.model.FocusMode
 import com.genesyx.app.domain.model.PartnerInvite
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import com.genesyx.app.domain.model.ThemeMode
 import com.genesyx.app.ui.components.Eyebrow
 import com.genesyx.app.ui.components.ScreenHeader
@@ -257,7 +258,17 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel = hi
         EditNameDialog(initial = name, onDismiss = { nameOpen = false }, onSave = { viewModel.updateName(it); nameOpen = false })
     }
     if (pwOpen) {
-        ChangePasswordDialog(onDismiss = { pwOpen = false })
+        val pwChanging by viewModel.pwChanging.collectAsState()
+        val pwError by viewModel.pwError.collectAsState()
+        val pwChanged by viewModel.pwChanged.collectAsState()
+        LaunchedEffect(Unit) { viewModel.resetPasswordState() }
+        ChangePasswordDialog(
+            changing = pwChanging,
+            remoteError = pwError,
+            changed = pwChanged,
+            onSubmit = { current, new -> viewModel.changePassword(current, new) },
+            onDismiss = { if (!pwChanging) pwOpen = false },
+        )
     }
     detail?.let { d ->
         AlertDialog(
@@ -483,38 +494,59 @@ private fun EditNameDialog(initial: String, onDismiss: () -> Unit, onSave: (Stri
 }
 
 @Composable
-private fun ChangePasswordDialog(onDismiss: () -> Unit) {
+private fun ChangePasswordDialog(
+    changing: Boolean,
+    remoteError: String?,
+    changed: Boolean,
+    onSubmit: (current: String, new: String) -> Unit,
+    onDismiss: () -> Unit,
+) {
     val colors = MaterialTheme.colorScheme
     var current by remember { mutableStateOf("") }
     var next by remember { mutableStateOf("") }
     var confirm by remember { mutableStateOf("") }
-    var err by remember { mutableStateOf<String?>(null) }
+    var localErr by remember { mutableStateOf<String?>(null) }
+    val err = localErr ?: remoteError
     AlertDialog(
         onDismissRequest = onDismiss,
         shape = RoundedCornerShape(20.dp),
         containerColor = colors.surface,
         title = { Text("Change password", style = MaterialTheme.typography.titleLarge, color = colors.onSurface) },
         text = {
-            Column {
-                Text("Choose a new password of at least 8 characters.", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
-                Spacer(Modifier.height(12.dp))
-                OutlinedTextField(current, { current = it }, label = { Text("Current password") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                Spacer(Modifier.height(8.dp))
-                OutlinedTextField(next, { next = it }, label = { Text("New password") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                Spacer(Modifier.height(8.dp))
-                OutlinedTextField(confirm, { confirm = it }, label = { Text("Confirm new password") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                if (err != null) { Spacer(Modifier.height(6.dp)); Text(err!!, style = MaterialTheme.typography.bodyMedium, color = colors.error) }
+            if (changed) {
+                Text("Your password has been updated.", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+            } else {
+                Column {
+                    Text("Choose a new password of at least 8 characters.", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                    Spacer(Modifier.height(12.dp))
+                    OutlinedTextField(current, { current = it }, label = { Text("Current password") }, singleLine = true, enabled = !changing, visualTransformation = PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth())
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(next, { next = it }, label = { Text("New password") }, singleLine = true, enabled = !changing, visualTransformation = PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth())
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(confirm, { confirm = it }, label = { Text("Confirm new password") }, singleLine = true, enabled = !changing, visualTransformation = PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth())
+                    if (err != null) { Spacer(Modifier.height(6.dp)); Text(err, style = MaterialTheme.typography.bodyMedium, color = colors.error) }
+                }
             }
         },
         confirmButton = {
-            TextButton(onClick = {
-                when {
-                    next.length < 8 -> err = "New password must be at least 8 characters"
-                    next != confirm -> err = "Passwords don't match"
-                    else -> onDismiss()
-                }
-            }) { Text("Update", color = ElectricLavender, fontWeight = FontWeight.SemiBold) }
+            if (changed) {
+                TextButton(onClick = onDismiss) { Text("Done", color = ElectricLavender, fontWeight = FontWeight.SemiBold) }
+            } else {
+                TextButton(
+                    enabled = !changing,
+                    onClick = {
+                        when {
+                            current.isBlank() -> localErr = "Enter your current password"
+                            next.length < 8 -> localErr = "New password must be at least 8 characters"
+                            next != confirm -> localErr = "Passwords don't match"
+                            else -> { localErr = null; onSubmit(current, next) }
+                        }
+                    },
+                ) { Text(if (changing) "Updating…" else "Update", color = ElectricLavender, fontWeight = FontWeight.SemiBold) }
+            }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel", color = colors.onSurfaceVariant) } },
+        dismissButton = {
+            if (!changed) TextButton(onClick = onDismiss, enabled = !changing) { Text("Cancel", color = colors.onSurfaceVariant) }
+        },
     )
 }

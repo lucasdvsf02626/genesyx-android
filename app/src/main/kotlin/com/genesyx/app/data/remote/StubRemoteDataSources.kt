@@ -63,6 +63,12 @@ class StubProfileRemoteDataSource @Inject constructor() : ProfileRemoteDataSourc
 }
 
 @Singleton
+class StubWaitlistRemoteDataSource @Inject constructor() : WaitlistRemoteDataSource {
+    // Unconfigured builds have nowhere to store the address; succeed so onboarding isn't blocked.
+    override suspend fun join(email: String): DataResult<Unit> = DataResult.Success(Unit)
+}
+
+@Singleton
 class StubClientRemoteDataSource @Inject constructor() : ClientRemoteDataSource {
     override suspend fun list(ownerUserId: String): DataResult<List<Client>> =
         DataResult.Success(emptyList())

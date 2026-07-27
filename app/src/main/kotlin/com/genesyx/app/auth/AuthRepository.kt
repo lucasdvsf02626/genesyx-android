@@ -79,6 +79,13 @@ class AuthRepository @Inject constructor(
         return DataResult.Success(Unit)
     }
 
+    /** Change the signed-in user's password via the remote provider. */
+    suspend fun changePassword(currentPassword: String, newPassword: String): DataResult<Unit> {
+        val result = authService.changePassword(currentPassword, newPassword)
+        if (result is DataResult.Error) logger.e("Auth", "change-password failed", result.throwable)
+        return result
+    }
+
     /** Permanently delete the account remotely (RPC → cascade) then wipe all local data. */
     suspend fun deleteAccount(): DataResult<Unit> =
         when (val result = authService.deleteAccount()) {
@@ -106,6 +113,10 @@ class AuthRepository @Inject constructor(
                     profileRepository.refresh(user.id)
                     cycleRepository.refresh(user.id)
                     dailyLogRepository.refresh(user.id)
+                    // Adopt guest pH readings BEFORE the pull: adopted rows are PENDING_UPSERT, and
+                    // refresh's merge never overwrites unsynced local rows, so they survive the pull
+                    // and its trailing syncPending() pushes them.
+                    phRepository.adoptGuestReadings(user.id)
                     phRepository.refresh(user.id)
                 }
                 DataResult.Success(Unit)

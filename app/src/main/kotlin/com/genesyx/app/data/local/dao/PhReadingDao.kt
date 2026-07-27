@@ -30,4 +30,15 @@ interface PhReadingDao {
     /** Soft delete: tombstone the row and queue the delete for sync. */
     @Query("UPDATE ph_readings SET deletedAt = :deletedAt, updatedAt = :deletedAt, syncStatus = 'PENDING_DELETE' WHERE id = :id")
     suspend fun markDeleted(id: String, deletedAt: LocalDateTime)
+
+    /**
+     * Guest→account adoption on sign-in: hand every visible guest row to [userId] and queue it for
+     * push. Guest tombstones are skipped — they never had a server counterpart, so there is nothing
+     * to propagate. Returns the number of rows adopted.
+     */
+    @Query(
+        "UPDATE ph_readings SET userId = :userId, syncStatus = 'PENDING_UPSERT', updatedAt = :updatedAt " +
+            "WHERE userId = :guestId AND deletedAt IS NULL",
+    )
+    suspend fun adoptGuestRows(guestId: String, userId: String, updatedAt: LocalDateTime): Int
 }

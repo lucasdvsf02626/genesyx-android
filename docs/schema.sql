@@ -97,6 +97,24 @@ CREATE POLICY "Users update own daily_logs" ON public.daily_logs FOR UPDATE TO a
 CREATE POLICY "Users delete own daily_logs" ON public.daily_logs FOR DELETE TO authenticated USING (auth.uid() = user_id);
 
 -- ============================================================
+-- waitlist_emails — pre-auth onboarding signups (1.3.1+). INSERT-ONLY for clients:
+-- anon/authenticated may add a row but never read, change, or enumerate the list.
+-- Duplicates are absorbed by UNIQUE(email) + the app's `on conflict do nothing`.
+-- delete_current_user() does NOT touch this table (no user_id; signup predates the account).
+-- ============================================================
+CREATE TABLE public.waitlist_emails (
+  id          uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  email       text        NOT NULL UNIQUE,                -- app lowercases + trims before insert
+  created_at  timestamptz NOT NULL DEFAULT now()
+);
+
+GRANT INSERT ON public.waitlist_emails TO anon, authenticated;  -- no SELECT: the list is not client-readable
+GRANT ALL ON public.waitlist_emails TO service_role;
+ALTER TABLE public.waitlist_emails ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Anyone may join the waitlist" ON public.waitlist_emails FOR INSERT TO anon, authenticated WITH CHECK (true);
+
+-- ============================================================
 -- ph_readings   — ph_readings_user_recorded_idx (user_id, recorded_at DESC)
 -- ============================================================
 CREATE TABLE public.ph_readings (

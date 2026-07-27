@@ -6,6 +6,29 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ---
 
+## [1.3.1 (12)] — Three dormant features made real
+
+### Fixed (27 Jul 2026) — change password, guest pH adoption, waitlist storage
+Closes three of the six §6 gaps recorded in `APP_INVENTORY.md`. Unit suite **247 passing, 0
+failures** (+2). The other three (quiz personalization, pregnancy mode, partner invites) are
+deliberate deferrals needing product/server decisions, not fixes.
+
+- **Change password now changes the password.** `AuthService.changePassword` re-verifies the
+  current password by re-signing-in (so a borrowed unlocked phone can't take over the account),
+  then updates via Supabase Auth (`SupabaseAuthService`). The Profile dialog gains
+  loading/error/success states and password masking; local mode reports the feature needs the
+  online service instead of pretending.
+- **Guest pH readings now survive sign-in.** `PhReadingDao.adoptGuestRows` +
+  `PhRepository.adoptGuestReadings`: on sign-in/sign-up the guest bucket's visible readings are
+  reassigned to the account and queued `PENDING_UPSERT`, running before the pull so the merge
+  can't clobber them; the WorkManager queue pushes them even if the sign-in refresh fails. Guest
+  tombstones are skipped (nothing to propagate).
+- **The waitlist email is now stored.** New `waitlist_emails` Supabase table (insert-only RLS for
+  anon — clients can add but never read the list; UNIQUE(email) + `on conflict do nothing` absorbs
+  duplicates; DDL in `docs/schema.sql`). `WaitlistViewModel` submits before showing success, with
+  offline error handling. ⚠️ **Server + compliance follow-ups:** the table must be created in
+  Supabase before this ships, and Data Safety / privacy policy must disclose email collection.
+
 ## [1.3.0 (11)] — Vaginal pH migration (Urine pH → Vaginal pH)
 
 ⚠️ The vaginal-pH range and thresholds below are

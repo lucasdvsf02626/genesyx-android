@@ -47,6 +47,11 @@ interface ProfileRemoteDataSource {
     suspend fun updateTheme(userId: String, theme: String): DataResult<Unit>
 }
 
+interface WaitlistRemoteDataSource {
+    /** Store a waitlist signup. Pre-auth (anon) — the table's RLS allows insert-only. */
+    suspend fun join(email: String): DataResult<Unit>
+}
+
 interface ClientRemoteDataSource {
     suspend fun list(ownerUserId: String): DataResult<List<Client>>
     suspend fun upsert(client: Client): DataResult<Unit>

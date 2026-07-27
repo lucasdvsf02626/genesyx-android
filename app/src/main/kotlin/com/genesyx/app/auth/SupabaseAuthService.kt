@@ -76,6 +76,33 @@ class SupabaseAuthService @Inject constructor(
         }
 
     /**
+     * Re-verifies [currentPassword] by signing in again, then updates the password on the (re-minted)
+     * session. The re-auth is the point: supabase-kt's `updateUser` only needs a live session, so
+     * without it anyone holding an unlocked phone could set a new password without knowing the old
+     * one. A wrong current password surfaces as its own message and never reaches the update.
+     */
+    override suspend fun changePassword(currentPassword: String, newPassword: String): DataResult<Unit> {
+        return try {
+            val email = client.auth.currentSessionOrNull()?.user?.email
+                ?: throw IllegalStateException("No signed-in account.")
+            try {
+                client.auth.signInWith(Email) {
+                    this.email = email
+                    this.password = currentPassword
+                }
+            } catch (t: Throwable) {
+                logger.e("Auth", "change-password re-auth failed", t)
+                return DataResult.Error(t, "Current password is incorrect")
+            }
+            client.auth.updateUser { password = newPassword }
+            DataResult.Success(Unit)
+        } catch (t: Throwable) {
+            logger.e("Auth", "change-password failed", t)
+            DataResult.Error(t, t.message)
+        }
+    }
+
+    /**
      * Runs an auth [attempt] and returns the session it established — never an ambient one.
      *
      * supabase-kt persists the current session, so `currentSessionOrNull()` happily returns a

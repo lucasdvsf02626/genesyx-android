@@ -32,6 +32,10 @@ class LocalAuthService @Inject constructor() : AuthService {
     // No remote account exists in local mode; the repository wipes local data.
     override suspend fun deleteAccount(): DataResult<Unit> = DataResult.Success(Unit)
 
+    // Local mode stores no passwords, so there is nothing truthful to change.
+    override suspend fun changePassword(currentPassword: String, newPassword: String): DataResult<Unit> =
+        DataResult.Error(IllegalStateException("Password change needs the online service"), "Password change isn't available offline")
+
     private fun localSession(email: String, displayName: String?): DataResult<AuthSession> {
         val name = displayName?.takeIf { it.isNotBlank() } ?: email.substringBefore("@")
         return DataResult.Success(

@@ -122,6 +122,22 @@ class PhRepository @Inject constructor(
     }
 
     /**
+     * Adopts the guest bucket's readings into [userId]'s account on sign-in/sign-up, marking them
+     * PENDING_UPSERT so the ordinary queue pushes them. Without this, readings logged before signing
+     * in silently vanish from view the moment a session exists (rows are keyed by user id). Ids are
+     * locally-minted UUIDs, so adopted rows cannot collide with server rows. Returns the count.
+     */
+    suspend fun adoptGuestReadings(userId: String): Int {
+        if (userId == SessionRepository.LOCAL_USER_ID) return 0
+        val adopted = dao.adoptGuestRows(SessionRepository.LOCAL_USER_ID, userId, LocalDateTime.now())
+        if (adopted > 0) {
+            logger.i("Ph", "adopted $adopted guest pH reading(s) into account")
+            scheduler.schedule() // push survives even if the sign-in refresh fails
+        }
+        return adopted
+    }
+
+    /**
      * Read-through pull. Merges by id (upsert → no duplicates), last-write-wins on updatedAt, and
      * never overwrites a row with unsynced local changes. Then drains anything still PENDING.
      */

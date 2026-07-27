@@ -26,6 +26,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,6 +39,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.genesyx.app.ui.components.BrandOrb
 import com.genesyx.app.ui.components.Eyebrow
 import com.genesyx.app.ui.components.GxGhostButton
@@ -48,11 +50,33 @@ import com.genesyx.app.ui.theme.GenesyxTheme
 private val EMAIL_REGEX = Regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")
 
 @Composable
-fun WaitlistScreen(onContinue: () -> Unit, onBack: () -> Unit) {
+fun WaitlistScreen(onContinue: () -> Unit, onBack: () -> Unit, viewModel: WaitlistViewModel = hiltViewModel()) {
+    val submitting by viewModel.submitting.collectAsState()
+    val submitted by viewModel.submitted.collectAsState()
+    val remoteError by viewModel.error.collectAsState()
+    WaitlistContent(
+        submitting = submitting,
+        submitted = submitted,
+        remoteError = remoteError,
+        onSubmit = { viewModel.join(it) },
+        onEdit = { viewModel.clearError() },
+        onContinue = onContinue,
+    )
+}
+
+@Composable
+private fun WaitlistContent(
+    submitting: Boolean,
+    submitted: Boolean,
+    remoteError: String?,
+    onSubmit: (String) -> Unit,
+    onEdit: () -> Unit,
+    onContinue: () -> Unit,
+) {
     val colors = MaterialTheme.colorScheme
     var email by remember { mutableStateOf("") }
-    var submitted by remember { mutableStateOf(false) }
-    var error by remember { mutableStateOf<String?>(null) }
+    var localError by remember { mutableStateOf<String?>(null) }
+    val error = localError ?: remoteError
 
     Column(
         modifier = Modifier
@@ -146,7 +170,7 @@ fun WaitlistScreen(onContinue: () -> Unit, onBack: () -> Unit) {
         Spacer(Modifier.height(20.dp))
         OutlinedTextField(
             value = email,
-            onValueChange = { email = it; error = null },
+            onValueChange = { email = it; localError = null; onEdit() },
             modifier = Modifier.fillMaxWidth(),
             placeholder = { Text("your@email.com") },
             singleLine = true,
@@ -161,10 +185,13 @@ fun WaitlistScreen(onContinue: () -> Unit, onBack: () -> Unit) {
 
         Spacer(Modifier.height(16.dp))
         GxPrimaryButton(
-            text = "Join the Waiting List",
+            text = if (submitting) "Joining…" else "Join the Waiting List",
             onClick = {
-                if (EMAIL_REGEX.matches(email.trim())) submitted = true
-                else error = "Please enter a valid email address."
+                when {
+                    submitting -> Unit
+                    EMAIL_REGEX.matches(email.trim()) -> { localError = null; onSubmit(email.trim()) }
+                    else -> localError = "Please enter a valid email address."
+                }
             },
         )
         Spacer(Modifier.height(4.dp))
@@ -176,7 +203,7 @@ fun WaitlistScreen(onContinue: () -> Unit, onBack: () -> Unit) {
 @Composable
 private fun WaitlistScreenLightPreview() {
     GenesyxTheme(darkTheme = false) {
-        WaitlistScreen(onContinue = {}, onBack = {})
+        WaitlistContent(submitting = false, submitted = false, remoteError = null, onSubmit = {}, onEdit = {}, onContinue = {})
     }
 }
 
@@ -184,6 +211,6 @@ private fun WaitlistScreenLightPreview() {
 @Composable
 private fun WaitlistScreenDarkPreview() {
     GenesyxTheme(darkTheme = true) {
-        WaitlistScreen(onContinue = {}, onBack = {})
+        WaitlistContent(submitting = false, submitted = false, remoteError = null, onSubmit = {}, onEdit = {}, onContinue = {})
     }
 }
