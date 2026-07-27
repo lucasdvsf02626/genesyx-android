@@ -6,13 +6,22 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ---
 
-## [Unreleased] — Vaginal pH migration (Urine pH → Vaginal pH)
+## [1.3.0 (11)] — Vaginal pH migration (Urine pH → Vaginal pH)
 
-⚠️ **RELEASE IS GATED ON CLIENT SIGN-OFF.** The vaginal-pH range and thresholds below are
+⚠️ The vaginal-pH range and thresholds below are
 **PROVISIONAL** (marked in `domain/ph/PhStatus.kt`): healthy band **3.8–4.5**, elevated **> 4.5**,
 input range **MIN 3.5 / MAX 7.0**, step 0.1, slider default 4.2 — the standard published healthy
-vaginal-pH range. Genesyx is a wellness app, not a medical device. No `versionCode` change here;
-not built as a release. See the **Release gates** table below for the full pre-ship checklist.
+vaginal-pH range. Genesyx is a wellness app, not a medical device. See the **Release gates** table
+below for the pre-ship checklist status.
+
+### Release build (27 Jul 2026) — 1.3.0 (versionCode 11) built and archived
+- `versionName` bumped `1.2.1` → `1.3.0` (versionCode was already 11); reverted a stray-keystroke
+  corruption on line 1 of `app/build.gradle.kts` that broke the build.
+- Unit suite green (245 passing). `:app:bundleRelease` + `:app:assembleRelease` GREEN.
+- Signed AAB/APK archived at `~/Documents/Genesyx Releases/1.3.0-code11/` with `SHA256SUMS.txt`.
+  This supersedes the `1.2.1-code10` archive, which predates the API-36 target and the vaginal-pH
+  migration and must not be uploaded.
+- Play Console upload + the owner items in the Release gates table are handled outside this repo.
 
 ### Audit follow-up (22 Jul 2026) — vaginal-pH audit flags closed
 Closes the five non-blocking flags raised in the 22 Jul vaginal-pH audit. Docs/tests + a small
