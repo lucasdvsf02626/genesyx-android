@@ -1,257 +1,188 @@
 # Genesyx — Product Inventory
 
-The **baseline** below (§1–§6) describes the v1.0 codebase at `release/learn-v1` (`ac59b3a`),
-versionCode 7 / versionName 1.0.0. **Current `main` is versionCode 11 / versionName 1.2.1**, targeting
-**Android 16 (compileSdk/targetSdk 36, minSdk 26)** on **Room schema v5** — the v1.1, v1.2, the API-36
-bump, and the Vaginal pH migration are summarised in **§0** and layered on top of the baseline. Where
-the baseline below conflicts with §0, §0 wins.
+Describes **current `main` at 1.3.0 (versionCode 11)**, targeting **Android 16**
+(compileSdk/targetSdk 36, minSdk 26), **Room schema v5**. Every claim below was verified against the
+tree on **2026-07-27** (file:line references throughout). Source root:
+`app/src/main/kotlin/com/genesyx/app/`.
 
-Six bottom tabs [`ui/navigation/Screen.kt`]. `FeatureFlags` on `main`: `PH_TRACKING` **on**,
-`PUSH_NOTIFICATIONS` **on** (v1.2 local reminders), `ADMIN_CLIENTS` off, `PARTNER_INVITES` off
-[`core/FeatureFlags.kt`].
+`FeatureFlags` [`core/FeatureFlags.kt`]: `PH_TRACKING` **on** (:11), `PUSH_NOTIFICATIONS` **on**
+(:37, local reminders), `ADMIN_CLIENTS` off (:18), `PARTNER_INVITES` off (:27).
 
----
-
-## 0. What's changed since v1.0 (v1.1 + v1.2 — current `main`)
-
-**v1.1 (PR #9):** offline daily-log sync queue (Room v4, `PENDING_UPSERT` + `DailyLogSyncWorker`);
-streak engine v2 + the cross-platform `tracking_test_vectors.json` contract; user-set hydration goal
-(`GOAL_RANGE_ML = 1000..5000`, persisted in DataStore, read by engine/Nutrition/Home); log-screen
-Back discard-guard; Learn section (10 articles).
-
-**v1.2 (PR #10):**
-
-- **Local reminders** (`FeatureFlags.PUSH_NOTIFICATIONS = true`). Strictly on-device — WorkManager,
-  no FCM/token. Package `notifications/`: 6 `ReminderKind`s (daily log, missed-log, hydration, weekly
-  insights, re-engagement; nutrition reserved) across 4 channels, a self-rescheduling one-time-work
-  chain (`ReminderScheduler`/`ReminderWorker`), a pure/tested `ReminderPolicy` (quiet-hours wrap,
-  already-logged-today, daily cap, re-engagement pacing) + `NotificationPermission` state machine,
-  and a `BootReceiver`. New screen **Reminder Settings** (`Screen.ReminderSettings`) reached from
-  Profile → Reminders, with a pre-permission sheet. `cancelAll()` on sign-out/delete.
-- **Track "Your Trackers" + six detail screens** (`ui/track/detail/`). A card of six rows (Cycle,
-  Hydration, Vaginal pH, Sleep, Symptoms, Nutrition) with real per-signal summaries + spark dots
-  (`TrackerSummaryLogic`), each opening a typed detail destination:
-  - **Hydration** — the canonical editor (quick-add + manual entry, clamped; 7-day bars; days-on-goal;
-    streak; daily history). Writes only through `DailyLogRepository`.
-  - **Cycle** — phase + metrics + explicitly-estimated fertile window / ovulation, edit settings.
-  - **Vaginal pH** — wraps the existing `PhTrackerSection` (3.5–7.0 validation, provisional two-band
-    Healthy/Elevated); the embedded Track pH section moved here. *(Relabelled from Urine pH — see §0
-    Post-v1.2.)*
-  - **Sleep** — week summary + hours/minutes editor.
-  - **Symptoms** — 4-week heatmap + dated history into the log flow.
-  - **Nutrition** — supplement summary into the logging flow.
-- **Home summary cards (iOS parity).** Hydration-ring card (60dp ring, status pill, streak flame,
-  coaching, 7 day-dots, "X of 7 on goal") deep-linking to Track hydration; pH-nudge card (real last
-  reading / prompt) deep-linking to Track pH; first-run "Welcome to Genesyx" setup card; cycle-hero
-  divider + 3 metrics; 44dp gradient avatar. **Pregnancy entry removed from Home** (route/feature
-  kept).
-- **Insights are now all real-data** (the baseline §6 "fixed sample data" gaps are closed): sleep,
-  cycle regularity, symptom patterns, ovulation, consistency, vaginal pH, hydration, and
-  nutrition-consistency (renamed from "Supplements") — plus a **Weekly Summary** extra after *My logs*.
-- **Supplement adherence card** on Insights, loggable Zinc, one supplement vocabulary, one
-  week-bucketing impl (`domain/time/WeekBuckets`), hydration scored against the user-set goal, and
-  **intraday hydration coaching** (`HydrationCoach`) on Home + Nutrition.
-
-**Post-v1.2 (current `main`, 2026-07-22):**
-
-- **Android 16 target** (`b713937`): `compileSdk`/`targetSdk` 35 → 36, `versionCode` 10 → 11 (`minSdk`
-  26 unchanged); `Icons.Outlined.MenuBook` → AutoMirrored. Toolchain unchanged (AGP 8.13.2 / Gradle
-  8.13). AAB built + verified (targetSdk 36); pending edge-to-edge pass + Play upload.
-- **Vaginal pH migration** (`3713374`) — the pH feature is now **Vaginal pH**, not Urine pH.
-  **Two-band model** (Healthy / Elevated) replaces acidic/optimal/alkaline: healthy band **3.8–4.5**,
-  elevated **> 4.5**, input range **3.5–7.0**, default 4.2 — **PROVISIONAL, pending client sign-off**
-  (`domain/ph/PhStatus.kt`; wellness app, not a medical device). All copy relabelled; neutral insight
-  copy (`domain/ph/PhCopy.kt`) + a disclaimer + one-time notice. **Room v4 → v5** adds a
-  `measurement_type` column; existing rows are stamped `urine` and shown as **"urine (legacy)"**
-  (excluded from insights, muted/hollow on the chart). Supabase `measurement_type` migration applied to
-  production 22 Jul 2026 (`ph_measurement_type_check`). Unit **236/0**; on-device `PhMigrationTest`
-  v4→v5 2/2 (emulator-5554). Release gated on client sign-off — see `CHANGELOG.md`.
-
-**Deep links:** `genesyx://{home,track,nutrition,insights,log}`, `genesyx://tracker/{hydration,ph}`
-(Home cards → Track detail), plus the reminder-tap routes.
-
-**Tests/builds:** 233 unit tests pass; debug + release (R8/lintVital) green. `SeedTestData` is a
-manual emulator seeder guarded by `@SeedOnly` (excluded from every gradle/CI run).
+Six bottom tabs — **Home, Track, Nutrition, Insights, Learn, Profile** — in that order
+[`ui/navigation/Screen.kt:55`]; deliberately one over the Material 3 maximum of five (Learn took
+Profile's slot, :35). The bottom bar hides on every other screen [`ui/navigation/Screen.kt:58-84`].
 
 ---
 
-## 1. SCREENS
+## 1. SCREENS — 26 routes
 
-| Screen | Route | Purpose | Key UI elements | Entry points |
+Start destination is Splash [`ui/navigation/GenesyxNavGraph.kt:41`].
+
+| Screen | Route | Purpose | Entry points |
+|---|---|---|---|
+| Splash | `splash` | Signed-out landing; brand statement and the two ways in. | Launch destination with no session; after account deletion |
+| Onboarding Intro | `onboarding_intro` | Explains the three things the app does before asking anything. | "Start Your Personalised Quiz" on Splash |
+| Onboarding Quiz | `onboarding_quiz` | Five questions (stage, cycle regularity, supplements, sex preference, support need). | "Continue" on Intro |
+| Readiness Summary | `readiness_summary` | Closes the quiz; routes to guide or account. | Final quiz answer |
+| Waitlist | `waitlist` | Collects an email for a nutrition guide. | "Unlock My Free Guide" on Readiness Summary |
+| Home | `home` | Daily dashboard. First-run setup card when no cycle is set [`ui/home/HomeScreen.kt:462-515`]; otherwise cycle hero + 3 metrics (Cycle day / Next period / Ovulation, :251-283), Today's focus (:296-316), hydration ring card (:318-407), pH nudge card (:414-459, flag-gated), "Log today", signed-out sign-in banner. Avatar menu: Sign in / Profile / Cycle setup (:169-187). **No pregnancy link on Home.** | Bottom tab; launch destination when signed in |
+| Track | `track` | Month calendar of cycle phases + "Your Trackers" list of six rows with real per-signal summaries (`TrackerSummaryLogic`), each opening a detail screen. | Bottom tab; pH card on Insights |
+| Cycle Detail | `tracker/cycle` | Phase + metrics + explicitly-estimated fertile window / ovulation; edit settings. | Track "Your Trackers" |
+| Hydration Detail | `tracker/hydration` | The canonical hydration editor: quick-add + manual entry (clamped), 7-day bars, days-on-goal, streak, daily history. Writes only through `DailyLogRepository`. | Track "Your Trackers"; Home hydration card (`genesyx://tracker/hydration`) |
+| Vaginal pH Detail | `tracker/ph` | The pH tracker section (validation, chart, history). | Track "Your Trackers"; Home pH card (`genesyx://tracker/ph`) |
+| Sleep Detail | `tracker/sleep` | Week summary + hours/minutes editor. | Track "Your Trackers" |
+| Symptoms Detail | `tracker/symptoms` | 4-week heatmap + dated history into the log flow. | Track "Your Trackers" |
+| Nutrition Detail | `tracker/nutrition` | Supplement summary into the logging flow. | Track "Your Trackers" |
+| Nutrition | `nutrition` | Phase-aware food focus, hydration stepper + goal dialog, supplement plan card, article entry. | Bottom tab |
+| Insights | `insights` | All-real-data trend cards — see §3. | Bottom tab |
+| Learn | `learn` | Landing for ten bundled articles: featured hero, category chips, search. | Bottom tab; "See all articles" on Nutrition |
+| Learn Search | `learn/search` | Free-text search over title, excerpt, tags. | Search icon on Learn |
+| Article Detail | `learn/article/{slug}` | Reads one article; CTA buttons, related articles, share, medical disclaimer on 6 of 10. | Article rows anywhere |
+| Log | `log` | Records the day: mood, energy, symptom chips + custom add, Sleep / Water / Supplements dialog tiles [`ui/screens/LogScreen.kt:231-238`], notes. Saves online **or offline** (offline queues — see §5). Back with unsaved edits raises "Discard your changes?" (`BackHandler`, :120-121, :264-288). | "Log today" on Home; "Add to today's log" on Track; article CTAs; `genesyx://log` |
+| Log History | `log_history` | Everything tracked, newest first (daily logs + pH readings per day). | "My logs" card on Insights |
+| Reminder Settings | `reminder_settings` | Master toggle + per-reminder toggles for the local reminder engine. | Profile → Reminders [`ui/profile/ProfileScreen.kt:203`] |
+| Pregnancy | `pregnancy` | Placeholder pregnancy mode (static copy, "—" trimester). | Profile focus toggle only [`ui/profile/ProfileScreen.kt:149-152`] |
+| Profile | `profile` | Account, focus toggle, Reminders row, tracking rows, theme selector, privacy link, log out, delete account. | Bottom tab; avatar menu on Home |
+| Auth | `auth` | Email/password sign-in / sign-up, "Continue with Google". | Splash; Home banner; Readiness Summary; Waitlist |
+| Invite | `invite/{code}` | Accepts a partner invite from a link (feature gated off). | Deep link only |
+| Clients | `clients` | Admin client list. **Unreachable** — the Profile row is gated off. | None |
+
+**Deep links.** In-app / notification navigation (nav graph only): `genesyx://{home,track,nutrition,insights,log}`, `genesyx://tracker/{hydration,ph}`. Externally launchable (manifest intent-filters): only the invite pair — `genesyx://invite/{code}` and `https://genesis-cycle-guide.lovable.app/invite/{code}` [`AndroidManifest.xml:37-53`].
+
+---
+
+## 2. TRACKERS — what the app records
+
+| Tracker | What she records | Constraints / model | Logged from | Detail screen |
 |---|---|---|---|---|
-| Splash | `splash` | Signed-out landing; brand statement and the two ways in. | Brand lockup, floating egg artwork, "Start Your Personalised Quiz", "Sign in" [`ui/onboarding/SplashScreen.kt:62-140`] | Launch destination when no session is stored [`ui/AppViewModel.kt:32`]; after account deletion [`ui/profile/ProfileScreen.kt:97`] |
-| Onboarding Intro | `onboarding_intro` | Explains the three things the app does before asking anything. | Three benefit cards (cycle, nutrition, insights), "Continue" [`ui/onboarding/OnboardingIntroScreen.kt:57-126`] | "Start Your Personalised Quiz" on Splash [`ui/navigation/GenesyxNavGraph.kt:46`] |
-| Onboarding Quiz | `onboarding_quiz` | Five questions establishing stage, cycle regularity, supplements, sex preference, support need. | Progress bar, step counter, option pills, "Did you know?" modal, back arrow [`ui/onboarding/OnboardingQuizScreen.kt:47-165`] | "Continue" on Intro [`ui/navigation/GenesyxNavGraph.kt:55`] |
-| Readiness Summary | `readiness_summary` | Reassurance screen closing the quiz; routes to guide or account. | Three insight rows, "Suggested next steps" card, "Unlock My Free Guide", "Register / Login to continue" [`ui/onboarding/ReadinessSummaryScreen.kt:51-159`] | Answering the final quiz question [`ui/navigation/GenesyxNavGraph.kt:62`] |
-| Waitlist | `waitlist` | Collects an email in exchange for a nutrition guide. | eBook hero, email field with validation, "Join the Waiting List", success state [`ui/onboarding/WaitlistScreen.kt:51-172`] | "Unlock My Free Guide" on Readiness Summary [`ui/navigation/GenesyxNavGraph.kt:71`] |
-| Home | `home` | Daily dashboard: where you are in your cycle and what to do today. | Greeting + avatar menu, cycle hero card, "Today's focus", hydration and streak tiles, "Log today", pregnancy link [`ui/home/HomeScreen.kt:103-301`] | Bottom tab; launch destination when signed in [`ui/AppViewModel.kt:32`]; after sign-in [`ui/navigation/GenesyxNavGraph.kt:120`] |
-| Track | `track` | Month calendar of cycle phases, plus today's phase. | Month grid with phase colouring, legend, day-detail dialog, current-phase card, "Add to today's log", pH section [`ui/track/TrackScreen.kt:91-282`] | Bottom tab; pH insight card on Insights [`ui/insights/InsightsScreen.kt:83`] |
-| Nutrition | `nutrition` | Phase-aware food focus, hydration, supplements, article entry. | Hydration stepper card, focus-food accordion, supplement plan card + dialog, article list [`ui/nutrition/NutritionScreen.kt:63-156`] | Bottom tab |
-| Insights | `insights` | Trend surfaces over cycle, symptoms, nutrition, pH. | "My logs" card, pH summary, cycle-regularity bars, symptom heatmap, nutrition bars [`ui/insights/InsightsScreen.kt:55-119`] | Bottom tab |
-| Learn | `learn` | Landing for ten bundled articles. | Search icon, dismissible intro hint, category filter chips, featured hero card, article rows [`ui/learn/LearnScreen.kt:65-155`] | Bottom tab; "See all articles" on Nutrition [`ui/nutrition/NutritionScreen.kt:120`] |
-| Learn Search | `learn/search` | Free-text search across the article set. | Auto-focused search field, clear button, results list, two empty states [`ui/learn/LearnSearchScreen.kt:46-112`] | Search icon on Learn [`ui/learn/LearnScreen.kt:101`] |
-| Article Detail | `learn/article/{slug}` | Reads one article. | Hero image, heading/paragraph/bullet/callout blocks, optional CTA button, medical disclaimer, related articles, share [`ui/learn/ArticleDetailScreen.kt:49-158`] | Any article row on Learn, Learn Search, Nutrition, or the Related list [`ui/learn/LearnScreen.kt:149`, `ui/nutrition/NutritionScreen.kt:119`] |
-| Log | `log` | Records how today went. | Mood picker, energy segments, symptom chips + custom add, sleep/water/supplement dialogs, notes, "Save log" [`ui/screens/LogScreen.kt:77-259`] | "Log today" on Home; "Add to today's log" on Track; article CTAs [`ui/home/HomeScreen.kt:282`, `ui/track/TrackScreen.kt:254`] |
-| Log History | `log_history` | Everything tracked, newest first. | Per-day cards combining daily log and pH readings, empty state [`ui/history/LogHistoryScreen.kt:59-113`] | "My logs" card on Insights [`ui/insights/InsightsScreen.kt:77`] |
-| Pregnancy | `pregnancy` | Preview of an unbuilt pregnancy mode. | Transition screen with two feature cards; after switching, a placeholder pregnancy home [`ui/screens/PregnancyScreen.kt:65-219`] | "Preview pregnancy pathway" on Home; "Pregnancy" focus segment on Profile [`ui/home/HomeScreen.kt:290`, `ui/profile/ProfileScreen.kt:148`] |
-| Profile | `profile` | Account, preferences, theme, deletion. | User card, focus toggle, account rows, tracking rows, theme selector, privacy link, log out, delete account [`ui/profile/ProfileScreen.kt:79-329`] | Bottom tab; avatar menu on Home [`ui/home/HomeScreen.kt:171`] |
-| Auth | `auth` | Sign in or create an account. | Email/password fields, mode toggle, error text, "Continue with Google" [`ui/screens/AuthScreen.kt:155-289`] | "Sign in" on Splash; Home sign-in banner; Readiness Summary; Waitlist; gated Profile rows [`ui/navigation/GenesyxNavGraph.kt:50,73,80`] |
-| Invite | `invite/{code}` | Accepts a partner invite from a link. | Signed-out prompt, invalid-code state, "Accept invite" [`ui/screens/InviteScreen.kt:48-104`] | Deep link `genesyx://invite/{code}` or the equivalent https link [`ui/navigation/GenesyxNavGraph.kt:132-135`] |
-| Clients | `clients` | Admin list of client records. | Add-client dialog, client cards with delete, "Seed 100 demo clients" [`ui/clients/ClientsScreen.kt:60-106`] | None — the Profile row that opened it is gated off [`ui/profile/ProfileScreen.kt:176`] |
-
-The bottom bar hides on every screen except the six tabs [`ui/navigation/Screen.kt:49-65`].
+| Cycle | Last period date, cycle length, period length | Phases, fertile window and ovulation are **derived estimates** (`domain/cycle/CycleEngine.kt`), nothing per-day stored | Cycle dialog (Home / Track / Cycle Detail) | `tracker/cycle` |
+| Mood | One of the mood options | Facet of the daily log | Log screen | — |
+| Energy | Segmented level | Facet of the daily log | Log screen | — |
+| Symptoms | Preset chips + free-text custom symptoms | Facet of the daily log | Log screen | `tracker/symptoms` |
+| Sleep | Hours + minutes | Facet of the daily log | Log screen; Sleep Detail | `tracker/sleep` |
+| Hydration | Water in ml | Scored against the **user-set goal** — range 1000–5000 ml, default 2400, step 200 [`domain/streaks/StreakEngine.kt:62-70`], clamped at the single writer [`data/PreferencesRepository.kt:43-62`] | Log screen; Hydration Detail (canonical editor); Nutrition stepper | `tracker/hydration` |
+| Supplements | Folate, Omega-3, Vitamin D, Zinc | One vocabulary across log, Nutrition and Insights | Log screen; Nutrition Detail | `tracker/nutrition` |
+| Vaginal pH | A pH value | Input **3.5–7.0**, step 0.1, default 4.2; two bands — Healthy **3.8–4.5**, Elevated **> 4.5** [`domain/ph/PhStatus.kt:23-35`] — **PROVISIONAL, pending client sign-off**. Out-of-range writes are rejected in the data layer [`data/PhRepository.kt:65-69`]. Pre-migration readings persist as **"urine (legacy)"** (`PhCopy.LEGACY_MARKER`): excluded from vaginal insights, muted/hollow on the chart. | pH dialog (Track / pH Detail) | `tracker/ph` |
+| Notes | Free text | Facet of the daily log | Log screen | — |
 
 ---
 
-## 2. FEATURES
+## 3. FEATURES
 
-| Feature | Screens involved | Data source | Feature-flagged? | Status |
-|---|---|---|---|---|
-| Cycle phase engine | Home, Track, Nutrition | Derived — computed from cycle settings, nothing stored [`domain/cycle/CycleEngine.kt:32-95`] | No | live |
-| Cycle settings (last period, cycle length, period length) | Home, Track | Both — Room is truth, written through to Supabase [`data/CycleRepository.kt:44-66`] | No | live |
-| Daily log (mood, energy, symptoms, sleep, water, supplements, notes) | Log, Home, Nutrition, Insights, Log History | Both — Room is truth, written through to Supabase [`data/DailyLogRepository.kt:49-96`] | No | live |
-| Hydration tracking + streak | Home, Nutrition, Log | Both — a facet of the daily log [`data/DailyLogRepository.kt:62-82`] | No | live |
-| Log history | Insights → Log History | Both — merges daily logs and pH readings by day [`ui/history/LogHistoryViewModel.kt:25-29`] | No | live |
-| Vaginal pH tracking (two-band, 3.5–7.0, provisional) | Track, Nutrition, Insights, Log History | Both — Room is truth, syncs to Supabase with a retry queue [`data/PhRepository.kt:61-148`] | Yes — `PH_TRACKING`, **on** [`core/FeatureFlags.kt:11`] | live |
-| pH background sync | (none — invisible) | Both — drains pending writes when the network returns [`data/sync/PhSyncWorker.kt:22-26`] | Follows `PH_TRACKING` | live |
-| Learn articles (10, bundled) | Learn, Learn Search, Article Detail, Nutrition | Neither — compiled into the app [`domain/content/LearnContent.kt:86`] | No | live |
-| Article search | Learn Search | Neither — matches title, excerpt, tags in memory [`domain/content/LearnContent.kt:76-84`] | No | live |
-| Article category filter | Learn | Neither — transient UI state [`ui/learn/LearnScreen.kt:71-73`] | No | live |
-| Related articles | Article Detail | Neither — hand-authored id lists [`domain/content/LearnContent.kt:72-73`] | No | live |
-| Article share | Article Detail | Neither — plain text to the system share sheet [`ui/learn/ArticleDetailScreen.kt:243-251`] | No | live |
-| Medical disclaimer | Article Detail | Neither — shown on 6 of 10 articles [`ui/learn/ArticleDetailScreen.kt:121-130`] | No | live |
-| Email/password auth | Auth | Supabase, with a local fallback when unconfigured [`di/NetworkModule.kt:60-64`] | No | live |
-| Google sign-in | Auth | Supabase, via a Google ID token [`ui/screens/AuthScreen.kt:86-112`] | Self-gating — hidden effect if no client ID is compiled in [`ui/screens/AuthScreen.kt:79`] | live |
-| Session persistence + launch routing | Splash, Home | Local — stored session decides the first screen [`ui/AppViewModel.kt:29-34`] | No | live |
-| Account deletion | Profile | Both — deletes the remote account, then wipes local data [`auth/AuthRepository.kt:59-71`] | No | live |
-| Display-name editing | Profile | Both — persists locally and to the profile record [`data/ProfileRepository.kt:52`] | No | live |
-| Theme (system/light/dark) | Profile, all screens | Local — persisted preference [`data/PreferencesRepository.kt:26,37`] | No | live |
-| Focus mode (prep/pregnancy) | Profile, Pregnancy | Local — persisted preference [`data/PreferencesRepository.kt:30,39`] | No | live |
-| Learn intro hint dismissal | Learn | Local — persisted preference [`ui/learn/LearnViewModel.kt:18-20`] | No | live |
-| Waitlist email capture | Waitlist | Neither — validated, then discarded [`ui/onboarding/WaitlistScreen.kt:166`] | No | dormant |
-| Onboarding quiz answers | Onboarding Quiz | Neither — held in memory, discarded on completion [`ui/onboarding/OnboardingQuizScreen.kt:53`] | No | dormant |
-| Pregnancy mode | Pregnancy | Neither — static placeholder copy [`ui/screens/PregnancyScreen.kt:150-219`] | No | dormant |
-| Cycle regularity / symptom / nutrition charts | Insights | Neither — fixed sample values [`ui/insights/InsightsScreen.kt:51-52,306`] | No | dormant |
-| Password change | Profile | Neither — validates, then closes [`ui/profile/ProfileScreen.kt:519-525`] | No | dormant |
-| Partner invites and linking | Profile, Invite | Local only — writes a Room row, sends no email, links a placeholder [`data/PartnerRepository.kt:49-69`] | Yes — `PARTNER_INVITES`, **off** [`core/FeatureFlags.kt:27`] | dormant |
-| Push notifications toggle | Profile | Local only — nothing consumes the stored value [`core/FeatureFlags.kt:29-36`] | Yes — `PUSH_NOTIFICATIONS`, **off** [`core/FeatureFlags.kt:36`] | dormant |
-| Client management + demo seeding | Clients | Local only — the remote source is a stub [`di/BindingsModule.kt:32`] | Yes — `ADMIN_CLIENTS`, **off** [`core/FeatureFlags.kt:18`] | dormant |
+| Feature | Data source | Flagged? | Status |
+|---|---|---|---|
+| Cycle phase engine (derived, nothing stored) | Computed from settings [`domain/cycle/CycleEngine.kt`] | No | live |
+| Cycle settings | Room is truth, written through to Supabase [`data/CycleRepository.kt:44-54`] | No | live |
+| Daily log (mood, energy, symptoms, sleep, water, supplements, notes) | Room is truth, written through with an **offline queue** [`data/DailyLogRepository.kt:76-98`] | No | live |
+| Daily-log offline sync queue | `PENDING_UPSERT` + `DailyLogSyncWorker` with WorkManager backoff; refresh skips unsynced rows | No | live |
+| Log back-guard | Confirm-discard dialog + `BackHandler` [`ui/screens/LogScreen.kt:120-121,264-288`] | No | live |
+| Hydration tracking, user-set goal, streaks, week buckets | Daily-log facet + DataStore goal; one week-bucketing impl (`domain/time/WeekBuckets`) | No | live |
+| Intraday hydration coaching | `HydrationCoach` on Home + Nutrition | No | live |
+| Vaginal pH tracking + **sync** | Room is truth, syncs to Supabase with a retry queue [`data/PhRepository.kt`, `data/sync/PhSyncWorker.kt`]; card copy discloses the sync [`ui/components/PhTrackerCard.kt:126-130`] | `PH_TRACKING` **on** | live |
+| **Local reminders** | Strictly on-device — WorkManager, no FCM/token. 6 `ReminderKind`s (daily log, missed-log, hydration, weekly insights, re-engagement; nutrition reserved) across 4 channels; self-rescheduling chain; pure/tested `ReminderPolicy` (quiet-hours wrap, already-logged-today, daily cap, re-engagement pacing); `BootReceiver`; `cancelAll()` on sign-out/delete. The Profile master toggle is genuinely consumed [`notifications/ReminderPolicy.kt:72`]. Default-enabled: daily log, missed-log, weekly insights, re-engagement. | `PUSH_NOTIFICATIONS` **on** | live |
+| Insights — **all real data** | `InsightsViewModel` combines the real repos; every card has a genuine empty state. Cards: Log-history entry, Weekly summary, Consistency, Vaginal pH (flag-gated), Hydration, Nutrition consistency, Supplement adherence, Sleep, Cycle regularity, Symptom patterns, Ovulation [`ui/insights/InsightsScreen.kt:91-131`] | No | live |
+| Streak engine v2 + cross-platform contract | `domain/tracking/tracking_test_vectors.json` — 16 vectors mirrored into the iOS repo; `TrackingVectorTest` runs them against the real engine | No | live |
+| Learn (10 bundled articles, search, filters, related, share, CTAs) | Compiled into the app [`domain/content/LearnContent.kt`] | No | live |
+| Email/password auth + Google sign-in | Supabase (local fallback when unconfigured) | Google self-gates on client ID | live |
+| Session persistence + launch routing | Stored session decides the first screen | No | live |
+| Account deletion (remote-first) | Server delete must succeed before local wipe [`auth/AuthRepository.kt`] | No | live |
+| Theme (system/light/dark), display name, focus mode | Persisted preferences | No | live |
+| Waitlist email capture | Validated, then **discarded** — never stored or sent [`ui/onboarding/WaitlistScreen.kt:163-169`] | No | dormant |
+| Onboarding quiz answers | Held in memory, discarded on completion [`ui/onboarding/OnboardingQuizScreen.kt:53`] | No | dormant |
+| Pregnancy mode | Static placeholder copy | No | dormant |
+| Password change | Validates, then closes — changes nothing [`ui/profile/ProfileScreen.kt:509-516`] | No | dormant |
+| Partner invites and linking | Writes a Room row, sends no email, links a placeholder | `PARTNER_INVITES` **off** | dormant |
+| Client management + demo seeding | Remote source is a stub | `ADMIN_CLIENTS` **off** | dormant |
 
 ---
 
-## 3. USER JOURNEYS
+## 4. USER JOURNEYS
 
 ### A. First run to a working account
 
-1. App opens on Splash because no session is stored [`ui/AppViewModel.kt:32`].
-2. Tapping "Start Your Personalised Quiz" opens the Intro, which names the three benefits [`ui/onboarding/OnboardingIntroScreen.kt:57-64`].
-3. "Continue" starts the five-question quiz. Each question needs an answer before "Continue" enables [`ui/onboarding/OnboardingQuizScreen.kt:126`].
-4. Two questions raise a "Did you know?" modal that must be dismissed before advancing [`ui/onboarding/OnboardingQuizScreen.kt:63-66`].
-5. The back arrow and the system back gesture both step to the previous question, preserving answers; from the first question they exit to the Intro [`ui/onboarding/OnboardingQuizScreen.kt:70`].
-6. The final answer opens the Readiness Summary — three insights and three suggested next steps [`ui/onboarding/ReadinessSummaryScreen.kt:53-62`].
-7. Two exits: "Unlock My Free Guide" opens the Waitlist; "Register / Login to continue" opens Auth [`ui/navigation/GenesyxNavGraph.kt:71-73`].
-8. The Waitlist validates an email, shows a confirmation, then also routes to Auth. The dashboard is reachable only through an account [`ui/navigation/GenesyxNavGraph.kt:80`].
-9. On Auth, creating an account or signing in clears the entire onboarding stack and lands on Home; back cannot return to the gate [`ui/navigation/GenesyxNavGraph.kt:120-122`].
-10. Cycle settings, daily logs, and pH readings are pulled from the server in the background [`auth/AuthRepository.kt:80-85`].
-11. Every later cold start goes straight to Home while the session persists [`ui/AppViewModel.kt:32`].
+Splash → Intro (three benefits) → five-question quiz (answers required per step; two "Did you know?"
+modals; back preserves answers) → Readiness Summary → "Unlock My Free Guide" (Waitlist) or
+"Register / Login". The dashboard is reachable only through an account; signing in clears the
+onboarding stack and lands on Home. Cycle settings, daily logs and pH readings pull from the server
+in the background. Later cold starts go straight to Home while the session persists.
 
 ### B. Setting up a cycle and logging a day
 
-1. Before setup, Home reads "Set up your cycle" and Today's focus is empty [`ui/home/HomeViewModel.kt:32-33`].
-2. Tapping the cycle card — or the avatar menu's "Cycle setup", or the edit button on Track — opens the cycle dialog [`ui/home/HomeScreen.kt:212`, `ui/track/TrackScreen.kt:139`].
-3. Saving a last-period date, cycle length, and period length stores the settings locally and pushes them to the server [`data/CycleRepository.kt:44-54`].
-4. Home immediately shows the cycle day, phase name, a headline, and phase tags; Today's focus fills with phase-appropriate foods [`ui/home/HomeViewModel.kt:79-90`].
-5. Track paints a month calendar colour-coded for period, fertile window, ovulation, and luteal days, with today outlined [`ui/track/TrackScreen.kt:304-316`].
-6. Tapping any calendar day opens a detail dialog; future days read as predictions [`ui/track/TrackScreen.kt:405-410`].
-7. "Log today" opens the Log screen, pre-filled with anything already recorded for today [`ui/screens/LogScreen.kt:79`].
-8. Mood, energy, symptoms (including custom ones), sleep, water, supplements, and a note are all optional [`ui/screens/LogScreen.kt:107-224`].
-9. Tapping "Save log" while offline does **not** save or close — it shows "You're offline — reconnect to save your log." [`ui/screens/LogScreen.kt:237-244`].
-10. Online, the log saves locally, pushes to the server, and the screen closes [`data/DailyLogRepository.kt:49-59`].
-11. Home's hydration tile and streak update; the streak counts consecutive days back from today with any water logged [`data/DailyLogRepository.kt:73-82`].
+1. Before setup, Home shows the first-run setup card (last-period date picker + "Start tracking").
+2. Saving cycle settings stores locally and pushes to the server; Home fills with the cycle hero,
+   three metrics and Today's focus; Track paints the phase-coloured month calendar.
+3. "Log today" opens the Log screen pre-filled with anything already recorded for today. Everything
+   is optional.
+4. **Saving works online or offline.** An offline save lands in Room as `PENDING_UPSERT` and a
+   WorkManager job retries with backoff until it reaches the server ("push failed — queued for
+   retry" → `Worker result SUCCESS`). Verified on-device 2026-07-13.
+5. Back with unsaved edits asks "Discard your changes?" instead of silently dropping them.
+6. Home's hydration ring, streak and week dots update; the streak counts consecutive days with any
+   water logged; "days on goal" counts days the user-set goal was actually hit.
 
 ### C. Reading the Learn section
 
-1. The Learn tab lists ten articles: one featured hero, the rest as rows [`ui/learn/LearnScreen.kt:75-152`].
-2. On first visit only, a dismissible card points at "Your first week with Genesyx"; dismissal is remembered [`ui/learn/LearnScreen.kt:117-125`].
-3. Five category chips — Getting started, Tracking, Nutrition, Insights, Wellness — filter the list. Inside a filter the featured hero becomes an ordinary row [`ui/learn/LearnScreen.kt:75`].
-4. The search icon opens a screen whose field is focused immediately; matching runs over title, excerpt, and tags [`domain/content/LearnContent.kt:79-83`].
-5. Opening an article shows a hero image, then headings, paragraphs, bullet lists, and callouts [`ui/learn/ArticleDetailScreen.kt:174-225`].
-6. Six of the ten articles close with a medical disclaimer above the footer [`ui/learn/ArticleDetailScreen.kt:121-130`].
-7. Some articles end with a call-to-action that jumps into Log, Track, Nutrition, Insights, or another article. A CTA into a tab reuses that tab rather than stacking a second copy [`ui/learn/ArticleDetailScreen.kt:110-118`].
-8. Related articles replace the current one rather than stacking, so three taps through Related need one back press, not three [`ui/learn/ArticleDetailScreen.kt:146-150`].
-9. Share sends the title, excerpt, and the site root — not a per-article link, which does not exist [`core/AppLinks.kt`].
+Ten articles: one featured hero, five category chips, auto-focused search, related-article links
+that replace rather than stack, share (title + excerpt + site root), medical disclaimer on six of
+ten, CTAs that jump into Log/Track/Nutrition/Insights or another article.
 
 ### D. Tracking vaginal pH
 
-*(Relabelled from urine pH in the Post-v1.2 migration; pre-migration readings persist as "urine
-(legacy)" and are excluded from insights. Range/thresholds are PROVISIONAL, pending client sign-off.)*
+*(Relabelled from urine pH in the post-v1.2 migration. Range/thresholds PROVISIONAL, pending client
+sign-off.)*
 
-1. A pH section sits on Track and Nutrition; a summary card sits on Insights [`ui/track/TrackScreen.kt:261-264`, `ui/nutrition/NutritionScreen.kt:101-104`].
-2. "Log pH" opens a dialog to record a value; readings outside 3.5–7.0 are rejected and never stored [`data/PhRepository.kt:64-68`, `domain/ph/PhStatus.kt`].
-3. Values round to one decimal place, then save to the device immediately [`data/PhRepository.kt:72-80`].
-4. For a signed-in user the reading also pushes to the server; if that fails the reading stays queued and a background job retries when the network returns [`data/PhRepository.kt:99-108`].
-5. For a signed-out user nothing is queued and nothing is pushed [`data/PhRepository.kt:76`].
-6. Deleting a reading marks it deleted rather than removing it, so the deletion syncs safely [`data/PhRepository.kt:86-96`].
-7. Insights shows the current value with a status colour, a trend marker, 7- and 30-day averages, and a written observation; with no readings it invites a first entry [`ui/insights/InsightsScreen.kt:185-222`].
-8. Tapping the pH card on Insights opens the tracker on Track [`ui/insights/InsightsScreen.kt:82-88`].
-9. Readings appear alongside daily logs, timestamped, in Log History [`ui/history/LogHistoryScreen.kt:143-163`].
+1. Entry points: Track "Your Trackers" → Vaginal pH detail; Home pH-nudge card (deep link); Insights
+   pH card.
+2. "Log pH" records a value; out-of-range (outside 3.5–7.0) is rejected and never stored.
+3. Values round to one decimal and save to the device immediately; a signed-in user's reading also
+   pushes to Supabase, with a queued retry on failure. Guests stay entirely on-device.
+4. Deleting a reading tombstones it so the deletion syncs; the server hard-deletes on account
+   erasure.
+5. Pre-migration readings surface as "urine (legacy)": excluded from vaginal insight/status
+   computation, muted/hollow on the chart, and the Home nudge asks for a fresh vaginal reading
+   rather than presenting the old value as current.
+6. Insights shows current value, status, trend, 7- and 30-day averages, and neutral written copy
+   (`domain/ph/PhCopy.kt` — no condition names, no dietary advice, GP/pharmacist signposting;
+   enforced by banned-phrase tests).
 
 ### E. Deleting an account
 
-1. "Delete account" appears on Profile only while signed in [`ui/profile/ProfileScreen.kt:233`].
-2. Tapping it raises a confirmation: "This will permanently delete your account and all your data. This cannot be undone." [`ui/profile/ProfileScreen.kt:302-305`].
-3. Confirming disables both buttons and shows "Deleting…" while the request is in flight [`ui/profile/ProfileScreen.kt:314-317`].
-4. The server deletes the account; only then is every local table wiped and the session cleared [`auth/AuthRepository.kt:60-65`].
-5. A failure keeps the user signed in and shows the error inside the dialog [`ui/profile/ProfileScreen.kt:307-310`].
-6. On success the entire back stack is cleared and the app returns to Splash [`ui/profile/ProfileScreen.kt:95-99`].
+Profile → "Delete account" (signed-in only) → confirmation → server deletes the account **first**;
+only then is local data wiped and the session cleared; failure keeps the user signed in with the
+error shown. Success clears the back stack to Splash. Reminders are cancelled on sign-out/delete.
 
 ---
 
-## 4. DATA & SYNC
+## 5. DATA & SYNC
 
-**Stored on the device.** A local database holds cycle settings, daily logs, pH readings, profile records, client records, partner invites, and partner links — seven tables, scoped per user so a guest's rows stay separate from an account's [`data/local/GenesyxDatabase.kt:25-44`]. A separate preference store holds the session (signed-in flag, user id, email, display name) and the app preferences: theme, push toggle, focus mode, onboarding-complete flag, and whether the Learn intro was dismissed [`data/SessionRepository.kt:34-41`, `data/PreferencesRepository.kt:26-35`].
+**Stored on the device.** Room v5 [`data/local/GenesyxDatabase.kt:34`], seven tables scoped per
+user: `cycle_settings`, `daily_logs`, `ph_readings`, `profiles`, `clients`, `partner_invites`,
+`partner_links`. DataStore holds the session and preferences: theme, reminders master + per-kind
+toggles, focus mode, hydration goal, Learn-hint and pH-notice dismissals.
 
-**The device is the source of truth.** Every write lands locally first and the UI updates from local state; the server is a mirror [`data/CycleRepository.kt:44-54`].
+**The device is the source of truth.** Every write lands locally first; the server is a mirror.
 
-**What syncs.** Profile records, cycle settings, daily logs, and pH readings sync to Supabase — but only when the app was built with server credentials. Without them, every remote call is replaced by a no-op stub and the app runs entirely on-device [`di/NetworkModule.kt:64-82`]. Client records never sync; their remote source is always a stub [`di/BindingsModule.kt:32`]. Partner invites and links never leave the device [`data/PartnerRepository.kt:49-69`].
+**What syncs to Supabase** (only when built with server credentials; otherwise stub no-ops):
+profiles, cycle settings, daily logs, **and pH readings**. Client records and partner rows never
+leave the device. Reminders add no server surface — strictly local.
 
-**When it syncs.** Writes push immediately after the local save. Reads pull once, in the background, right after sign-in — profile, then cycle, then daily logs, then pH — so sign-in never blocks on a slow table [`auth/AuthRepository.kt:80-85`].
+**Offline behaviour by data type:**
 
-**Offline behaviour differs by data type, and this is the sharpest edge in the product.**
+- *Daily logs* — offline writes **queue** (`PENDING_UPSERT`, `DailyLogSyncWorker`, WorkManager
+  backoff). `DailyLogRepository.refresh` skips rows with unsynced local changes — the rule that
+  makes offline writes safe, covered by `a_pull_must_not_overwrite_an_unsynced_local_edit`.
+- *pH readings* — same shape: pending status + `PhSyncWorker` retry; pull-merge by record id
+  prefers whichever copy was updated last and never overwrites unsynced local edits.
+- *Cycle settings* — the local write persists and drives the UI, but a failed remote push is only
+  logged; **nothing retries it**, and a later refresh can overwrite a never-pushed offline edit
+  with the server's older copy [`data/CycleRepository.kt:44-66`]. The one remaining offline gap.
 
-- *Daily logs* refuse to save while offline. The Save button checks connectivity and, if there is none, blocks the save and shows an error rather than storing something the server will later overwrite [`ui/screens/LogScreen.kt:237-244`, `ui/screens/LogViewModel.kt:24-33`].
-- *pH readings* do the opposite: an offline write is stored, marked pending, and a background job retries it with backoff once the network returns [`data/PhRepository.kt:99-108`, `data/sync/PhSyncScheduler.kt:24-27`].
-- *Cycle settings* take a third path: the local write succeeds, the remote push fails quietly and is logged, and nothing retries it [`data/CycleRepository.kt:48-52`].
+**Guests** (`LOCAL_USER_ID`): daily-log and pH writes are marked `SYNCED` without a push (no server
+target under RLS) and there is **no migration** of guest rows to an account on sign-in.
 
-**Conflict resolution.** Only pH has any. A pull merges by record id, prefers whichever copy was updated last, and never overwrites a row with unsynced local edits [`data/PhRepository.kt:127-148`]. Cycle settings and daily logs let the server copy win on the next read [`data/DailyLogRepository.kt:85-96`].
-
-**Deletion.** Account deletion is remote-first: the server call must succeed before any local data is cleared, so a failed delete leaves the user intact and signed in [`auth/AuthRepository.kt:59-71`]. pH deletions are tombstoned rather than removed, so they propagate [`data/PhRepository.kt:86-96`].
-
----
-
-## 5. RECENT ADDITIONS
-
-Commits from 2026-07-07 to 2026-07-09 (`git log --since="3 days ago"`). The Learn section is the headline: it did not exist three days ago.
-
-| Item | What it does | Where it lives |
-|---|---|---|
-| **Learn section** (`659de4d`, Jul 9) | Ten illustrated articles with search, category filters, related-article links, share, and per-article calls-to-action. Took Profile's bottom-tab slot, making six tabs. | [`ui/learn/LearnScreen.kt`, `ui/learn/LearnSearchScreen.kt`, `ui/learn/ArticleDetailScreen.kt`, `ui/learn/LearnViewModel.kt`, `domain/content/LearnContent.kt`] |
-| Article content set | Ten articles across five categories, one featured, six carrying a medical disclaimer: `getting-started-first-week` (featured, 5 min), `why-logging-beats-remembering` (4 min), `what-to-log` (4 min), `hydration-basics` (3 min), `eating-with-your-cycle` (6 min), `gentle-guide-supplements` (6 min), `what-insights-mean` (5 min), `reading-your-trends` (5 min), `small-habits-that-hold` (4 min), `using-what-you-learn` (4 min). | [`domain/content/LearnContent.kt:86-505`] |
-| Ten article hero images | One illustration per article, shown on the landing hero, list rows, and article headers. Missing art falls back to a category-tinted gradient. | [`res/drawable-nodpi/learn_hero_*.jpg`, `ui/learn/LearnScreen.kt:230-247`] |
-| Six-tab bottom navigation | Learn joined Home, Track, Nutrition, Insights, and Profile — one past the platform's recommended maximum, a deliberate product call. | [`ui/navigation/Screen.kt:41-46`, `ui/components/GenesyxBottomNav.kt:30-35`] |
-| Learn entry point on Nutrition | The old "Learn more" article list now opens real articles and gained a "See all articles" link into the Learn tab. | [`ui/nutrition/NutritionScreen.kt:333-361`] |
-| Persisted Learn intro hint | A one-time dismissible card on the Learn landing; dismissal survives restart. | [`data/PreferencesRepository.kt:34,41`, `ui/learn/LearnViewModel.kt`] |
-| Share link target | Article shares point at the site root, not a per-article URL, because no per-article page is confirmed to exist. | [`core/AppLinks.kt`] |
-| Learn audit + iOS parity handoff (`e6f279e`, Jul 9) | Documentation only: a verification audit of the Learn feature, an iOS parity handoff, and the article set exported as JSON. | [`docs/LEARN_FEATURE_AUDIT.md`, `docs/IOS_LEARN_PARITY_HANDOFF.md`, `docs/learn/articles.json`] |
-| Three content-safety fixes (`ac59b3a`, Jul 9) | Behaviour unchanged; the guards around content changed. The banned-phrase scan now covers tags, CTA labels, and every body block — previously it read only title, excerpt, and body, so a banned tag could ship. The disclaimer check now pins an exact set of six article slugs rather than inferring from category. A call-to-action that opens another article now fails at construction if it names no target, rather than crashing a reader. | [`domain/content/LearnContent.kt:31-39`, `ui/learn/ArticleDetailScreen.kt:167-168`, `domain/content/LearnContentTest.kt`] |
-| Dashboard gated behind an account (`49d07f2`, Jul 7) | Both onboarding exits — the readiness summary and the waitlist — now route to register/login instead of straight to Home. | [`ui/navigation/GenesyxNavGraph.kt:71-81`] |
-| Brand lockup on readiness screen (`49d07f2`, Jul 7) | Replaced a text wordmark with the real logo. | [`ui/onboarding/ReadinessSummaryScreen.kt:74`] |
-| Push-notification toggle gated off (`ff8d82c`, Jul 7) | The Profile switch is hidden; it persisted a value nothing consumed. | [`core/FeatureFlags.kt:36`, `ui/profile/ProfileScreen.kt:195-201`] |
-| Partner section gated off (`f9966bc`, Jul 7) | Hidden: the invite flow sends no email and links no real accounts. | [`core/FeatureFlags.kt:27`, `ui/profile/ProfileScreen.kt:154-165`] |
-| Support email changed (`7c3d13d`, Jul 7) | Now `info@genesyx.co.uk`. | [`core/AppLinks.kt`] |
-| Profile tracking rows + splash icon (`04bf55c`, Jul 7) | Three tracking rows now open explanatory dialogs; the system splash uses a branded icon. | [`ui/profile/ProfileScreen.kt:69-76`, `res/drawable/splash_icon.xml`] |
-| Brand launcher icon (`f568180`, Jul 7) | Replaced the vector placeholder with the real logo. | [`res/drawable-nodpi/ic_launcher_foreground.png`] |
-| Theme follows system + user toggle (`fcdd8d1`, Jul 7) | Theme choice is System, Light, or Dark, and persists. Bumped versionCode to 7. | [`ui/profile/ProfileScreen.kt:204-209`, `app/build.gradle.kts:38`] |
+**Deletion.** Account deletion is remote-first. pH deletions tombstone locally so they propagate;
+the server-side `delete_current_user` hard-deletes `ph_readings` rows (GDPR erase removes rows, not
+tombstones).
 
 ---
 
@@ -261,27 +192,39 @@ Commits from 2026-07-07 to 2026-07-09 (`git log --since="3 days ago"`). The Lear
 
 | What | Flag | Why it is off |
 |---|---|---|
-| Client management screen, including "Seed 100 demo clients" | `ADMIN_CLIENTS` [`core/FeatureFlags.kt:18`] | An admin tool, not a user feature. Its route still exists in the navigation graph but nothing links to it [`ui/navigation/GenesyxNavGraph.kt:102-104`]. |
-| Partner invites and linking | `PARTNER_INVITES` [`core/FeatureFlags.kt:27`] | Sends no email and links no real account. The Invite deep link `genesyx://invite/{code}` remains registered and reachable, and accepting one silently links a placeholder partner named "Your partner" [`data/PartnerRepository.kt:63-65`]. |
-| Push notifications toggle | `PUSH_NOTIFICATIONS` [`core/FeatureFlags.kt:36`] | No notification infrastructure exists. The stored value has no consumer. |
+| Client management screen | `ADMIN_CLIENTS` | Admin tool, not a user feature. Route exists; nothing links to it. |
+| Partner invites and linking | `PARTNER_INVITES` | Sends no email, links no real account. The invite deep links remain registered; accepting one links a placeholder partner. |
 
 **Reachable, but not doing what the interface implies.**
 
-- **Change password validates and then does nothing.** The dialog checks length and confirmation, then closes without changing any password [`ui/profile/ProfileScreen.kt:519-525`].
-- **The waitlist email is discarded.** It is validated, a success screen promises "We'll send your free fertility nutrition guide to {email} shortly", and the address is never stored or transmitted [`ui/onboarding/WaitlistScreen.kt:166`].
-- **Three of four Insights charts are fixed sample data.** Cycle regularity and nutrition consistency are hard-coded numbers; the symptom heatmap is generated from a sine wave, not from logged symptoms. Their accompanying prose reads as personalised. Only the pH card reflects real data [`ui/insights/InsightsScreen.kt:51-52,306`].
-- **The supplement plan reports "3 of 4 taken today" unconditionally.** The count is static text, unconnected to the supplements recorded in the daily log [`ui/nutrition/NutritionScreen.kt:303`].
-- **The Log screen's "Nutrition — On track" tile is inert.** It has an empty tap handler and a fixed value [`ui/screens/LogScreen.kt:213`].
-- **Pregnancy mode is a placeholder.** Switching in shows static prenatal copy, a "—" trimester, and no due-date entry despite the copy promising "once you confirm your due date" [`ui/screens/PregnancyScreen.kt:150-208`].
-- **The pH card's caption contradicts the code.** It reads "pH entries are stored on this device for now", but the repository pushes readings to the server and queues retries [`ui/components/PhTrackerCard.kt:124`, `data/PhRepository.kt:99-108`]. One of the two is wrong.
-- **Quiz answers are never used.** All five are collected into memory and discarded when the summary opens. The readiness summary and Today's focus are identical for every answer set [`ui/onboarding/OnboardingQuizScreen.kt:53`, `ui/onboarding/ReadinessSummaryScreen.kt:53-62`].
-- **The onboarding-complete preference is never written or read.** It exists in the preference store with no caller [`data/PreferencesRepository.kt:32`].
-- **Guest pH readings never sync.** A signed-out user's readings are marked synced without ever reaching a server, and signing in later does not migrate them [`data/PhRepository.kt:76`].
-- **An offline cycle-settings change is silently lost.** The local write succeeds, the remote push fails, a warning is logged, nothing retries, and the next sign-in pulls the server's older copy over it. Unlike the daily log, the user is not told [`data/CycleRepository.kt:48-52`].
-- **"PREMIUM" is a label, not a tier.** It appears on Profile for anyone signed in; no subscription, billing, or entitlement code exists [`ui/profile/ProfileScreen.kt:134-138`].
+- **Change password validates and then does nothing** [`ui/profile/ProfileScreen.kt:509-516`].
+- **The waitlist email is discarded** after a success screen promising delivery
+  [`ui/onboarding/WaitlistScreen.kt:163-169`].
+- **Quiz answers are never used** — the readiness summary is identical for every answer set.
+- **Pregnancy mode is a placeholder** — static copy, "—" trimester, no due-date entry.
+- **The onboarding-complete preference has no callers** — persisted plumbing exists, nothing writes
+  or reads it.
+- **Guest pH readings never sync and don't migrate on sign-in** — they vanish from view once a real
+  account signs in (rows keyed by user id).
+- **An offline cycle-settings change can still be lost server-side** — see §5; unlike daily logs
+  there is no pending status or retry.
+- **"PREMIUM" is a label, not a tier** — no subscription, billing, or entitlement code exists.
 
 **Environment-dependent.**
 
-- Without compiled-in server credentials the entire app runs offline against stub remote sources, and authentication falls back to a local service that does not verify passwords [`di/NetworkModule.kt:60-64`, `auth/LocalAuthService.kt`].
-- Google sign-in shows its button unconditionally but reports "Google sign-in isn't configured" when no client ID was compiled in [`ui/screens/AuthScreen.kt:87-89`].
-- The Article Detail screen handles an unknown slug with a dedicated "That article isn't available" screen, but no deep link can currently deliver one — article routes are reachable only from inside the app [`ui/learn/ArticleDetailScreen.kt:254-274`].
+- Without compiled-in server credentials the app runs fully offline against stubs, and auth falls
+  back to a local service that does not verify passwords.
+- Google sign-in shows unconditionally but reports "isn't configured" without a compiled-in client
+  ID.
+
+---
+
+## 7. RELEASE HISTORY (condensed — details in `CHANGELOG.md`)
+
+| Version | Highlights |
+|---|---|
+| v1.0 (code 6–7) | Core app: cycle engine, daily log, Track calendar, Nutrition, pH (urine, flag-on), Learn (10 articles), auth, account deletion. Uploaded to Play Internal testing Jul 2026. |
+| v1.1 (PR #9) | Daily-log offline queue; streak engine v2 + cross-platform vector contract; user-set hydration goal; log back-guard; auth hardening. |
+| v1.2 (PR #10) | Local reminders (`PUSH_NOTIFICATIONS` on); Track "Your Trackers" + six detail screens; Home hydration-ring/pH-nudge cards + deep links; all-real-data Insights + Weekly Summary; supplement adherence; intraday hydration coaching. |
+| 1.2.1 (code 10) | Corrective versionCode bump after the code-9 Play collision. Archived, never uploaded — **superseded, do not upload**. |
+| **1.3.0 (code 11)** | **Current.** Android 16 target (SDK 36); Vaginal pH migration (two-band model, Room v5, legacy "urine (legacy)" handling, Supabase `measurement_type`). Built, signed and archived 2026-07-27; uploaded to Play **Internal testing** 2026-07-27 with the Health apps declaration re-submitted. |

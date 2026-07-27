@@ -14,6 +14,17 @@ input range **MIN 3.5 / MAX 7.0**, step 0.1, slider default 4.2 — the standard
 vaginal-pH range. Genesyx is a wellness app, not a medical device. See the **Release gates** table
 below for the pre-ship checklist status.
 
+### Play rollout (27 Jul 2026) — 1.3.0 (11) live on Internal testing
+- `genesyx-1.3.0-code11.aab` uploaded to Play Console and **rolled out to Internal testing**.
+- **Health apps declaration re-submitted** (Policy → App content) — wellness / menstrual health,
+  not Medical — as required for the changed health feature under the Jan 2026 enforcement. This
+  clears Release-gates item 6(d) below.
+- `APP_INVENTORY.md` fully rewritten against the tree: the stale v1.0 baseline (§1–§6) is gone;
+  every section now describes current `main` (26 routes, tracker matrix, real-data Insights, the
+  offline queues, updated gaps list). Verified by a two-agent code audit — 7 previously-listed gaps
+  are closed (offline log save, back-guard, sample-data Insights, supplement counter, pH caption,
+  unconsumed notifications toggle, inert Nutrition tile), 6 remain and are listed in §6.
+
 ### Release build (27 Jul 2026) — 1.3.0 (versionCode 11) built and archived
 - `versionName` bumped `1.2.1` → `1.3.0` (versionCode was already 11); reverted a stray-keystroke
   corruption on line 1 of `app/build.gradle.kts` that broke the build.
@@ -96,11 +107,10 @@ failures / 0 errors** (was 236; +9). Not pushed.
    `ph_measurement_type_check` (`'urine'`, `'vaginal'`) applied.
 4. **`PhMigrationTest` v4→v5 on-device run** — **DONE 22 Jul 2026** (emulator-5554, 2/2 pass).
 5. **iOS parity fix scheduled** — labels, two-band range/thresholds, `measurement_type`, copy. **OPEN.**
-6. **Store / compliance updates. OPEN:** (a) Play Data Safety form review; (b) `docs/DATA_SAFETY_AND_PRIVACY`
-   "Urine pH" → "Vaginal pH" (draft updated locally — gitignored; owner to review/submit); (c) `genesyx.co.uk`
-   privacy-policy wording; (d) **re-submit the Play Console Health apps declaration** (Policy → App
-   content) — a changed health feature requires re-declaration under the Jan 2026 enforcement; category
-   stays wellness / menstrual health, **not** Medical.
+6. **Store / compliance updates:** (a) Play Data Safety form review — **OPEN**; (b) `docs/DATA_SAFETY_AND_PRIVACY`
+   "Urine pH" → "Vaginal pH" (draft updated locally — gitignored; owner to review/submit) — **OPEN**; (c) `genesyx.co.uk`
+   privacy-policy wording — **OPEN**; (d) ~~re-submit the Play Console Health apps declaration~~ —
+   **DONE 27 Jul 2026** (wellness / menstrual health, not Medical).
 
 ### Verified (commit `3713374`, 33 files)
 - Unit suite **236 passing, 0 failures / 0 errors** (`./gradlew :app:testDebugUnitTest`).
