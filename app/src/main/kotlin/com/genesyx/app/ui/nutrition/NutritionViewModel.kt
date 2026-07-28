@@ -53,9 +53,11 @@ class NutritionViewModel @Inject constructor(
             dailyLogRepository.logByDate,
             streakRepository.state,
             preferencesRepository.hydrationGoalMl,
-        ) { settings, _, streaks, goalMl ->
+        ) { settings, logs, streaks, goalMl ->
             val today = LocalDate.now()
-            val waterMl = dailyLogRepository.waterMlOn(today)
+            // From the emitted map, not a `.value` side-read — the card must show the same total
+            // every other collector of logByDate shows at the same instant.
+            val waterMl = logs[today]?.waterMl ?: 0
             val coaching = HydrationCoach.coach(waterMl, goalMl, LocalTime.now()).message
             if (settings == null) {
                 NutritionUiState(

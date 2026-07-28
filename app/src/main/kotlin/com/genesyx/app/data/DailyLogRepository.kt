@@ -18,6 +18,8 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.time.LocalDate
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -111,14 +113,45 @@ class DailyLogRepository @Inject constructor(
     }
 
     /** Adjust today's hydration by [deltaMl], clamped to 0..10000. */
-    fun adjustWater(deltaMl: Int, date: LocalDate = LocalDate.now()) {
-        val next = (waterMlOn(date) + deltaMl).coerceIn(0, 10_000)
-        upsert(date, logOn(date).copy(waterMl = next))
-    }
+    fun adjustWater(deltaMl: Int, date: LocalDate = LocalDate.now()) =
+        mutateRow(date) { it.copy(waterMl = (it.waterMl + deltaMl).coerceIn(0, 10_000)) }
 
     /** Set today's hydration to [ml], clamped to 0..10000. */
-    fun setWater(ml: Int, date: LocalDate = LocalDate.now()) {
-        upsert(date, logOn(date).copy(waterMl = ml.coerceIn(0, 10_000)))
+    fun setWater(ml: Int, date: LocalDate = LocalDate.now()) =
+        mutateRow(date) { it.copy(waterMl = ml.coerceIn(0, 10_000)) }
+
+    /** Set the night's sleep, clamped to 0..14h. Goes through [mutateRow] so it can't clobber water. */
+    fun setSleep(minutes: Int, date: LocalDate = LocalDate.now()) =
+        mutateRow(date) { it.copy(sleepMinutes = minutes.coerceIn(0, 14 * 60)) }
+
+    /**
+     * Save the Log Today form. The form owns mood/energy/symptoms/sleep/supplements/notes, but the
+     * hydration total is owned by the quick-add trackers and may have moved while the form sat open —
+     * so the stored row's water wins over the form's snapshot, never the other way round. This is
+     * what stopped "My logs says 1.8 L while the tracker says 0.5 L".
+     */
+    fun upsertPreservingWater(date: LocalDate, log: DailyLog) =
+        mutateRow(date) { stored -> log.copy(waterMl = stored.waterMl) }
+
+    private val writeMutex = Mutex()
+
+    /**
+     * Serialized read-modify-write against the stored row, not the in-memory snapshot. Two quick
+     * +200 taps used to read the same pre-write value out of [logByDate] and the second silently
+     * overwrote the first; reading the DAO under a mutex makes each tap see the previous one.
+     * The network push stays outside the lock so an offline retry can't stall the next tap.
+     */
+    private fun mutateRow(date: LocalDate, transform: (DailyLog) -> DailyLog) {
+        scope.launch {
+            val userId = session.currentUserId()
+            val signedIn = userId != SessionRepository.LOCAL_USER_ID
+            val status = if (signedIn) LogSyncStatus.PENDING_UPSERT else LogSyncStatus.SYNCED
+            val next = writeMutex.withLock {
+                val current = dao.getByDate(userId, date)?.toDomain() ?: DailyLog()
+                transform(current).also { dao.upsert(it.toEntity(userId, date, status)) }
+            }
+            if (signedIn) pushOrQueue(userId, date, next)
+        }
     }
 
     /**

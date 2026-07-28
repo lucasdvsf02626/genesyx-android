@@ -100,8 +100,11 @@ private fun LogForm(initial: DailyLog, onClose: () -> Unit, viewModel: LogViewMo
     var symptoms by remember { mutableStateOf(initial.symptoms) }
     var notes by remember { mutableStateOf(initial.notes.orEmpty()) }
     var sleepMinutes by remember { mutableStateOf(initial.sleepMinutes) }
-    var waterMl by remember { mutableStateOf(initial.waterMl) }
     var supplements by remember { mutableStateOf(initial.supplements) }
+    // Water is not form state: the quick-add trackers own it, so the mini-card renders the live
+    // aggregate and the dialog writes straight through the repository. A snapshot here used to
+    // revert any water quick-added while the form sat open.
+    val waterMl by viewModel.todayWaterMl.collectAsState()
     var showAdd by remember { mutableStateOf(false) }
     var custom by remember { mutableStateOf("") }
 
@@ -112,7 +115,9 @@ private fun LogForm(initial: DailyLog, onClose: () -> Unit, viewModel: LogViewMo
 
     val allSymptoms = remember(symptoms) { (DEFAULT_SYMPTOMS + symptoms).distinct() }
 
-    val edited = DailyLog(mood, energy, symptoms, sleepMinutes, supplements, notes.ifBlank { null }, waterMl)
+    // Water is excluded from the dirty check: it saves the moment the dialog closes, and the
+    // repository preserves the stored total on save regardless of what this snapshot carries.
+    val edited = DailyLog(mood, energy, symptoms, sleepMinutes, supplements, notes.ifBlank { null }, initial.waterMl)
     val dirty = edited != initial
 
     // Leaving with unsaved edits used to bin them silently. Ask first — but only when there is
@@ -291,7 +296,8 @@ private fun LogForm(initial: DailyLog, onClose: () -> Unit, viewModel: LogViewMo
         SleepDialog(initialMinutes = sleepMinutes, onDismiss = { sleepOpen = false }, onDone = { sleepMinutes = it; sleepOpen = false })
     }
     if (waterOpen) {
-        WaterDialog(initialMl = waterMl, onDismiss = { waterOpen = false }, onDone = { waterMl = it; waterOpen = false })
+        // Saves immediately through the shared repository — every screen shows it at once.
+        WaterDialog(initialMl = waterMl, onDismiss = { waterOpen = false }, onDone = { viewModel.setWater(it); waterOpen = false })
     }
     if (suppOpen) {
         SupplementsDialog(selected = supplements, onToggle = { supplements = if (it in supplements) supplements - it else supplements + it }, onDismiss = { suppOpen = false })

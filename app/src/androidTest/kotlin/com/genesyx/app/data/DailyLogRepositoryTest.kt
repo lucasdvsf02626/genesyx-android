@@ -193,6 +193,31 @@ class DailyLogRepositoryTest {
     }
 
     @Test
+    fun rapid_quick_adds_all_land() = runBlocking {
+        // Five +200 taps before Room has emitted anything back. The old implementation read the
+        // in-memory snapshot for each, so every tap saw 0 and the total came out 200, not 1000.
+        repeat(5) { repo.adjustWater(200, today) }
+        logsWhen { it[today]?.waterMl == 1_000 }
+        assertEquals(1_000, repo.waterMlOn(today))
+    }
+
+    @Test
+    fun form_save_preserves_water_quick_added_while_the_form_was_open() = runBlocking {
+        // The form opens and snapshots water = 0...
+        val formSnapshot = DailyLog(mood = Mood.GOOD, notes = "form", waterMl = 0)
+
+        // ...then a tracker quick-adds while the form sits open...
+        repo.setWater(800, today)
+        logsWhen { it[today]?.waterMl == 800 }
+
+        // ...and Save must keep the tracker's total while landing the form's own fields.
+        repo.upsertPreservingWater(today, formSnapshot)
+        val logs = logsWhen { it[today]?.mood == Mood.GOOD }
+        assertEquals(800, logs.getValue(today).waterMl)
+        assertEquals("form", logs.getValue(today).notes)
+    }
+
+    @Test
     fun a_signed_in_user_does_not_see_the_guest_bucket() = runBlocking {
         // Guest writes first, under LOCAL_USER_ID.
         repo.upsert(today, DailyLog(waterMl = 700))

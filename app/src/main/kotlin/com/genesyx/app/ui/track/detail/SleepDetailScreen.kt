@@ -38,7 +38,6 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import com.genesyx.app.data.DailyLogRepository
-import com.genesyx.app.domain.model.DailyLog
 import com.genesyx.app.ui.components.Eyebrow
 import com.genesyx.app.ui.components.GxPrimaryButton
 import com.genesyx.app.ui.insights.SleepInsightLogic
@@ -80,11 +79,7 @@ class SleepDetailViewModel @Inject constructor(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SleepDetailState())
 
     /** Writes tonight's sleep through the shared log — Insights and the tracker row update from it. */
-    fun setSleep(minutes: Int) {
-        val today = LocalDate.now()
-        val current: DailyLog = dailyLogRepository.logOn(today)
-        dailyLogRepository.upsert(today, current.copy(sleepMinutes = minutes.coerceIn(0, 14 * 60)))
-    }
+    fun setSleep(minutes: Int) = dailyLogRepository.setSleep(minutes)
 }
 
 private val weekdayLabels = listOf("M", "T", "W", "T", "F", "S", "S")
