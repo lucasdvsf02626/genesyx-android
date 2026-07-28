@@ -3,7 +3,7 @@ package com.genesyx.app.domain.hydration
 import java.time.LocalTime
 
 /** How today's water is going relative to where the day is. Never a grade — a position. */
-enum class HydrationPace { NOT_STARTED, BEHIND, ON_TRACK, AHEAD, REACHED }
+enum class HydrationPace { NOT_STARTED, WELL_BEHIND, BEHIND, ON_TRACK, AHEAD, REACHED }
 
 data class HydrationCoaching(
     val pace: HydrationPace,
@@ -29,6 +29,12 @@ object HydrationCoach {
     /** How far below the day's expected pace still counts as "on track" — a whole day is noisy. */
     private const val TOLERANCE = 0.12
 
+    /**
+     * Beyond this shortfall "a little behind" stops being true — at 0% of the goal two-thirds
+     * through the day, the honest word is "well behind". Still an invitation, never a mark.
+     */
+    private const val WELL_BEHIND_GAP = 0.35
+
     fun coach(currentMl: Int, goalMl: Int, now: LocalTime = LocalTime.now()): HydrationCoaching {
         val goal = goalMl.coerceAtLeast(1)
         val remaining = (goal - currentMl).coerceAtLeast(0)
@@ -49,7 +55,16 @@ object HydrationCoach {
         val pace = when {
             actual > expected + TOLERANCE -> HydrationPace.AHEAD
             actual >= expected - TOLERANCE -> HydrationPace.ON_TRACK
-            else -> HydrationPace.BEHIND
+            actual >= expected - WELL_BEHIND_GAP -> HydrationPace.BEHIND
+            else -> HydrationPace.WELL_BEHIND
+        }
+        // "You're behind the pace" is a strange thing to read over an empty glass — when nothing
+        // is logged yet, say that instead.
+        if (currentMl == 0 && (pace == HydrationPace.BEHIND || pace == HydrationPace.WELL_BEHIND)) {
+            return HydrationCoaching(
+                pace,
+                "${partOfDay(now)} nothing's logged yet — your first glass sets the pace whenever you're ready.",
+            )
         }
         return HydrationCoaching(pace, message(pace, now, remaining))
     }
@@ -64,8 +79,9 @@ object HydrationCoach {
         val part = partOfDay(now)
         return when (pace) {
             HydrationPace.AHEAD -> "$part you're ahead of the day's pace — nicely done."
-            HydrationPace.ON_TRACK -> "$part you're right on pace, about ${remainingMl}ml to go."
+            HydrationPace.ON_TRACK -> "$part you're right on pace, about ${HydrationFormat.format(remainingMl)} to go."
             HydrationPace.BEHIND -> "$part you're a little behind the day's pace — a glass whenever suits, no rush."
+            HydrationPace.WELL_BEHIND -> "$part you're well behind the day's pace — steady glasses from here close the gap, no rush."
             // The two edge paces don't route here, but keep the when exhaustive and honest.
             HydrationPace.REACHED -> "You've reached your water goal today — lovely."
             HydrationPace.NOT_STARTED -> "$part is a fresh start — a glass now sets an easy pace."

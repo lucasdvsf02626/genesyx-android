@@ -53,6 +53,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.genesyx.app.domain.hydration.HydrationFormat
 import com.genesyx.app.domain.model.DailyLog
 import com.genesyx.app.domain.model.EnergyLevel
 import com.genesyx.app.domain.model.Mood
@@ -235,7 +236,7 @@ private fun LogForm(initial: DailyLog, onClose: () -> Unit, viewModel: LogViewMo
             // Mini-cards
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 MiniCard(Icons.Filled.Bedtime, "Sleep", sleepMinutes?.let { "${it / 60}h ${it % 60}m" } ?: "—", ElectricLavender, Modifier.weight(1f)) { sleepOpen = true }
-                MiniCard(Icons.Outlined.WaterDrop, "Water", if (waterMl > 0) "%.1fL".format(waterMl / 1000f) else "—", ElectricBlue, Modifier.weight(1f)) { waterOpen = true }
+                MiniCard(Icons.Outlined.WaterDrop, "Water", if (waterMl > 0) HydrationFormat.format(waterMl) else "—", ElectricBlue, Modifier.weight(1f)) { waterOpen = true }
             }
             Spacer(Modifier.height(12.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {

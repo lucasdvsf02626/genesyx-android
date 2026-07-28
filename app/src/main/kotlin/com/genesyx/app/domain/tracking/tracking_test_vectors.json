@@ -1,6 +1,6 @@
 {
   "spec": "genesyx-tracking-v1",
-  "note": "Cross-platform vectors for the tracking engine. Mirrored verbatim in the iOS repo \u2014 keep free of platform-specific behaviour. Dates are ISO local dates. A log omitting a field means the user left it blank; sleepMinutes present-and-zero is a REAL record (an all-nighter is still logging), which is why the rule is null-vs-not-null, never > 0. 2026-07-13 is a Monday: ISO week 28 is 6-12 Jul, week 29 is 13-19 Jul. cycleCases (added 2026-07-28) pin the cycle phase calculator: dayOfCycle is 1-based, ovulationDay = cycleLength - 14 (fixed 14-day luteal phase), fertileWindow = [ovulationDay - 5, ovulationDay + 1] inclusive, phase = PERIOD while dayOfCycle <= periodLength, OVULATORY only on the ovulation day itself, FOLLICULAR before it, LUTEAL after; daysUntilNextPeriod is 0 on day 1.",
+  "note": "Cross-platform vectors for the tracking engine. Mirrored verbatim in the iOS repo \u2014 keep free of platform-specific behaviour. Dates are ISO local dates. A log omitting a field means the user left it blank; sleepMinutes present-and-zero is a REAL record (an all-nighter is still logging), which is why the rule is null-vs-not-null, never > 0. 2026-07-13 is a Monday: ISO week 28 is 6-12 Jul, week 29 is 13-19 Jul. cycleCases (added 2026-07-28) pin the cycle phase calculator: dayOfCycle is 1-based, ovulationDay = cycleLength - 14 (fixed 14-day luteal phase), fertileWindow = [ovulationDay - 5, ovulationDay + 1] inclusive, phase = PERIOD while dayOfCycle <= periodLength, OVULATORY only on the ovulation day itself, FOLLICULAR before it, LUTEAL after; daysUntilNextPeriod is 0 on day 1. hydrationAverageCases (added 2026-07-28) pin the rolling hydration average: over the last 7 calendar days ending today, avgOnLoggedDaysMl = (sum of water) / (count of days with water > 0), null when nothing is logged in the window; deltaMlPerDay compares against the same statistic for the 7 days before, null when that window is empty.",
   "config": {
     "goalMl": 2400,
     "minWeekDays": 4
@@ -540,6 +540,53 @@
         "fertileWindowEnd": 15,
         "inFertileWindow": true,
         "daysUntilNextPeriod": 19
+      }
+    }
+  ],
+  "hydrationAverageCases": [
+    {
+      "name": "sparse window averages over logged days, not the calendar (28 Jul walkthrough repro shape)",
+      "today": "2026-07-28",
+      "logs": [
+        { "date": "2026-07-27", "waterMl": 300 },
+        { "date": "2026-07-26", "waterMl": 700 }
+      ],
+      "expected": {
+        "avgOnLoggedDaysMl": 500,
+        "deltaMlPerDay": null
+      }
+    },
+    {
+      "name": "an empty window has no average at all",
+      "today": "2026-07-28",
+      "logs": [],
+      "expected": {
+        "avgOnLoggedDaysMl": null,
+        "deltaMlPerDay": null
+      }
+    },
+    {
+      "name": "the delta compares logged-day averages of both windows",
+      "today": "2026-07-28",
+      "logs": [
+        { "date": "2026-07-28", "waterMl": 2400 },
+        { "date": "2026-07-20", "waterMl": 1000 },
+        { "date": "2026-07-19", "waterMl": 1000 }
+      ],
+      "expected": {
+        "avgOnLoggedDaysMl": 2400,
+        "deltaMlPerDay": 1400
+      }
+    },
+    {
+      "name": "water older than both windows is invisible",
+      "today": "2026-07-28",
+      "logs": [
+        { "date": "2026-07-10", "waterMl": 2000 }
+      ],
+      "expected": {
+        "avgOnLoggedDaysMl": null,
+        "deltaMlPerDay": null
       }
     }
   ]

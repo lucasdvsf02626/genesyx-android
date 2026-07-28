@@ -1,5 +1,6 @@
 package com.genesyx.app.ui.insights
 
+import com.genesyx.app.domain.hydration.HydrationFormat
 import com.genesyx.app.domain.model.DailyLog
 import com.genesyx.app.domain.streaks.StreakEngine
 import com.genesyx.app.domain.time.WeekBuckets
@@ -12,8 +13,12 @@ import kotlin.math.abs
  * The bars show the current Mon–Sun week, but the week-over-week delta compares two rolling 7-day
  * windows (the last seven days against the seven before them). Comparing calendar weeks would put a
  * two-day-old week next to a finished one and report a fake collapse; seven-against-seven is always
- * a like-for-like comparison. Unlogged days count as zero, so the average is millilitres per day
- * rather than per day-she-remembered.
+ * a like-for-like comparison.
+ *
+ * The average divides by days she actually logged, not by seven: dividing a two-day 1000ml by the
+ * calendar produced "142ml a day" — a meaninglessly tiny number that read as failure while the data
+ * was merely sparse. The copy names the denominator ("on the days you log") so the number stays
+ * honest. Mirrored in the iOS repo via `hydrationAverageCases` in tracking_test_vectors.json.
  */
 object HydrationInsightLogic {
 
@@ -30,20 +35,21 @@ object HydrationInsightLogic {
         goalMl: Int = StreakEngine.DEFAULT_GOAL_ML,
     ): HydrationInsights {
         fun waterOn(date: LocalDate) = logsByDate[date]?.waterMl ?: 0
-        fun windowTotal(endingDaysAgo: Long) =
-            (0L until 7L).sumOf { waterOn(today.minusDays(endingDaysAgo + it)) }
+        fun windowDates(endingDaysAgo: Long) = (0L until 7L).map { today.minusDays(endingDaysAgo + it) }
+        /** Total over logged days — null when the window has no water at all. */
+        fun windowAvg(endingDaysAgo: Long): Int? {
+            val totals = windowDates(endingDaysAgo).map(::waterOn).filter { it > 0 }
+            return if (totals.isEmpty()) null else totals.sum() / totals.size
+        }
 
-        val thisWindow = windowTotal(0)
-        if (thisWindow == 0) return HydrationInsights()
+        val avgMlPerDay = windowAvg(0) ?: return HydrationInsights()
 
         val weekStart = WeekBuckets.weekStart(today)
         val bars = (0L until 7L).map { day ->
             (waterOn(weekStart.plusDays(day)) * 100 / goalMl).coerceIn(0, 100)
         }
 
-        val avgMlPerDay = thisWindow / 7
-        val previousWindow = windowTotal(7)
-        val deltaMlPerDay = if (previousWindow == 0) null else avgMlPerDay - previousWindow / 7
+        val deltaMlPerDay = windowAvg(7)?.let { avgMlPerDay - it }
 
         return HydrationInsights(
             hasData = true,
@@ -56,7 +62,7 @@ object HydrationInsightLogic {
 
     /** Never scolds a dip — it reports the number and leaves it there. */
     private fun insightFor(avgMlPerDay: Int, deltaMlPerDay: Int?): String {
-        val average = "You're averaging ${avgMlPerDay}ml a day"
+        val average = "You're averaging ${HydrationFormat.format(avgMlPerDay)} on the days you log"
         val change = when {
             deltaMlPerDay == null -> " — another week of logging and you'll see the change week to week."
             deltaMlPerDay >= 50 -> ", ${deltaMlPerDay}ml more than the previous seven days."

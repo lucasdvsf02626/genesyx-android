@@ -5,10 +5,12 @@ import com.genesyx.app.domain.model.DailyLog
 import com.genesyx.app.domain.model.EnergyLevel
 import com.genesyx.app.domain.model.Mood
 import com.genesyx.app.domain.streaks.StreakEngine
+import com.genesyx.app.ui.insights.HydrationInsightLogic
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.int
+import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -40,6 +42,7 @@ class TrackingVectorTest {
 
     private val cases get() = doc["cases"]!!.jsonArray.map { it.jsonObject }
     private val cycleCases get() = doc["cycleCases"]!!.jsonArray.map { it.jsonObject }
+    private val hydrationAverageCases get() = doc["hydrationAverageCases"]!!.jsonArray.map { it.jsonObject }
     private val config get() = doc["config"]!!.jsonObject
 
     /**
@@ -66,6 +69,7 @@ class TrackingVectorTest {
         // leaving a green suite that asserts nothing.
         assertEquals(true, cases.size >= 16)
         assertEquals(true, cycleCases.size >= 8)
+        assertEquals(true, hydrationAverageCases.size >= 4)
     }
 
     @Test
@@ -142,6 +146,36 @@ class TrackingVectorTest {
         if (failures.isNotEmpty()) {
             throw AssertionError(
                 "${failures.size} cycle vector mismatch(es):\n" + failures.joinToString("\n") { "  $it" },
+            )
+        }
+    }
+
+    @Test
+    fun `every hydration average vector holds`() {
+        val failures = mutableListOf<String>()
+
+        for (case in hydrationAverageCases) {
+            val name = case["name"]!!.jsonPrimitive.content
+            val today = LocalDate.parse(case["today"]!!.jsonPrimitive.content)
+            val logs = case["logs"]!!.jsonArray.associate { element ->
+                val o = element.jsonObject
+                LocalDate.parse(o["date"]!!.jsonPrimitive.content) to o.toDailyLog()
+            }
+            val result = HydrationInsightLogic.compute(logs, today)
+            val expected = case["expected"]!!.jsonObject
+
+            fun check(metric: String, actual: Int?) {
+                val want = expected[metric]!!.jsonPrimitive.intOrNull
+                if (want != actual) failures += "[$name] $metric: expected $want but was $actual"
+            }
+
+            check("avgOnLoggedDaysMl", result.avgMlPerDay)
+            check("deltaMlPerDay", result.deltaMlPerDay)
+        }
+
+        if (failures.isNotEmpty()) {
+            throw AssertionError(
+                "${failures.size} hydration vector mismatch(es):\n" + failures.joinToString("\n") { "  $it" },
             )
         }
     }

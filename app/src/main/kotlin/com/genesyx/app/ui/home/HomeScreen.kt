@@ -63,6 +63,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import android.content.res.Configuration
 import com.genesyx.app.R
+import com.genesyx.app.domain.hydration.HydrationFormat
 import com.genesyx.app.domain.hydration.HydrationPace
 import com.genesyx.app.domain.model.CycleSettings
 import com.genesyx.app.domain.ph.PhCopy
@@ -321,13 +322,12 @@ private fun TodayFocusCard(state: HomeUiState) {
 @Composable
 private fun HydrationSummaryCard(state: HomeUiState, onOpen: () -> Unit) {
     val colors = MaterialTheme.colorScheme
-    val litres = state.hydrationLitres ?: 0f
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onOpen)
             .clearAndSetSemantics {
-                contentDescription = "Hydration. ${"%.1f".format(litres)} of ${"%.1f".format(state.hydrationGoalLitres)} litres. ${hydrationStatusLabel(state.hydrationPace)}. Opens hydration tracker."
+                contentDescription = "Hydration. ${HydrationFormat.format(state.hydrationMl ?: 0)} of ${HydrationFormat.format(state.hydrationGoalMl)}. ${hydrationStatusLabel(state.hydrationPace)}. Opens hydration tracker."
             },
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = colors.surface),
@@ -347,9 +347,9 @@ private fun HydrationSummaryCard(state: HomeUiState, onOpen: () -> Unit) {
                 Spacer(Modifier.size(16.dp))
                 Column(Modifier.weight(1f)) {
                     Row(verticalAlignment = Alignment.Bottom) {
-                        Text("${state.hydrationLitres?.let { "%.1f".format(it) } ?: "0.0"} L", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+                        Text(HydrationFormat.format(state.hydrationMl ?: 0), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
                         Spacer(Modifier.size(4.dp))
-                        Text("/ ${"%.1f".format(state.hydrationGoalLitres)} L", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, modifier = Modifier.padding(bottom = 2.dp))
+                        Text("/ ${HydrationFormat.format(state.hydrationGoalMl)}", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, modifier = Modifier.padding(bottom = 2.dp))
                     }
                     Spacer(Modifier.height(6.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -554,7 +554,7 @@ private val sampleHomeState = HomeUiState(
     ovulationDayLabel = "Day 14",
     todayFocusTitle = "Leafy greens & folate",
     todayFocusBody = "Spinach, lentils and citrus support the follicular build-up.",
-    hydrationLitres = 1.6f,
+    hydrationMl = 1600,
     hydrationPercent = 67,
     hydrationPace = HydrationPace.ON_TRACK,
     hydrationStreak = 4,

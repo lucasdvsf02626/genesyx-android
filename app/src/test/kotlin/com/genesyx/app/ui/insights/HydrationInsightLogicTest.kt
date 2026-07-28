@@ -35,15 +35,18 @@ class HydrationInsightLogicTest {
     }
 
     @Test
-    fun `the average is millilitres per day across all seven days, logged or not`() {
-        // Two days of 2100ml, five days of nothing: 4200 / 7 = 600, not 2100.
+    fun `the average is over logged days, so sparse data reads honestly`() {
+        // Two days of 2100ml, five days of nothing: 4200 / 2 = 2100. Dividing by the calendar gave
+        // "600ml a day" — and the walkthrough's "142ml" — numbers that read as failure while the
+        // data was merely sparse.
         val sparse = mapOf(
             today to DailyLog(waterMl = 2100),
             today.minusDays(1) to DailyLog(waterMl = 2100),
         )
         val r = HydrationInsightLogic.compute(sparse, today)
         assertTrue(r.hasData)
-        assertEquals(600, r.avgMlPerDay)
+        assertEquals(2100, r.avgMlPerDay)
+        assertTrue("copy must name the denominator: \"${r.insight}\"", r.insight.contains("on the days you log"))
     }
 
     @Test
@@ -58,14 +61,28 @@ class HydrationInsightLogicTest {
     fun `a rise is reported against the previous seven days`() {
         val r = HydrationInsightLogic.compute(window(2100, 0) + window(1400, 7), today)
         assertEquals(700, r.deltaMlPerDay)
-        assertEquals("You're averaging 2100ml a day, 700ml more than the previous seven days.", r.insight)
+        assertEquals("You're averaging 2.1 L on the days you log, 700ml more than the previous seven days.", r.insight)
     }
 
     @Test
     fun `a drop is reported plainly, without scolding`() {
         val r = HydrationInsightLogic.compute(window(1400, 0) + window(2100, 7), today)
         assertEquals(-700, r.deltaMlPerDay)
-        assertEquals("You're averaging 1400ml a day, 700ml less than the previous seven days.", r.insight)
+        assertEquals("You're averaging 1.4 L on the days you log, 700ml less than the previous seven days.", r.insight)
+    }
+
+    @Test
+    fun `both windows average over their own logged days`() {
+        // This window: one 2400ml day. Previous window: two 1000ml days -> avg 1000, delta +1400.
+        // Under the old calendar division this read 343 vs 285 — a meaningless comparison.
+        val logs = mapOf(
+            today to DailyLog(waterMl = 2400),
+            today.minusDays(8) to DailyLog(waterMl = 1000),
+            today.minusDays(9) to DailyLog(waterMl = 1000),
+        )
+        val r = HydrationInsightLogic.compute(logs, today)
+        assertEquals(2400, r.avgMlPerDay)
+        assertEquals(1400, r.deltaMlPerDay)
     }
 
     @Test

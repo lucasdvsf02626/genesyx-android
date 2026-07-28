@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.genesyx.app.domain.hydration.HydrationFormat
 import com.genesyx.app.domain.model.DailyLog
 import com.genesyx.app.domain.model.EnergyLevel
 import com.genesyx.app.domain.model.PhMeasurement
@@ -42,7 +43,7 @@ fun DailyLogSummary(log: DailyLog, modifier: Modifier = Modifier) {
         if (log.symptoms.isNotEmpty()) InfoRow("Symptoms", log.symptoms.joinToString(", "))
         log.sleepMinutes?.let { InfoRow("Sleep", sleepLabel(it)) }
         if (log.supplements.isNotEmpty()) InfoRow("Supplements", log.supplements.joinToString(", "))
-        if (log.waterMl > 0) InfoRow("Water", "%.1fL".format(log.waterMl / 1000f))
+        if (log.waterMl > 0) InfoRow("Water", HydrationFormat.format(log.waterMl))
         log.notes?.takeIf { it.isNotBlank() }?.let { InfoRow("Notes", it) }
     }
 }

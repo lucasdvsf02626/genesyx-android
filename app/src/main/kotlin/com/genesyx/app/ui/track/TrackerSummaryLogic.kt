@@ -2,6 +2,7 @@ package com.genesyx.app.ui.track
 
 import com.genesyx.app.domain.content.phaseLabel
 import com.genesyx.app.domain.cycle.CycleEngine
+import com.genesyx.app.domain.hydration.HydrationFormat
 import com.genesyx.app.domain.model.CycleSettings
 import com.genesyx.app.domain.model.DailyLog
 import com.genesyx.app.domain.model.PhMeasurement
@@ -141,5 +142,5 @@ object TrackerSummaryLogic {
     }
 
     /** "1.6 L" — one decimal, matching the hydration surfaces elsewhere. */
-    private fun litres(ml: Int): String = "%.1f L".format(ml / 1000f)
+    private fun litres(ml: Int): String = HydrationFormat.format(ml)
 }

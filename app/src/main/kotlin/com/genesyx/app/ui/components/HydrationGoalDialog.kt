@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.genesyx.app.domain.hydration.HydrationFormat
 import com.genesyx.app.domain.streaks.StreakEngine
 import com.genesyx.app.ui.theme.ElectricLavender
 
@@ -67,7 +68,7 @@ fun HydrationGoalDialog(current: Int, onDismiss: () -> Unit, onSave: (Int) -> Un
                     GoalStepper(Icons.Filled.Remove, "Lower goal", colors.surfaceVariant, colors.onSurface) {
                         draft = (draft - StreakEngine.GOAL_STEP_ML).coerceIn(StreakEngine.GOAL_RANGE_ML)
                     }
-                    Text("${"%.1f".format(draft / 1000f)} L", fontSize = 28.sp, fontWeight = FontWeight.SemiBold, color = colors.onSurface)
+                    Text(HydrationFormat.format(draft), fontSize = 28.sp, fontWeight = FontWeight.SemiBold, color = colors.onSurface)
                     GoalStepper(Icons.Filled.Add, "Raise goal", ElectricLavender, Color.White) {
                         draft = (draft + StreakEngine.GOAL_STEP_ML).coerceIn(StreakEngine.GOAL_RANGE_ML)
                     }

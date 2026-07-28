@@ -39,6 +39,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.genesyx.app.domain.hydration.HydrationFormat
 import com.genesyx.app.ui.components.Eyebrow
 import com.genesyx.app.ui.components.HydrationGoalDialog
 import com.genesyx.app.ui.components.HydrationStatusPill
@@ -67,9 +68,9 @@ fun HydrationDetailScreen(
         // ── Current amount, progress, status, coaching
         DetailCard {
             Row(verticalAlignment = Alignment.Bottom) {
-                Text("%.1f".format(state.waterMl / 1000f), fontSize = 34.sp, fontWeight = FontWeight.SemiBold, color = colors.onSurface)
+                Text(HydrationFormat.format(state.waterMl), fontSize = 34.sp, fontWeight = FontWeight.SemiBold, color = colors.onSurface)
                 Spacer(Modifier.size(6.dp))
-                Text("/ ${"%.1f".format(state.goalMl / 1000f)} L", style = MaterialTheme.typography.bodyLarge, color = colors.onSurfaceVariant, modifier = Modifier.padding(bottom = 4.dp))
+                Text("/ ${HydrationFormat.format(state.goalMl)}", style = MaterialTheme.typography.bodyLarge, color = colors.onSurfaceVariant, modifier = Modifier.padding(bottom = 4.dp))
                 Spacer(Modifier.weight(1f))
                 HydrationStatusPill(state.pace, modifier = Modifier.padding(bottom = 4.dp))
             }
@@ -79,6 +80,9 @@ fun HydrationDetailScreen(
                 modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape),
                 color = ElectricBlue,
                 trackColor = colors.surfaceVariant,
+                // M3 draws a stop dot at the track's end by default — on an empty bar it floats
+                // alone at the far right and reads as a stray goal marker.
+                drawStopIndicator = {},
             )
             if (state.coaching.isNotEmpty()) {
                 Spacer(Modifier.height(12.dp))
@@ -139,7 +143,7 @@ fun HydrationDetailScreen(
             WeekBars(state.bars)
             Spacer(Modifier.height(16.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                MetricTile("7-day avg", state.avgMlPerDay?.let { "${it}ml" } ?: "—", Modifier.weight(1f))
+                MetricTile("Avg on logged days", state.avgMlPerDay?.let { HydrationFormat.format(it) } ?: "—", Modifier.weight(1f))
                 MetricTile("Days on goal", "${state.daysOnGoal}/7", Modifier.weight(1f))
                 MetricTile("Streak", if (state.streakDays > 0) "${state.streakDays}d" else "—", Modifier.weight(1f))
             }
@@ -163,7 +167,7 @@ fun HydrationDetailScreen(
                 ) {
                     Text(date.format(historyDay), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
                     Text(
-                        if (ml > 0) "${ml}ml" else "—",
+                        if (ml > 0) HydrationFormat.format(ml) else "—",
                         style = MaterialTheme.typography.bodyMedium,
                         color = if (ml > 0) colors.onSurface else colors.onSurfaceVariant,
                         fontWeight = if (ml > 0) FontWeight.Medium else FontWeight.Normal,

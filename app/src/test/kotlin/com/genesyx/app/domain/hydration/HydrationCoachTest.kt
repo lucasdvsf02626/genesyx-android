@@ -46,11 +46,31 @@ class HydrationCoachTest {
     }
 
     @Test
-    fun `falling behind the pace is named gently, never scolded`() {
-        // 20:00 expects ~86% = ~2057ml; only 500ml -> behind.
-        val r = HydrationCoach.coach(currentMl = 500, goalMl = goal, now = LocalTime.of(20, 0))
+    fun `a modest shortfall reads as a little behind`() {
+        // 15:00 expects ~50%; 800ml is ~33% — a 17-point gap, inside the 35-point "little" band.
+        val r = HydrationCoach.coach(currentMl = 800, goalMl = goal, now = LocalTime.of(15, 0))
         assertEquals(HydrationPace.BEHIND, r.pace)
+    }
+
+    @Test
+    fun `a deep shortfall reads as well behind, named gently, never scolded`() {
+        // 20:00 expects ~86%; 500ml is ~21% — far past the "little" band.
+        val r = HydrationCoach.coach(currentMl = 500, goalMl = goal, now = LocalTime.of(20, 0))
+        assertEquals(HydrationPace.WELL_BEHIND, r.pace)
         listOf("should", "fail", "bad", "poor", "behind on your goal", "only").forEach {
+            assertFalse("copy must not scold: '$it' in \"${r.message}\"", r.message.lowercase().contains(it))
+        }
+    }
+
+    @Test
+    fun `an empty glass mid-afternoon is well behind but the copy names the empty log, not a pace`() {
+        // The 28 Jul walkthrough: 0.0 L at 16:00 wore an "A LITTLE BEHIND" badge — at 0% two-thirds
+        // through the day that was neither accurate nor sensible copy.
+        val r = HydrationCoach.coach(currentMl = 0, goalMl = goal, now = LocalTime.of(16, 0))
+        assertEquals(HydrationPace.WELL_BEHIND, r.pace)
+        assertTrue("copy should speak to the empty log: \"${r.message}\"", r.message.contains("nothing's logged yet"))
+        assertFalse("'behind the pace' over an empty glass reads oddly", r.message.contains("behind the day's pace"))
+        listOf("should", "fail", "bad", "poor", "only").forEach {
             assertFalse("copy must not scold: '$it' in \"${r.message}\"", r.message.lowercase().contains(it))
         }
     }

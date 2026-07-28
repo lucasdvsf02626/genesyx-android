@@ -49,9 +49,9 @@ data class HomeUiState(
     val todayFocusTitle: String? = null,
     val todayFocusBody: String? = null,
     // Hydration summary card.
-    val hydrationLitres: Float? = null,
+    val hydrationMl: Int? = null,
     /** Her goal, from preferences — the default only until she sets her own. */
-    val hydrationGoalLitres: Float = StreakEngine.DEFAULT_GOAL_ML / 1000f,
+    val hydrationGoalMl: Int = StreakEngine.DEFAULT_GOAL_ML,
     val hydrationPercent: Int = 0,
     val hydrationPace: HydrationPace = HydrationPace.NOT_STARTED,
     val hydrationStreak: Int = 0,
@@ -127,8 +127,8 @@ class HomeViewModel @Inject constructor(
             signedIn = signedIn,
             greeting = greetingFor(LocalTime.now()),
             settings = settings,
-            hydrationLitres = if (waterMl > 0) waterMl / 1000f else null,
-            hydrationGoalLitres = goalMl / 1000f,
+            hydrationMl = if (waterMl > 0) waterMl else null,
+            hydrationGoalMl = goalMl,
             hydrationPercent = (waterMl * 100 / goalMl).coerceIn(0, 100),
             hydrationPace = coaching.pace,
             hydrationStreak = streaks.dailyHydration,

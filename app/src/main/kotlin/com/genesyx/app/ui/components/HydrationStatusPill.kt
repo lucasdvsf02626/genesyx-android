@@ -22,6 +22,7 @@ fun hydrationStatusLabel(pace: HydrationPace): String = when (pace) {
     HydrationPace.AHEAD -> "Ahead of pace"
     HydrationPace.ON_TRACK -> "On track"
     HydrationPace.BEHIND -> "A little behind"
+    HydrationPace.WELL_BEHIND -> "Well behind"
     HydrationPace.NOT_STARTED -> "Not started"
 }
 
@@ -30,7 +31,7 @@ fun hydrationStatusLabel(pace: HydrationPace): String = when (pace) {
 fun hydrationStatusColor(pace: HydrationPace): Color = when (pace) {
     HydrationPace.REACHED, HydrationPace.AHEAD -> PhOptimal
     HydrationPace.ON_TRACK -> ElectricBlue
-    HydrationPace.BEHIND, HydrationPace.NOT_STARTED -> MaterialTheme.colorScheme.onSurfaceVariant
+    HydrationPace.BEHIND, HydrationPace.WELL_BEHIND, HydrationPace.NOT_STARTED -> MaterialTheme.colorScheme.onSurfaceVariant
 }
 
 @Composable

@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.genesyx.app.domain.content.PhaseFood
+import com.genesyx.app.domain.hydration.HydrationFormat
 import com.genesyx.app.domain.content.learnArticles
 import com.genesyx.app.domain.content.supplementPlan
 import com.genesyx.app.domain.streaks.StreakEngine
@@ -198,9 +199,9 @@ private fun HydrationCard(
                     Eyebrow("Hydration", color = colors.onSurfaceVariant)
                     Spacer(Modifier.height(4.dp))
                     Row(verticalAlignment = Alignment.Bottom) {
-                        Text("%.1f".format(waterMl / 1000f), fontSize = 28.sp, fontWeight = FontWeight.SemiBold, color = colors.onSurface)
+                        Text(HydrationFormat.format(waterMl), fontSize = 28.sp, fontWeight = FontWeight.SemiBold, color = colors.onSurface)
                         Spacer(Modifier.size(4.dp))
-                        Text("/ ${"%.1f".format(goalMl / 1000f)} L goal", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, modifier = Modifier.padding(bottom = 4.dp))
+                        Text("/ ${HydrationFormat.format(goalMl)} goal", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, modifier = Modifier.padding(bottom = 4.dp))
                     }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -215,6 +216,9 @@ private fun HydrationCard(
                 modifier = Modifier.fillMaxWidth().height(6.dp).clip(CircleShape),
                 color = colors.onSurface,
                 trackColor = colors.surfaceVariant,
+                // M3 draws a stop dot at the track's end by default — on an empty bar it floats
+                // alone at the far right and reads as a stray goal marker.
+                drawStopIndicator = {},
             )
             Spacer(Modifier.height(12.dp))
             Row(
@@ -226,7 +230,7 @@ private fun HydrationCard(
                     Icon(Icons.Outlined.WaterDrop, null, tint = colors.onSurfaceVariant, modifier = Modifier.size(14.dp))
                     Spacer(Modifier.size(6.dp))
                     Text(
-                        if (remaining > 0) "${remaining}ml to go" else "Goal reached — nice work",
+                        if (remaining > 0) "${HydrationFormat.format(remaining)} to go" else "Goal reached — nice work",
                         style = MaterialTheme.typography.bodyMedium,
                         color = colors.onSurfaceVariant,
                     )
@@ -293,7 +297,7 @@ private fun GoalDialog(goalMl: Int, onDismiss: () -> Unit, onSave: (Int) -> Unit
                         colors.onSurface,
                     ) { draft = (draft - StreakEngine.GOAL_STEP_ML).coerceIn(StreakEngine.GOAL_RANGE_ML) }
                     Text(
-                        "${"%.1f".format(draft / 1000f)} L",
+                        HydrationFormat.format(draft),
                         fontSize = 28.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = colors.onSurface,
