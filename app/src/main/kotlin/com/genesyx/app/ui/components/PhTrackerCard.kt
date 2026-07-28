@@ -73,7 +73,10 @@ fun PhTrackerCard(
             readings.filter { it.recordedAt.isAfter(cutoff) }
         }
     }
-    val latest = readings.lastOrNull()
+    // By timestamp, not list position — Track and Home pick their "latest" with maxByOrNull too.
+    // The DAO's ORDER BY is a lexicographic sort over a TEXT column, and a server round-trip can
+    // reorder rows, so trusting position here let this card show 5.1 while Track showed 5.4.
+    val latest = readings.maxByOrNull { it.recordedAt }
 
     Card(
         modifier = modifier.fillMaxWidth(),
