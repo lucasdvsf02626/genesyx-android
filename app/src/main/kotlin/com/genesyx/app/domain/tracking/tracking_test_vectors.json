@@ -1,6 +1,6 @@
 {
   "spec": "genesyx-tracking-v1",
-  "note": "Cross-platform vectors for the tracking engine. Mirrored verbatim in the iOS repo \u2014 keep free of platform-specific behaviour. Dates are ISO local dates. A log omitting a field means the user left it blank; sleepMinutes present-and-zero is a REAL record (an all-nighter is still logging), which is why the rule is null-vs-not-null, never > 0. 2026-07-13 is a Monday: ISO week 28 is 6-12 Jul, week 29 is 13-19 Jul.",
+  "note": "Cross-platform vectors for the tracking engine. Mirrored verbatim in the iOS repo \u2014 keep free of platform-specific behaviour. Dates are ISO local dates. A log omitting a field means the user left it blank; sleepMinutes present-and-zero is a REAL record (an all-nighter is still logging), which is why the rule is null-vs-not-null, never > 0. 2026-07-13 is a Monday: ISO week 28 is 6-12 Jul, week 29 is 13-19 Jul. cycleCases (added 2026-07-28) pin the cycle phase calculator: dayOfCycle is 1-based, ovulationDay = cycleLength - 14 (fixed 14-day luteal phase), fertileWindow = [ovulationDay - 5, ovulationDay + 1] inclusive, phase = PERIOD while dayOfCycle <= periodLength, OVULATORY only on the ovulation day itself, FOLLICULAR before it, LUTEAL after; daysUntilNextPeriod is 0 on day 1.",
   "config": {
     "goalMl": 2400,
     "minWeekDays": 4
@@ -410,6 +410,136 @@
         "weeklyStreak": 0,
         "daysLoggedThisWeek": 1,
         "daysOnGoal": 0
+      }
+    }
+  ],
+  "cycleCases": [
+    {
+      "name": "32-day cycle, day 19 is luteal yet still fertile (28 Jul walkthrough repro)",
+      "lastPeriodDate": "2026-07-10",
+      "cycleLength": 32,
+      "periodLength": 5,
+      "target": "2026-07-28",
+      "expected": {
+        "dayOfCycle": 19,
+        "phase": "LUTEAL",
+        "ovulationDay": 18,
+        "fertileWindowStart": 13,
+        "fertileWindowEnd": 19,
+        "inFertileWindow": true,
+        "daysUntilNextPeriod": 13
+      }
+    },
+    {
+      "name": "33-day cycle, the same day 19 is the ovulation day",
+      "lastPeriodDate": "2026-07-10",
+      "cycleLength": 33,
+      "periodLength": 5,
+      "target": "2026-07-28",
+      "expected": {
+        "dayOfCycle": 19,
+        "phase": "OVULATORY",
+        "ovulationDay": 19,
+        "fertileWindowStart": 14,
+        "fertileWindowEnd": 20,
+        "inFertileWindow": true,
+        "daysUntilNextPeriod": 14
+      }
+    },
+    {
+      "name": "ovulation day on the default 28-day cycle",
+      "lastPeriodDate": "2026-07-01",
+      "cycleLength": 28,
+      "periodLength": 5,
+      "target": "2026-07-14",
+      "expected": {
+        "dayOfCycle": 14,
+        "phase": "OVULATORY",
+        "ovulationDay": 14,
+        "fertileWindowStart": 9,
+        "fertileWindowEnd": 15,
+        "inFertileWindow": true,
+        "daysUntilNextPeriod": 14
+      }
+    },
+    {
+      "name": "the day after ovulation is luteal and closes out the fertile window",
+      "lastPeriodDate": "2026-07-01",
+      "cycleLength": 28,
+      "periodLength": 5,
+      "target": "2026-07-15",
+      "expected": {
+        "dayOfCycle": 15,
+        "phase": "LUTEAL",
+        "ovulationDay": 14,
+        "fertileWindowStart": 9,
+        "fertileWindowEnd": 15,
+        "inFertileWindow": true,
+        "daysUntilNextPeriod": 13
+      }
+    },
+    {
+      "name": "first day of period reports zero days until next period",
+      "lastPeriodDate": "2026-07-01",
+      "cycleLength": 28,
+      "periodLength": 5,
+      "target": "2026-07-01",
+      "expected": {
+        "dayOfCycle": 1,
+        "phase": "PERIOD",
+        "ovulationDay": 14,
+        "fertileWindowStart": 9,
+        "fertileWindowEnd": 15,
+        "inFertileWindow": false,
+        "daysUntilNextPeriod": 0
+      }
+    },
+    {
+      "name": "last day of period is still period",
+      "lastPeriodDate": "2026-07-01",
+      "cycleLength": 28,
+      "periodLength": 5,
+      "target": "2026-07-05",
+      "expected": {
+        "dayOfCycle": 5,
+        "phase": "PERIOD",
+        "ovulationDay": 14,
+        "fertileWindowStart": 9,
+        "fertileWindowEnd": 15,
+        "inFertileWindow": false,
+        "daysUntilNextPeriod": 23
+      }
+    },
+    {
+      "name": "the day after the period ends is follicular",
+      "lastPeriodDate": "2026-07-01",
+      "cycleLength": 28,
+      "periodLength": 5,
+      "target": "2026-07-06",
+      "expected": {
+        "dayOfCycle": 6,
+        "phase": "FOLLICULAR",
+        "ovulationDay": 14,
+        "fertileWindowStart": 9,
+        "fertileWindowEnd": 15,
+        "inFertileWindow": false,
+        "daysUntilNextPeriod": 22
+      }
+    },
+    {
+      "name": "fertile window opens five days before ovulation, not six",
+      "lastPeriodDate": "2026-07-01",
+      "cycleLength": 28,
+      "periodLength": 5,
+      "target": "2026-07-09",
+      "expected": {
+        "dayOfCycle": 9,
+        "phase": "FOLLICULAR",
+        "ovulationDay": 14,
+        "fertileWindowStart": 9,
+        "fertileWindowEnd": 15,
+        "inFertileWindow": true,
+        "daysUntilNextPeriod": 19
       }
     }
   ]

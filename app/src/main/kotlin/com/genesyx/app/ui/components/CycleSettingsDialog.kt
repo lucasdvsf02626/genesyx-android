@@ -74,9 +74,13 @@ fun CycleSettingsDialog(
     // and Home then rendered "DAY 1 · PERIOD" from it with complete confidence. Every phase,
     // fertile window and prediction in the app is derived from this one value, so it must come
     // from her or not exist.
-    var lastPeriod by remember { mutableStateOf(current?.lastPeriodDate) }
-    var cycleLength by remember { mutableStateOf(current?.cycleLength ?: CycleEngine.DEFAULT_CYCLE_LENGTH) }
-    var periodLength by remember { mutableStateOf(current?.periodLength ?: CycleEngine.DEFAULT_PERIOD_LENGTH) }
+    // Keyed on `current` so the dialog re-seeds from the latest persisted value — the repository's
+    // StateFlow starts at null and emits the real row a beat later, and an un-keyed remember would
+    // freeze the steppers on whatever snapshot happened to be live at first composition (the
+    // "modal says 33, card says 32" bug).
+    var lastPeriod by remember(current) { mutableStateOf(current?.lastPeriodDate) }
+    var cycleLength by remember(current) { mutableStateOf(current?.cycleLength ?: CycleEngine.DEFAULT_CYCLE_LENGTH) }
+    var periodLength by remember(current) { mutableStateOf(current?.periodLength ?: CycleEngine.DEFAULT_PERIOD_LENGTH) }
     var showDatePicker by remember { mutableStateOf(false) }
 
     AlertDialog(

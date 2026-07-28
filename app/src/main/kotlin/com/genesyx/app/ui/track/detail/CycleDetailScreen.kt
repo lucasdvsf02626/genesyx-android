@@ -75,9 +75,11 @@ fun CycleDetailScreen(
             Spacer(Modifier.height(16.dp))
             GxPrimaryButton(text = "Add cycle settings", onClick = { editing = true })
         } else {
-            val today = remember { LocalDate.now() }
+            // Not remembered: a frozen `today` survives past midnight and drifts this screen's phase
+            // away from ViewModels that re-evaluate the date. Same reason both cards share one value.
+            val today = LocalDate.now()
             val info = CycleEngine.getCyclePhase(settings!!, today)
-            val ovulation = OvulationLogic.compute(settings)
+            val ovulation = OvulationLogic.compute(settings, today)
 
             DetailCard {
                 Eyebrow("Current phase", color = ElectricLavender)

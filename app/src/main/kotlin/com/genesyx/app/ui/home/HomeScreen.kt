@@ -182,7 +182,7 @@ fun HomeContent(
                         DropdownMenuItem(
                             text = { Text("Cycle setup") },
                             leadingIcon = { Icon(Icons.Filled.Settings, null) },
-                            onClick = { menuOpen = false; cycleSeed = state.settings; showCycleDialog = true },
+                            onClick = { menuOpen = false; showCycleDialog = true },
                         )
                     }
                 }
@@ -211,7 +211,7 @@ fun HomeContent(
             Spacer(Modifier.height(24.dp))
 
             if (state.cycleSetUp) {
-                CycleHeroCard(state) { cycleSeed = state.settings; showCycleDialog = true }
+                CycleHeroCard(state) { showCycleDialog = true }
                 Spacer(Modifier.height(12.dp))
                 TodayFocusCard(state)
             } else {
@@ -238,10 +238,13 @@ fun HomeContent(
     }
 
     if (showCycleDialog) {
+        // `cycleSeed` exists only for the first-run card, which hands over a date the user just
+        // picked. Every other entry point reads the live state so the dialog never opens on a
+        // snapshot that a later Room emission has already superseded.
         CycleSettingsDialog(
             current = cycleSeed ?: state.settings,
-            onDismiss = { showCycleDialog = false },
-            onSave = { onSaveCycle(it); showCycleDialog = false },
+            onDismiss = { cycleSeed = null; showCycleDialog = false },
+            onSave = { onSaveCycle(it); cycleSeed = null; showCycleDialog = false },
         )
     }
 }

@@ -106,6 +106,42 @@ class CycleEngineTest {
         assertEquals(DayType.LUTEAL, CycleEngine.dayTypeFor(info))
     }
 
+    // ── phase boundaries (mirrored as cycleCases in tracking_test_vectors.json) ──
+    //
+    // The 28 Jul 2026 walkthrough showed screens disagreeing (Luteal vs Ovulatory) on day 19
+    // because one surface computed against cycleLength 32 and another against 33. One day of
+    // cycle length moves the ovulation day and flips the label — these pin the exact boundary.
+
+    @Test
+    fun `period ends and follicular begins on adjacent days`() {
+        assertEquals(Phase.PERIOD, phaseOn(lastPeriod.plusDays(4)).phase) // day 5, last period day
+        assertEquals(Phase.FOLLICULAR, phaseOn(lastPeriod.plusDays(5)).phase) // day 6
+    }
+
+    @Test
+    fun `ovulation day and the day after on a 32-day cycle`() {
+        val last = LocalDate.of(2026, 7, 10)
+        fun on(day: Int) = CycleEngine.getCyclePhase(last, 32, 5, last.plusDays((day - 1).toLong()))
+
+        assertEquals(18, on(18).ovulationDay) // 32 - 14
+        assertEquals(Phase.FOLLICULAR, on(17).phase)
+        assertEquals(Phase.OVULATORY, on(18).phase)
+        assertEquals(Phase.LUTEAL, on(19).phase)
+        // Day 19 is luteal yet still inside the fertile window [13, 19].
+        assertTrue(19 in on(19).fertileWindow)
+    }
+
+    @Test
+    fun `one extra day of cycle length flips day 19 from luteal to ovulatory`() {
+        val last = LocalDate.of(2026, 7, 10)
+        val day19at32 = CycleEngine.getCyclePhase(last, 32, 5, last.plusDays(18))
+        val day19at33 = CycleEngine.getCyclePhase(last, 33, 5, last.plusDays(18))
+        assertEquals(19, day19at32.dayOfCycle)
+        assertEquals(19, day19at33.dayOfCycle)
+        assertEquals(Phase.LUTEAL, day19at32.phase)
+        assertEquals(Phase.OVULATORY, day19at33.phase)
+    }
+
     @Test
     fun `cycle number increments once per full cycle`() {
         assertEquals(1, CycleEngine.cycleNumberFor(lastPeriod, cycleLength, lastPeriod))

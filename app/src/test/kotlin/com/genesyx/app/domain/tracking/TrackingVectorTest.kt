@@ -1,11 +1,13 @@
 package com.genesyx.app.domain.tracking
 
+import com.genesyx.app.domain.cycle.CycleEngine
 import com.genesyx.app.domain.model.DailyLog
 import com.genesyx.app.domain.model.EnergyLevel
 import com.genesyx.app.domain.model.Mood
 import com.genesyx.app.domain.streaks.StreakEngine
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -37,6 +39,7 @@ class TrackingVectorTest {
     }
 
     private val cases get() = doc["cases"]!!.jsonArray.map { it.jsonObject }
+    private val cycleCases get() = doc["cycleCases"]!!.jsonArray.map { it.jsonObject }
     private val config get() = doc["config"]!!.jsonObject
 
     /**
@@ -62,6 +65,7 @@ class TrackingVectorTest {
         // Guards the failure mode where the resource wiring breaks and every case silently vanishes,
         // leaving a green suite that asserts nothing.
         assertEquals(true, cases.size >= 16)
+        assertEquals(true, cycleCases.size >= 8)
     }
 
     @Test
@@ -99,6 +103,45 @@ class TrackingVectorTest {
         if (failures.isNotEmpty()) {
             throw AssertionError(
                 "${failures.size} vector mismatch(es):\n" + failures.joinToString("\n") { "  $it" },
+            )
+        }
+    }
+
+    @Test
+    fun `every cycle vector holds`() {
+        val failures = mutableListOf<String>()
+
+        for (case in cycleCases) {
+            val name = case["name"]!!.jsonPrimitive.content
+            val info = CycleEngine.getCyclePhase(
+                lastPeriodDate = LocalDate.parse(case["lastPeriodDate"]!!.jsonPrimitive.content),
+                cycleLength = case["cycleLength"]!!.jsonPrimitive.int,
+                periodLength = case["periodLength"]!!.jsonPrimitive.int,
+                target = LocalDate.parse(case["target"]!!.jsonPrimitive.content),
+            )
+            val expected = case["expected"]!!.jsonObject
+
+            fun check(metric: String, actual: Any) {
+                val want: Any = when (actual) {
+                    is Int -> expected[metric]!!.jsonPrimitive.int
+                    is Boolean -> expected[metric]!!.jsonPrimitive.boolean
+                    else -> expected[metric]!!.jsonPrimitive.content
+                }
+                if (want != actual) failures += "[$name] $metric: expected $want but was $actual"
+            }
+
+            check("dayOfCycle", info.dayOfCycle)
+            check("phase", info.phase.name)
+            check("ovulationDay", info.ovulationDay)
+            check("fertileWindowStart", info.fertileWindow.startDay)
+            check("fertileWindowEnd", info.fertileWindow.endDay)
+            check("inFertileWindow", info.dayOfCycle in info.fertileWindow)
+            check("daysUntilNextPeriod", info.daysUntilNextPeriod)
+        }
+
+        if (failures.isNotEmpty()) {
+            throw AssertionError(
+                "${failures.size} cycle vector mismatch(es):\n" + failures.joinToString("\n") { "  $it" },
             )
         }
     }

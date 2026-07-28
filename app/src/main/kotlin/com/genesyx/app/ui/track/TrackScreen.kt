@@ -115,7 +115,9 @@ fun TrackContent(
     onSaveCycle: (CycleSettings) -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
-    val today = remember { LocalDate.now() }
+    // Not remembered: a frozen `today` survives past midnight and diverges from the ViewModels,
+    // which re-evaluate the date on every emission.
+    val today = LocalDate.now()
 
     var monthAnchor by remember { mutableStateOf(YearMonth.now()) }
     var showCycleDialog by remember { mutableStateOf(false) }
