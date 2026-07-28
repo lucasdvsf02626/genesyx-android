@@ -46,14 +46,17 @@ import com.genesyx.app.ui.theme.PowderBlue
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import androidx.lifecycle.viewModelScope
 import java.time.LocalDate
 import javax.inject.Inject
 
 data class SleepDetailState(
-    val todayMinutes: Int = 0,
+    /** False until Room's first emission — the editor must not seed a draft before this is true. */
+    val loaded: Boolean = false,
+    /** Last night's saved minutes, or null when no entry exists — null and 0 are different nights. */
+    val todayMinutes: Int? = null,
     val bars: List<Int> = List(7) { 0 },
     val nightlyAverageMinutes: Int? = null,
     val nightsLogged: Int = 0,
@@ -65,11 +68,15 @@ data class SleepDetailState(
 class SleepDetailViewModel @Inject constructor(
     private val dailyLogRepository: DailyLogRepository,
 ) : ViewModel() {
-    val uiState: StateFlow<SleepDetailState> = dailyLogRepository.logByDate.map { logs ->
+    val uiState: StateFlow<SleepDetailState> = combine(
+        dailyLogRepository.logByDate,
+        dailyLogRepository.loaded,
+    ) { logs, loaded ->
         val today = LocalDate.now()
         val insights = SleepInsightLogic.compute(logs, today)
         SleepDetailState(
-            todayMinutes = logs[today]?.sleepMinutes ?: 0,
+            loaded = loaded,
+            todayMinutes = logs[today]?.sleepMinutes,
             bars = insights.bars,
             nightlyAverageMinutes = insights.nightlyAverageMinutes,
             nightsLogged = insights.nightsLogged,
@@ -91,9 +98,6 @@ fun SleepDetailScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val colors = MaterialTheme.colorScheme
-
-    // Editor draft, seeded from the stored value. `-1` marks "not yet touched" so we can seed once.
-    var draft by remember(state.todayMinutes) { mutableIntStateOf(state.todayMinutes) }
 
     TrackerDetailScaffold(title = "Sleep", onBack = onBack) {
         Spacer(Modifier.height(8.dp))
@@ -118,28 +122,36 @@ fun SleepDetailScreen(
 
         Spacer(Modifier.height(12.dp))
 
-        // ── Editor
-        TrackerDetailCard {
-            Eyebrow("Last night", color = colors.onSurfaceVariant)
-            Spacer(Modifier.height(10.dp))
-            Text(SleepInsightLogic.formatDuration(draft), style = MaterialTheme.typography.headlineMedium, color = colors.onSurface)
-            Spacer(Modifier.height(16.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-                Stepper("Hours", Icons.Filled.Remove, Icons.Filled.Add,
-                    onMinus = { draft = (draft - 60).coerceAtLeast(0) },
-                    onPlus = { draft = (draft + 60).coerceAtMost(14 * 60) })
-                Stepper("Minutes", Icons.Filled.Remove, Icons.Filled.Add,
-                    onMinus = { draft = (draft - 15).coerceAtLeast(0) },
-                    onPlus = { draft = (draft + 15).coerceAtMost(14 * 60) })
+        // ── Editor. Not composed until Room has answered: seeding a draft before then showed
+        // "0h 0m" over a real 8-hour entry — the "LAST NIGHT 1h 15m" bug was the user rebuilding
+        // their night on top of that phantom zero.
+        if (state.loaded) {
+            // Draft, seeded from the saved entry for last night (re-seeded if it changes underneath).
+            // Save is an upsert on (user, date) — editing an existing night updates it in place.
+            var draft by remember(state.todayMinutes) { mutableIntStateOf(state.todayMinutes ?: 0) }
+
+            TrackerDetailCard {
+                Eyebrow("Last night", color = colors.onSurfaceVariant)
+                Spacer(Modifier.height(10.dp))
+                Text(SleepInsightLogic.formatDuration(draft), style = MaterialTheme.typography.headlineMedium, color = colors.onSurface)
+                Spacer(Modifier.height(16.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+                    Stepper("Hours", Icons.Filled.Remove, Icons.Filled.Add,
+                        onMinus = { draft = (draft - 60).coerceAtLeast(0) },
+                        onPlus = { draft = (draft + 60).coerceAtMost(14 * 60) })
+                    Stepper("Minutes", Icons.Filled.Remove, Icons.Filled.Add,
+                        onMinus = { draft = (draft - 15).coerceAtLeast(0) },
+                        onPlus = { draft = (draft + 15).coerceAtMost(14 * 60) })
+                }
+                Spacer(Modifier.height(16.dp))
+                GxPrimaryButton(text = "Save sleep", onClick = { viewModel.setSleep(draft) })
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    "Saved to your log and synced when you're online. An unlogged night stays empty, never a zero-hour night.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.onSurfaceVariant,
+                )
             }
-            Spacer(Modifier.height(16.dp))
-            GxPrimaryButton(text = "Save sleep", onClick = { viewModel.setSleep(draft) })
-            Spacer(Modifier.height(6.dp))
-            Text(
-                "Saved to your log and synced when you're online. An unlogged night stays empty, never a zero-hour night.",
-                style = MaterialTheme.typography.bodySmall,
-                color = colors.onSurfaceVariant,
-            )
         }
 
         Spacer(Modifier.height(32.dp))
