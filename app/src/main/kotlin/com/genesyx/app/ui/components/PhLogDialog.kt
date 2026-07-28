@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -39,6 +40,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.genesyx.app.domain.model.PhReading
@@ -138,6 +140,7 @@ fun PhLogDialog(
                     RoundIconButton(Icons.Filled.Remove, "Decrease pH") {
                         value = clampRound(value - PhStatus.STEP)
                     }
+                    val sliderInteraction = remember { MutableInteractionSource() }
                     Slider(
                         value = value.toFloat(),
                         onValueChange = { value = clampRound(it.toDouble()) },
@@ -147,6 +150,16 @@ fun PhLogDialog(
                             thumbColor = status.color,
                             activeTrackColor = status.color,
                         ),
+                        interactionSource = sliderInteraction,
+                        // A round thumb instead of M3's default handle bar — the bar sat on the
+                        // fill boundary and read as a divider, making 5.1 and 5.4 look alike.
+                        thumb = {
+                            SliderDefaults.Thumb(
+                                interactionSource = sliderInteraction,
+                                thumbSize = DpSize(20.dp, 20.dp),
+                                colors = SliderDefaults.colors(thumbColor = status.color),
+                            )
+                        },
                         modifier = Modifier
                             .weight(1f)
                             .padding(horizontal = 8.dp),

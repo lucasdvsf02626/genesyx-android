@@ -237,16 +237,28 @@ private fun PhChart(readings: List<PhReading>, modifier: Modifier = Modifier) {
     Canvas(modifier = modifier) {
         val w = size.width
         val h = size.height
+        // Marks are dp-scaled (the old raw-pixel radii rendered near-invisibly small on dense
+        // screens) and the plot is inset by a dot radius so first/last and min/max readings render
+        // whole instead of half-clipped by the Canvas bounds.
+        val dotRadius = 4.dp.toPx()
+        val inset = dotRadius + 1.dp.toPx()
+        val plotW = w - inset * 2
+        val plotH = h - inset * 2
+
         // Off-scale legacy urine values (up to 9.0) are clamped to the vaginal axis so they stay visible.
-        fun yFor(v: Float) = h - ((v.coerceIn(min, max) - min) / (max - min)) * h
+        fun yFor(v: Float) = inset + (1f - (v.coerceIn(min, max) - min) / (max - min)) * plotH
 
         // Two bands: healthy (3.8–4.5) and elevated (above 4.5). Provisional — see PhStatus.
         drawRect(healthy.copy(alpha = 0.10f), topLeft = Offset(0f, yFor(healthyHigh)), size = androidx.compose.ui.geometry.Size(w, yFor(healthyLow) - yFor(healthyHigh)))
         drawRect(elevated.copy(alpha = 0.06f), topLeft = Offset(0f, 0f), size = androidx.compose.ui.geometry.Size(w, yFor(healthyHigh)))
+        // Hairlines on the band boundaries — without them the pale fills read as a wash and the
+        // dots looked like they floated on nothing.
+        drawLine(healthy.copy(alpha = 0.35f), Offset(0f, yFor(healthyLow)), Offset(w, yFor(healthyLow)), strokeWidth = 1.dp.toPx())
+        drawLine(healthy.copy(alpha = 0.35f), Offset(0f, yFor(healthyHigh)), Offset(w, yFor(healthyHigh)), strokeWidth = 1.dp.toPx())
 
         val n = readings.size
         val points = readings.mapIndexed { i, r ->
-            val x = if (n == 1) w / 2 else w * i / (n - 1)
+            val x = if (n == 1) w / 2 else inset + plotW * i / (n - 1)
             val isVaginal = r.measurementType == PhMeasurement.VAGINAL
             Pair(Offset(x, yFor(r.phValue.toFloat())), isVaginal)
         }
@@ -257,18 +269,18 @@ private fun PhChart(readings: List<PhReading>, modifier: Modifier = Modifier) {
                     color = ElectricLavender,
                     start = points[i].first,
                     end = points[i + 1].first,
-                    strokeWidth = 4f,
+                    strokeWidth = 2.dp.toPx(),
                     cap = StrokeCap.Round,
                 )
             }
         }
         points.forEach { (p, isVaginal) ->
             if (isVaginal) {
-                drawCircle(ElectricLavender, radius = 5f, center = p)
-                drawCircle(Color.White, radius = 2f, center = p)
+                drawCircle(ElectricLavender, radius = dotRadius, center = p)
+                drawCircle(Color.White, radius = 1.5.dp.toPx(), center = p)
             } else {
                 // Legacy urine reading: muted, hollow ring.
-                drawCircle(legacy, radius = 4.5f, center = p, style = Stroke(width = 2f))
+                drawCircle(legacy, radius = dotRadius - 0.5.dp.toPx(), center = p, style = Stroke(width = 1.5.dp.toPx()))
             }
         }
     }
