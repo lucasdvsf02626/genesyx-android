@@ -6,6 +6,45 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ---
 
+## [Unreleased] — Single-source-of-truth bug batch (28 Jul device walkthrough)
+
+### Fixed (28 Jul 2026) — cross-screen values that disagreed with each other
+A device walkthrough caught the same number rendering differently on different screens minutes
+apart. Six commits (`5cd4784..e7c90f2`), each phase committed with the unit suite green — now
+**262 passing, 0 failures** (+15). Session detail in `docs/worklog/2026-07-28.md`.
+
+- **Cycle phase/length (P0-1, P0-2).** The settings modal froze stale values in un-keyed `remember`
+  state (said 33 while the card said 32; one day of length moves ovulation day and flips day 19
+  Luteal↔Ovulatory). The modal now re-seeds from the latest emission; Home's never-cleared settings
+  snapshot removed; `today` un-frozen on Track/Cycle screens. Phase math was already single-sourced
+  in `CycleEngine` — only inputs diverged.
+- **Hydration total (P0-3).** Four values at once, one column: Log Today's full-row save clobbered
+  quick-adds with a stale snapshot; Nutrition side-read `.value` instead of its emitted logs; rapid
+  +200 taps raced an in-memory snapshot. `DailyLogRepository` now serializes read-modify-writes
+  against the DAO row; the form's Water field is a live read-through that saves on Done.
+- **Sleep editor (P0-4).** Stepper seeded before Room answered and collapsed null/0 — "LAST NIGHT
+  1h 15m" over a real 8h entry was the user rebuilding on a phantom zero. Editor gates on `loaded`;
+  `todayMinutes` nullable; save was already an upsert (no duplicates possible — verified).
+- **pH latest (P0-5).** Card picked "latest" by list position while Track/Home pick by timestamp;
+  aligned on `maxByOrNull { recordedAt }`.
+- **Pace copy (P1-6).** New WELL_BEHIND tier + a dedicated nothing-logged-yet line; 0.0 L at 16:00
+  no longer wears "A LITTLE BEHIND". Stray M3 stop-indicator dot suppressed on empty bars.
+- **7-day average (P1-7).** Now averages over logged days ("Avg on logged days"), killing the
+  meaningless sparse-data "142ml". **Cross-platform semantic change** — vectors added.
+- **Volume formatting (P1-8).** One `HydrationFormat` rule everywhere: sub-litre in ml, else litres
+  to 1 dp. Ends "0.0 / 2.4 L goal" beside "2400ml to go" on one card.
+- **pH chart/slider polish (P2).** dp-scaled chart marks, inset plot (edge dots were half-clipped),
+  band-boundary hairlines; conventional round slider thumb. "urine (legacy)" confirmed intended.
+
+### Cross-platform (iOS pickup)
+`tracking_test_vectors.json` gains additive `cycleCases` (8) and `hydrationAverageCases` (4);
+spec stays `genesyx-tracking-v1`. iOS must mirror the file, add both runners, and adopt the
+logged-days average.
+
+### Pending
+On-device sweep + `connectedDebugAndroidTest` (two new instrumented hydration regressions compiled,
+not yet executed); release build unrun this session.
+
 ## [1.3.2 (13)] — Waitlist joins via RPC (1.3.1's waitlist was broken)
 
 ### Fixed (27 Jul 2026) — every waitlist join failed in 1.3.1, not just duplicates
