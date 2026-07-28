@@ -83,6 +83,15 @@ class HydrationCoachTest {
     }
 
     @Test
+    fun `amounts in the copy follow the chosen unit`() {
+        // 15:00, 1200 of 2400 -> on track, 1200ml remaining = 4.8 cups.
+        val ml = HydrationCoach.coach(1200, goal, LocalTime.of(15, 0))
+        assertTrue(ml.message.contains("1.2 L to go"))
+        val cups = HydrationCoach.coach(1200, goal, LocalTime.of(15, 0), HydrationUnit.CUPS)
+        assertTrue(cups.message.contains("4.8 cups to go"))
+    }
+
+    @Test
     fun `a zero goal cannot divide by zero`() {
         // PreferencesRepository clamps the real goal, but the coach must be safe regardless: the goal
         // floors to 1, so this simply computes a pace instead of crashing.

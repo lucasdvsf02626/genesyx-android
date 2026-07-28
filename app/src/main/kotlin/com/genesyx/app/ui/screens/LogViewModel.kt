@@ -3,6 +3,8 @@ package com.genesyx.app.ui.screens
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.genesyx.app.data.DailyLogRepository
+import com.genesyx.app.data.PreferencesRepository
+import com.genesyx.app.domain.hydration.HydrationUnit
 import com.genesyx.app.domain.model.DailyLog
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -15,7 +17,11 @@ import javax.inject.Inject
 @HiltViewModel
 class LogViewModel @Inject constructor(
     private val dailyLogRepository: DailyLogRepository,
+    preferencesRepository: PreferencesRepository,
 ) : ViewModel() {
+
+    /** Display unit for the Water mini-card. */
+    val hydrationUnit: StateFlow<HydrationUnit> = preferencesRepository.hydrationUnit
 
     /** The form must not seed itself until this is true — see [DailyLogRepository.loaded]. */
     val loaded: StateFlow<Boolean> = dailyLogRepository.loaded

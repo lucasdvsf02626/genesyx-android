@@ -16,6 +16,7 @@ import com.genesyx.app.domain.content.phaseTags
 import com.genesyx.app.domain.cycle.CycleEngine
 import com.genesyx.app.domain.hydration.HydrationCoach
 import com.genesyx.app.domain.hydration.HydrationPace
+import com.genesyx.app.domain.hydration.HydrationUnit
 import com.genesyx.app.domain.model.CycleSettings
 import com.genesyx.app.domain.model.PhMeasurement
 import com.genesyx.app.domain.model.PhReading
@@ -52,6 +53,8 @@ data class HomeUiState(
     val hydrationMl: Int? = null,
     /** Her goal, from preferences — the default only until she sets her own. */
     val hydrationGoalMl: Int = StreakEngine.DEFAULT_GOAL_ML,
+    /** Display unit for water amounts. Storage stays in ml. */
+    val hydrationUnit: HydrationUnit = HydrationUnit.ML,
     val hydrationPercent: Int = 0,
     val hydrationPace: HydrationPace = HydrationPace.NOT_STARTED,
     val hydrationStreak: Int = 0,
@@ -79,7 +82,11 @@ class HomeViewModel @Inject constructor(
 
     // Paired rather than passed as separate flows: combine is only typed up to five.
     private val streaksWithGoal =
-        combine(streakRepository.state, preferencesRepository.hydrationGoalMl) { streaks, goalMl -> streaks to goalMl }
+        combine(
+            streakRepository.state,
+            preferencesRepository.hydrationGoalMl,
+            preferencesRepository.hydrationUnit,
+        ) { streaks, goalMl, unit -> Triple(streaks, goalMl, unit) }
     private val sessionInfo =
         combine(sessionRepository.displayName, sessionRepository.isSignedIn) { name, signed -> name to signed }
 
@@ -90,8 +97,8 @@ class HomeViewModel @Inject constructor(
             sessionInfo,
             streaksWithGoal,
             phRepository.readings,
-        ) { settings, logs, (displayName, signedIn), (streaks, goalMl), readings ->
-            buildState(settings, logs, displayName, signedIn, streaks, goalMl, readings)
+        ) { settings, logs, (displayName, signedIn), (streaks, goalMl, unit), readings ->
+            buildState(settings, logs, displayName, signedIn, streaks, goalMl, unit, readings)
         }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
@@ -102,6 +109,7 @@ class HomeViewModel @Inject constructor(
                 sessionRepository.isSignedIn.value,
                 streakRepository.state.value,
                 preferencesRepository.hydrationGoalMl.value,
+                preferencesRepository.hydrationUnit.value,
                 phRepository.readings.value,
             ),
         )
@@ -115,11 +123,12 @@ class HomeViewModel @Inject constructor(
         signedIn: Boolean,
         streaks: StreakState,
         goalMl: Int,
+        unit: HydrationUnit,
         readings: List<PhReading>,
     ): HomeUiState {
         val today = LocalDate.now()
         val waterMl = logs[today]?.waterMl ?: 0
-        val coaching = HydrationCoach.coach(waterMl, goalMl, LocalTime.now())
+        val coaching = HydrationCoach.coach(waterMl, goalMl, LocalTime.now(), unit)
         val weekOnGoal = WeekBuckets.weekDays(today).map { (logs[it]?.waterMl ?: 0) >= goalMl }
 
         val base = HomeUiState(
@@ -129,6 +138,7 @@ class HomeViewModel @Inject constructor(
             settings = settings,
             hydrationMl = if (waterMl > 0) waterMl else null,
             hydrationGoalMl = goalMl,
+            hydrationUnit = unit,
             hydrationPercent = (waterMl * 100 / goalMl).coerceIn(0, 100),
             hydrationPace = coaching.pace,
             hydrationStreak = streaks.dailyHydration,

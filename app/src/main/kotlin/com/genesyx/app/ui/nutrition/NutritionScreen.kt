@@ -50,11 +50,12 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.genesyx.app.domain.content.PhaseFood
 import com.genesyx.app.domain.hydration.HydrationFormat
+import com.genesyx.app.domain.hydration.HydrationUnit
 import com.genesyx.app.domain.content.learnArticles
 import com.genesyx.app.domain.content.supplementPlan
-import com.genesyx.app.domain.streaks.StreakEngine
 import com.genesyx.app.ui.components.Eyebrow
 import com.genesyx.app.ui.components.GxPrimaryButton
+import com.genesyx.app.ui.components.HydrationGoalDialog
 import com.genesyx.app.ui.navigation.Screen
 import com.genesyx.app.ui.ph.PhTrackerSection
 import com.genesyx.app.ui.theme.ElectricBlue
@@ -97,6 +98,7 @@ fun NutritionScreen(
             HydrationCard(
                 waterMl = state.waterMl,
                 goalMl = state.waterGoalMl,
+                unit = state.waterUnit,
                 coaching = state.hydrationCoaching,
                 weeklyStreak = state.weeklyStreak,
                 daysOnGoal = state.daysOnGoal,
@@ -132,8 +134,11 @@ fun NutritionScreen(
     }
 
     if (goalOpen) {
-        GoalDialog(
-            goalMl = state.waterGoalMl,
+        // The shared dialog — one goal editor (and one ml/cups toggle) app-wide, not a local copy.
+        HydrationGoalDialog(
+            current = state.waterGoalMl,
+            unit = state.waterUnit,
+            onUnitChange = { viewModel.setWaterUnit(it) },
             onDismiss = { goalOpen = false },
             onSave = { viewModel.setWaterGoal(it); goalOpen = false },
         )
@@ -174,6 +179,7 @@ fun NutritionScreen(
 private fun HydrationCard(
     waterMl: Int,
     goalMl: Int,
+    unit: HydrationUnit,
     coaching: String,
     weeklyStreak: Int,
     daysOnGoal: Int,
@@ -199,9 +205,9 @@ private fun HydrationCard(
                     Eyebrow("Hydration", color = colors.onSurfaceVariant)
                     Spacer(Modifier.height(4.dp))
                     Row(verticalAlignment = Alignment.Bottom) {
-                        Text(HydrationFormat.format(waterMl), fontSize = 28.sp, fontWeight = FontWeight.SemiBold, color = colors.onSurface)
+                        Text(HydrationFormat.format(waterMl, unit), fontSize = 28.sp, fontWeight = FontWeight.SemiBold, color = colors.onSurface)
                         Spacer(Modifier.size(4.dp))
-                        Text("/ ${HydrationFormat.format(goalMl)} goal", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, modifier = Modifier.padding(bottom = 4.dp))
+                        Text("/ ${HydrationFormat.format(goalMl, unit)} goal", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, modifier = Modifier.padding(bottom = 4.dp))
                     }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -230,7 +236,7 @@ private fun HydrationCard(
                     Icon(Icons.Outlined.WaterDrop, null, tint = colors.onSurfaceVariant, modifier = Modifier.size(14.dp))
                     Spacer(Modifier.size(6.dp))
                     Text(
-                        if (remaining > 0) "${HydrationFormat.format(remaining)} to go" else "Goal reached — nice work",
+                        if (remaining > 0) "${HydrationFormat.format(remaining, unit)} to go" else "Goal reached — nice work",
                         style = MaterialTheme.typography.bodyMedium,
                         color = colors.onSurfaceVariant,
                     )
@@ -262,58 +268,6 @@ private fun HydrationCard(
             }
         }
     }
-}
-
-/**
- * Sets the goal the whole app measures her against. Steps in [StreakEngine.GOAL_STEP_ML] because
- * that is the pour the log buttons add, so every reachable goal is one she can land on exactly.
- */
-@Composable
-private fun GoalDialog(goalMl: Int, onDismiss: () -> Unit, onSave: (Int) -> Unit) {
-    val colors = MaterialTheme.colorScheme
-    var draft by remember(goalMl) { mutableStateOf(goalMl) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        shape = RoundedCornerShape(20.dp),
-        containerColor = colors.surface,
-        title = { Text("Daily water goal", style = MaterialTheme.typography.titleLarge, color = colors.onSurface) },
-        text = {
-            Column {
-                Text(
-                    "How much you're aiming for each day. Your streaks are measured against this.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = colors.onSurfaceVariant,
-                )
-                Spacer(Modifier.height(20.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    StepperButton(
-                        Icons.Filled.Remove,
-                        "Lower goal",
-                        colors.surfaceVariant,
-                        colors.onSurface,
-                    ) { draft = (draft - StreakEngine.GOAL_STEP_ML).coerceIn(StreakEngine.GOAL_RANGE_ML) }
-                    Text(
-                        HydrationFormat.format(draft),
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = colors.onSurface,
-                    )
-                    StepperButton(
-                        Icons.Filled.Add,
-                        "Raise goal",
-                        ElectricLavender,
-                        Color.White,
-                    ) { draft = (draft + StreakEngine.GOAL_STEP_ML).coerceIn(StreakEngine.GOAL_RANGE_ML) }
-                }
-            }
-        },
-        confirmButton = { TextButton(onClick = { onSave(draft) }) { Text("Save", color = ElectricLavender) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel", color = colors.onSurfaceVariant) } },
-    )
 }
 
 @Composable

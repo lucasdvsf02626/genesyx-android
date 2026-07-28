@@ -1,6 +1,7 @@
 package com.genesyx.app.ui.insights
 
 import com.genesyx.app.domain.hydration.HydrationFormat
+import com.genesyx.app.domain.hydration.HydrationUnit
 import com.genesyx.app.domain.model.DailyLog
 import com.genesyx.app.domain.streaks.StreakEngine
 import com.genesyx.app.domain.time.WeekBuckets
@@ -33,6 +34,7 @@ object HydrationInsightLogic {
         logsByDate: Map<LocalDate, DailyLog>,
         today: LocalDate = LocalDate.now(),
         goalMl: Int = StreakEngine.DEFAULT_GOAL_ML,
+        unit: HydrationUnit = HydrationUnit.ML,
     ): HydrationInsights {
         fun waterOn(date: LocalDate) = logsByDate[date]?.waterMl ?: 0
         fun windowDates(endingDaysAgo: Long) = (0L until 7L).map { today.minusDays(endingDaysAgo + it) }
@@ -56,13 +58,13 @@ object HydrationInsightLogic {
             bars = bars,
             avgMlPerDay = avgMlPerDay,
             deltaMlPerDay = deltaMlPerDay,
-            insight = insightFor(avgMlPerDay, deltaMlPerDay),
+            insight = insightFor(avgMlPerDay, deltaMlPerDay, unit),
         )
     }
 
     /** Never scolds a dip — it reports the number and leaves it there. */
-    private fun insightFor(avgMlPerDay: Int, deltaMlPerDay: Int?): String {
-        val average = "You're averaging ${HydrationFormat.format(avgMlPerDay)} on the days you log"
+    private fun insightFor(avgMlPerDay: Int, deltaMlPerDay: Int?, unit: HydrationUnit): String {
+        val average = "You're averaging ${HydrationFormat.format(avgMlPerDay, unit)} on the days you log"
         val change = when {
             deltaMlPerDay == null -> " — another week of logging and you'll see the change week to week."
             deltaMlPerDay >= 50 -> ", ${deltaMlPerDay}ml more than the previous seven days."

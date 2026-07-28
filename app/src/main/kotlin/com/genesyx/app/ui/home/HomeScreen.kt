@@ -327,7 +327,7 @@ private fun HydrationSummaryCard(state: HomeUiState, onOpen: () -> Unit) {
             .fillMaxWidth()
             .clickable(onClick = onOpen)
             .clearAndSetSemantics {
-                contentDescription = "Hydration. ${HydrationFormat.format(state.hydrationMl ?: 0)} of ${HydrationFormat.format(state.hydrationGoalMl)}. ${hydrationStatusLabel(state.hydrationPace)}. Opens hydration tracker."
+                contentDescription = "Hydration. ${HydrationFormat.format(state.hydrationMl ?: 0, state.hydrationUnit)} of ${HydrationFormat.format(state.hydrationGoalMl, state.hydrationUnit)}. ${hydrationStatusLabel(state.hydrationPace)}. Opens hydration tracker."
             },
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = colors.surface),
@@ -347,9 +347,9 @@ private fun HydrationSummaryCard(state: HomeUiState, onOpen: () -> Unit) {
                 Spacer(Modifier.size(16.dp))
                 Column(Modifier.weight(1f)) {
                     Row(verticalAlignment = Alignment.Bottom) {
-                        Text(HydrationFormat.format(state.hydrationMl ?: 0), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+                        Text(HydrationFormat.format(state.hydrationMl ?: 0, state.hydrationUnit), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
                         Spacer(Modifier.size(4.dp))
-                        Text("/ ${HydrationFormat.format(state.hydrationGoalMl)}", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, modifier = Modifier.padding(bottom = 2.dp))
+                        Text("/ ${HydrationFormat.format(state.hydrationGoalMl, state.hydrationUnit)}", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, modifier = Modifier.padding(bottom = 2.dp))
                     }
                     Spacer(Modifier.height(6.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {

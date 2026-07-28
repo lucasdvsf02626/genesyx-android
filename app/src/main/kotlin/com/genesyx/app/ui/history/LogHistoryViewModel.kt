@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.genesyx.app.data.DailyLogRepository
 import com.genesyx.app.data.PhRepository
+import com.genesyx.app.data.PreferencesRepository
+import com.genesyx.app.domain.hydration.HydrationUnit
 import com.genesyx.app.domain.model.LogDay
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -20,7 +22,11 @@ import javax.inject.Inject
 class LogHistoryViewModel @Inject constructor(
     phRepository: PhRepository,
     dailyLogRepository: DailyLogRepository,
+    preferencesRepository: PreferencesRepository,
 ) : ViewModel() {
+
+    /** Display unit for water amounts in the timeline. */
+    val hydrationUnit: StateFlow<HydrationUnit> = preferencesRepository.hydrationUnit
 
     val days: StateFlow<List<LogDay>> = combine(
         phRepository.readings,

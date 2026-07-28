@@ -45,6 +45,7 @@ class TrackViewModelTest {
         every { logRepo.logByDate } returns MutableStateFlow(logs)
         every { phRepo.readings } returns MutableStateFlow(readings)
         every { prefsRepo.hydrationGoalMl } returns MutableStateFlow(2400)
+        every { prefsRepo.hydrationUnit } returns MutableStateFlow(com.genesyx.app.domain.hydration.HydrationUnit.ML)
         return TrackViewModel(cycleRepo, logRepo, phRepo, prefsRepo)
     }
 

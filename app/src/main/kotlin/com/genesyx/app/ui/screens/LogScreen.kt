@@ -106,6 +106,7 @@ private fun LogForm(initial: DailyLog, onClose: () -> Unit, viewModel: LogViewMo
     // aggregate and the dialog writes straight through the repository. A snapshot here used to
     // revert any water quick-added while the form sat open.
     val waterMl by viewModel.todayWaterMl.collectAsState()
+    val waterUnit by viewModel.hydrationUnit.collectAsState()
     var showAdd by remember { mutableStateOf(false) }
     var custom by remember { mutableStateOf("") }
 
@@ -236,7 +237,7 @@ private fun LogForm(initial: DailyLog, onClose: () -> Unit, viewModel: LogViewMo
             // Mini-cards
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 MiniCard(Icons.Filled.Bedtime, "Sleep", sleepMinutes?.let { "${it / 60}h ${it % 60}m" } ?: "—", ElectricLavender, Modifier.weight(1f)) { sleepOpen = true }
-                MiniCard(Icons.Outlined.WaterDrop, "Water", if (waterMl > 0) HydrationFormat.format(waterMl) else "—", ElectricBlue, Modifier.weight(1f)) { waterOpen = true }
+                MiniCard(Icons.Outlined.WaterDrop, "Water", if (waterMl > 0) HydrationFormat.format(waterMl, waterUnit) else "—", ElectricBlue, Modifier.weight(1f)) { waterOpen = true }
             }
             Spacer(Modifier.height(12.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {

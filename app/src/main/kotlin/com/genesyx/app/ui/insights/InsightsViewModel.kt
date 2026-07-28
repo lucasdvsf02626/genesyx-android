@@ -160,8 +160,12 @@ class InsightsViewModel @Inject constructor(
 
     // Her goal, not a constant. The bars are a percentage of what she asked for.
     val hydrationInsights: StateFlow<HydrationInsights> =
-        combine(dailyLogRepository.logByDate, preferencesRepository.hydrationGoalMl) { logs, goalMl ->
-            HydrationInsightLogic.compute(logs, goalMl = goalMl)
+        combine(
+            dailyLogRepository.logByDate,
+            preferencesRepository.hydrationGoalMl,
+            preferencesRepository.hydrationUnit,
+        ) { logs, goalMl, unit ->
+            HydrationInsightLogic.compute(logs, goalMl = goalMl, unit = unit)
         }
             .stateIn(
                 scope = viewModelScope,

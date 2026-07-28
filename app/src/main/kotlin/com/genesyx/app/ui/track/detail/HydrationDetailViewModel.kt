@@ -7,6 +7,7 @@ import com.genesyx.app.data.PreferencesRepository
 import com.genesyx.app.data.StreakRepository
 import com.genesyx.app.domain.hydration.HydrationCoach
 import com.genesyx.app.domain.hydration.HydrationPace
+import com.genesyx.app.domain.hydration.HydrationUnit
 import com.genesyx.app.domain.streaks.StreakEngine
 import com.genesyx.app.ui.insights.HydrationInsightLogic
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -21,6 +22,8 @@ import javax.inject.Inject
 data class HydrationDetailState(
     val waterMl: Int = 0,
     val goalMl: Int = StreakEngine.DEFAULT_GOAL_ML,
+    /** Display unit for every amount on this screen. Storage stays in ml. */
+    val unit: HydrationUnit = HydrationUnit.ML,
     /** Mon..Sun of the current week, each as a percentage of the goal. */
     val bars: List<Int> = List(7) { 0 },
     val avgMlPerDay: Int? = null,
@@ -49,15 +52,17 @@ class HydrationDetailViewModel @Inject constructor(
     val uiState: StateFlow<HydrationDetailState> = combine(
         dailyLogRepository.logByDate,
         preferencesRepository.hydrationGoalMl,
+        preferencesRepository.hydrationUnit,
         streakRepository.state,
-    ) { logs, goalMl, streaks ->
+    ) { logs, goalMl, unit, streaks ->
         val today = LocalDate.now()
         val waterToday = logs[today]?.waterMl ?: 0
-        val insight = HydrationInsightLogic.compute(logs, today, goalMl)
-        val coaching = HydrationCoach.coach(waterToday, goalMl, LocalTime.now())
+        val insight = HydrationInsightLogic.compute(logs, today, goalMl, unit)
+        val coaching = HydrationCoach.coach(waterToday, goalMl, LocalTime.now(), unit)
         HydrationDetailState(
             waterMl = waterToday,
             goalMl = goalMl,
+            unit = unit,
             bars = insight.bars,
             avgMlPerDay = insight.avgMlPerDay,
             daysOnGoal = streaks.daysOnGoal,
@@ -84,6 +89,9 @@ class HydrationDetailViewModel @Inject constructor(
     fun setWater(ml: Int) = dailyLogRepository.setWater(ml.coerceIn(0, 10_000))
 
     fun setGoal(ml: Int) = preferencesRepository.setHydrationGoalMl(ml)
+
+    /** ml/cups display choice — shared app-wide via preferences. */
+    fun setUnit(unit: HydrationUnit) = preferencesRepository.setHydrationUnit(unit)
 
     companion object {
         val GOAL_RANGE = StreakEngine.GOAL_RANGE_ML

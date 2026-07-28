@@ -6,6 +6,7 @@ import com.genesyx.app.data.CycleRepository
 import com.genesyx.app.data.DailyLogRepository
 import com.genesyx.app.data.PhRepository
 import com.genesyx.app.data.PreferencesRepository
+import com.genesyx.app.domain.hydration.HydrationUnit
 import com.genesyx.app.domain.model.CycleSettings
 import com.genesyx.app.domain.model.LogDay
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -32,9 +33,13 @@ class TrackViewModel @Inject constructor(
         phRepository.readings,
         cycleRepository.settings,
         preferencesRepository.hydrationGoalMl,
-    ) { logs, readings, settings, goalMl ->
-        TrackerSummaryLogic.compute(logs, readings, settings, goalMl)
+        preferencesRepository.hydrationUnit,
+    ) { logs, readings, settings, goalMl, unit ->
+        TrackerSummaryLogic.compute(logs, readings, settings, goalMl, unit = unit)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyTrackerSummaries())
+
+    /** Display unit for water amounts — the calendar day dialog renders logs with it. */
+    val hydrationUnit: StateFlow<HydrationUnit> = preferencesRepository.hydrationUnit
 
     /**
      * What the user actually logged, keyed by day, so tapping a calendar date can show it. The

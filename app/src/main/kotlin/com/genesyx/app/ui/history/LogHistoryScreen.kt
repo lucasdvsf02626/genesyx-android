@@ -30,6 +30,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.genesyx.app.domain.hydration.HydrationUnit
 import com.genesyx.app.domain.model.DailyLog
 import com.genesyx.app.domain.model.EnergyLevel
 import com.genesyx.app.domain.model.LogDay
@@ -49,11 +50,12 @@ fun LogHistoryScreen(
     viewModel: LogHistoryViewModel = hiltViewModel(),
 ) {
     val days by viewModel.days.collectAsState()
-    LogHistoryContent(days = days, onBack = onBack)
+    val hydrationUnit by viewModel.hydrationUnit.collectAsState()
+    LogHistoryContent(days = days, onBack = onBack, hydrationUnit = hydrationUnit)
 }
 
 @Composable
-private fun LogHistoryContent(days: List<LogDay>, onBack: () -> Unit) {
+private fun LogHistoryContent(days: List<LogDay>, onBack: () -> Unit, hydrationUnit: HydrationUnit = HydrationUnit.ML) {
     val colors = MaterialTheme.colorScheme
     Column(
         modifier = Modifier.fillMaxSize().background(colors.background),
@@ -71,14 +73,14 @@ private fun LogHistoryContent(days: List<LogDay>, onBack: () -> Unit) {
                 contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                items(days, key = { it.date.toString() }) { day -> LogDayCard(day) }
+                items(days, key = { it.date.toString() }) { day -> LogDayCard(day, hydrationUnit) }
             }
         }
     }
 }
 
 @Composable
-private fun LogDayCard(day: LogDay) {
+private fun LogDayCard(day: LogDay, hydrationUnit: HydrationUnit) {
     val colors = MaterialTheme.colorScheme
     val today = remember { LocalDate.now() }
     Card(
@@ -97,7 +99,7 @@ private fun LogDayCard(day: LogDay) {
             Spacer(Modifier.height(12.dp))
 
             day.dailyLog?.takeIf { day.hasDailyContent }?.let { log ->
-                DailyLogSummary(log)
+                DailyLogSummary(log, unit = hydrationUnit)
                 if (day.phReadings.isNotEmpty()) Spacer(Modifier.height(12.dp))
             }
 

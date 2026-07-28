@@ -35,7 +35,12 @@ object HydrationCoach {
      */
     private const val WELL_BEHIND_GAP = 0.35
 
-    fun coach(currentMl: Int, goalMl: Int, now: LocalTime = LocalTime.now()): HydrationCoaching {
+    fun coach(
+        currentMl: Int,
+        goalMl: Int,
+        now: LocalTime = LocalTime.now(),
+        unit: HydrationUnit = HydrationUnit.ML,
+    ): HydrationCoaching {
         val goal = goalMl.coerceAtLeast(1)
         val remaining = (goal - currentMl).coerceAtLeast(0)
 
@@ -66,7 +71,7 @@ object HydrationCoach {
                 "${partOfDay(now)} nothing's logged yet — your first glass sets the pace whenever you're ready.",
             )
         }
-        return HydrationCoaching(pace, message(pace, now, remaining))
+        return HydrationCoaching(pace, message(pace, now, remaining, unit))
     }
 
     /** The fraction of the goal the day "expects" by [now] — 0 before the window, 1 after it. */
@@ -75,11 +80,11 @@ object HydrationCoach {
         return ((hour - START_HOUR) / (END_HOUR - START_HOUR)).coerceIn(0.0, 1.0)
     }
 
-    private fun message(pace: HydrationPace, now: LocalTime, remainingMl: Int): String {
+    private fun message(pace: HydrationPace, now: LocalTime, remainingMl: Int, unit: HydrationUnit): String {
         val part = partOfDay(now)
         return when (pace) {
             HydrationPace.AHEAD -> "$part you're ahead of the day's pace — nicely done."
-            HydrationPace.ON_TRACK -> "$part you're right on pace, about ${HydrationFormat.format(remainingMl)} to go."
+            HydrationPace.ON_TRACK -> "$part you're right on pace, about ${HydrationFormat.format(remainingMl, unit)} to go."
             HydrationPace.BEHIND -> "$part you're a little behind the day's pace — a glass whenever suits, no rush."
             HydrationPace.WELL_BEHIND -> "$part you're well behind the day's pace — steady glasses from here close the gap, no rush."
             // The two edge paces don't route here, but keep the when exhaustive and honest.

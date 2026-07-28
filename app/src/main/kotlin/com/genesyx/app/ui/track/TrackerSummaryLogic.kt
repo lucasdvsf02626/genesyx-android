@@ -3,6 +3,7 @@ package com.genesyx.app.ui.track
 import com.genesyx.app.domain.content.phaseLabel
 import com.genesyx.app.domain.cycle.CycleEngine
 import com.genesyx.app.domain.hydration.HydrationFormat
+import com.genesyx.app.domain.hydration.HydrationUnit
 import com.genesyx.app.domain.model.CycleSettings
 import com.genesyx.app.domain.model.DailyLog
 import com.genesyx.app.domain.model.PhMeasurement
@@ -50,13 +51,14 @@ object TrackerSummaryLogic {
         goalMl: Int,
         plan: List<Supplement> = Supplement.defaultPlan,
         today: LocalDate = LocalDate.now(),
+        unit: HydrationUnit = HydrationUnit.ML,
     ): TrackerSummaries {
         val week = (6L downTo 0L).map { today.minusDays(it) } // oldest → newest, incl. today
         fun log(d: LocalDate) = logsByDate[d]
 
         return TrackerSummaries(
             cycle = cycle(settings, today),
-            hydration = hydration(logsByDate, week, goalMl, today),
+            hydration = hydration(logsByDate, week, goalMl, today, unit),
             ph = ph(readings, week),
             sleep = sleep(logsByDate, week),
             symptoms = symptoms(logsByDate, week),
@@ -77,11 +79,12 @@ object TrackerSummaryLogic {
         week: List<LocalDate>,
         goalMl: Int,
         today: LocalDate,
+        unit: HydrationUnit,
     ): TrackerSummary {
         val spark = week.map { (logs[it]?.waterMl ?: 0) > 0 }
         val todayMl = logs[today]?.waterMl ?: 0
         return if (todayMl > 0) {
-            TrackerSummary("${litres(todayMl)} of ${litres(goalMl)} today", spark, hasData = true)
+            TrackerSummary("${HydrationFormat.format(todayMl, unit)} of ${HydrationFormat.format(goalMl, unit)} today", spark, hasData = true)
         } else {
             TrackerSummary("No water logged today", spark, hasData = false)
         }
@@ -142,5 +145,4 @@ object TrackerSummaryLogic {
     }
 
     /** "1.6 L" — one decimal, matching the hydration surfaces elsewhere. */
-    private fun litres(ml: Int): String = HydrationFormat.format(ml)
 }

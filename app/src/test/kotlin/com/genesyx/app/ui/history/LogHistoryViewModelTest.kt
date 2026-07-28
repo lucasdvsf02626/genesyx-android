@@ -24,6 +24,7 @@ class LogHistoryViewModelTest {
 
     private val phRepo = mockk<PhRepository>()
     private val logRepo = mockk<DailyLogRepository>()
+    private val prefsRepo = mockk<com.genesyx.app.data.PreferencesRepository>()
 
     private fun vm(
         readings: List<PhReading> = emptyList(),
@@ -31,7 +32,8 @@ class LogHistoryViewModelTest {
     ): LogHistoryViewModel {
         every { phRepo.readings } returns MutableStateFlow(readings)
         every { logRepo.logByDate } returns MutableStateFlow(logs)
-        return LogHistoryViewModel(phRepo, logRepo)
+        every { prefsRepo.hydrationUnit } returns MutableStateFlow(com.genesyx.app.domain.hydration.HydrationUnit.ML)
+        return LogHistoryViewModel(phRepo, logRepo, prefsRepo)
     }
 
     @Test

@@ -2,6 +2,7 @@ package com.genesyx.app.data
 
 import com.genesyx.app.core.di.ApplicationScope
 import com.genesyx.app.data.local.datastore.GenesyxPreferencesDataStore
+import com.genesyx.app.domain.hydration.HydrationUnit
 import com.genesyx.app.domain.model.FocusMode
 import com.genesyx.app.domain.model.ThemeMode
 import com.genesyx.app.domain.streaks.StreakEngine
@@ -42,6 +43,8 @@ class PreferencesRepository @Inject constructor(
         store.celebratedMilestones.stateIn(scope, SharingStarted.Eagerly, emptySet())
     val hydrationGoalMl: StateFlow<Int> =
         store.hydrationGoalMl.stateIn(scope, SharingStarted.Eagerly, StreakEngine.DEFAULT_GOAL_ML)
+    val hydrationUnit: StateFlow<HydrationUnit> =
+        store.hydrationUnit.stateIn(scope, SharingStarted.Eagerly, HydrationUnit.ML)
 
     fun setTheme(mode: ThemeMode) { scope.launch { store.setTheme(mode) } }
     fun setPush(enabled: Boolean) { scope.launch { store.setPush(enabled) } }
@@ -60,4 +63,7 @@ class PreferencesRepository @Inject constructor(
     fun setHydrationGoalMl(ml: Int) {
         scope.launch { store.setHydrationGoalMl(ml.coerceIn(StreakEngine.GOAL_RANGE_ML)) }
     }
+
+    /** Display unit for water amounts. Storage stays in ml whatever she picks. */
+    fun setHydrationUnit(unit: HydrationUnit) { scope.launch { store.setHydrationUnit(unit) } }
 }

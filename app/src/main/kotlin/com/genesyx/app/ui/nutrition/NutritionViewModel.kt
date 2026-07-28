@@ -12,6 +12,7 @@ import com.genesyx.app.domain.content.nutritionPhaseFoods
 import com.genesyx.app.domain.content.phaseLabel
 import com.genesyx.app.domain.cycle.CycleEngine
 import com.genesyx.app.domain.hydration.HydrationCoach
+import com.genesyx.app.domain.hydration.HydrationUnit
 import com.genesyx.app.domain.model.Phase
 import com.genesyx.app.domain.streaks.StreakEngine
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -32,6 +33,8 @@ data class NutritionUiState(
     val waterMl: Int = 0,
     /** Her goal, from preferences — [StreakEngine.DEFAULT_GOAL_ML] only until she sets her own. */
     val waterGoalMl: Int = StreakEngine.DEFAULT_GOAL_ML,
+    /** Display unit for water amounts (ml/L or cups). Storage stays in ml. */
+    val waterUnit: HydrationUnit = HydrationUnit.ML,
     /** Time-of-day pacing line for the hydration card — how today is going, right now. */
     val hydrationCoaching: String = "",
     val weeklyStreak: Int = 0,
@@ -53,16 +56,18 @@ class NutritionViewModel @Inject constructor(
             dailyLogRepository.logByDate,
             streakRepository.state,
             preferencesRepository.hydrationGoalMl,
-        ) { settings, logs, streaks, goalMl ->
+            preferencesRepository.hydrationUnit,
+        ) { settings, logs, streaks, goalMl, unit ->
             val today = LocalDate.now()
             // From the emitted map, not a `.value` side-read — the card must show the same total
             // every other collector of logByDate shows at the same instant.
             val waterMl = logs[today]?.waterMl ?: 0
-            val coaching = HydrationCoach.coach(waterMl, goalMl, LocalTime.now()).message
+            val coaching = HydrationCoach.coach(waterMl, goalMl, LocalTime.now(), unit).message
             if (settings == null) {
                 NutritionUiState(
                     waterMl = waterMl,
                     waterGoalMl = goalMl,
+                    waterUnit = unit,
                     hydrationCoaching = coaching,
                     weeklyStreak = streaks.weeklyStreak,
                     daysOnGoal = streaks.daysOnGoal,
@@ -77,6 +82,7 @@ class NutritionViewModel @Inject constructor(
                     foods = nutritionPhaseFoods.getValue(phase),
                     waterMl = waterMl,
                     waterGoalMl = goalMl,
+                    waterUnit = unit,
                     hydrationCoaching = coaching,
                     weeklyStreak = streaks.weeklyStreak,
                     daysOnGoal = streaks.daysOnGoal,
@@ -91,4 +97,7 @@ class NutritionViewModel @Inject constructor(
     fun adjustWater(deltaMl: Int) = dailyLogRepository.adjustWater(deltaMl)
 
     fun setWaterGoal(goalMl: Int) = preferencesRepository.setHydrationGoalMl(goalMl)
+
+    /** ml/cups display choice — shared app-wide via preferences. */
+    fun setWaterUnit(unit: HydrationUnit) = preferencesRepository.setHydrationUnit(unit)
 }

@@ -41,9 +41,33 @@ apart. Six commits (`5cd4784..e7c90f2`), each phase committed with the unit suit
 spec stays `genesyx-tracking-v1`. iOS must mirror the file, add both runners, and adopt the
 logged-days average.
 
+### Added (28 Jul 2026, later the same day) — ml/cups display choice for hydration
+Client request: the customer chooses how water reads. New `HydrationUnit` preference (DataStore,
+default ml) with an ml / cups toggle inside the shared water-goal dialog — which Nutrition now
+reuses instead of its private duplicate. One cup = **250ml (metric, client-confirmed)**. The chosen
+unit applies display-wide: Home card, Nutrition card, Track row, Hydration detail (headline, avg
+tile, history), Log Today mini-card, My logs, the calendar day dialog, and the coaching/insight
+copy ("about 4.8 cups to go"). **Storage, sync, goals and streaks stay in ml** — the toggle changes
+nothing but presentation; quick-add buttons keep their ml labels. Per-day deltas stay in ml (a rate,
+not a pour). Unit suite **265 passing, 0 failures**. iOS parity: needs the same preference +
+`CUP_ML = 250` if the feature ships there.
+
+### Verified on-device (28 Jul 2026)
+`connectedDebugAndroidTest` on emulator (API 36): **18 tests, 0 failures** — including the two new
+hydration regressions (rapid quick-adds sum; form save preserves water) and the previously flaky
+`CycleSettingsDialogTest`.
+
+### Note — Google sign-in on debug builds
+Running the instrumented suite (and Studio deploys) put the **debug-signed** build on the test
+emulator. "Continue with Google" requires the app's signing certificate to be registered in the
+Google Cloud OAuth config, and only the **release** certificate is registered — so Google sign-in
+fails on debug builds by design, and reinstalls wipe local app data (hence being signed out).
+Not an app defect; nothing in today's changes touched auth. Options: register the debug
+keystore's SHA-1 as an additional Android OAuth client (one-time, Cloud Console), or test Google
+sign-in on release-signed builds only. Email/password is unaffected by signing.
+
 ### Pending
-On-device sweep + `connectedDebugAndroidTest` (two new instrumented hydration regressions compiled,
-not yet executed); release build unrun this session.
+On-device manual sweep; release build unrun this session.
 
 ## [1.3.2 (13)] — Waitlist joins via RPC (1.3.1's waitlist was broken)
 

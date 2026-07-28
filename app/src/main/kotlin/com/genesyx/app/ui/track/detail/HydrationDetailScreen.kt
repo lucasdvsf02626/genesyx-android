@@ -68,9 +68,9 @@ fun HydrationDetailScreen(
         // ── Current amount, progress, status, coaching
         DetailCard {
             Row(verticalAlignment = Alignment.Bottom) {
-                Text(HydrationFormat.format(state.waterMl), fontSize = 34.sp, fontWeight = FontWeight.SemiBold, color = colors.onSurface)
+                Text(HydrationFormat.format(state.waterMl, state.unit), fontSize = 34.sp, fontWeight = FontWeight.SemiBold, color = colors.onSurface)
                 Spacer(Modifier.size(6.dp))
-                Text("/ ${HydrationFormat.format(state.goalMl)}", style = MaterialTheme.typography.bodyLarge, color = colors.onSurfaceVariant, modifier = Modifier.padding(bottom = 4.dp))
+                Text("/ ${HydrationFormat.format(state.goalMl, state.unit)}", style = MaterialTheme.typography.bodyLarge, color = colors.onSurfaceVariant, modifier = Modifier.padding(bottom = 4.dp))
                 Spacer(Modifier.weight(1f))
                 HydrationStatusPill(state.pace, modifier = Modifier.padding(bottom = 4.dp))
             }
@@ -143,7 +143,7 @@ fun HydrationDetailScreen(
             WeekBars(state.bars)
             Spacer(Modifier.height(16.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                MetricTile("Avg on logged days", state.avgMlPerDay?.let { HydrationFormat.format(it) } ?: "—", Modifier.weight(1f))
+                MetricTile("Avg on logged days", state.avgMlPerDay?.let { HydrationFormat.format(it, state.unit) } ?: "—", Modifier.weight(1f))
                 MetricTile("Days on goal", "${state.daysOnGoal}/7", Modifier.weight(1f))
                 MetricTile("Streak", if (state.streakDays > 0) "${state.streakDays}d" else "—", Modifier.weight(1f))
             }
@@ -167,7 +167,7 @@ fun HydrationDetailScreen(
                 ) {
                     Text(date.format(historyDay), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
                     Text(
-                        if (ml > 0) HydrationFormat.format(ml) else "—",
+                        if (ml > 0) HydrationFormat.format(ml, state.unit) else "—",
                         style = MaterialTheme.typography.bodyMedium,
                         color = if (ml > 0) colors.onSurface else colors.onSurfaceVariant,
                         fontWeight = if (ml > 0) FontWeight.Medium else FontWeight.Normal,
@@ -182,6 +182,8 @@ fun HydrationDetailScreen(
     if (editGoal) {
         HydrationGoalDialog(
             current = state.goalMl,
+            unit = state.unit,
+            onUnitChange = { viewModel.setUnit(it) },
             onDismiss = { editGoal = false },
             onSave = { viewModel.setGoal(it); editGoal = false },
         )

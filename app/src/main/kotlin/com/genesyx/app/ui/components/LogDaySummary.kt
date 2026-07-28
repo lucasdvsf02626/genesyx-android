@@ -19,6 +19,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.genesyx.app.domain.hydration.HydrationFormat
+import com.genesyx.app.domain.hydration.HydrationUnit
 import com.genesyx.app.domain.model.DailyLog
 import com.genesyx.app.domain.model.EnergyLevel
 import com.genesyx.app.domain.model.PhMeasurement
@@ -36,14 +37,14 @@ import java.time.format.DateTimeFormatter
  * gate on [com.genesyx.app.domain.model.LogDay.hasDailyContent] before showing this.
  */
 @Composable
-fun DailyLogSummary(log: DailyLog, modifier: Modifier = Modifier) {
+fun DailyLogSummary(log: DailyLog, modifier: Modifier = Modifier, unit: HydrationUnit = HydrationUnit.ML) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         log.mood?.let { InfoRow("Mood", it.label) }
         log.energy?.let { InfoRow("Energy", it.label()) }
         if (log.symptoms.isNotEmpty()) InfoRow("Symptoms", log.symptoms.joinToString(", "))
         log.sleepMinutes?.let { InfoRow("Sleep", sleepLabel(it)) }
         if (log.supplements.isNotEmpty()) InfoRow("Supplements", log.supplements.joinToString(", "))
-        if (log.waterMl > 0) InfoRow("Water", HydrationFormat.format(log.waterMl))
+        if (log.waterMl > 0) InfoRow("Water", HydrationFormat.format(log.waterMl, unit))
         log.notes?.takeIf { it.isNotBlank() }?.let { InfoRow("Notes", it) }
     }
 }

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -34,6 +35,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.genesyx.app.domain.hydration.HydrationFormat
+import com.genesyx.app.domain.hydration.HydrationUnit
 import com.genesyx.app.domain.streaks.StreakEngine
 import com.genesyx.app.ui.theme.ElectricLavender
 
@@ -42,9 +44,18 @@ import com.genesyx.app.ui.theme.ElectricLavender
  * same pour the quick-add buttons use — so every reachable goal is one she can land on exactly.
  * [PreferencesRepository][com.genesyx.app.data.PreferencesRepository] clamps on write, so this only
  * ever offers goals inside [StreakEngine.GOAL_RANGE_ML].
+ *
+ * Also hosts the ml/cups display choice. Applied immediately (it's a display preference, not part
+ * of the goal draft) and it changes only how amounts are *shown* — storage stays in ml.
  */
 @Composable
-fun HydrationGoalDialog(current: Int, onDismiss: () -> Unit, onSave: (Int) -> Unit) {
+fun HydrationGoalDialog(
+    current: Int,
+    unit: HydrationUnit,
+    onUnitChange: (HydrationUnit) -> Unit,
+    onDismiss: () -> Unit,
+    onSave: (Int) -> Unit,
+) {
     val colors = MaterialTheme.colorScheme
     var draft by remember(current) { mutableStateOf(current) }
     AlertDialog(
@@ -68,16 +79,46 @@ fun HydrationGoalDialog(current: Int, onDismiss: () -> Unit, onSave: (Int) -> Un
                     GoalStepper(Icons.Filled.Remove, "Lower goal", colors.surfaceVariant, colors.onSurface) {
                         draft = (draft - StreakEngine.GOAL_STEP_ML).coerceIn(StreakEngine.GOAL_RANGE_ML)
                     }
-                    Text(HydrationFormat.format(draft), fontSize = 28.sp, fontWeight = FontWeight.SemiBold, color = colors.onSurface)
+                    Text(HydrationFormat.format(draft, unit), fontSize = 28.sp, fontWeight = FontWeight.SemiBold, color = colors.onSurface)
                     GoalStepper(Icons.Filled.Add, "Raise goal", ElectricLavender, Color.White) {
                         draft = (draft + StreakEngine.GOAL_STEP_ML).coerceIn(StreakEngine.GOAL_RANGE_ML)
                     }
+                }
+                Spacer(Modifier.height(20.dp))
+                Eyebrow("Show amounts as", color = colors.onSurfaceVariant)
+                Spacer(Modifier.height(8.dp))
+                Row(
+                    Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(colors.surfaceVariant).padding(4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    UnitChip("ml / L", unit == HydrationUnit.ML, Modifier.weight(1f)) { onUnitChange(HydrationUnit.ML) }
+                    UnitChip("Cups (250ml)", unit == HydrationUnit.CUPS, Modifier.weight(1f)) { onUnitChange(HydrationUnit.CUPS) }
                 }
             }
         },
         confirmButton = { TextButton(onClick = { onSave(draft) }) { Text("Save", color = ElectricLavender) } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel", color = colors.onSurfaceVariant) } },
     )
+}
+
+@Composable
+private fun UnitChip(label: String, selected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(10.dp))
+            .background(if (selected) colors.surface else Color.Transparent)
+            .clickable(onClick = onClick)
+            .padding(vertical = 8.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            label,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Medium,
+            color = if (selected) colors.onSurface else colors.onSurfaceVariant,
+        )
+    }
 }
 
 @Composable

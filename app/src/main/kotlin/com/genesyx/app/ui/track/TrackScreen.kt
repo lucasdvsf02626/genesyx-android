@@ -62,6 +62,7 @@ import androidx.navigation.NavController
 import android.content.res.Configuration
 import com.genesyx.app.domain.content.phaseLabel
 import com.genesyx.app.domain.cycle.CycleEngine
+import com.genesyx.app.domain.hydration.HydrationUnit
 import com.genesyx.app.domain.model.CalendarCell
 import com.genesyx.app.domain.model.CycleSettings
 import com.genesyx.app.domain.model.DayType
@@ -97,10 +98,12 @@ fun TrackScreen(
     val settings by viewModel.settings.collectAsState()
     val logDays by viewModel.logDays.collectAsState()
     val summaries by viewModel.trackerSummaries.collectAsState()
+    val hydrationUnit by viewModel.hydrationUnit.collectAsState()
     TrackContent(
         settings = settings,
         logDays = logDays,
         summaries = summaries,
+        hydrationUnit = hydrationUnit,
         onNavigate = { navController.navigate(it) },
         onSaveCycle = { viewModel.saveCycleSettings(it) },
     )
@@ -110,6 +113,7 @@ fun TrackScreen(
 fun TrackContent(
     settings: CycleSettings?,
     logDays: Map<LocalDate, LogDay> = emptyMap(),
+    hydrationUnit: HydrationUnit = HydrationUnit.ML,
     summaries: TrackerSummaries = emptyTrackerSummaries(),
     onNavigate: (String) -> Unit,
     onSaveCycle: (CycleSettings) -> Unit,
@@ -320,6 +324,7 @@ fun TrackContent(
             day = day,
             logDay = logDays[day.date],
             today = today,
+            hydrationUnit = hydrationUnit,
             onDismiss = { selectedDay = null },
         )
     }
@@ -469,6 +474,7 @@ private fun DayDetailDialog(
     day: CalendarCell.Day,
     logDay: LogDay?,
     today: LocalDate,
+    hydrationUnit: HydrationUnit,
     onDismiss: () -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
@@ -510,7 +516,7 @@ private fun DayDetailDialog(
                 }
 
                 if (logDay!!.hasDailyContent) {
-                    DailyLogSummary(logDay.dailyLog!!)
+                    DailyLogSummary(logDay.dailyLog!!, unit = hydrationUnit)
                 }
                 if (logDay.phReadings.isNotEmpty()) {
                     if (logDay.hasDailyContent) Spacer(Modifier.height(12.dp))

@@ -1,5 +1,6 @@
 package com.genesyx.app.ui.track
 
+import com.genesyx.app.domain.hydration.HydrationUnit
 import com.genesyx.app.domain.model.CycleSettings
 import com.genesyx.app.domain.model.DailyLog
 import com.genesyx.app.domain.model.PhMeasurement
@@ -47,6 +48,13 @@ class TrackerSummaryLogicTest {
         assertTrue(s.hydration.hasData)
         assertEquals("1.6 L of 2.4 L today", s.hydration.value)
         assertTrue(s.hydration.spark.last()) // today (newest) is on
+    }
+
+    @Test
+    fun `hydration summary follows the chosen display unit`() {
+        val logs = mapOf(today to DailyLog(waterMl = 1600))
+        val s = TrackerSummaryLogic.compute(logs, emptyList(), null, goal, today = today, unit = HydrationUnit.CUPS)
+        assertEquals("6.4 cups of 9.6 cups today", s.hydration.value)
     }
 
     @Test

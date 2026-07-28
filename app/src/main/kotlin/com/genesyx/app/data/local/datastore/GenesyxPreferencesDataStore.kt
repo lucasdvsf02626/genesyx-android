@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
+import com.genesyx.app.domain.hydration.HydrationUnit
 import com.genesyx.app.domain.model.FocusMode
 import com.genesyx.app.domain.model.ThemeMode
 import com.genesyx.app.domain.streaks.StreakEngine
@@ -33,6 +34,7 @@ class GenesyxPreferencesDataStore @Inject constructor(
         val BEST_DAILY_STREAK = intPreferencesKey("best_daily_streak")
         val CELEBRATED_MILESTONES = stringSetPreferencesKey("celebrated_milestones")
         val HYDRATION_GOAL_ML = intPreferencesKey("hydration_goal_ml")
+        val HYDRATION_UNIT = stringPreferencesKey("hydration_unit")
         val SIGNED_IN = booleanPreferencesKey("signed_in")
         val USER_ID = stringPreferencesKey("user_id")
         val EMAIL = stringPreferencesKey("email")
@@ -61,6 +63,11 @@ class GenesyxPreferencesDataStore @Inject constructor(
     /** Her own daily water goal. Absent until she sets one, and then it is hers, not a suggestion. */
     val hydrationGoalMl: Flow<Int> = dataStore.data.map { it[Keys.HYDRATION_GOAL_ML] ?: StreakEngine.DEFAULT_GOAL_ML }
 
+    /** How water amounts are displayed (ml/L or cups). Display-only — storage stays in ml. */
+    val hydrationUnit: Flow<HydrationUnit> = dataStore.data.map { p ->
+        p[Keys.HYDRATION_UNIT]?.let { runCatching { HydrationUnit.valueOf(it) }.getOrNull() } ?: HydrationUnit.ML
+    }
+
     val signedIn: Flow<Boolean> = dataStore.data.map { it[Keys.SIGNED_IN] ?: false }
     val userId: Flow<String?> = dataStore.data.map { it[Keys.USER_ID] }
     val email: Flow<String?> = dataStore.data.map { it[Keys.EMAIL] }
@@ -75,6 +82,7 @@ class GenesyxPreferencesDataStore @Inject constructor(
     suspend fun setBestDailyStreak(days: Int) = dataStore.edit { it[Keys.BEST_DAILY_STREAK] = days }.let {}
     suspend fun setCelebratedMilestones(ids: Set<String>) = dataStore.edit { it[Keys.CELEBRATED_MILESTONES] = ids }.let {}
     suspend fun setHydrationGoalMl(ml: Int) = dataStore.edit { it[Keys.HYDRATION_GOAL_ML] = ml }.let {}
+    suspend fun setHydrationUnit(unit: HydrationUnit) = dataStore.edit { it[Keys.HYDRATION_UNIT] = unit.name }.let {}
 
     suspend fun setSession(userId: String, email: String?, displayName: String?) {
         dataStore.edit {
