@@ -107,6 +107,7 @@ private fun LogForm(initial: DailyLog, onClose: () -> Unit, viewModel: LogViewMo
     // revert any water quick-added while the form sat open.
     val waterMl by viewModel.todayWaterMl.collectAsState()
     val waterUnit by viewModel.hydrationUnit.collectAsState()
+    val customSupplements by viewModel.customSupplementNames.collectAsState()
     var showAdd by remember { mutableStateOf(false) }
     var custom by remember { mutableStateOf("") }
 
@@ -241,7 +242,7 @@ private fun LogForm(initial: DailyLog, onClose: () -> Unit, viewModel: LogViewMo
             }
             Spacer(Modifier.height(12.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                MiniCard(Icons.Filled.Medication, "Supplements", "${supplements.size} of ${Supplement.loggable.size}", ElectricLavender, Modifier.weight(1f)) { suppOpen = true }
+                MiniCard(Icons.Filled.Medication, "Supplements", "${supplements.size} of ${Supplement.loggable.size + customSupplements.size}", ElectricLavender, Modifier.weight(1f)) { suppOpen = true }
             }
 
             // Notes
@@ -302,7 +303,7 @@ private fun LogForm(initial: DailyLog, onClose: () -> Unit, viewModel: LogViewMo
         WaterDialog(initialMl = waterMl, onDismiss = { waterOpen = false }, onDone = { viewModel.setWater(it); waterOpen = false })
     }
     if (suppOpen) {
-        SupplementsDialog(selected = supplements, onToggle = { supplements = if (it in supplements) supplements - it else supplements + it }, onDismiss = { suppOpen = false })
+        SupplementsDialog(selected = supplements, custom = customSupplements, onToggle = { supplements = if (it in supplements) supplements - it else supplements + it }, onDismiss = { suppOpen = false })
     }
 }
 
@@ -382,34 +383,40 @@ private fun WaterDialog(initialMl: Int, onDismiss: () -> Unit, onDone: (Int) -> 
 }
 
 @Composable
-private fun SupplementsDialog(selected: Set<String>, onToggle: (String) -> Unit, onDismiss: () -> Unit) {
+private fun SupplementsDialog(selected: Set<String>, custom: List<String>, onToggle: (String) -> Unit, onDismiss: () -> Unit) {
     val colors = MaterialTheme.colorScheme
+
+    @Composable
+    fun SupplementRow(display: String, stored: String) {
+        // Toggles the stored string, shows the display name. The set she edits is the set that
+        // is stored and synced, so the strings crossing that boundary never change.
+        val checked = stored in selected
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(if (checked) ElectricLavender.copy(alpha = 0.08f) else Color.Transparent)
+                .border(1.dp, if (checked) ElectricLavender else colors.outline, RoundedCornerShape(12.dp))
+                .clickable { onToggle(stored) }
+                .padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(display, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, color = colors.onSurface, modifier = Modifier.weight(1f))
+            if (checked) Icon(Icons.Filled.Check, null, tint = ElectricLavender, modifier = Modifier.size(18.dp))
+        }
+    }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         shape = RoundedCornerShape(20.dp),
         containerColor = colors.surface,
         title = { Text("Supplements") },
         text = {
-            Column {
-                Supplement.loggable.forEach { s ->
-                    // Toggles the wire name, shows the display name. The set she edits is the set that
-                    // is stored and synced, so the strings crossing that boundary never change.
-                    val checked = s.wireName in selected
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(if (checked) ElectricLavender.copy(alpha = 0.08f) else Color.Transparent)
-                            .border(1.dp, if (checked) ElectricLavender else colors.outline, RoundedCornerShape(12.dp))
-                            .clickable { onToggle(s.wireName) }
-                            .padding(14.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(s.displayName, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, color = colors.onSurface, modifier = Modifier.weight(1f))
-                        if (checked) Icon(Icons.Filled.Check, null, tint = ElectricLavender, modifier = Modifier.size(18.dp))
-                    }
-                }
+            Column(Modifier.verticalScroll(rememberScrollState())) {
+                Supplement.loggable.forEach { s -> SupplementRow(display = s.displayName, stored = s.wireName) }
+                // The user's own entries (Nutrition → Your supplements); stored under their own name.
+                custom.forEach { name -> SupplementRow(display = name, stored = name) }
             }
         },
         confirmButton = { TextButton(onClick = onDismiss) { Text("Done", color = ElectricLavender) } },

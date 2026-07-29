@@ -15,10 +15,16 @@ import com.genesyx.app.data.remote.StubPhRemoteDataSource
 import com.genesyx.app.data.remote.SupabaseCycleRemoteDataSource
 import com.genesyx.app.data.remote.SupabaseDailyLogRemoteDataSource
 import com.genesyx.app.data.remote.SupabasePhRemoteDataSource
+import com.genesyx.app.data.remote.GenesyxProductRemoteDataSource
+import com.genesyx.app.data.remote.StubGenesyxProductRemoteDataSource
 import com.genesyx.app.data.remote.StubProfileRemoteDataSource
+import com.genesyx.app.data.remote.StubUserSupplementRemoteDataSource
 import com.genesyx.app.data.remote.StubWaitlistRemoteDataSource
+import com.genesyx.app.data.remote.SupabaseGenesyxProductRemoteDataSource
 import com.genesyx.app.data.remote.SupabaseProfileRemoteDataSource
+import com.genesyx.app.data.remote.SupabaseUserSupplementRemoteDataSource
 import com.genesyx.app.data.remote.SupabaseWaitlistRemoteDataSource
+import com.genesyx.app.data.remote.UserSupplementRemoteDataSource
 import com.genesyx.app.data.remote.WaitlistRemoteDataSource
 import dagger.Module
 import dagger.Provides
@@ -110,4 +116,22 @@ object NetworkModule {
         supabaseImpl: Provider<SupabaseWaitlistRemoteDataSource>,
         stub: Provider<StubWaitlistRemoteDataSource>,
     ): WaitlistRemoteDataSource = if (config.hasSupabase) supabaseImpl.get() else stub.get()
+
+    /** User-supplement remote source: real Supabase when configured, else local-first stub. */
+    @Provides
+    @Singleton
+    fun provideUserSupplementRemoteDataSource(
+        config: AppConfig,
+        supabaseImpl: Provider<SupabaseUserSupplementRemoteDataSource>,
+        stub: Provider<StubUserSupplementRemoteDataSource>,
+    ): UserSupplementRemoteDataSource = if (config.hasSupabase) supabaseImpl.get() else stub.get()
+
+    /** Genesyx product catalogue: real Supabase when configured, else local-first stub. */
+    @Provides
+    @Singleton
+    fun provideGenesyxProductRemoteDataSource(
+        config: AppConfig,
+        supabaseImpl: Provider<SupabaseGenesyxProductRemoteDataSource>,
+        stub: Provider<StubGenesyxProductRemoteDataSource>,
+    ): GenesyxProductRemoteDataSource = if (config.hasSupabase) supabaseImpl.get() else stub.get()
 }

@@ -8,6 +8,54 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ## [Unreleased] — Single-source-of-truth bug batch (28 Jul device walkthrough)
 
+### Changed (29 Jul 2026, night) — code-13 re-archive; calendar clipping fixes; supplements build starts
+- **`1.3.2-code13` archive refreshed** (`~/Documents/Genesyx Releases/1.3.2-code13/`, new
+  `SHA256SUMS.txt`): the binaries now include the day-marker/phase-timeline session and the 29 Jul
+  wording work, committed as `fd15178` so the archive matches git exactly. Release build green
+  (`:app:bundleRelease` + `:app:assembleRelease`, R8 + lintVital clean); aapt2 confirms
+  `versionCode 13 / versionName 1.3.2 / SDK 36`. Awaiting Play upload — Internal still serves
+  code 11.
+- **Client punch-list triaged against the tree** for the upcoming meeting: Track reorder ✅ shipped
+  in source; ml/cups toggle ✅ shipped in source (28 Jul); Genesyx-range visibility ❌ proposal only;
+  manual supplement entry ❌ proposal only; the reported "… calendar truncation" matched no code —
+  the app never sets `TextOverflow.Ellipsis`; a layout audit instead found real clip/squeeze bugs
+  on the calendar surfaces, fixed below.
+- **Calendar clipping fixes** (`TrackScreen.kt`, `LogDaySummary.kt`): the marker legend under the
+  month grid is now a `FlowRow` (four dot+label pairs need ~240dp — a 320dp screen or raised font
+  scale was clipping the trailing "supplements"/"pH" labels); the Track header column and the
+  month-nav label take `weight(1f)` so a long month title squeezes before the edit/nav controls are
+  pushed off-screen; the day-detail dialog's label column is `widthIn(min 96.dp)` (was fixed
+  96dp, wrapping "Supplements" mid-word at large font scale) and `PhReadingRow` weights the status
+  label so the trailing time can no longer be clipped at the dialog edge.
+- `docs/migrations/2026-07-29_user_supplements.sql` gained the **`genesyx_products` catalogue**
+  (read-only for signed-in users, writes via service_role only, `product_id` FK on
+  `user_supplements` with `ON DELETE SET NULL`) — the client's "Genesyx visibility in supplements"
+  as data, with a coming-soon empty state while the range has zero SKUs (`3e15fb1`). Application to
+  production was attempted this session and **REST verification shows the tables do not exist yet**
+  (`PGRST205` on both) — the migration is still NOT APPLIED; re-verify before any client that
+  writes these tables ships.
+- **Manual supplement entry + Genesyx range shipped in source** (client items 3 and 4):
+  - Room v5→v6: `user_supplements` mirror table (client-minted UUID id, `updatedAt` LWW clock,
+    `deletedAt` tombstone, `syncStatus`), `MIGRATION_5_6` DDL verified identical to the exported
+    `6.json` schema.
+  - `UserSupplementRepository` cloned from the proven `PhRepository` shape: writes land in Room
+    instantly as PENDING and push-or-queue (WorkManager backoff, `user-supplement-sync`); deletes
+    are soft; guests stay local with no doomed retries; sign-in adopts guest entries **before** the
+    pull so they survive the merge (`AuthRepository.persist`). Name trimmed + 1..60 enforced in the
+    data layer (server contract), whitespace-only dose collapses to null.
+  - Nutrition tab gains **"Your supplements"** (add/edit/delete dialog — name, optional dose,
+    optional morning/afternoon/evening/anytime) and **"The Genesyx range"** reading the
+    `genesyx_products` catalogue with a "coming soon" empty state — seeded products appear with no
+    app update. Guests/offline/empty all collapse to coming-soon (RLS is signed-in-only).
+  - The Log screen's Supplements dialog now lists the user's own entries under the built-in five
+    and stores them by name (compatible with the existing `Set<String>` storage; unknown names
+    simply don't score against the 4-item default plan). Custom names colliding with a built-in
+    row are filtered out of the dialog; the mini-card denominator now counts customs.
+  - Tests: `UserSupplementRepositoryTest` (9 — push/queue/guest/validation/trim/merge/adoption) +
+    `UserSupplementTest` (3 — wire contract). Unit suite **304 passing, 0 failures**; release build
+    + R8 green. NOT yet released — ships in the next versionCode, and MUST NOT ship before the
+    Supabase migration is applied and REST-verified.
+
 ### Changed (29 Jul 2026, evening) — Insights "Cycle regularity" card becomes "Your cycle phases"
 - The Insights cycle card no longer plots one dot on the 21–35 range: it now shows a proportional
   phase timeline (Period / Follicular / Ovulatory / Luteal) with a "Today · Day N" marker, current

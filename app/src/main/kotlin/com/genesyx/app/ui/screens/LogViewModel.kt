@@ -4,8 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.genesyx.app.data.DailyLogRepository
 import com.genesyx.app.data.PreferencesRepository
+import com.genesyx.app.data.UserSupplementRepository
 import com.genesyx.app.domain.hydration.HydrationUnit
 import com.genesyx.app.domain.model.DailyLog
+import com.genesyx.app.domain.model.Supplement
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -18,7 +20,22 @@ import javax.inject.Inject
 class LogViewModel @Inject constructor(
     private val dailyLogRepository: DailyLogRepository,
     preferencesRepository: PreferencesRepository,
+    userSupplementRepository: UserSupplementRepository,
 ) : ViewModel() {
+
+    /**
+     * The user's own supplements, as the names the Supplements dialog toggles and the log stores.
+     * Entries whose name collides with a built-in row (wire or display name, case-insensitive) are
+     * dropped — otherwise the dialog would show two rows toggling different strings for one thing.
+     */
+    val customSupplementNames: StateFlow<List<String>> = userSupplementRepository.supplements
+        .map { entries ->
+            val builtIn = Supplement.loggable
+                .flatMap { listOf(it.wireName.lowercase(), it.displayName.lowercase()) }
+                .toSet()
+            entries.map { it.name }.distinct().filter { it.lowercase() !in builtIn }
+        }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     /** Display unit for the Water mini-card. */
     val hydrationUnit: StateFlow<HydrationUnit> = preferencesRepository.hydrationUnit

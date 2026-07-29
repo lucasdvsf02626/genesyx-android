@@ -9,6 +9,7 @@ import com.genesyx.app.data.DailyLogRepository
 import com.genesyx.app.data.PhRepository
 import com.genesyx.app.data.ProfileRepository
 import com.genesyx.app.data.SessionRepository
+import com.genesyx.app.data.UserSupplementRepository
 import com.genesyx.app.data.local.GenesyxDatabase
 import com.genesyx.app.notifications.ReminderScheduler
 import kotlinx.coroutines.CoroutineScope
@@ -32,6 +33,7 @@ class AuthRepository @Inject constructor(
     private val cycleRepository: CycleRepository,
     private val dailyLogRepository: DailyLogRepository,
     private val phRepository: PhRepository,
+    private val userSupplementRepository: UserSupplementRepository,
     private val database: GenesyxDatabase,
     private val reminderScheduler: ReminderScheduler,
     private val dispatchers: DispatcherProvider,
@@ -118,6 +120,9 @@ class AuthRepository @Inject constructor(
                     // and its trailing syncPending() pushes them.
                     phRepository.adoptGuestReadings(user.id)
                     phRepository.refresh(user.id)
+                    // Same adopt-before-pull dance for the user's own supplements.
+                    userSupplementRepository.adoptGuestEntries(user.id)
+                    userSupplementRepository.refresh(user.id)
                 }
                 DataResult.Success(Unit)
             }

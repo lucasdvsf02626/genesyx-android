@@ -1,7 +1,9 @@
 package com.genesyx.app.data.remote
 
 import com.genesyx.app.core.result.DataResult
+import com.genesyx.app.data.remote.dto.GenesyxProductDto
 import com.genesyx.app.data.remote.dto.PhReadingDto
+import com.genesyx.app.data.remote.dto.UserSupplementDto
 import com.genesyx.app.domain.model.Client
 import com.genesyx.app.domain.model.CycleSettings
 import com.genesyx.app.domain.model.DailyLog
@@ -30,6 +32,20 @@ interface PhRemoteDataSource {
 
     /** Upsert (conflict on id). A soft delete is an upsert of the row with deleted_at set. */
     suspend fun upsert(reading: PhReadingDto): DataResult<Unit>
+}
+
+interface UserSupplementRemoteDataSource {
+    /** All rows for the user, INCLUDING soft-deleted tombstones (deleted_at set) so deletes sync. */
+    suspend fun list(userId: String): DataResult<List<UserSupplementDto>>
+
+    /** Upsert (conflict on id). A soft delete is an upsert of the row with deleted_at set. */
+    suspend fun upsert(entry: UserSupplementDto): DataResult<Unit>
+}
+
+interface GenesyxProductRemoteDataSource {
+    /** Active catalogue rows. RLS grants SELECT to signed-in users only — guests get an error,
+     *  which callers render the same as an empty catalogue ("coming soon"). */
+    suspend fun listActive(): DataResult<List<GenesyxProductDto>>
 }
 
 /** Minimal projection of the Supabase `profiles` row. */

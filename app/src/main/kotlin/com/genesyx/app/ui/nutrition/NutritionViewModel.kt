@@ -4,8 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.genesyx.app.data.CycleRepository
 import com.genesyx.app.data.DailyLogRepository
+import com.genesyx.app.data.GenesyxProductRepository
 import com.genesyx.app.data.PreferencesRepository
 import com.genesyx.app.data.StreakRepository
+import com.genesyx.app.data.SupplementWriteResult
+import com.genesyx.app.data.UserSupplementRepository
 import com.genesyx.app.domain.content.PhaseFood
 import com.genesyx.app.domain.content.nutritionPhaseDescription
 import com.genesyx.app.domain.content.nutritionPhaseFoods
@@ -13,13 +16,18 @@ import com.genesyx.app.domain.content.phaseLabel
 import com.genesyx.app.domain.cycle.CycleEngine
 import com.genesyx.app.domain.hydration.HydrationCoach
 import com.genesyx.app.domain.hydration.HydrationUnit
+import com.genesyx.app.domain.model.GenesyxProduct
 import com.genesyx.app.domain.model.Phase
+import com.genesyx.app.domain.model.UserSupplement
 import com.genesyx.app.domain.streaks.StreakEngine
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalTime
 import javax.inject.Inject
@@ -47,8 +55,37 @@ class NutritionViewModel @Inject constructor(
     private val cycleRepository: CycleRepository,
     private val dailyLogRepository: DailyLogRepository,
     private val preferencesRepository: PreferencesRepository,
+    private val userSupplementRepository: UserSupplementRepository,
+    genesyxProductRepository: GenesyxProductRepository,
     streakRepository: StreakRepository,
 ) : ViewModel() {
+
+    /** The user's own supplement entries — live from Room, synced in the background. */
+    val userSupplements: StateFlow<List<UserSupplement>> = userSupplementRepository.supplements
+
+    private val _catalogue = MutableStateFlow<List<GenesyxProduct>>(emptyList())
+
+    /** The Genesyx range. Empty (→ "coming soon") for guests, offline, or while it has no SKUs. */
+    val catalogue: StateFlow<List<GenesyxProduct>> = _catalogue.asStateFlow()
+
+    init {
+        viewModelScope.launch { _catalogue.value = genesyxProductRepository.fetchCatalogue() }
+    }
+
+    fun saveSupplement(entry: UserSupplement): SupplementWriteResult =
+        if (entry.id in userSupplements.value.map { it.id }) {
+            userSupplementRepository.update(entry)
+        } else {
+            userSupplementRepository.create(entry)
+        }
+
+    fun deleteSupplement(id: String) = userSupplementRepository.delete(id)
+
+    fun addFromCatalogue(product: GenesyxProduct) {
+        userSupplementRepository.create(
+            UserSupplement(name = product.name, dose = product.dose, productId = product.id),
+        )
+    }
 
     val uiState: StateFlow<NutritionUiState> =
         combine(

@@ -69,6 +69,8 @@ fun NutritionScreen(
 ) {
     val colors = MaterialTheme.colorScheme
     val state by viewModel.uiState.collectAsState()
+    val userSupplements by viewModel.userSupplements.collectAsState()
+    val catalogue by viewModel.catalogue.collectAsState()
     var expandedFood by remember { mutableStateOf<String?>(null) }
     var planOpen by remember { mutableStateOf(false) }
     var goalOpen by remember { mutableStateOf(false) }
@@ -121,6 +123,21 @@ fun NutritionScreen(
                 Spacer(Modifier.height(12.dp))
                 SupplementPlanCard(onReview = { planOpen = true })
             }
+
+            // Outside the cycle gate: the user's own supplement list is independent of cycle setup.
+            Spacer(Modifier.height(12.dp))
+            UserSupplementsCard(
+                supplements = userSupplements,
+                onSave = { viewModel.saveSupplement(it) },
+                onDelete = { viewModel.deleteSupplement(it.id) },
+            )
+
+            Spacer(Modifier.height(12.dp))
+            GenesyxRangeCard(
+                products = catalogue,
+                addedProductIds = userSupplements.mapNotNull { it.productId }.toSet(),
+                onAdd = { viewModel.addFromCatalogue(it) },
+            )
 
             // Outside the cycle gate: Learn is most useful to someone who hasn't set up a cycle yet.
             Spacer(Modifier.height(16.dp))

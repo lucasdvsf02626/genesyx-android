@@ -9,6 +9,7 @@ import com.genesyx.app.data.local.dao.DailyLogDao
 import com.genesyx.app.data.local.dao.PartnerDao
 import com.genesyx.app.data.local.dao.PhReadingDao
 import com.genesyx.app.data.local.dao.ProfileDao
+import com.genesyx.app.data.local.dao.UserSupplementDao
 import com.genesyx.app.data.local.entity.ClientEntity
 import com.genesyx.app.data.local.entity.CycleSettingsEntity
 import com.genesyx.app.data.local.entity.DailyLogEntity
@@ -16,6 +17,7 @@ import com.genesyx.app.data.local.entity.PartnerInviteEntity
 import com.genesyx.app.data.local.entity.PartnerLinkEntity
 import com.genesyx.app.data.local.entity.PhReadingEntity
 import com.genesyx.app.data.local.entity.ProfileEntity
+import com.genesyx.app.data.local.entity.UserSupplementEntity
 
 /**
  * Offline-first local store mirroring the Supabase schema (docs/schema.sql). Every row is scoped by
@@ -30,8 +32,9 @@ import com.genesyx.app.data.local.entity.ProfileEntity
         ClientEntity::class,
         PartnerInviteEntity::class,
         PartnerLinkEntity::class,
+        UserSupplementEntity::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -42,4 +45,5 @@ abstract class GenesyxDatabase : RoomDatabase() {
     abstract fun profileDao(): ProfileDao
     abstract fun clientDao(): ClientDao
     abstract fun partnerDao(): PartnerDao
+    abstract fun userSupplementDao(): UserSupplementDao
 }

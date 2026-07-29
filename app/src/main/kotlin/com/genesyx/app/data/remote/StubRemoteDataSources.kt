@@ -1,7 +1,9 @@
 package com.genesyx.app.data.remote
 
 import com.genesyx.app.core.result.DataResult
+import com.genesyx.app.data.remote.dto.GenesyxProductDto
 import com.genesyx.app.data.remote.dto.PhReadingDto
+import com.genesyx.app.data.remote.dto.UserSupplementDto
 import com.genesyx.app.domain.model.Client
 import com.genesyx.app.domain.model.CycleSettings
 import com.genesyx.app.domain.model.DailyLog
@@ -45,6 +47,22 @@ class StubPhRemoteDataSource @Inject constructor() : PhRemoteDataSource {
 
     override suspend fun upsert(reading: PhReadingDto): DataResult<Unit> =
         DataResult.Success(Unit)
+}
+
+@Singleton
+class StubUserSupplementRemoteDataSource @Inject constructor() : UserSupplementRemoteDataSource {
+    override suspend fun list(userId: String): DataResult<List<UserSupplementDto>> =
+        DataResult.Success(emptyList())
+
+    override suspend fun upsert(entry: UserSupplementDto): DataResult<Unit> =
+        DataResult.Success(Unit)
+}
+
+@Singleton
+class StubGenesyxProductRemoteDataSource @Inject constructor() : GenesyxProductRemoteDataSource {
+    // Empty catalogue → the UI's "coming soon" state, which is also the truth on the server today.
+    override suspend fun listActive(): DataResult<List<GenesyxProductDto>> =
+        DataResult.Success(emptyList())
 }
 
 @Singleton

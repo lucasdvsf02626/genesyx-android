@@ -10,6 +10,7 @@ import com.genesyx.app.data.local.dao.DailyLogDao
 import com.genesyx.app.data.local.dao.PartnerDao
 import com.genesyx.app.data.local.dao.PhReadingDao
 import com.genesyx.app.data.local.dao.ProfileDao
+import com.genesyx.app.data.local.dao.UserSupplementDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -41,4 +42,5 @@ object DatabaseModule {
     @Provides fun provideProfileDao(db: GenesyxDatabase): ProfileDao = db.profileDao()
     @Provides fun provideClientDao(db: GenesyxDatabase): ClientDao = db.clientDao()
     @Provides fun providePartnerDao(db: GenesyxDatabase): PartnerDao = db.partnerDao()
+    @Provides fun provideUserSupplementDao(db: GenesyxDatabase): UserSupplementDao = db.userSupplementDao()
 }

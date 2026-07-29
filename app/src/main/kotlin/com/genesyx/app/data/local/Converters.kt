@@ -3,6 +3,7 @@ package com.genesyx.app.data.local
 import androidx.room.TypeConverter
 import com.genesyx.app.data.local.entity.LogSyncStatus
 import com.genesyx.app.data.local.entity.PhSyncStatus
+import com.genesyx.app.data.local.entity.SupplementSyncStatus
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -43,4 +44,12 @@ class Converters {
     @TypeConverter
     fun toLogSyncStatus(value: String?): LogSyncStatus =
         value?.let { runCatching { LogSyncStatus.valueOf(it) }.getOrNull() } ?: LogSyncStatus.SYNCED
+
+    @TypeConverter
+    fun fromSupplementSyncStatus(status: SupplementSyncStatus?): String? = status?.name
+
+    @TypeConverter
+    fun toSupplementSyncStatus(value: String?): SupplementSyncStatus =
+        value?.let { runCatching { SupplementSyncStatus.valueOf(it) }.getOrNull() }
+            ?: SupplementSyncStatus.SYNCED
 }

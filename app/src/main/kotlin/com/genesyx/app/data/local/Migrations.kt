@@ -37,8 +37,36 @@ val MIGRATION_4_5 = object : Migration(4, 5) {
     }
 }
 
+/** v5 -> v6: the `user_supplements` table (manual supplement entries), mirroring the Supabase
+ *  table with the same offline-sync bookkeeping as ph_readings. DDL must match Room's expected
+ *  schema for [com.genesyx.app.data.local.entity.UserSupplementEntity] exactly (see
+ *  app/schemas/…/6.json after building) or Room rejects the database at open. */
+val MIGRATION_5_6 = object : Migration(5, 6) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `user_supplements` (" +
+                "`id` TEXT NOT NULL, " +
+                "`userId` TEXT NOT NULL, " +
+                "`name` TEXT NOT NULL, " +
+                "`dose` TEXT, " +
+                "`timeOfDay` TEXT, " +
+                "`productId` TEXT, " +
+                "`createdAt` TEXT NOT NULL, " +
+                "`syncStatus` TEXT NOT NULL DEFAULT 'SYNCED', " +
+                "`updatedAt` TEXT, " +
+                "`deletedAt` TEXT, " +
+                "PRIMARY KEY(`id`))",
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_user_supplements_userId_createdAt` " +
+                "ON `user_supplements` (`userId`, `createdAt`)",
+        )
+    }
+}
+
 val GENESYX_MIGRATIONS: Array<Migration> = arrayOf(
     MIGRATION_2_3,
     MIGRATION_3_4,
     MIGRATION_4_5,
+    MIGRATION_5_6,
 )
