@@ -129,7 +129,7 @@ GRANT EXECUTE ON FUNCTION public.join_waitlist(text) TO anon, authenticated;
 CREATE TABLE public.ph_readings (
   id               uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id          uuid        NOT NULL,
-  ph_value         numeric     NOT NULL,                 -- app rounds to 1 decimal. Vaginal range 3.5–7.0 (PROVISIONAL, pending clinical sign-off); legacy urine rows may hold 4.5–9.0.
+  ph_value         numeric     NOT NULL,                 -- app rounds to 1 decimal. Vaginal range 3.8–7.0 (approved for 1.3.2); legacy urine rows may hold 4.5–9.0.
   recorded_at      timestamptz NOT NULL DEFAULT now(),
   notes            text,
   measurement_type text        NOT NULL DEFAULT 'urine' CONSTRAINT ph_measurement_type_check CHECK (measurement_type IN ('urine', 'vaginal')), -- 'urine' (legacy, pre-1.2.x) or 'vaginal'. Apply via the ALTER flagged in CHANGELOG before deploying the client; existing rows are urine.

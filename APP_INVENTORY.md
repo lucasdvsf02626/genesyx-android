@@ -62,7 +62,7 @@ Start destination is Splash [`ui/navigation/GenesyxNavGraph.kt:41`].
 | Sleep | Hours + minutes | Facet of the daily log | Log screen; Sleep Detail | `tracker/sleep` |
 | Hydration | Water in ml | Scored against the **user-set goal** — range 1000–5000 ml, default 2400, step 200 [`domain/streaks/StreakEngine.kt:62-70`], clamped at the single writer [`data/PreferencesRepository.kt:43-62`] | Log screen; Hydration Detail (canonical editor); Nutrition stepper | `tracker/hydration` |
 | Supplements | Folate, Omega-3, Vitamin D, Zinc | One vocabulary across log, Nutrition and Insights | Log screen; Nutrition Detail | `tracker/nutrition` |
-| Vaginal pH | A pH value | Input **3.5–7.0**, step 0.1, default 4.2; two bands — Healthy **3.8–4.5**, Elevated **> 4.5** [`domain/ph/PhStatus.kt:23-35`] — **PROVISIONAL, pending client sign-off**. Out-of-range writes are rejected in the data layer [`data/PhRepository.kt:65-69`]. Pre-migration readings persist as **"urine (legacy)"** (`PhCopy.LEGACY_MARKER`): excluded from vaginal insights, muted/hollow on the chart. | pH dialog (Track / pH Detail) | `tracker/ph` |
+| Vaginal pH | A pH value | Input **3.8–7.0**, step 0.1, default 4.2; two bands — Healthy **3.8–4.5**, Elevated **> 4.5** [`domain/ph/PhStatus.kt:20-32`] — approved for 1.3.2. Out-of-range writes are rejected in the data layer [`data/PhRepository.kt:65-69`]. Pre-migration readings persist as **"urine (legacy)"** (`PhCopy.LEGACY_MARKER`): excluded from vaginal insights, muted/hollow on the chart. | pH dialog (Track / pH Detail) | `tracker/ph` |
 | Notes | Free text | Facet of the daily log | Log screen | — |
 
 ---
@@ -129,12 +129,11 @@ ten, CTAs that jump into Log/Track/Nutrition/Insights or another article.
 
 ### D. Tracking vaginal pH
 
-*(Relabelled from urine pH in the post-v1.2 migration. Range/thresholds PROVISIONAL, pending client
-sign-off.)*
+*(Relabelled from urine pH in the post-v1.2 migration. Range/thresholds approved for 1.3.2.)*
 
 1. Entry points: Track "Your Trackers" → Vaginal pH detail; Home pH-nudge card (deep link); Insights
    pH card.
-2. "Log pH" records a value; out-of-range (outside 3.5–7.0) is rejected and never stored.
+2. "Log pH" records a value; out-of-range (outside 3.8–7.0) is rejected and never stored.
 3. Values round to one decimal and save to the device immediately; a signed-in user's reading also
    pushes to Supabase, with a queued retry on failure. Guests stay entirely on-device.
 4. Deleting a reading tombstones it so the deletion syncs; the server hard-deletes on account

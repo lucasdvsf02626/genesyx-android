@@ -6,8 +6,7 @@ package com.genesyx.app.domain.ph
  * guard). Copy is deliberately neutral and descriptive: it names no conditions, gives no dietary
  * advice, offers no diagnosis, and signposts a GP or pharmacist for persistently elevated readings.
  *
- * ⚠️ PROVISIONAL — the wording accompanies the provisional ranges in [PhStatus] and is subject to
- * the same clinical sign-off before release.
+ * Client-approved for the 1.3.2 release alongside the range in [PhStatus].
  */
 object PhCopy {
     /** Shown on the pH detail screen and the log dialog. */

@@ -18,7 +18,8 @@ import com.genesyx.app.domain.model.EnergyLevel
 import com.genesyx.app.domain.model.Mood
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
@@ -113,8 +114,11 @@ class DailyLogRepositoryTest {
     }
 
     @After
-    fun tearDown() {
-        scope.cancel()
+    fun tearDown() = runBlocking {
+        // The repository owns Room-observing coroutines on this scope. Wait for them to finish
+        // before closing the database, otherwise the next instrumented test can inherit a process
+        // crash from a cursor racing the closed connection pool.
+        scope.coroutineContext[Job]?.cancelAndJoin()
         db.close()
     }
 

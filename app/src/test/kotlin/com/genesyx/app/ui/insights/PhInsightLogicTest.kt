@@ -13,7 +13,7 @@ import java.time.LocalDateTime
 
 /**
  * Validates the vaginal-pH status thresholds and the pure insight computation (`PhInsightLogic`).
- * Figures are PROVISIONAL — pending clinical sign-off (see PhStatus).
+ * Figures are client-approved for 1.3.2 (see PhStatus).
  */
 class PhInsightLogicTest {
 
@@ -35,8 +35,8 @@ class PhInsightLogicTest {
     }
 
     @Test
-    fun `ph range constants are the provisional vaginal figures`() {
-        assertEquals(3.5, PhStatus.MIN, 0.0)
+    fun `ph range constants are the approved vaginal figures`() {
+        assertEquals(3.8, PhStatus.MIN, 0.0)
         assertEquals(7.0, PhStatus.MAX, 0.0)
         assertEquals(0.1, PhStatus.STEP, 0.0)
         assertEquals(3.8, PhStatus.HEALTHY_MIN, 0.0)

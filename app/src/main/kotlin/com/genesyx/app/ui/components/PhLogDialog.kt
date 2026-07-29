@@ -56,8 +56,8 @@ import kotlin.math.roundToInt
 private val whenFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("d MMM yyyy · HH:mm")
 
 /**
- * Log / edit a vaginal-pH reading: big value tile coloured by status, slider 3.5–7.0 step 0.1
- * (provisional range — see PhStatus) with ± buttons, when picker, notes, Save (+ Delete when
+ * Log / edit a vaginal-pH reading: big value tile coloured by status, slider 3.8–7.0 step 0.1
+ * (see PhStatus) with ± buttons, when picker, notes, Save (+ Delete when
  * editing). Editing preserves the reading's measurement type (a legacy urine reading stays urine).
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -94,7 +94,7 @@ fun PhLogDialog(
         text = {
             Column {
                 Text(
-                    "Track your vaginal pH from 3.5 to 7.0.",
+                    "Track your vaginal pH from 3.8 to 7.0.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = colors.onSurfaceVariant,
                 )

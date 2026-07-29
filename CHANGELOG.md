@@ -8,6 +8,35 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ## [Unreleased] — Single-source-of-truth bug batch (28 Jul device walkthrough)
 
+### Release readiness (28–29 Jul 2026) — code 13 verified; Play drafts corrected
+- Play Console was checked live. Production remains **1.2.0 (9)** and Internal testing remains
+  **1.3.0 (11)**; the earlier changelog statement that code 13 was already on Internal was wrong.
+- The Health apps declaration was corrected and saved: Period tracking, Nutrition and weight
+  management, Sleep management, and Reproductive and sexual health are selected; Mental and
+  behavioural health is removed; Genesyx is declared as a wellness app, not a medical device.
+- Data Safety was updated and saved as a
+  draft. It now declares Name, Email address, User IDs and Health info as collected but not shared,
+  encrypted in transit, optional because guest mode is available, with account/data deletion URLs.
+  These console changes are **not yet sent for review**.
+- `docs/DATA_SAFETY_AND_PRIVACY_v1.1.md` now records the v1.3.2 facts, including waitlist email
+  storage through `join_waitlist`, the verified Supabase region (EU West / Ireland), adults 18+,
+  and the live Genesyx Ltd identity. Supabase DPA status and the production pH deletion proof remain
+  owner/backend verification gates.
+- Unit tests: **265 passing, 0 failures**. Connected tests: **18 passing, 0 failures** on the API 37
+  emulator after fixing a Room test teardown race by waiting for repository observers to stop before
+  closing their in-memory database.
+- Signed release AAB and APK built successfully with lint/R8 clean. APK identity verified as
+  `com.genesyx.app`, **1.3.2 (13)**. AAB SHA-256:
+  `4dd38d1953261ffe1c2291b37cff94c3794a16ed363530152da53f41b575701c`.
+- The code-13 Internal upload was started but **not completed or rolled out** in this session. No
+  Production release was created or submitted.
+
+### Changed (28 Jul 2026) — approved vaginal-pH range
+Client approved the release contract: input **3.8–7.0**, default **4.2**, Healthy **3.8–4.5**,
+Elevated **>4.5**, with the existing neutral disclaimer and GP/nurse/pharmacist signposting. The
+old 3.5 input floor contradicted the Healthy lower bound and could label 3.5–3.7 as Healthy; the
+input floor, repository validation, tests, UI copy and inventory are now aligned at 3.8.
+
 ### Fixed (28 Jul 2026) — cross-screen values that disagreed with each other
 A device walkthrough caught the same number rendering differently on different screens minutes
 apart. Six commits (`5cd4784..e7c90f2`), each phase committed with the unit suite green — now
@@ -67,7 +96,9 @@ keystore's SHA-1 as an additional Android OAuth client (one-time, Cloud Console)
 sign-in on release-signed builds only. Email/password is unaffected by signing.
 
 ### Pending
-On-device manual sweep; release build unrun this session.
+Upload code 13 to Internal testing and verify a Play-installed build; resolve the Play URL validator
+429 warning for the deletion/privacy routes; verify the Supabase DPA and live end-to-end deletion of
+an account containing a pH reading; then request explicit owner approval before Production rollout.
 
 ## [1.3.2 (13)] — Waitlist joins via RPC (1.3.1's waitlist was broken)
 
@@ -89,8 +120,9 @@ direct table access.
   (trim/lowercase confirmed server-side), duplicate join silent no-op collapsing onto one row,
   direct table POST/GET/DELETE all 401. Final table state: RLS on, **zero policies, no client
   grants** — only the execute-only RPC touches it.
-- 1.3.1 (12) was uploaded to Internal testing with the broken flow; **1.3.2 (13) supersedes it and
-  is on Internal testing since 27 Jul 2026** — no other behaviour change.
+- 1.3.1 (12) was built for the broken flow, but the live Play bundle/track audit on 28 Jul found
+  neither code 12 nor code 13 uploaded. Internal testing still serves **1.3.0 (11)**. Code 13 is the
+  verified replacement artifact and still needs upload and Play-installed verification.
 
 ## [1.3.1 (12)] — Three dormant features made real
 
@@ -117,11 +149,9 @@ deliberate deferrals needing product/server decisions, not fixes.
 
 ## [1.3.0 (11)] — Vaginal pH migration (Urine pH → Vaginal pH)
 
-⚠️ The vaginal-pH range and thresholds below are
-**PROVISIONAL** (marked in `domain/ph/PhStatus.kt`): healthy band **3.8–4.5**, elevated **> 4.5**,
-input range **MIN 3.5 / MAX 7.0**, step 0.1, slider default 4.2 — the standard published healthy
-vaginal-pH range. Genesyx is a wellness app, not a medical device. See the **Release gates** table
-below for the pre-ship checklist status.
+The vaginal-pH range and thresholds were approved on 28 Jul 2026: healthy band **3.8–4.5**,
+elevated **> 4.5**, input range **MIN 3.8 / MAX 7.0**, step 0.1, slider default 4.2. Genesyx is a
+wellness app, not a medical device. See the **Release gates** table below for the pre-ship checklist.
 
 ### Play rollout (27 Jul 2026) — 1.3.0 (11) live on Internal testing
 - `genesyx-1.3.0-code11.aab` uploaded to Play Console and **rolled out to Internal testing**.
@@ -209,8 +239,9 @@ failures / 0 errors** (was 236; +9). Not pushed.
 - **TODO:** Android citation surface — separate task.
 
 ### Release gates (all must clear before this ships)
-1. **Client sign-off of the ranges** — healthy 3.8–4.5, elevated >4.5, input 3.5–7.0, default 4.2. **OPEN.**
-2. **Client sign-off of the user-visible copy** (`domain/ph/PhCopy.kt`). **OPEN.**
+1. ~~**Client sign-off of the ranges**~~ — **DONE 28 Jul 2026:** healthy 3.8–4.5, elevated >4.5,
+   input 3.8–7.0, default 4.2.
+2. ~~**Client sign-off of the user-visible copy**~~ (`domain/ph/PhCopy.kt`) — **DONE 28 Jul 2026.**
 3. **Supabase migration** — **DONE 22 Jul 2026** (production): `measurement_type` added to
    `public.ph_readings`, all 31 existing rows stamped `'urine'`, CHECK constraint
    `ph_measurement_type_check` (`'urine'`, `'vaginal'`) applied.

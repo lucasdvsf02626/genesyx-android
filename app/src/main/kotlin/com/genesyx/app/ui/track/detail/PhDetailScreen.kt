@@ -13,7 +13,7 @@ import com.genesyx.app.ui.ph.PhTrackerSection
 
 /**
  * The canonical vaginal-pH tracker. Wraps the existing self-contained [PhTrackerSection] (latest
- * reading + status, history, trend, and the log dialog that validates 3.5–7.0 and timestamps each
+ * reading + status, history, trend, and the log dialog that validates 3.8–7.0 and timestamps each
  * reading), so all of the previously embedded Track behaviour moves here intact.
  */
 @Composable

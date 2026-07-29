@@ -45,14 +45,14 @@ class PhRepositoryRangeTest {
         return PhRepository(dao, remote, session, scheduler, logger, scope)
     }
 
-    // Boundaries are the PROVISIONAL vaginal range 3.5–7.0 (see PhStatus).
+    // Boundaries are the client-approved vaginal range 3.8–7.0 (see PhStatus).
 
     @Test
-    fun `lower boundary 3-5 is accepted and persisted`() = runTest {
+    fun `lower boundary 3-8 is accepted and persisted`() = runTest {
         val scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler))
-        val result = repo(scope).create(reading(3.5))
+        val result = repo(scope).create(reading(3.8))
         assertTrue(result is PhWriteResult.Accepted)
-        coVerify(exactly = 1) { dao.upsert(match { it.phValue == 3.5 }) }
+        coVerify(exactly = 1) { dao.upsert(match { it.phValue == 3.8 }) }
         scope.cancel()
     }
 
@@ -66,10 +66,10 @@ class PhRepositoryRangeTest {
     }
 
     @Test
-    fun `below range 3-4 is rejected and never persisted`() = runTest {
+    fun `below range 3-7 is rejected and never persisted`() = runTest {
         val scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler))
-        val result = repo(scope).create(reading(3.4))
-        assertEquals(PhWriteResult.OutOfRange(3.4), result)
+        val result = repo(scope).create(reading(3.7))
+        assertEquals(PhWriteResult.OutOfRange(3.7), result)
         coVerify(exactly = 0) { dao.upsert(any()) }
         scope.cancel()
     }

@@ -34,8 +34,8 @@ import kotlin.math.roundToInt
  * stays PENDING and a WorkManager job ([PhSyncScheduler]) retries with backoff — offline writes QUEUE,
  * never block. Deletes are soft (deletedAt tombstone) so they sync safely. [refresh] pulls on sign-in
  * / manual refresh, merging by id (no duplicates) with last-write-wins on updatedAt, and never
- * clobbering locally-pending edits. pH values are rounded to 1 dp and range-checked (3.5–7.0,
- * provisional — see PhStatus). New writes are vaginal; legacy urine rows are never re-validated.
+ * clobbering locally-pending edits. pH values are rounded to 1 dp and range-checked (3.8–7.0;
+ * see PhStatus). New writes are vaginal; legacy urine rows are never re-validated.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @Singleton
