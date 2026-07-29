@@ -243,7 +243,11 @@ fun TrackContent(
                                 Box(Modifier.weight(1f).padding(2.dp)) {
                                     when (cell) {
                                         is CalendarCell.Empty -> Spacer(Modifier.aspectRatio(1f))
-                                        is CalendarCell.Day -> DayCell(cell, today) { selectedDay = cell }
+                                        is CalendarCell.Day -> DayCell(
+                                            cell = cell,
+                                            today = today,
+                                            markers = DayMarkers.forDay(logDays[cell.date]),
+                                        ) { selectedDay = cell }
                                     }
                                 }
                             }
@@ -361,7 +365,12 @@ private fun MonthNavButton(
  * used to render a projected ovulation day exactly as confidently as one that had already happened.
  */
 @Composable
-private fun DayCell(cell: CalendarCell.Day, today: LocalDate, onClick: () -> Unit) {
+private fun DayCell(
+    cell: CalendarCell.Day,
+    today: LocalDate,
+    markers: List<DayMarker>,
+    onClick: () -> Unit,
+) {
     val colors = MaterialTheme.colorScheme
     val type = CycleEngine.dayTypeFor(cell.info)
     val predicted = cell.date.isAfter(today)
@@ -394,17 +403,66 @@ private fun DayCell(cell: CalendarCell.Day, today: LocalDate, onClick: () -> Uni
             .clip(RoundedCornerShape(12.dp))
             .background(bg)
             .let { if (border != null) it.border(border, RoundedCornerShape(12.dp)) else it }
-            .clickable(onClick = onClick),
+            .clickable(onClick = onClick)
+            .clearAndSetSemantics {
+                // The dots are decorative to TalkBack unless we say what they mean, and a
+                // screen-reader user would otherwise hear an undifferentiated grid of numbers.
+                contentDescription = buildString {
+                    append(cell.date.dayOfMonth)
+                    append(if (predicted) ", predicted ${type.name.lowercase()}" else ", ${type.name.lowercase()}")
+                    if (markers.isNotEmpty()) {
+                        append(". Logged: ")
+                        append(markers.joinToString(", ") { it.label })
+                    }
+                    append(". Opens the day's detail.")
+                }
+            },
         contentAlignment = Alignment.Center,
     ) {
-        Text(
-            cell.date.dayOfMonth.toString(),
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Medium,
-            color = fg,
-        )
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                cell.date.dayOfMonth.toString(),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium,
+                color = fg,
+            )
+            if (markers.isNotEmpty()) {
+                Spacer(Modifier.height(2.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                    markers.forEach { marker ->
+                        Box(
+                            Modifier
+                                .size(4.5.dp)
+                                .clip(CircleShape)
+                                .background(marker.color)
+                                // A hairline ring keeps a pale dot separable from a pale phase
+                                // tint without having to special-case every background.
+                                .border(0.5.dp, Color.White.copy(alpha = 0.9f), CircleShape),
+                        )
+                    }
+                }
+            }
+        }
     }
 }
+
+/** Dot colour and screen-reader name per marker, matched to the "Your trackers" row colours so the
+ *  same signal reads as the same colour in both places. */
+private val DayMarker.color: Color
+    get() = when (this) {
+        DayMarker.LOG -> PowderPink
+        DayMarker.WATER -> ElectricBlue
+        DayMarker.SUPPLEMENTS -> PowderBlue
+        DayMarker.PH -> PhOptimal
+    }
+
+private val DayMarker.label: String
+    get() = when (this) {
+        DayMarker.LOG -> "how you felt"
+        DayMarker.WATER -> "water"
+        DayMarker.SUPPLEMENTS -> "supplements"
+        DayMarker.PH -> "pH"
+    }
 
 @Composable
 private fun EmptyCalendar(onClick: () -> Unit) {
@@ -455,9 +513,29 @@ private fun Legend() {
                 }
             }
         }
+        Spacer(Modifier.height(10.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            DayMarker.entries.forEach { marker ->
+                Box(
+                    Modifier
+                        .size(6.dp)
+                        .clip(CircleShape)
+                        .background(marker.color)
+                        .border(0.5.dp, Color.White.copy(alpha = 0.9f), CircleShape),
+                )
+                Spacer(Modifier.size(4.dp))
+                Text(
+                    marker.label,
+                    fontSize = 11.5.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.size(10.dp))
+            }
+        }
         Spacer(Modifier.height(8.dp))
         Text(
-            "Faded days are predictions — they shift as you log.",
+            "Dots show what you logged — tap a day to see it. Faded days are predictions; they " +
+                "shift as you log.",
             fontSize = 11.5.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

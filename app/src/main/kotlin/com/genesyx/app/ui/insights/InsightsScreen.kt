@@ -1,6 +1,7 @@
 package com.genesyx.app.ui.insights
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,6 +25,7 @@ import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -34,13 +36,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.genesyx.app.domain.model.DayType
+import com.genesyx.app.domain.model.Phase
 import com.genesyx.app.ui.components.Eyebrow
 import com.genesyx.app.ui.components.ScreenHeader
 import com.genesyx.app.ui.components.tintOnWhite
@@ -121,7 +130,7 @@ fun InsightsScreen(
 
             // The two cycle cards close the screen, both reading the one saved setup.
             Spacer(Modifier.height(12.dp))
-            CycleRegularityCard(cycleRegularity)
+            CyclePhaseTimelineCard(cycleRegularity)
 
             Spacer(Modifier.height(12.dp))
             SymptomPatternsCard(symptoms)
@@ -479,16 +488,27 @@ private fun SleepCard(state: SleepInsights) {
 }
 
 @Composable
-private fun CycleRegularityCard(state: CycleRegularityInsights) {
+private fun CyclePhaseTimelineCard(state: CycleRegularityInsights) {
     val colors = MaterialTheme.colorScheme
     if (!state.hasData) {
-        EmptyInsightsCard("Cycle regularity", state.insight)
+        EmptyInsightsCard("Your cycle phases", state.insight)
         return
     }
 
     val length = state.cycleLength!!
+    val weights = CycleRegularityLogic.visualWeights(state.segments)
+    val currentLabel = CycleRegularityLogic.shortPhaseLabel.getValue(state.currentPhase)
+    val nextLabel = CycleRegularityLogic.shortPhaseLabel.getValue(state.nextPhase)
+    val nextIn = "${state.daysUntilNextPhase} ${if (state.daysUntilNextPhase == 1) "day" else "days"}"
+
     InsightsCard {
-        Text("Cycle regularity", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+        Text("Your cycle phases", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+        Spacer(Modifier.height(2.dp))
+        Text(
+            "See where you are in your predicted cycle.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = colors.onSurfaceVariant,
+        )
 
         Spacer(Modifier.height(16.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -500,40 +520,113 @@ private fun CycleRegularityCard(state: CycleRegularityInsights) {
             )
         }
 
-        // One point against a range — NOT a trend line. The app stores a single cycle length and no
-        // history at all, so there is nothing here that could honestly be plotted over time.
-        Spacer(Modifier.height(16.dp))
-        val position = ((length - CycleRegularityLogic.typicalMin).toFloat() /
-            (CycleRegularityLogic.typicalMax - CycleRegularityLogic.typicalMin))
-            .coerceIn(0f, 1f)
-        Box(Modifier.fillMaxWidth()) {
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .height(6.dp)
-                    .align(Alignment.Center)
-                    .clip(CircleShape)
-                    .background(
-                        if (state.inTypicalRange) PowderBlue.copy(alpha = 0.35f)
-                        else colors.surfaceVariant.copy(alpha = 0.6f),
-                    ),
-            )
-            Row(Modifier.fillMaxWidth()) {
+        // Position in the one saved setup — NOT a history chart. Bar and marker share the same
+        // widened weights, so the marker always sits inside the segment named as the current phase.
+        // The segment list is whatever the engine says: a long period in a short cycle swallows the
+        // ovulation day and only two segments arrive, so nothing below assumes four.
+        Spacer(Modifier.height(18.dp))
+        Box(
+            Modifier.fillMaxWidth().clearAndSetSemantics {
+                contentDescription = "Cycle phase timeline. Day ${state.dayOfCycle} of $length. " +
+                    "Current phase $currentLabel. Next phase $nextLabel in $nextIn."
+            },
+        ) {
+            Row(
+                Modifier.fillMaxWidth().height(12.dp).align(Alignment.Center),
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                state.segments.forEachIndexed { index, segment ->
+                    val active = segment.phase == state.currentPhase
+                    Box(
+                        Modifier
+                            .weight(weights[index])
+                            .fillMaxHeight()
+                            .clip(RoundedCornerShape(3.dp))
+                            .background(phaseColor(segment.phase, colors).copy(alpha = if (active) 1f else 0.45f)),
+                    )
+                }
+            }
+            Row(Modifier.fillMaxWidth().align(Alignment.Center)) {
                 // Weights must be strictly positive, so a marker at either end still lays out.
-                Spacer(Modifier.weight(position.coerceIn(0.001f, 0.999f)))
+                Spacer(Modifier.weight(state.markerFraction.coerceIn(0.001f, 0.999f)))
                 Box(
                     Modifier
-                        .size(14.dp)
+                        .size(16.dp)
                         .clip(CircleShape)
-                        .background(if (state.inTypicalRange) ElectricLavender else PowderPink),
+                        .background(colors.surface)
+                        .border(2.dp, ElectricLavender, CircleShape),
                 )
-                Spacer(Modifier.weight((1f - position).coerceIn(0.001f, 0.999f)))
+                Spacer(Modifier.weight((1f - state.markerFraction).coerceIn(0.001f, 0.999f)))
+            }
+        }
+
+        Spacer(Modifier.height(6.dp))
+        Text(
+            "Today · Day ${state.dayOfCycle}",
+            fontSize = 11.sp,
+            color = colors.onSurfaceVariant,
+            modifier = Modifier.align(Alignment.CenterHorizontally),
+        )
+
+        Spacer(Modifier.height(10.dp))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            state.segments.forEach { segment ->
+                val active = segment.phase == state.currentPhase
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        Modifier
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(phaseColor(segment.phase, colors).copy(alpha = if (active) 1f else 0.45f)),
+                    )
+                    Spacer(Modifier.size(4.dp))
+                    Text(
+                        CycleRegularityLogic.shortPhaseLabel.getValue(segment.phase),
+                        fontSize = 11.sp,
+                        fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
+                        color = if (active) colors.onSurface else colors.onSurfaceVariant,
+                    )
+                }
             }
         }
 
         Spacer(Modifier.height(14.dp))
-        Text(state.insight, style = MaterialTheme.typography.bodyMedium, color = colors.onSurface.copy(alpha = 0.8f))
+        Text(
+            buildAnnotatedString {
+                append("Current phase: ")
+                withStyle(SpanStyle(fontWeight = FontWeight.SemiBold)) { append(currentLabel) }
+            },
+            style = MaterialTheme.typography.bodyMedium,
+            color = colors.onSurface,
+        )
+        Spacer(Modifier.height(2.dp))
+        Text(
+            "Next phase: $nextLabel in $nextIn",
+            style = MaterialTheme.typography.bodyMedium,
+            color = colors.onSurface,
+        )
+
+        Spacer(Modifier.height(8.dp))
+        Text(
+            state.phaseInsightLine,
+            style = MaterialTheme.typography.bodyMedium,
+            color = colors.onSurface.copy(alpha = 0.8f),
+        )
+
+        Spacer(Modifier.height(8.dp))
+        Text(state.insight, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+
+        Spacer(Modifier.height(8.dp))
+        Text(CycleRegularityLogic.DISCLAIMER, fontSize = 10.sp, color = colors.onSurfaceVariant)
     }
+}
+
+/** The DayType palette the ovulation ribbon and Track calendar already use, keyed by phase. */
+private fun phaseColor(phase: Phase, colors: ColorScheme): Color = when (phase) {
+    Phase.PERIOD -> PowderPink
+    Phase.FOLLICULAR -> colors.surfaceVariant
+    Phase.OVULATORY -> ElectricLavender
+    Phase.LUTEAL -> BabyLavender
 }
 
 @Composable

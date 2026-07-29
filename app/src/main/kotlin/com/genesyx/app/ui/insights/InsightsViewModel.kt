@@ -93,7 +93,17 @@ data class CycleRegularityInsights(
     val hasData: Boolean = false,
     val cycleLength: Int? = null,
     val inTypicalRange: Boolean = false,
-    val insight: String = "Set up your cycle and this card will show your cycle length against the typical range.",
+    val insight: String = "Set up your cycle and this card will show your place in it.",
+    /** The engine's phases run-length-encoded over one cycle — two segments, not four, when a long
+     *  period swallows the ovulation day. The card renders whatever it gets. */
+    val segments: List<PhaseSegment> = emptyList(),
+    val dayOfCycle: Int = 0,
+    val currentPhase: Phase = Phase.FOLLICULAR,
+    val nextPhase: Phase = Phase.PERIOD,
+    val daysUntilNextPhase: Int = 0,
+    /** 0..1 along the bar's widened visual weights — see [CycleRegularityLogic.markerFraction]. */
+    val markerFraction: Float = 0f,
+    val phaseInsightLine: String = "",
 )
 
 data class SymptomPatternInsights(

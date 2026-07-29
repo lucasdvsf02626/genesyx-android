@@ -8,6 +8,28 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ## [Unreleased] — Single-source-of-truth bug batch (28 Jul device walkthrough)
 
+### Changed (29 Jul 2026, evening) — Insights "Cycle regularity" card becomes "Your cycle phases"
+- The Insights cycle card no longer plots one dot on the 21–35 range: it now shows a proportional
+  phase timeline (Period / Follicular / Ovulatory / Luteal) with a "Today · Day N" marker, current
+  and next phase lines, one per-phase wellbeing sentence, and the estimate disclaimer. The two
+  summary tiles (Your cycle / Typical) stay.
+- Segments are **run-length-encoded from `CycleEngine.getCyclePhase`** — never a restated
+  when-ladder — so the bar cannot disagree with the phase Home, Track, and the Cycle detail screen
+  report. The engine's single-day Ovulatory phase is widened only *visually* (`MIN_VISUAL_DAYS`);
+  the marker is placed in the same widened coordinate space, so it always sits inside the segment
+  named as the current phase. Degenerate case handled: a 10-day period in a 21-day cycle swallows
+  the ovulation day and the card renders the two segments the engine returns, not an assumed four.
+- Client decisions: segment boundaries mirror the engine exactly, and the first phase is labelled
+  **"Period"** (the app's word everywhere), not "Menstrual". The honesty line survives, trimmed:
+  the timeline comes from the saved setup, not a measurement of past cycles.
+- New copy (four phase lines + disclaimer) is pinned and guarded by a banned-phrase test extending
+  the card's anti-diagnosis list with fertility/conception terms.
+- `CycleRegularityLogic.compute` now takes `today` (defaulted, `OvulationLogic` pattern);
+  `CycleRegularityInsights` gains segments/day/phase/marker fields. Files:
+  `CycleRegularityLogic.kt`, `InsightsViewModel.kt`, `InsightsScreen.kt`
+  (`CycleRegularityCard` → `CyclePhaseTimelineCard`), `CycleRegularityLogicTest.kt` (6 → 15 tests).
+- Unit suite: **292 passing, 0 failures**.
+
 ### Changed (29 Jul 2026) — client wording + Track order; legacy-pH audit came back clean
 - Home pH nudge card retitled **"Vaginal pH"** (was "Check your pH"), including the screen-reader
   description, matching the tracker's name everywhere else.
