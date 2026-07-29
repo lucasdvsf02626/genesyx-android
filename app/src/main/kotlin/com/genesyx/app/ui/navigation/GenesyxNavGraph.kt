@@ -133,7 +133,10 @@ fun GenesyxNavGraph(
             Screen.PhDetail.route,
             deepLinks = listOf(navDeepLink { uriPattern = "genesyx://tracker/ph" }),
         ) {
-            PhDetailScreen(onBack = { navController.popBackStack() })
+            PhDetailScreen(
+                onBack = { navController.popBackStack() },
+                onOpenPlan = { navController.navigate(Screen.NutritionDetail.route) },
+            )
         }
         composable(Screen.SleepDetail.route) {
             SleepDetailScreen(onBack = { navController.popBackStack() })
