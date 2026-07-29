@@ -21,6 +21,26 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
   `DATA_LAYER.md`, `ARCHITECTURE.md`) still describe the old urine model and need updating.
 - Unit suite after each change: **265 passing, 0 failures**.
 
+### Added (29 Jul 2026) — pH detail screen answers the four questions, with citations
+- New shared `Citation` type + `CitationList` component: dated, named, tappable sources that open the
+  publisher's own page. Compile-time constants, so a citation can never fail to load. This is the
+  citation surface that was logged as a TODO during the 1.3.0 pH migration.
+- `PhCopy` gains four sections — why pH matters, what your reading means, what to do next, how the
+  Genesyx plan relates. The two band-dependent sections resolve via `meansFor`/`doNextFor` off the
+  same `PhInsightLogic` the Insights screen uses, so a reading classifies identically everywhere and
+  legacy urine rows are correctly excluded.
+- Sources: StatPearls *Physiology, Vaginal Structure and Function* (updated 5 Jul 2026) for the
+  3.8–4.5 range and the lactobacilli/lactic-acid mechanism; NHS *Vaginal discharge* (reviewed
+  15 Feb 2024) for the when-to-speak-to-someone list and everyday care advice.
+- The supplements section explicitly disclaims any pH effect and links to the plan without selling it.
+- All new copy passes the banned-phrase guard unchanged. Citation titles are deliberately outside
+  that guard — it governs claims Genesyx writes, not the names of the sources it cites.
+- `docs/migrations/2026-07-29_user_supplements.sql` — **PROPOSED, NOT APPLIED**: the shared
+  `user_supplements` table for manual supplement entry, shaped after `ph_readings` (soft delete,
+  `updated_at` LWW, four RLS policies), including the mandatory `delete_current_user()` addition
+  without which deleted accounts would leave orphaned rows.
+- Unit tests: **272 passing, 0 failures** (was 265; +7).
+
 ### Release readiness (28–29 Jul 2026) — code 13 verified; Play drafts corrected
 - Play Console was checked live. Production remains **1.2.0 (9)** and Internal testing remains
   **1.3.0 (11)**; the earlier changelog statement that code 13 was already on Internal was wrong.
