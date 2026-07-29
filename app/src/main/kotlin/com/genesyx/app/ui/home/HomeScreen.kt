@@ -418,7 +418,7 @@ private fun StatusPill(pace: HydrationPace) {
 private fun PhNudgeCard(latest: Double?, isLegacy: Boolean, onOpen: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     // A pre-migration urine reading is on a different scale, so it's marked legacy, never shown as a
-    // current vaginal reading. "Check your pH" is measurement-neutral and stays.
+    // current vaginal reading. Titled "Vaginal pH" to match the tracker's name everywhere else.
     val body = when {
         latest == null -> "Log today's reading in the pH tracker"
         isLegacy -> "Last reading %.1f · ${PhCopy.LEGACY_MARKER} — tap to log a vaginal reading".format(latest)
@@ -429,7 +429,7 @@ private fun PhNudgeCard(latest: Double?, isLegacy: Boolean, onOpen: () -> Unit) 
             .fillMaxWidth()
             .clickable(onClick = onOpen)
             .clearAndSetSemantics {
-                contentDescription = "Check your pH. " + when {
+                contentDescription = "Vaginal pH. " + when {
                     latest == null -> "No reading yet"
                     isLegacy -> "Last reading %.1f, ${PhCopy.LEGACY_MARKER}".format(latest)
                     else -> "Last reading %.1f".format(latest)
@@ -449,7 +449,7 @@ private fun PhNudgeCard(latest: Double?, isLegacy: Boolean, onOpen: () -> Unit) 
             ) { Icon(Icons.Outlined.Science, null, tint = PhOptimal, modifier = Modifier.size(20.dp)) }
             Spacer(Modifier.size(12.dp))
             Column(Modifier.weight(1f)) {
-                Text("Check your pH", style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+                Text("Vaginal pH", style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
                 Text(
                     body,
                     style = MaterialTheme.typography.bodySmall,
