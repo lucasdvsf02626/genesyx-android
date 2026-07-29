@@ -7,6 +7,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -148,7 +150,10 @@ fun TrackContent(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column {
+            // weight(1f) so a long month title squeezes before the fixed edit button does —
+            // without it the unweighted column can push the pencil off-screen at large font
+            // scale (same layout ScreenHeader gets right).
+            Column(Modifier.weight(1f)) {
                 Text(
                     monthAnchor.format(monthTitleFormat),
                     style = MaterialTheme.typography.titleLarge,
@@ -206,6 +211,8 @@ fun TrackContent(
                     }
                     Text(
                         monthAnchor.format(monthNavFormat),
+                        modifier = Modifier.weight(1f),
+                        textAlign = TextAlign.Center,
                         style = MaterialTheme.typography.bodyMedium,
                         color = colors.onSurfaceVariant,
                     )
@@ -488,6 +495,7 @@ private fun EmptyCalendar(onClick: () -> Unit) {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun Legend() {
     val items = listOf(
@@ -514,22 +522,29 @@ private fun Legend() {
             }
         }
         Spacer(Modifier.height(10.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        // FlowRow, not Row: all four dot+label pairs need ~240dp, which a 320dp screen or a
+        // raised font scale doesn't have — the trailing labels were getting clipped at the
+        // card edge. Wrapping keeps every label whole.
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
             DayMarker.entries.forEach { marker ->
-                Box(
-                    Modifier
-                        .size(6.dp)
-                        .clip(CircleShape)
-                        .background(marker.color)
-                        .border(0.5.dp, Color.White.copy(alpha = 0.9f), CircleShape),
-                )
-                Spacer(Modifier.size(4.dp))
-                Text(
-                    marker.label,
-                    fontSize = 11.5.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(Modifier.size(10.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        Modifier
+                            .size(6.dp)
+                            .clip(CircleShape)
+                            .background(marker.color)
+                            .border(0.5.dp, Color.White.copy(alpha = 0.9f), CircleShape),
+                    )
+                    Spacer(Modifier.size(4.dp))
+                    Text(
+                        marker.label,
+                        fontSize = 11.5.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
         Spacer(Modifier.height(8.dp))

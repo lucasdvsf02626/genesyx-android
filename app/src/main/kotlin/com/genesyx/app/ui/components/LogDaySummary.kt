@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -67,8 +67,11 @@ fun PhReadingRow(reading: PhReading) {
             color = colors.onSurface,
         )
         Spacer(Modifier.size(8.dp))
-        Text(statusLabel, style = MaterialTheme.typography.bodyMedium, color = accent)
-        Spacer(Modifier.weight(1f))
+        // weight(1f) on the label, not a weighted spacer: when the row runs out of width
+        // (large font scale, "urine (legacy)") the label wraps instead of the trailing
+        // time being clipped at the dialog edge.
+        Text(statusLabel, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, color = accent)
+        Spacer(Modifier.size(8.dp))
         Text(
             reading.recordedAt.format(TIME_FMT),
             style = MaterialTheme.typography.bodyMedium,
@@ -81,11 +84,13 @@ fun PhReadingRow(reading: PhReading) {
 private fun InfoRow(label: String, value: String) {
     val colors = MaterialTheme.colorScheme
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+        // Min-width, not fixed: "Supplements" outgrows 96dp at raised font scales and was
+        // wrapping mid-word inside the hard-coded column.
         Text(
             label,
             style = MaterialTheme.typography.bodyMedium,
             color = colors.onSurfaceVariant,
-            modifier = Modifier.width(96.dp),
+            modifier = Modifier.widthIn(min = 96.dp),
         )
         Text(value, style = MaterialTheme.typography.bodyMedium, color = colors.onSurface)
     }
