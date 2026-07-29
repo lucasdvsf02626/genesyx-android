@@ -547,13 +547,14 @@ private data class TrackerRowSpec(
 @Composable
 private fun YourTrackersCard(summaries: TrackerSummaries, onNavigate: (String) -> Unit) {
     val colors = MaterialTheme.colorScheme
+    // Client-requested order (28 Jul 2026): Cycle → pH → Nutrition, then the rest.
     val rows = listOf(
         TrackerRowSpec("Cycle", Icons.Outlined.CalendarMonth, ElectricLavender, Screen.CycleDetail.route, summaries.cycle),
-        TrackerRowSpec("Hydration", Icons.Outlined.WaterDrop, ElectricBlue, Screen.HydrationDetail.route, summaries.hydration),
         TrackerRowSpec("Vaginal pH", Icons.Outlined.Science, PhOptimal, Screen.PhDetail.route, summaries.ph),
-        TrackerRowSpec("Sleep", Icons.Outlined.Bedtime, BabyLavender, Screen.SleepDetail.route, summaries.sleep),
-        TrackerRowSpec("Symptoms", Icons.Outlined.MonitorHeart, PowderPink, Screen.SymptomsDetail.route, summaries.symptoms),
         TrackerRowSpec("Nutrition", Icons.Outlined.Restaurant, PowderBlue, Screen.NutritionDetail.route, summaries.nutrition),
+        TrackerRowSpec("Symptoms", Icons.Outlined.MonitorHeart, PowderPink, Screen.SymptomsDetail.route, summaries.symptoms),
+        TrackerRowSpec("Sleep", Icons.Outlined.Bedtime, BabyLavender, Screen.SleepDetail.route, summaries.sleep),
+        TrackerRowSpec("Hydration", Icons.Outlined.WaterDrop, ElectricBlue, Screen.HydrationDetail.route, summaries.hydration),
     )
     Card(
         modifier = Modifier.fillMaxWidth(),
