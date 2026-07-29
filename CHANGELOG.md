@@ -8,6 +8,19 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ## [Unreleased] — Single-source-of-truth bug batch (28 Jul device walkthrough)
 
+### Changed (29 Jul 2026) — client wording + Track order; legacy-pH audit came back clean
+- Home pH nudge card retitled **"Vaginal pH"** (was "Check your pH"), including the screen-reader
+  description, matching the tracker's name everywhere else.
+- Track "Your Trackers" reordered to the client-requested **Cycle → Vaginal pH → Nutrition →
+  Symptoms → Sleep → Hydration** (was Cycle → Hydration → pH → Sleep → Symptoms → Nutrition).
+  Pure row permutation; routes and summaries unchanged.
+- A full audit for legacy urine-pH UI found **zero reachable urine-pH screens, strings, or routes**
+  in the tree — the 22 Jul migration (`3713374`) converted the model in place. A tester report of a
+  "Urine pH" 4.5–9.0 page is explained by an out-of-date installed build, not by this source.
+  Follow-ups noted: several docs (`CYCLE_ENGINE.md`, `UIUX_SPEC.md`, `SCREEN_LAYOUTS.md`,
+  `DATA_LAYER.md`, `ARCHITECTURE.md`) still describe the old urine model and need updating.
+- Unit suite after each change: **265 passing, 0 failures**.
+
 ### Release readiness (28–29 Jul 2026) — code 13 verified; Play drafts corrected
 - Play Console was checked live. Production remains **1.2.0 (9)** and Internal testing remains
   **1.3.0 (11)**; the earlier changelog statement that code 13 was already on Internal was wrong.
