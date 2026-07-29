@@ -16,6 +16,45 @@
 -- exists in that client's environment.
 -- ============================================================================
 
+-- ============================================================================
+-- 1. genesyx_products — the Genesyx range, as DATA not code.
+--
+-- Zero SKUs exist yet (Shopify store confirmed empty, all statuses); the line
+-- is not finalised. The app therefore ships reading this table and rendering a
+-- "coming soon" empty state when it returns nothing. Seeding real rows later
+-- needs NO app change on either platform.
+--
+-- NOT user-owned: this is a shared catalogue. RLS is on with a read-only policy
+-- for signed-in users, and no INSERT/UPDATE/DELETE grants to clients at all —
+-- only service_role (i.e. the dashboard or a seed script) can write it. It must
+-- NOT appear in delete_current_user(): deleting an account must never delete
+-- the product catalogue.
+-- ============================================================================
+
+CREATE TABLE public.genesyx_products (
+  id          uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  name        text        NOT NULL,
+  dose        text,                                  -- label as printed on the product
+  sort_order  integer     NOT NULL DEFAULT 0,        -- display order; ties break on name
+  active      boolean     NOT NULL DEFAULT true,     -- false = retired, keep the row for history
+  created_at  timestamptz NOT NULL DEFAULT now(),
+  updated_at  timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX genesyx_products_active_idx ON public.genesyx_products (active, sort_order);
+
+GRANT SELECT ON public.genesyx_products TO authenticated;
+GRANT ALL    ON public.genesyx_products TO service_role;
+ALTER TABLE public.genesyx_products ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Signed-in users read the catalogue" ON public.genesyx_products
+  FOR SELECT TO authenticated USING (true);
+-- Deliberately no write policies: clients cannot create or edit products.
+
+-- ============================================================================
+-- 2. user_supplements — the user's own entries
+-- ============================================================================
+
 CREATE TABLE public.user_supplements (
   id           uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id      uuid        NOT NULL,
@@ -23,6 +62,10 @@ CREATE TABLE public.user_supplements (
   dose         text,                     -- free text ("400 mcg", "2 capsules"); nullable, never parsed
   time_of_day  text        CONSTRAINT user_supplements_time_of_day_check
                            CHECK (time_of_day IN ('morning', 'afternoon', 'evening', 'anytime')),
+  product_id   uuid        REFERENCES public.genesyx_products (id) ON DELETE SET NULL,
+                           -- set when the entry came from the Genesyx catalogue, null for a
+                           -- user's own. SET NULL, not CASCADE: retiring a product must never
+                           -- delete the user's adherence history.
   created_at   timestamptz NOT NULL DEFAULT now(),
   updated_at   timestamptz NOT NULL DEFAULT now(),
   deleted_at   timestamptz               -- soft-delete tombstone: null = live, set = deleted
@@ -81,6 +124,42 @@ grant execute on function public.delete_current_user() to authenticated;
 --   1. INSERT a row; confirm it returns and carries your user_id.
 --   2. SELECT as the other user; confirm zero rows (RLS isolation).
 --   3. UPDATE the other user's row by id; confirm zero rows affected.
---   4. Call delete_current_user(); confirm 0 rows remain for that user_id
---      (this is the S6 re-check, which must now cover supplements as well as pH).
+--   4. Call delete_current_user(); confirm 0 rows remain in user_supplements for
+--      that user_id (this is the S6 re-check, which must now cover supplements as
+--      well as pH), AND that genesyx_products still has all its rows — deleting an
+--      account must never touch the catalogue.
+--   5. As an authenticated user, attempt INSERT/UPDATE/DELETE on genesyx_products;
+--      all three must fail. SELECT must succeed.
 -- ----------------------------------------------------------------------------
+
+-- ============================================================================
+-- ROLLBACK
+--
+-- Safe while no client build that writes these tables has shipped. Once one has,
+-- rolling back destroys user-entered supplement data — export user_supplements
+-- first, and prefer leaving the tables in place (an unused table costs nothing)
+-- over dropping them.
+--
+-- Run in this order; the FK means user_supplements must go first.
+-- ============================================================================
+--
+-- DROP TABLE IF EXISTS public.user_supplements;
+-- DROP TABLE IF EXISTS public.genesyx_products;
+--
+-- -- Restore delete_current_user() to its pre-migration body (drop the
+-- -- user_supplements line). Leaving the line in place against a dropped table
+-- -- would make the function raise, breaking account deletion entirely — so this
+-- -- half of the rollback is mandatory, not optional.
+-- create or replace function public.delete_current_user()
+-- returns void language plpgsql security definer as $$
+-- declare uid uuid := auth.uid();
+-- begin
+--   if uid is null then raise exception 'no authenticated user'; end if;
+--   delete from public.ph_readings    where user_id = uid;
+--   delete from public.daily_logs     where user_id = uid;
+--   delete from public.cycle_settings where user_id = uid;
+--   delete from public.profiles       where id      = uid;
+--   delete from auth.users where id = uid;
+-- end; $$;
+-- revoke execute on function public.delete_current_user() from public, anon;
+-- grant execute on function public.delete_current_user() to authenticated;
