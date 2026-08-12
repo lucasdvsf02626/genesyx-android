@@ -8,6 +8,23 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ## [Unreleased] — Single-source-of-truth bug batch (28 Jul device walkthrough)
 
+### Fixed (12 Aug 2026) — Google sign-in errors now name the real cause
+- The catch-all Google failure message ("Couldn't reach Google. Check your connection.") hid the most
+  common real cause — the app's **signing certificate isn't registered** as an Android OAuth client
+  in Google Cloud (works on the release/Play build, fails on debug/other builds). `AuthViewModel` now
+  maps failures to specific copy: a developer-config signal (Google Identity code `10`, "developer",
+  "whitelist", "audience", or a provider-configuration exception) → "This build isn't registered for
+  Google sign-in…"; no account on device → "No Google account is available…"; genuine network signals
+  → the connection message; else a plain retry. The Supabase-rejected-token case (provider disabled /
+  audience mismatch) gets its own message and is logged. Raw exception `type`/message is logged for
+  diagnosis. Pure mapping extracted to `AuthViewModel.googleErrorText` + 6 unit tests.
+- **Not a code bug in the sign-in flow itself** — verified live on the emulator: the account picker
+  shows, caller verification succeeds, and the flow fails only at the token step (the emulator's GMS
+  returned `NETWORK_ERROR`), handled gracefully with no crash. The actual fix for Google sign-in on a
+  given build is registering that build's signing SHA-1 as an Android OAuth client (debug
+  `D3:8A:DB…A0:69`; **Play app-signing key** for the Play build) — an owner action in Google Cloud.
+- Verified: **360 unit tests green** (+6); `:app:lintDebug` + `:app:assembleRelease` green.
+
 ### Added (12 Aug 2026) — quiz-answer persistence + Tracking-Preferences editor; the 12-week plan completed
 - **Onboarding answers now persist and sync.** New `QuizAnswersRepository` mirrors the answers to
   the shared owner-only `quiz_answers` table (cross-platform contract with iOS: a `jsonb` map of

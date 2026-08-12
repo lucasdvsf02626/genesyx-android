@@ -46,6 +46,7 @@ import android.content.res.Configuration
 import androidx.compose.ui.platform.LocalContext
 import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.credentials.exceptions.GetCredentialException
+import androidx.credentials.exceptions.GetCredentialProviderConfigurationException
 import androidx.credentials.exceptions.NoCredentialException
 import com.genesyx.app.BuildConfig
 import com.genesyx.app.auth.AuthRepository
@@ -70,6 +71,7 @@ data class AuthUiState(val loading: Boolean = false, val error: String? = null)
 class AuthViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val googleClient: GoogleCredentialClient,
+    private val logger: com.genesyx.app.core.log.Logger,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AuthUiState())
@@ -81,11 +83,12 @@ class AuthViewModel @Inject constructor(
     /**
      * Launches the Credential Manager Google flow, then signs in to Supabase with the ID token.
      * No fake success: unconfigured → clear error; user-cancelled → silently dismissed; any
-     * failure (incl. airplane mode) → a friendly error, never a crash.
+     * failure → a message that names the *likely* cause (so a config problem doesn't masquerade as
+     * a network blip), with the raw exception logged for diagnosis.
      */
     fun signInWithGoogle(activityContext: Context, onSuccess: () -> Unit) {
         if (!isGoogleConfigured) {
-            _uiState.value = AuthUiState(error = "Google sign-in isn't configured.")
+            _uiState.value = AuthUiState(error = "Google sign-in isn't set up in this build. Use email and password instead.")
             return
         }
         _uiState.value = AuthUiState(loading = true)
@@ -97,16 +100,71 @@ class AuthViewModel @Inject constructor(
                         _uiState.value = AuthUiState()
                         onSuccess()
                     }
-                    is DataResult.Error ->
-                        _uiState.value = AuthUiState(error = result.message ?: "Google sign-in failed.")
+                    is DataResult.Error -> {
+                        // We got a Google token but the server refused it — provider disabled in
+                        // Supabase, or the token's audience doesn't match. Not a device problem.
+                        logger.e("Auth", "Google → Supabase rejected the token", result.throwable)
+                        _uiState.value = AuthUiState(
+                            error = "Google signed you in, but the server didn't accept it. " +
+                                "Google sign-in may not be enabled for this app yet — email and password still works.",
+                        )
+                    }
                     DataResult.Loading -> Unit
                 }
             } catch (e: GetCredentialCancellationException) {
                 _uiState.value = AuthUiState() // user dismissed the sheet — not an error
-            } catch (e: NoCredentialException) {
-                _uiState.value = AuthUiState(error = "No Google account found on this device.")
             } catch (e: GetCredentialException) {
-                _uiState.value = AuthUiState(error = "Couldn't reach Google. Check your connection and try again.")
+                logger.e("Auth", "Google credential request failed: ${e.type} — ${e.message}", e)
+                _uiState.value = AuthUiState(error = googleCredentialErrorMessage(e))
+            }
+        }
+    }
+
+    /**
+     * Turns a Credential Manager failure into a message that points at the real cause. Credential
+     * Manager collapses several very different problems into a couple of exception types, so we also
+     * read the (developer-facing) message for the tell-tale Google Identity status codes:
+     * `10`/DEVELOPER_ERROR means the app's package + signing certificate isn't registered as an
+     * Android OAuth client — the classic "works on release, fails on this build" cause.
+     */
+    private fun googleCredentialErrorMessage(e: GetCredentialException): String =
+        googleErrorText(
+            isProviderConfig = e is GetCredentialProviderConfigurationException,
+            isNoCredential = e is NoCredentialException,
+            rawMessage = e.message,
+        )
+
+    companion object {
+        /**
+         * Pure mapping from a Credential Manager failure to a user message, extracted so the
+         * (message-sniffing) logic is unit-testable without constructing exceptions. Credential
+         * Manager collapses very different problems into a couple of types, so the developer-facing
+         * message is read for Google Identity status codes: `10`/DEVELOPER_ERROR means the app's
+         * package + signing certificate isn't registered as an Android OAuth client.
+         */
+        internal fun googleErrorText(
+            isProviderConfig: Boolean,
+            isNoCredential: Boolean,
+            rawMessage: String?,
+        ): String {
+            val detail = (rawMessage ?: "").lowercase()
+            val looksLikeDevConfig = isProviderConfig ||
+                "10:" in detail || "developer" in detail || "whitelist" in detail ||
+                "audience" in detail || "not been allowed" in detail || "sha" in detail
+            val looksLikeNetwork = "network" in detail || "7:" in detail ||
+                "unable to resolve host" in detail || "timeout" in detail || "timed out" in detail
+            return when {
+                looksLikeDevConfig ->
+                    "This build isn't registered for Google sign-in (its signing certificate isn't " +
+                        "in the Google config). Email and password works — Google sign-in works on " +
+                        "the Play build."
+                isNoCredential ->
+                    "No Google account is available on this device. Add one in your phone's " +
+                        "settings, then try again."
+                looksLikeNetwork ->
+                    "Couldn't reach Google — check your connection and try again."
+                else ->
+                    "Google sign-in couldn't complete. Please try again, or use email and password."
             }
         }
     }
