@@ -53,6 +53,7 @@ import com.genesyx.app.domain.content.PhaseFood
 import com.genesyx.app.domain.hydration.HydrationFormat
 import com.genesyx.app.domain.hydration.HydrationUnit
 import com.genesyx.app.domain.content.LearnDrip
+import com.genesyx.app.ui.components.ExpandableInfo
 import com.genesyx.app.domain.content.supplementPlan
 import com.genesyx.app.ui.components.Eyebrow
 import com.genesyx.app.ui.components.GxPrimaryButton
@@ -405,7 +406,18 @@ private fun SupplementPlanCard(onReview: () -> Unit) {
                     }
                 }
             }
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(12.dp))
+            // Secondary rationale tucked behind a tap — keeps the card action-focused (client's
+            // "Why is this important? / Learn more" dropdown).
+            ExpandableInfo(
+                label = "Why is this important?",
+                body = "Folate lowers the risk of neural-tube conditions and matters most in the " +
+                    "first weeks — before many people know they're pregnant, so it's worth taking " +
+                    "while trying. Vitamin D is advised for UK adults through autumn and winter. " +
+                    "Omega-3 and zinc support general health. This is a suggested starting point, " +
+                    "not a prescription — a pharmacist or GP can tailor it to you.",
+            )
+            Spacer(Modifier.height(12.dp))
             GxPrimaryButton(text = "Review Plan", onClick = onReview)
         }
     }
