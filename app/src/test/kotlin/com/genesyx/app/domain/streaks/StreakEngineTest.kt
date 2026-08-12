@@ -8,7 +8,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDate
 
-/** Validates the daily hydration streak, the 5-of-7 weekly streak, and the one-shot milestones. */
+/** Validates the daily hydration streak, the 4-of-7 weekly streak, and the one-shot milestones. */
 class StreakEngineTest {
 
     // Sunday 2026-06-21 — the last day of its Mon–Sun week, so "this week" is 2026-06-15..21.

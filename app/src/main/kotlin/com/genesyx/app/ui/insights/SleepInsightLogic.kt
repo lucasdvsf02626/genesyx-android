@@ -43,9 +43,14 @@ object SleepInsightLogic {
 
     /** Reports the number and stops. It is not the app's place to tell her she slept badly. */
     private fun insightFor(averageMinutes: Int, nightsLogged: Int): String {
-        val nights = if (nightsLogged == 1) "the one night" else "the $nightsLogged nights"
-        return "You're averaging ${formatDuration(averageMinutes)} a night across $nights you've " +
-            "logged this week."
+        // One night is an observation, not an average — calling it one would dress a single data
+        // point up as a trend. The copy names the single value and says what to log next.
+        if (nightsLogged == 1) {
+            return "One night logged this week — ${formatDuration(averageMinutes)}. " +
+                "Log tonight and your weekly average starts here."
+        }
+        return "You're averaging ${formatDuration(averageMinutes)} a night across the " +
+            "$nightsLogged nights you've logged this week."
     }
 
     /** "7h 20m", "8h" — never "7.33 hours". */

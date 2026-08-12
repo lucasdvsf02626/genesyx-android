@@ -6,10 +6,11 @@ import java.time.LocalDate
 /**
  * Pure symptom-pattern computation: a 28-day heatmap, plus the one symptom she logs most.
  *
- * The grid covers the last 28 days ending today, oldest first, so it fills four rows of seven. The
- * *summary*, by contrast, counts her whole history — a symptom she logged heavily two months ago is
- * still her most-logged symptom, and the copy says "in all" so the number is never mistaken for the
- * window on screen.
+ * The grid covers the last 28 days ending today, oldest first, so it fills four rows of seven —
+ * and **the summary counts the same 28 days the grid shows**. It used to count her whole history,
+ * which let a symptom from two months ago qualify a "pattern" the visible grid contradicted; the
+ * qualification window and the displayed window are now deliberately the same one, and the copy
+ * names it ("in the last four weeks").
  *
  * The thin-data guard is the point of this file. Four scattered symptom days are noise, and a card
  * that announced a "pattern" from them would be inventing one. Below [MIN_DAYS_FOR_PATTERN] days
@@ -19,7 +20,7 @@ object SymptomPatternLogic {
 
     const val WINDOW_DAYS = 28
 
-    /** Under this many symptom days, the card names no pattern. Four weeks of grid, one week of data. */
+    /** Under this many symptom days *within the window*, the card names no pattern. */
     const val MIN_DAYS_FOR_PATTERN = 7
 
     fun compute(
@@ -30,8 +31,10 @@ object SymptomPatternLogic {
         val window = (WINDOW_DAYS - 1 downTo 0).map { today.minusDays(it.toLong()) }
         val heatmapValues = window.map { logsByDate[it]?.symptoms?.count(::isReal) ?: 0 }
 
-        // Frequency and the day count come from her whole history, not just the window.
-        val symptomDays = logsByDate.values.filter { log -> log.symptoms.any(::isReal) }
+        // Frequency and the day count come from the same rolling window the grid displays.
+        val symptomDays = window.mapNotNull { date ->
+            logsByDate[date]?.takeIf { log -> log.symptoms.any(::isReal) }
+        }
         val daysWithSymptoms = symptomDays.size
 
         if (daysWithSymptoms == 0) return SymptomPatternInsights(heatmapValues = heatmapValues)
@@ -51,8 +54,8 @@ object SymptomPatternLogic {
                 top == null -> SymptomPatternInsights().insight
                 else ->
                     "${top.first} is the symptom you log most — ${top.second} " +
-                        "${if (top.second == 1) "day" else "days"} in all, of the $daysWithSymptoms " +
-                        "days you've logged a symptom."
+                        "${if (top.second == 1) "day" else "days"} in the last four weeks, of the " +
+                        "$daysWithSymptoms days with a symptom."
             },
         )
     }

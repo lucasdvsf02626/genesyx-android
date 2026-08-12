@@ -36,8 +36,8 @@ val phaseHeroCopy: Map<Phase, PhaseHeroCopy> = mapOf(
         focus = FocusCopy("Add 2 cups of leafy greens", "Folate-forward foods support egg quality."),
     ),
     Phase.OVULATORY to PhaseHeroCopy(
-        hero = "High chance of conception today",
-        sub = "Ovulation expected in 1–2 days. Stay hydrated and rested.",
+        hero = "Predicted peak fertility today",
+        sub = "Ovulation is estimated within 1–2 days. Stay hydrated and rested.",
         tags = listOf("High estrogen", "Peak energy"),
         focus = FocusCopy("Hydrate and prioritise protein", "Eggs, salmon, and avocado support hormone balance."),
     ),
@@ -50,24 +50,31 @@ val phaseHeroCopy: Map<Phase, PhaseHeroCopy> = mapOf(
 )
 
 // ── Fertile-window overlay (ports lib/cycleEngine.ts). When the day is in the fertile window and
-// it isn't the ovulation day itself, the hero copy switches to "fertile window is open" messaging.
+// it isn't the ovulation day itself, the hero copy switches to fertile-window messaging.
+// Every sentence here says "predicted" or "estimated": the window is arithmetic on one saved cycle
+// setup — no temperature, no LH test, no observed ovulation — and the copy must never imply the app
+// measured fertility. Guarded by FertileCopyTest.
 
 fun phaseSubLabel(phase: Phase, inFertile: Boolean): String =
-    if (inFertile) "Fertile window" else phaseLabel.getValue(phase)
+    if (inFertile) "Predicted fertile window" else phaseLabel.getValue(phase)
 
 fun phaseHeroText(phase: Phase, inFertile: Boolean): String =
-    if (inFertile && phase != Phase.OVULATORY) "Fertile window is open" else phaseHeroCopy.getValue(phase).hero
+    if (inFertile && phase != Phase.OVULATORY) {
+        "Your predicted fertile window is open"
+    } else {
+        phaseHeroCopy.getValue(phase).hero
+    }
 
 fun phaseHeroSubtext(phase: Phase, inFertile: Boolean): String =
     if (inFertile && phase != Phase.OVULATORY) {
-        "Conception chances are rising — stay hydrated and prioritise rest."
+        "These are your estimated higher-fertility days — stay hydrated and prioritise rest."
     } else {
         phaseHeroCopy.getValue(phase).sub
     }
 
 fun phaseTags(phase: Phase, inFertile: Boolean): List<String> {
     val base = phaseHeroCopy.getValue(phase).tags
-    return if (inFertile && phase != Phase.OVULATORY) listOf("Fertile window") + base else base
+    return if (inFertile && phase != Phase.OVULATORY) listOf("Predicted fertile window") + base else base
 }
 
 val phaseFoods: Map<Phase, List<FocusFood>> = mapOf(

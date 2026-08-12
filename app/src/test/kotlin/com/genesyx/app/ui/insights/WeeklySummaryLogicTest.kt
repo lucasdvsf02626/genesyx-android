@@ -118,4 +118,28 @@ class WeeklySummaryLogicTest {
         val r = WeeklySummaryLogic.compute(logs, today)
         assertTrue(r.insight.contains("2 more than last week"))
     }
+
+    @Test
+    fun `supplement delta never compares against an unlogged week`() {
+        // Supplements this week, but last week holds no meaningful log at all: that silence is
+        // missing data, not a week of zero supplements — no delta may be reported.
+        val folate = setOf(Supplement.FOLATE.wireName)
+        val logs = mapOf(
+            thisMon to DailyLog(supplements = folate),
+            thisMon.plusDays(1) to DailyLog(supplements = folate),
+        )
+        assertNull(WeeklySummaryLogic.compute(logs, today).supplementDaysDelta)
+    }
+
+    @Test
+    fun `supplement delta appears when last week was logged without supplements`() {
+        // Last week WAS used (a meaningful log exists) and genuinely had no supplements — a real
+        // zero, so the comparison stands.
+        val folate = setOf(Supplement.FOLATE.wireName)
+        val logs = mapOf(
+            thisMon to DailyLog(supplements = folate),
+            lastMon to DailyLog(waterMl = 500),
+        )
+        assertEquals(1, WeeklySummaryLogic.compute(logs, today).supplementDaysDelta)
+    }
 }

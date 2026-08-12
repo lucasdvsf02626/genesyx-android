@@ -86,4 +86,23 @@ class SleepInsightLogicTest {
         assertEquals("8h", SleepInsightLogic.formatDuration(480))
         assertEquals("45m", SleepInsightLogic.formatDuration(45))
     }
+
+    @Test
+    fun `one night is an observation, never called an average`() {
+        val r = SleepInsightLogic.compute(mapOf(monday to night(480)), today)
+        assertEquals(1, r.nightsLogged)
+        assertFalse("a single point must not wear trend language", r.insight.contains("averaging"))
+        assertTrue(r.insight.contains("One night logged"))
+        assertTrue("tells her what to log next", r.insight.contains("Log tonight"))
+    }
+
+    @Test
+    fun `two nights may speak of an average`() {
+        val r = SleepInsightLogic.compute(
+            mapOf(monday to night(480), monday.plusDays(1) to night(480)),
+            today,
+        )
+        assertTrue(r.insight.contains("averaging"))
+        assertTrue(r.insight.contains("2 nights"))
+    }
 }

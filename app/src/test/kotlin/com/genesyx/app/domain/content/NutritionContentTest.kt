@@ -77,10 +77,10 @@ class NutritionContentTest {
     // ── Fertile-window overlay (lib/cycleEngine.ts) ──
 
     @Test
-    fun `sub-label is the phase label normally and 'Fertile window' when fertile`() {
+    fun `sub-label is the phase label normally and the predicted window when fertile`() {
         Phase.entries.forEach { phase ->
             assertEquals(phaseLabel.getValue(phase), phaseSubLabel(phase, inFertile = false))
-            assertEquals("Fertile window", phaseSubLabel(phase, inFertile = true))
+            assertEquals("Predicted fertile window", phaseSubLabel(phase, inFertile = true))
         }
     }
 
@@ -89,21 +89,67 @@ class NutritionContentTest {
         // Ovulatory keeps its own hero even inside the fertile window.
         assertEquals(phaseHeroCopy.getValue(Phase.OVULATORY).hero, phaseHeroText(Phase.OVULATORY, true))
         // Other phases switch to the fertile-window hero when fertile.
-        assertEquals("Fertile window is open", phaseHeroText(Phase.FOLLICULAR, true))
+        assertEquals("Your predicted fertile window is open", phaseHeroText(Phase.FOLLICULAR, true))
         assertEquals(phaseHeroCopy.getValue(Phase.FOLLICULAR).hero, phaseHeroText(Phase.FOLLICULAR, false))
-        assertTrue(phaseHeroSubtext(Phase.FOLLICULAR, true).contains("Conception"))
+        assertTrue(phaseHeroSubtext(Phase.FOLLICULAR, true).contains("estimated"))
         assertEquals(phaseHeroCopy.getValue(Phase.LUTEAL).sub, phaseHeroSubtext(Phase.LUTEAL, false))
     }
 
     @Test
-    fun `tags prepend 'Fertile window' for non-ovulatory fertile days only`() {
+    fun `tags prepend the predicted window for non-ovulatory fertile days only`() {
         val base = phaseHeroCopy.getValue(Phase.FOLLICULAR).tags
         val fertile = phaseTags(Phase.FOLLICULAR, inFertile = true)
-        assertEquals("Fertile window", fertile.first())
+        assertEquals("Predicted fertile window", fertile.first())
         assertEquals(base.size + 1, fertile.size)
         // Ovulatory is not overlaid.
         assertEquals(phaseHeroCopy.getValue(Phase.OVULATORY).tags, phaseTags(Phase.OVULATORY, true))
         // Not fertile -> unchanged.
         assertEquals(base, phaseTags(Phase.FOLLICULAR, false))
+    }
+
+    // ── Content-safety guard: fertility copy is predicted/estimated, never measured ──
+
+    @Test
+    fun `every fertile-window sentence carries a predicted or estimated qualifier`() {
+        val qualified = Regex("predicted|estimated|estimate", RegexOption.IGNORE_CASE)
+        Phase.entries.forEach { phase ->
+            val sentences = mutableListOf(
+                phaseSubLabel(phase, inFertile = true),
+                phaseHeroText(phase, inFertile = true),
+                phaseHeroSubtext(phase, inFertile = true),
+            )
+            // The prepended window tag exists only on overlaid (non-ovulatory) phases; the base
+            // tags are hormone descriptors ("High estrogen"), not fertility claims.
+            if (phase != Phase.OVULATORY) sentences += phaseTags(phase, inFertile = true).first()
+            sentences.forEach { sentence ->
+                assertTrue(
+                    "fertile copy must be qualified: \"$sentence\"",
+                    qualified.containsMatchIn(sentence),
+                )
+            }
+        }
+        // The ovulatory hero is its own fertility claim and needs the same qualifier.
+        assertTrue(qualified.containsMatchIn(phaseHeroCopy.getValue(Phase.OVULATORY).hero))
+        assertTrue(qualified.containsMatchIn(phaseHeroCopy.getValue(Phase.OVULATORY).sub))
+    }
+
+    @Test
+    fun `fertility copy never claims certainty`() {
+        val banned = listOf("high chance of conception", "you are fertile", "confirmed ovulation")
+        val everything = Phase.entries.flatMap { phase ->
+            listOf(
+                phaseHeroText(phase, true), phaseHeroText(phase, false),
+                phaseHeroSubtext(phase, true), phaseHeroSubtext(phase, false),
+                phaseSubLabel(phase, true),
+            ) + phaseTags(phase, true)
+        }
+        everything.forEach { sentence ->
+            banned.forEach { phrase ->
+                assertTrue(
+                    "\"$phrase\" must not appear in: \"$sentence\"",
+                    !sentence.lowercase().contains(phrase),
+                )
+            }
+        }
     }
 }

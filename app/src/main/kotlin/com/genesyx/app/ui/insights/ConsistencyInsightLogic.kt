@@ -1,5 +1,6 @@
 package com.genesyx.app.ui.insights
 
+import com.genesyx.app.domain.streaks.StreakEngine
 import com.genesyx.app.domain.streaks.StreakState
 
 /**
@@ -24,7 +25,9 @@ object ConsistencyInsightLogic {
         }
         val days = "You've logged ${streaks.daysLoggedThisWeek} of 7 days this week"
         return when (streaks.weeklyStreak) {
-            0 -> "$days. Five days makes the week count."
+            // The number comes from the engine contract, so this sentence can never drift from
+            // what actually makes a week count (it once said five while the engine counted four).
+            0 -> "$days. ${StreakEngine.WEEK_COMPLETE_DAYS} days make the week count."
             1 -> "$days — one steady week behind you."
             else -> "$days — ${streaks.weeklyStreak} steady weeks behind you."
         }

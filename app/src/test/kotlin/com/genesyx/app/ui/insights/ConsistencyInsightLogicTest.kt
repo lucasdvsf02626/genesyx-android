@@ -1,5 +1,6 @@
 package com.genesyx.app.ui.insights
 
+import com.genesyx.app.domain.streaks.StreakEngine
 import com.genesyx.app.domain.streaks.StreakState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -18,9 +19,16 @@ class ConsistencyInsightLogicTest {
     }
 
     @Test
-    fun `a partial week states the count and the threshold`() {
+    fun `a partial week states the count and the engine's own threshold`() {
         val r = ConsistencyInsightLogic.compute(StreakState(daysLoggedThisWeek = 3))
-        assertEquals("You've logged 3 of 7 days this week. Five days makes the week count.", r.insight)
+        // Built from WEEK_COMPLETE_DAYS so this sentence can never disagree with the engine
+        // contract again (it once said five while the engine counted four).
+        assertEquals(
+            "You've logged 3 of 7 days this week. " +
+                "${StreakEngine.WEEK_COMPLETE_DAYS} days make the week count.",
+            r.insight,
+        )
+        assertTrue(r.insight.contains("${StreakEngine.WEEK_COMPLETE_DAYS} days"))
     }
 
     @Test

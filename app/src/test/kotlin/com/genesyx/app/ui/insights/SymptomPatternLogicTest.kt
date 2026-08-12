@@ -85,11 +85,26 @@ class SymptomPatternLogicTest {
     }
 
     @Test
-    fun `a day outside the 28-day window is not drawn, but still counts towards her history`() {
+    fun `a day outside the 28-day window neither draws nor qualifies`() {
+        // The summary counts the same rolling window the grid displays — a symptom from six weeks
+        // ago must not qualify a "pattern" the visible grid contradicts.
         val logs = mapOf(today.minusDays(40) to log("Cramps"))
         val r = SymptomPatternLogic.compute(logs, today)
         assertEquals("nothing to draw in the window", List(28) { 0 }, r.heatmapValues)
-        assertEquals("but the day is real and is counted", 1, r.daysWithSymptoms)
+        assertEquals("and nothing outside the window is counted", 0, r.daysWithSymptoms)
+    }
+
+    @Test
+    fun `pattern qualification uses only the displayed window`() {
+        // Seven symptom days six weeks ago + one in the window: history alone must not unlock the
+        // pattern, and the in-window count is what the copy reports.
+        val logs = buildMap {
+            repeat(7) { put(today.minusDays((40 + it).toLong()), log("Cramps")) }
+            put(today, log("Bloating"))
+        }
+        val r = SymptomPatternLogic.compute(logs, today)
+        assertEquals(1, r.daysWithSymptoms)
+        assertEquals(false, r.hasEnoughData)
     }
 
     @Test

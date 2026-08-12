@@ -45,7 +45,13 @@ object WeeklySummaryLogic {
             prevDaysLogged = prevDaysLogged,
             hydrationDeltaMlPerDay = hydrationDelta(logsByDate, thisWeek, lastWeek),
             sleepDeltaMinutes = sleepDelta(logsByDate, thisWeek, lastWeek),
-            supplementDaysDelta = supplementDaysDelta(logsByDate, thisWeek, lastWeek, plan),
+            // Gated on last week holding ANY meaningful log: a week she didn't use the app is
+            // missing data, not a week of zero supplements, and must not anchor a "+N days" delta.
+            supplementDaysDelta = if (prevLogs.isEmpty()) {
+                null
+            } else {
+                supplementDaysDelta(logsByDate, thisWeek, lastWeek, plan)
+            },
             moodEnergyLine = moodEnergyLine(topMood, topEnergy),
             insight = narrativeFor(daysLogged, prevDaysLogged),
         )

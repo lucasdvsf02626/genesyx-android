@@ -291,7 +291,7 @@ fun TrackContent(
                     text = when {
                         info == null -> "Set up your cycle to see today's phase."
                         info.dayOfCycle in info.fertileWindow ->
-                            "You're in your fertile window. Stay hydrated and prioritise rest."
+                            "You're in your predicted fertile window. Stay hydrated and prioritise rest."
                         else -> "About ${info.daysUntilNextPeriod} days until your next period."
                     },
                     style = MaterialTheme.typography.bodyMedium,
@@ -516,8 +516,8 @@ private fun EmptyCalendar(onClick: () -> Unit) {
 private fun Legend() {
     val items = listOf(
         "Period" to PowderPink.tintOnWhite(0.55f),
-        "Fertile window" to PowderBlue.tintOnWhite(0.55f),
-        "Ovulation" to ElectricLavender,
+        "Fertile window (predicted)" to PowderBlue.tintOnWhite(0.55f),
+        "Ovulation (predicted)" to ElectricLavender,
         "Luteal" to BabyLavender.tintOnWhite(0.25f),
     )
     Column {
