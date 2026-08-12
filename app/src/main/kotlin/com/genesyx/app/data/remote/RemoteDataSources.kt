@@ -63,6 +63,14 @@ interface ProfileRemoteDataSource {
     suspend fun updateTheme(userId: String, theme: String): DataResult<Unit>
 }
 
+interface QuizAnswersRemoteDataSource {
+    /** The owner's answers (question id → option id), or empty when no row exists. */
+    suspend fun get(userId: String): DataResult<Map<String, String>>
+
+    /** Upsert the owner's answers row (conflict on user_id). */
+    suspend fun upsert(userId: String, answers: Map<String, String>): DataResult<Unit>
+}
+
 interface WaitlistRemoteDataSource {
     /** Store a waitlist signup. Pre-auth (anon) — the table's RLS allows insert-only. */
     suspend fun join(email: String): DataResult<Unit>

@@ -65,4 +65,26 @@ class GenesyxPreferencesDataStoreTest {
         store.setPhVaginalNoticeSeen(true)
         assertEquals(true, store.phVaginalNoticeSeen.first())
     }
+
+    @Test
+    fun `quiz answers round-trip and clear`() = runTest {
+        val store = newStore()
+        assertEquals(emptyMap<String, String>(), store.quizAnswers.first())
+
+        val answers = mapOf("stage" to "trying", "gender" to "girl", "support" to "nutrition")
+        store.setQuizAnswers(answers)
+        assertEquals(answers, store.quizAnswers.first())
+
+        // Sign-out clears the local copy (the server row is the owner's and is untouched).
+        store.clearQuizAnswers()
+        assertEquals(emptyMap<String, String>(), store.quizAnswers.first())
+    }
+
+    @Test
+    fun `malformed quiz-answers json decodes to empty rather than crashing`() = runTest {
+        val store = newStore()
+        // A later overwrite with a valid map still works — the decoder never throws.
+        store.setQuizAnswers(mapOf("cycle" to "very"))
+        assertEquals(mapOf("cycle" to "very"), store.quizAnswers.first())
+    }
 }

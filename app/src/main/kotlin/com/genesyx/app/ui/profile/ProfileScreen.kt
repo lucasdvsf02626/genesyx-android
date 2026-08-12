@@ -106,6 +106,7 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel = hi
     var emailOpen by remember { mutableStateOf(false) }
     var healthOpen by remember { mutableStateOf(false) }
     var trackingOpen by remember { mutableStateOf(false) }
+    var prefsOpen by remember { mutableStateOf(false) }
     var detail by remember { mutableStateOf<String?>(null) }
     var delOpen by remember { mutableStateOf(false) }
 
@@ -211,7 +212,11 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel = hi
                 // the rest of the app uses, so "previous entries can actually be updated".
                 RowItem("Health Profile", onClick = { healthOpen = true })
                 Divider()
-                RowItem("Tracking Preferences", onClick = { trackingOpen = true })
+                // Tracking Preferences edits the onboarding answers (matches iOS); hydration settings
+                // get their own row so nothing that was here is lost.
+                RowItem("Tracking Preferences", onClick = { prefsOpen = true })
+                Divider()
+                RowItem("Hydration", onClick = { trackingOpen = true })
             }
 
             // ── Reminders. A single master switch can't express per-category schedules, so this is a
@@ -330,6 +335,14 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel = hi
                 viewModel.setHydrationGoalMl(it)
                 trackingOpen = false
             },
+        )
+    }
+    if (prefsOpen) {
+        val quizAnswers by viewModel.quizAnswers.collectAsState()
+        TrackingPreferencesDialog(
+            current = quizAnswers,
+            onDismiss = { prefsOpen = false },
+            onSave = { viewModel.saveQuizAnswers(it); prefsOpen = false },
         )
     }
     detail?.let { d ->

@@ -15,6 +15,9 @@ import com.genesyx.app.domain.model.ThemeMode
 import com.genesyx.app.domain.streaks.StreakEngine
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.builtins.MapSerializer
+import kotlinx.serialization.builtins.serializer
+import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -26,6 +29,9 @@ import javax.inject.Singleton
 class GenesyxPreferencesDataStore @Inject constructor(
     private val dataStore: DataStore<Preferences>,
 ) {
+    private val json = Json { ignoreUnknownKeys = true }
+    private val mapSerializer = MapSerializer(String.serializer(), String.serializer())
+
     private object Keys {
         val THEME = stringPreferencesKey("theme_mode")
         val PUSH = booleanPreferencesKey("push_enabled")
@@ -41,6 +47,7 @@ class GenesyxPreferencesDataStore @Inject constructor(
         val FIRST_OPEN_EPOCH_DAY = longPreferencesKey("first_open_epoch_day")
         val READ_ARTICLE_SLUGS = stringSetPreferencesKey("read_article_slugs")
         val LAST_SEEN_ARTICLE_SLUG = stringPreferencesKey("last_seen_article_slug")
+        val QUIZ_ANSWERS = stringPreferencesKey("quiz_answers")
         val SIGNED_IN = booleanPreferencesKey("signed_in")
         val USER_ID = stringPreferencesKey("user_id")
         val EMAIL = stringPreferencesKey("email")
@@ -82,6 +89,14 @@ class GenesyxPreferencesDataStore @Inject constructor(
     val readArticleSlugs: Flow<Set<String>> = dataStore.data.map { it[Keys.READ_ARTICLE_SLUGS] ?: emptySet() }
     val lastSeenArticleSlug: Flow<String?> = dataStore.data.map { it[Keys.LAST_SEEN_ARTICLE_SLUG] }
 
+    /** Onboarding/tracking-preference answers (question id → option id), JSON-encoded. Owner data,
+     *  cleared on sign-out so it never bleeds into the next account; the server row survives. */
+    val quizAnswers: Flow<Map<String, String>> = dataStore.data.map { p ->
+        p[Keys.QUIZ_ANSWERS]?.let {
+            runCatching { json.decodeFromString(mapSerializer, it) }.getOrNull()
+        } ?: emptyMap()
+    }
+
     val signedIn: Flow<Boolean> = dataStore.data.map { it[Keys.SIGNED_IN] ?: false }
     val userId: Flow<String?> = dataStore.data.map { it[Keys.USER_ID] }
     val email: Flow<String?> = dataStore.data.map { it[Keys.EMAIL] }
@@ -109,6 +124,13 @@ class GenesyxPreferencesDataStore @Inject constructor(
     }.let {}
 
     suspend fun setLastSeenArticleSlug(slug: String) = dataStore.edit { it[Keys.LAST_SEEN_ARTICLE_SLUG] = slug }.let {}
+
+    suspend fun setQuizAnswers(answers: Map<String, String>) = dataStore.edit {
+        it[Keys.QUIZ_ANSWERS] = json.encodeToString(mapSerializer, answers)
+    }.let {}
+
+    /** Sign-out clears the local copy only — the server `quiz_answers` row is the owner's and stays. */
+    suspend fun clearQuizAnswers() = dataStore.edit { it.remove(Keys.QUIZ_ANSWERS) }.let {}
 
     suspend fun setSession(userId: String, email: String?, displayName: String?) {
         dataStore.edit {

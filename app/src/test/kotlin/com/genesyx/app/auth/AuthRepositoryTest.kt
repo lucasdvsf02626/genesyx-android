@@ -33,6 +33,7 @@ class AuthRepositoryTest {
     private val dailyLogRepo = mockk<DailyLogRepository>(relaxed = true)
     private val phRepo = mockk<PhRepository>(relaxed = true)
     private val userSupplementRepo = mockk<com.genesyx.app.data.UserSupplementRepository>(relaxed = true)
+    private val quizAnswersRepo = mockk<com.genesyx.app.data.QuizAnswersRepository>(relaxed = true)
     private val database = mockk<GenesyxDatabase>(relaxed = true)
     private val reminderScheduler = mockk<com.genesyx.app.notifications.ReminderScheduler>(relaxed = true)
     private val logger = mockk<Logger>(relaxed = true)
@@ -46,7 +47,7 @@ class AuthRepositoryTest {
         }
         return AuthRepository(
             authService, session, profileRepo, cycleRepo, dailyLogRepo, phRepo, userSupplementRepo,
-            database, reminderScheduler, dispatchers, scope, logger,
+            quizAnswersRepo, database, reminderScheduler, dispatchers, scope, logger,
         )
     }
 

@@ -87,6 +87,15 @@ class StubWaitlistRemoteDataSource @Inject constructor() : WaitlistRemoteDataSou
 }
 
 @Singleton
+class StubQuizAnswersRemoteDataSource @Inject constructor() : QuizAnswersRemoteDataSource {
+    override suspend fun get(userId: String): DataResult<Map<String, String>> =
+        DataResult.Success(emptyMap())
+
+    override suspend fun upsert(userId: String, answers: Map<String, String>): DataResult<Unit> =
+        DataResult.Success(Unit)
+}
+
+@Singleton
 class StubClientRemoteDataSource @Inject constructor() : ClientRemoteDataSource {
     override suspend fun list(ownerUserId: String): DataResult<List<Client>> =
         DataResult.Success(emptyList())

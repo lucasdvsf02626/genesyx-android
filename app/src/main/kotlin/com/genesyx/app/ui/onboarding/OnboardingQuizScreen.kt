@@ -45,7 +45,11 @@ import com.genesyx.app.ui.theme.ElectricLavender
 import com.genesyx.app.ui.theme.GenesyxTheme
 
 @Composable
-fun OnboardingQuizScreen(onComplete: () -> Unit, onBack: () -> Unit) {
+fun OnboardingQuizScreen(
+    onComplete: () -> Unit,
+    onBack: () -> Unit,
+    viewModel: OnboardingQuizViewModel = androidx.hilt.navigation.compose.hiltViewModel(),
+) {
     val colors = MaterialTheme.colorScheme
     val total = quizQuestions.size
 
@@ -57,7 +61,13 @@ fun OnboardingQuizScreen(onComplete: () -> Unit, onBack: () -> Unit) {
     val selected = answers[question.id]
 
     fun advance() {
-        if (step == total - 1) onComplete() else step += 1
+        if (step == total - 1) {
+            // Persist before leaving — recorded locally now, pushed to the owner's row on sign-in.
+            viewModel.record(answers.toMap())
+            onComplete()
+        } else {
+            step += 1
+        }
     }
 
     fun onContinue() {

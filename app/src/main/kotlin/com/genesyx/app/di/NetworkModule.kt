@@ -19,6 +19,9 @@ import com.genesyx.app.data.remote.GenesyxProductRemoteDataSource
 import com.genesyx.app.data.remote.StubGenesyxProductRemoteDataSource
 import com.genesyx.app.data.remote.StubProfileRemoteDataSource
 import com.genesyx.app.data.remote.StubUserSupplementRemoteDataSource
+import com.genesyx.app.data.remote.QuizAnswersRemoteDataSource
+import com.genesyx.app.data.remote.StubQuizAnswersRemoteDataSource
+import com.genesyx.app.data.remote.SupabaseQuizAnswersRemoteDataSource
 import com.genesyx.app.data.remote.StubWaitlistRemoteDataSource
 import com.genesyx.app.data.remote.SupabaseGenesyxProductRemoteDataSource
 import com.genesyx.app.data.remote.SupabaseProfileRemoteDataSource
@@ -116,6 +119,15 @@ object NetworkModule {
         supabaseImpl: Provider<SupabaseWaitlistRemoteDataSource>,
         stub: Provider<StubWaitlistRemoteDataSource>,
     ): WaitlistRemoteDataSource = if (config.hasSupabase) supabaseImpl.get() else stub.get()
+
+    /** Quiz-answers remote source: real Supabase when configured, else local-first stub. */
+    @Provides
+    @Singleton
+    fun provideQuizAnswersRemoteDataSource(
+        config: AppConfig,
+        supabaseImpl: Provider<SupabaseQuizAnswersRemoteDataSource>,
+        stub: Provider<StubQuizAnswersRemoteDataSource>,
+    ): QuizAnswersRemoteDataSource = if (config.hasSupabase) supabaseImpl.get() else stub.get()
 
     /** User-supplement remote source: real Supabase when configured, else local-first stub. */
     @Provides

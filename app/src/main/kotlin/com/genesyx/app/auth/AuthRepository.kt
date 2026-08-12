@@ -8,6 +8,7 @@ import com.genesyx.app.data.CycleRepository
 import com.genesyx.app.data.DailyLogRepository
 import com.genesyx.app.data.PhRepository
 import com.genesyx.app.data.ProfileRepository
+import com.genesyx.app.data.QuizAnswersRepository
 import com.genesyx.app.data.SessionRepository
 import com.genesyx.app.data.UserSupplementRepository
 import com.genesyx.app.data.local.GenesyxDatabase
@@ -34,6 +35,7 @@ class AuthRepository @Inject constructor(
     private val dailyLogRepository: DailyLogRepository,
     private val phRepository: PhRepository,
     private val userSupplementRepository: UserSupplementRepository,
+    private val quizAnswersRepository: QuizAnswersRepository,
     private val database: GenesyxDatabase,
     private val reminderScheduler: ReminderScheduler,
     private val dispatchers: DispatcherProvider,
@@ -77,6 +79,9 @@ class AuthRepository @Inject constructor(
         // Reminders deep-link into the gated dashboard, so they must never outlive the session.
         reminderScheduler.cancelAll()
         withContext(dispatchers.io) { database.clearAllTables() }
+        // Quiz answers live in DataStore, not Room, so clearAllTables doesn't reach them — drop the
+        // local copy explicitly so the next account can't inherit them (the server row stays).
+        quizAnswersRepository.clearLocal()
         session.signOut()
         return DataResult.Success(Unit)
     }
@@ -104,6 +109,7 @@ class AuthRepository @Inject constructor(
             is DataResult.Success -> {
                 reminderScheduler.cancelAll()
                 withContext(dispatchers.io) { database.clearAllTables() }
+                quizAnswersRepository.clearLocal()
                 session.signOut()
                 DataResult.Success(Unit)
             }
@@ -133,6 +139,8 @@ class AuthRepository @Inject constructor(
                     // Same adopt-before-pull dance for the user's own supplements.
                     userSupplementRepository.adoptGuestEntries(user.id)
                     userSupplementRepository.refresh(user.id)
+                    // Quiz answers: server wins if present, else the guest's local answers are adopted.
+                    quizAnswersRepository.refresh(user.id)
                 }
                 DataResult.Success(Unit)
             }

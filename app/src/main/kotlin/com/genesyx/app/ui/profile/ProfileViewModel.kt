@@ -8,6 +8,7 @@ import com.genesyx.app.data.CycleRepository
 import com.genesyx.app.data.PartnerRepository
 import com.genesyx.app.data.PreferencesRepository
 import com.genesyx.app.data.ProfileRepository
+import com.genesyx.app.data.QuizAnswersRepository
 import com.genesyx.app.data.SessionRepository
 import com.genesyx.app.data.SyncStatusRepository
 import com.genesyx.app.domain.hydration.HydrationUnit
@@ -32,6 +33,7 @@ class ProfileViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val syncStatusRepository: SyncStatusRepository,
     private val cycleRepository: CycleRepository,
+    private val quizAnswersRepository: QuizAnswersRepository,
 ) : ViewModel() {
 
     val isSignedIn: StateFlow<Boolean> = sessionRepository.isSignedIn
@@ -54,10 +56,14 @@ class ProfileViewModel @Inject constructor(
     val cycleSettings: StateFlow<CycleSettings?> = cycleRepository.settings
     fun saveCycleSettings(settings: CycleSettings) = cycleRepository.upsert(settings)
 
-    // Tracking Preferences row → the shared hydration goal + display unit + glass size.
+    // Hydration row → the shared hydration goal + display unit + glass size.
     val hydrationGoalMl: StateFlow<Int> = preferencesRepository.hydrationGoalMl
     val hydrationUnit: StateFlow<HydrationUnit> = preferencesRepository.hydrationUnit
     val hydrationGlassMl: StateFlow<Int> = preferencesRepository.hydrationGlassMl
+
+    // Tracking Preferences row → the onboarding quiz answers, editable and synced to quiz_answers.
+    val quizAnswers: StateFlow<Map<String, String>> = quizAnswersRepository.answers
+    fun saveQuizAnswers(answers: Map<String, String>) = quizAnswersRepository.record(answers)
     fun setHydrationGoalMl(ml: Int) = preferencesRepository.setHydrationGoalMl(ml)
     fun setHydrationUnit(unit: HydrationUnit) = preferencesRepository.setHydrationUnit(unit)
     fun setHydrationGlassMl(ml: Int) = preferencesRepository.setHydrationGlassMl(ml)
