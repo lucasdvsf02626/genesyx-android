@@ -1,6 +1,7 @@
 package com.genesyx.app.data.local.datastore
 
 import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
@@ -31,6 +32,7 @@ class GenesyxPreferencesDataStore @Inject constructor(
 ) {
     private val json = Json { ignoreUnknownKeys = true }
     private val mapSerializer = MapSerializer(String.serializer(), String.serializer())
+    private val intMapSerializer = MapSerializer(String.serializer(), Int.serializer())
 
     private object Keys {
         val THEME = stringPreferencesKey("theme_mode")
@@ -48,6 +50,7 @@ class GenesyxPreferencesDataStore @Inject constructor(
         val READ_ARTICLE_SLUGS = stringSetPreferencesKey("read_article_slugs")
         val LAST_SEEN_ARTICLE_SLUG = stringPreferencesKey("last_seen_article_slug")
         val QUIZ_ANSWERS = stringPreferencesKey("quiz_answers")
+        val SUPPLEMENT_REMINDERS = stringPreferencesKey("supplement_reminders")
         val SIGNED_IN = booleanPreferencesKey("signed_in")
         val USER_ID = stringPreferencesKey("user_id")
         val EMAIL = stringPreferencesKey("email")
@@ -97,6 +100,14 @@ class GenesyxPreferencesDataStore @Inject constructor(
         } ?: emptyMap()
     }
 
+    /** Per-supplement daily reminder times (supplement id → minutes-of-day), device-local. Not
+     *  synced — a reminder schedule is a phone setting, not shared health data. */
+    val supplementReminders: Flow<Map<String, Int>> = dataStore.data.map { p ->
+        p[Keys.SUPPLEMENT_REMINDERS]?.let {
+            runCatching { json.decodeFromString(intMapSerializer, it) }.getOrNull()
+        } ?: emptyMap()
+    }
+
     val signedIn: Flow<Boolean> = dataStore.data.map { it[Keys.SIGNED_IN] ?: false }
     val userId: Flow<String?> = dataStore.data.map { it[Keys.USER_ID] }
     val email: Flow<String?> = dataStore.data.map { it[Keys.EMAIL] }
@@ -131,6 +142,21 @@ class GenesyxPreferencesDataStore @Inject constructor(
 
     /** Sign-out clears the local copy only — the server `quiz_answers` row is the owner's and stays. */
     suspend fun clearQuizAnswers() = dataStore.edit { it.remove(Keys.QUIZ_ANSWERS) }.let {}
+
+    private fun MutablePreferences.readReminders(): Map<String, Int> =
+        this[Keys.SUPPLEMENT_REMINDERS]?.let {
+            runCatching { json.decodeFromString(intMapSerializer, it) }.getOrNull()
+        } ?: emptyMap()
+
+    suspend fun setSupplementReminder(id: String, minutesOfDay: Int) = dataStore.edit {
+        it[Keys.SUPPLEMENT_REMINDERS] = json.encodeToString(intMapSerializer, it.readReminders() + (id to minutesOfDay))
+    }.let {}
+
+    suspend fun removeSupplementReminder(id: String) = dataStore.edit {
+        it[Keys.SUPPLEMENT_REMINDERS] = json.encodeToString(intMapSerializer, it.readReminders() - id)
+    }.let {}
+
+    suspend fun clearSupplementReminders() = dataStore.edit { it.remove(Keys.SUPPLEMENT_REMINDERS) }.let {}
 
     suspend fun setSession(userId: String, email: String?, displayName: String?) {
         dataStore.edit {

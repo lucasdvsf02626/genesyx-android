@@ -116,10 +116,13 @@ fun NutritionScreen(
             // come before the things she READS (focus foods, suggested plan, articles).
             // pH moved out to its own bottom tab (client request, 12 Aug 2026).
             Spacer(Modifier.height(12.dp))
+            val supplementReminders by viewModel.supplementReminders.collectAsState()
             UserSupplementsCard(
                 supplements = userSupplements,
+                reminders = supplementReminders,
                 onSave = { viewModel.saveSupplement(it) },
                 onDelete = { viewModel.deleteSupplement(it.id) },
+                onSetReminder = { id, name, minutes -> viewModel.setSupplementReminder(id, name, minutes) },
             )
 
             Spacer(Modifier.height(12.dp))

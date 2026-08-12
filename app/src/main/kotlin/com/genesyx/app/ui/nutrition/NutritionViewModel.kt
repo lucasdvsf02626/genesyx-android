@@ -7,6 +7,7 @@ import com.genesyx.app.data.DailyLogRepository
 import com.genesyx.app.data.GenesyxProductRepository
 import com.genesyx.app.data.PreferencesRepository
 import com.genesyx.app.data.StreakRepository
+import com.genesyx.app.data.SupplementReminderRepository
 import com.genesyx.app.data.SupplementWriteResult
 import com.genesyx.app.data.UserSupplementRepository
 import com.genesyx.app.domain.content.PhaseFood
@@ -56,12 +57,30 @@ class NutritionViewModel @Inject constructor(
     private val dailyLogRepository: DailyLogRepository,
     private val preferencesRepository: PreferencesRepository,
     private val userSupplementRepository: UserSupplementRepository,
+    private val supplementReminderRepository: SupplementReminderRepository,
     genesyxProductRepository: GenesyxProductRepository,
     streakRepository: StreakRepository,
 ) : ViewModel() {
 
     /** The user's own supplement entries — live from Room, synced in the background. */
     val userSupplements: StateFlow<List<UserSupplement>> = userSupplementRepository.supplements
+
+    /** supplement id → daily reminder time (minutes-of-day); absent = no reminder set. */
+    val supplementReminders: StateFlow<Map<String, Int>> = supplementReminderRepository.reminders
+
+    init {
+        // Re-arm the surviving reminders and drop any whose supplement was deleted, whenever the
+        // list changes (and on first collection — the app-start re-arm).
+        viewModelScope.launch {
+            userSupplementRepository.supplements.collect { supplementReminderRepository.reconcile(it) }
+        }
+    }
+
+    /** Set or clear a supplement's daily reminder. Minutes null = off. */
+    fun setSupplementReminder(id: String, name: String, minutesOfDay: Int?) {
+        if (minutesOfDay == null) supplementReminderRepository.clearReminder(id)
+        else supplementReminderRepository.setReminder(id, name, minutesOfDay)
+    }
 
     private val _catalogue = MutableStateFlow<List<GenesyxProduct>>(emptyList())
 

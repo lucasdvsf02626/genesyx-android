@@ -8,6 +8,25 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ## [Unreleased] — Single-source-of-truth bug batch (28 Jul device walkthrough)
 
+### Added (12 Aug 2026) — Per-supplement daily reminders
+- **Each supplement can now carry its own daily reminder.** In the Nutrition "Your supplements"
+  editor a supplement gains a *Daily reminder* switch; turning it on opens the system time picker and
+  schedules a local notification at that time, every day. Off cancels it. Default time 09:00.
+- **On-device, private, self-rescheduling** — mirrors the proven `ReminderWorker`/`ReminderScheduler`
+  pattern: a one-time WorkManager job fires `SupplementReminderWorker`, which posts the notification
+  and re-arms itself for the next day (no exact-alarm permission, no FCM). The notification title is
+  *"Time for your {name}"* on the Nutrition channel, tapping deep-links to Nutrition. It is
+  `VISIBILITY_PRIVATE` with a **name-free public version** (*"Supplement reminder"*) so the lock
+  screen never shows what she takes.
+- **No shared-schema change:** reminder times live only in DataStore (`supplement_reminders`, a
+  supplement-id → minutes-of-day map). Reminders reconcile when the supplement list changes (a
+  removed supplement's reminder is cancelled) and are **cleared on sign-out and account deletion**,
+  so they never bleed across accounts on a shared device.
+- Verified: `SupplementReminderSchedulerTest` (next-occurrence maths) — 365 unit tests green;
+  **`SupplementReminderWorkerInstrumentedTest` passes on the emulator**, proving the notification
+  actually fires with the correct title and the nameless lock-screen version; `:app:assembleRelease`
+  green (R8/minify clean, worker survives shrinking).
+
 ### Added (12 Aug 2026) — Nutrition meal cards; weekly streak + 7-day hydration challenge
 - **Focus foods are now attractive cards**, not a flat text list: each food gets its own rounded
   card with an accent header band, an icon, name + benefit, and a "Why this helps" expandable
