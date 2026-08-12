@@ -1739,4 +1739,68 @@ val learnArticles: List<Article> = listOf(
         disclaimerRequired = true,
         publishedAt = LocalDate.of(2026, 11, 1),
     ),
+    // The client's 12-week plan lists this as topic #7. It is scheduled last (the 12th Sunday iOS
+    // reserved) because its subject needed a framing decision: it is included ONLY as an unproven
+    // theory the evidence does not support — never as guidance the app offers. Written to pass the
+    // banned-phrase guard by construction (a debunking piece avoids the endorsement phrasing).
+    Article(
+        id = "w12",
+        slug = "shettles-method-theory-vs-evidence",
+        title = "The Shettles Method: theory versus evidence",
+        excerpt = "A popular theory about timing and your baby's sex — and why careful study has not backed it up.",
+        body = listOf(
+            ArticleBlock.Heading("What the theory claims"),
+            ArticleBlock.Paragraph(
+                "The Shettles method is a decades-old theory about the timing of sex and the sex of " +
+                    "a baby. It proposes that having sex very close to ovulation, rather than a few " +
+                    "days before, changes which sex is more likely to be conceived. It reached a lot " +
+                    "of people through a best-selling book and has been repeated ever since.",
+            ),
+            ArticleBlock.Heading("What the evidence actually shows"),
+            ArticleBlock.Paragraph(
+                "When researchers test it against real conception data, the effect does not hold up. " +
+                    "Reviews of well-designed studies find no reliable link between when in the cycle " +
+                    "sex happens and the sex of the resulting baby. The best current understanding is " +
+                    "that the sex of each child is essentially a chance event, settled at the moment " +
+                    "of fertilisation, and not something the timing of sex meaningfully shifts.",
+            ),
+            ArticleBlock.Paragraph(
+                "This is not a small gap in the evidence. It is the difference between a story that " +
+                    "sounds mechanical and plausible and a claim that repeated study has failed to " +
+                    "support.",
+            ),
+            ArticleBlock.Heading("Why it persists anyway"),
+            ArticleBlock.Paragraph(
+                "Roughly half of the couples who try it will get the result they hoped for by chance " +
+                    "alone, and those are the stories that get told and retold. A theory that lands " +
+                    "correctly half the time by coincidence can feel convincing to the people it " +
+                    "happened to work for — which is exactly why anecdote is a poor guide here.",
+            ),
+            ArticleBlock.Heading("What this means for you"),
+            ArticleBlock.BulletList(
+                listOf(
+                    "There is no timing trick this app can offer to influence a baby's sex, because none has been shown to work.",
+                    "Timing sex tightly around one predicted day is generally worse for conceiving at all than regular sex across the fertile window.",
+                    "If you meet a method that promises a particular sex, treat the confidence of the promise with caution — it is not matched by the evidence.",
+                ),
+            ),
+            ArticleBlock.Callout(
+                "Read about it out of interest by all means. Just don't reorganise your cycle, your " +
+                    "diet, or your relationship around a theory the evidence does not support.",
+            ),
+            ArticleBlock.Heading("The honest summary"),
+            ArticleBlock.Paragraph(
+                "The Shettles method is a theory, not a finding. Genesyx includes it here so you can " +
+                    "recognise it for what it is — an unproven idea — rather than leaving you to meet " +
+                    "it somewhere that sells it as fact.",
+            ),
+        ),
+        category = ArticleCategory.WELLNESS,
+        tags = listOf("shettles", "myths", "evidence", "conception"),
+        readingTime = "4 min read",
+        relatedArticleIds = listOf("w1", "w6", "w8"),
+        cta = ArticleCta(CtaType.OPEN_TRACK, "Open your cycle"),
+        disclaimerRequired = true,
+        publishedAt = LocalDate.of(2026, 11, 8),
+    ),
 )

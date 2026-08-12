@@ -8,6 +8,38 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ## [Unreleased] — Single-source-of-truth bug batch (28 Jul device walkthrough)
 
+### Added (12 Aug 2026) — quiz-answer persistence + Tracking-Preferences editor; the 12-week plan completed
+- **Onboarding answers now persist and sync.** New `QuizAnswersRepository` mirrors the answers to
+  the shared owner-only `quiz_answers` table (cross-platform contract with iOS: a `jsonb` map of
+  question-id → option-id). Recorded locally on quiz completion (`OnboardingQuizViewModel`), pushed
+  as an owed write on sign-in, server-wins-else-adopt on refresh (`AuthRepository.persist`), and
+  cleared from DataStore on sign-out/delete so one account's answers never reach the next. New
+  `QuizAnswersDto` + Supabase/stub remote sources + DI binding. **No schema change** — the table
+  already exists in production (REST-verified) and iOS authored it; Android is now a compatible
+  second client.
+- **Profile → Tracking Preferences is a real editor** (matches iOS): opens the onboarding questions
+  with the current answers, edits round-trip through `quiz_answers`. Hydration settings moved to
+  their own "Hydration" row so nothing was lost.
+- **The 12-week Learn plan is complete (32 articles).** Added the client's topic #7, "The Shettles
+  Method: theory versus evidence" — included ONLY as an unproven theory the evidence does not
+  support, never as guidance. Written to pass the banned-phrase guard **by construction** (a
+  debunking piece avoids the endorsement phrasing) — no guard weakening. Scheduled 2026-11-08 (the
+  12th Sunday iOS reserved), keeping the other 11 dates cross-platform-identical.
+- Tests: `QuizAnswersRepositoryTest` (5 — server-wins/adopt/clear/cross-account-isolation/guest),
+  `QuizAnswersDtoTest` (3 — wire shape), DataStore round-trip + clear, `AuthRepositoryTest` updated.
+  **354 unit tests green** (+10); `:app:lintDebug` + `:app:assembleRelease` + `:app:bundleRelease`
+  green.
+
+### Verified on emulator (12 Aug 2026) — real in-app run + instrumented suite
+- **`connectedDebugAndroidTest`: 19 tests, 0 failures** on `test_Pixel8.1` (API-level Pixel 8),
+  including the previously-flaky `CycleSettingsDialogTest` and the Room v7 migration tests.
+- **Live app run** (installed debug build, driven via adb): Splash renders in **light mode with the
+  floating egg graphics**; onboarding flow works (progress, "Did you know?" modal); the **gender
+  question shows "Do you have a preference for your baby's sex?" with Girl / Boy / No preference /
+  Prefer not to say**; Readiness Summary and Auth render. Signed-in tabs were not visually driven —
+  the dashboard requires an account and a throwaway account was deliberately not created in the
+  shared production DB; those surfaces are covered by the instrumented + unit suites.
+
 ### Release ops (12 Aug 2026) — code 14 built and archived; migrations reconciled; upload gated
 - **Version bumped 1.3.2 (13) → 1.4.0 (14)** (`app/build.gradle.kts`). Signed release AAB + APK built
   (R8/lint clean), identity verified `com.genesyx.app 14 / 1.4.0 / SDK 36`, signing cert SHA-1

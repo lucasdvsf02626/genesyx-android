@@ -68,8 +68,8 @@ class LearnDripTest {
     fun `releasedOn and newestReleased key off the exact publish date`() {
         assertEquals(listOf("vaginal-ph-explained"), LearnDrip.releasedOn(secondWeekly).map { it.slug })
         assertEquals("vaginal-ph-explained", LearnDrip.newestReleased(secondWeekly)?.slug)
-        // A week after the LAST release in the series (2026-11-01), nothing counts as "new" — the
-        // consecutive-Sunday cadence means every earlier date still has a release within 7 days.
-        assertNull(LearnDrip.newestReleased(LocalDate.of(2026, 11, 8)))
+        // A week after the LAST release (the Shettles piece, 2026-11-08), nothing counts as "new" —
+        // the consecutive-Sunday cadence means every earlier date still has a release within 7 days.
+        assertNull(LearnDrip.newestReleased(LocalDate.of(2026, 11, 15)))
     }
 }

@@ -44,10 +44,10 @@ class LearnContentTest {
     }
 
     @Test
-    fun `thirty-one articles, each tagged`() {
-        // 10 launch + 10 guides + 11 weekly-series, all ported from iOS 1.2.0 (18), 12 Aug.
-        // (Week-7 Shettles piece deliberately absent on both platforms — banned claim language.)
-        assertEquals(31, learnArticles.size)
+    fun `thirty-two articles, each tagged`() {
+        // 10 launch + 10 guides + 11 weekly-series + the Shettles piece (the 12-week plan's topic
+        // #7, added as an explicitly-unproven debunking article, scheduled on the 12th Sunday).
+        assertEquals(32, learnArticles.size)
         learnArticles.forEach { assertTrue("${it.slug} has no tags", it.tags.isNotEmpty()) }
     }
 
@@ -130,6 +130,7 @@ class LearnContentTest {
                 "supporting-sperm-health",
                 "fertility-supplements-explained",
                 "when-to-ask-for-support",
+                "shettles-method-theory-vs-evidence",
             ),
             learnArticles.filter { it.disclaimerRequired }.map { it.slug }.toSet(),
         )
