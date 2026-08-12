@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -298,53 +299,74 @@ private fun StepperButton(icon: androidx.compose.ui.graphics.vector.ImageVector,
     }
 }
 
+/**
+ * Focus foods as individual, attractive cards (an accent header strip + a "Why this helps"
+ * expandable) rather than one flat text list — the client's "replace text-only food suggestions
+ * with meal/recipe cards". Content is unchanged ([PhaseFood]); this is presentation only.
+ */
 @Composable
 private fun FocusFoodsCard(foods: List<PhaseFood>, expanded: String?, onToggle: (String) -> Unit) {
     val colors = MaterialTheme.colorScheme
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.cardColors(containerColor = colors.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-    ) {
-        Column {
-            Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 12.dp)) {
-                Eyebrow("Focus foods", color = colors.onSurfaceVariant)
-                Spacer(Modifier.height(4.dp))
-                Text("Your focus foods this phase", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
-            }
-            foods.forEachIndexed { i, food ->
-                val open = expanded == food.name
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onToggle(food.name) }
-                        .padding(horizontal = 20.dp, vertical = 14.dp),
-                ) {
-                    Box(Modifier.padding(top = 6.dp).size(12.dp).clip(CircleShape).background(food.accent))
-                    Spacer(Modifier.size(16.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text(food.name, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
-                        Spacer(Modifier.height(2.dp))
-                        Text(food.shortDesc, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
-                        AnimatedVisibility(visible = open) {
+    Column {
+        Eyebrow("Focus foods", color = colors.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp, bottom = 4.dp))
+        Text(
+            "Your focus foods this phase",
+            style = MaterialTheme.typography.titleLarge,
+            color = colors.onSurface,
+            modifier = Modifier.padding(start = 4.dp, bottom = 12.dp),
+        )
+        foods.forEach { food ->
+            val open = expanded == food.name
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 10.dp)
+                    .clickable { onToggle(food.name) },
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = colors.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+            ) {
+                Column {
+                    // Accent header band — gives each food its own colour identity.
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .height(6.dp)
+                            .background(Brush.horizontalGradient(listOf(food.accent, food.accent.copy(alpha = 0.45f)))),
+                    )
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Box(
+                            Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(food.accent.copy(alpha = 0.16f)),
+                            contentAlignment = Alignment.Center,
+                        ) { Box(Modifier.size(14.dp).clip(CircleShape).background(food.accent)) }
+                        Spacer(Modifier.size(14.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(food.name, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+                            Spacer(Modifier.height(2.dp))
+                            Text(food.shortDesc, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                        }
+                        Icon(
+                            Icons.Filled.ChevronRight,
+                            if (open) "Hide details" else "Show details",
+                            tint = colors.onSurfaceVariant,
+                            modifier = Modifier.size(18.dp).rotate(if (open) 90f else 0f),
+                        )
+                    }
+                    AnimatedVisibility(visible = open) {
+                        Column(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp)) {
                             Text(
-                                food.expandedDesc,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = colors.onSurfaceVariant.copy(alpha = 0.8f),
-                                modifier = Modifier.padding(top = 8.dp),
+                                "Why this helps",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = food.accent,
                             )
+                            Spacer(Modifier.height(4.dp))
+                            Text(food.expandedDesc, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
                         }
                     }
-                    Icon(
-                        Icons.Filled.ChevronRight,
-                        null,
-                        tint = colors.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 4.dp).size(18.dp).rotate(if (open) 90f else 0f),
-                    )
-                }
-                if (i < foods.lastIndex) {
-                    Box(Modifier.fillMaxWidth().padding(horizontal = 20.dp).height(1.dp).background(colors.outline.copy(alpha = 0.6f)))
                 }
             }
         }

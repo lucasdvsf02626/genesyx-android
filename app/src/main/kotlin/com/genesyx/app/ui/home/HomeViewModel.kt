@@ -37,6 +37,9 @@ import java.time.LocalDate
 import java.time.LocalTime
 import javax.inject.Inject
 
+/** Days of the "stay hydrated" challenge — log water 7 days running. */
+const val HYDRATION_CHALLENGE_TARGET = 7
+
 /** Home screen UI state. Mirrors the web Home (greeting, cycle hero, hydration, streak). */
 data class HomeUiState(
     val userName: String = "Guest",
@@ -63,6 +66,10 @@ data class HomeUiState(
     val hydrationPercent: Int = 0,
     val hydrationPace: HydrationPace = HydrationPace.NOT_STARTED,
     val hydrationStreak: Int = 0,
+    /** Consecutive weeks that counted (4+ logged days) — the weekly streak, shown beside the daily one. */
+    val weeklyStreak: Int = 0,
+    /** Progress toward the 7-day hydration challenge: consecutive days with water, capped at 7. */
+    val hydrationChallengeDays: Int = 0,
     /** Mon..Sun of the current week: true where that day hit the goal. */
     val weekOnGoal: List<Boolean> = List(7) { false },
     val daysOnGoal: Int = 0,
@@ -191,6 +198,10 @@ class HomeViewModel @Inject constructor(
             hydrationPercent = (waterMl * 100 / goalMl).coerceIn(0, 100),
             hydrationPace = coaching.pace,
             hydrationStreak = streaks.dailyHydration,
+            weeklyStreak = streaks.weeklyStreak,
+            // A rolling 7-day challenge: keep water logged 7 days running. Caps at 7 (a completed
+            // challenge shows full), and simply rolls forward as the hydration streak grows.
+            hydrationChallengeDays = streaks.dailyHydration.coerceAtMost(HYDRATION_CHALLENGE_TARGET),
             weekOnGoal = weekOnGoal,
             daysOnGoal = streaks.daysOnGoal,
             hydrationCoaching = coaching.message,

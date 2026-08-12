@@ -25,6 +25,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
@@ -161,26 +162,25 @@ fun HomeContent(
                 Column {
                     Text(state.greeting, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
                     Text(state.userName, style = MaterialTheme.typography.headlineMedium, color = colors.onBackground)
-                    // The streak chip counts ANY logged activity (StreakEngine.dailyActivity), not
-                    // water alone. Hidden below two days — a "1-day streak" congratulates noise.
+                    // Two streaks side by side: the daily streak counts ANY logged activity
+                    // (StreakEngine.dailyActivity, hidden below two days — a "1-day streak"
+                    // congratulates noise), and the weekly streak counts weeks that reached the
+                    // 4-of-7 bar. Each shows only once it means something.
                     val streak = state.streakDays ?: 0
-                    if (streak >= 2) {
+                    if (streak >= 2 || state.weeklyStreak >= 1) {
                         Spacer(Modifier.height(6.dp))
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .clip(CircleShape)
-                                .background(ElectricPink.tintOnWhite(0.12f))
-                                .padding(horizontal = 10.dp, vertical = 4.dp),
-                        ) {
-                            Icon(Icons.Filled.LocalFireDepartment, null, tint = ElectricPink, modifier = Modifier.size(14.dp))
-                            Spacer(Modifier.size(4.dp))
-                            Text(
-                                "$streak-day streak",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = colors.onSurface,
-                                fontWeight = FontWeight.Medium,
-                            )
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            if (streak >= 2) {
+                                StreakChip(Icons.Filled.LocalFireDepartment, "$streak-day streak", ElectricPink)
+                            }
+                            if (state.weeklyStreak >= 1) {
+                                val weeks = state.weeklyStreak
+                                StreakChip(
+                                    Icons.Filled.CalendarMonth,
+                                    if (weeks == 1) "1-week streak" else "$weeks-week streak",
+                                    ElectricLavender,
+                                )
+                            }
                         }
                     }
                 }
@@ -264,6 +264,9 @@ fun HomeContent(
 
             Spacer(Modifier.height(12.dp))
             HydrationSummaryCard(state, onOpenHydration)
+
+            Spacer(Modifier.height(12.dp))
+            HydrationChallengeCard(state.hydrationChallengeDays, onOpenHydration)
 
             if (com.genesyx.app.core.FeatureFlags.PH_TRACKING) {
                 Spacer(Modifier.height(12.dp))
@@ -465,6 +468,75 @@ private fun TodayFocusCard(state: HomeUiState) {
                 Text(state.todayFocusBody.orEmpty(), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
             } else {
                 Text("Complete your cycle setup to see focus foods.", style = MaterialTheme.typography.bodyLarge, color = colors.onSurfaceVariant)
+            }
+        }
+    }
+}
+
+@Composable
+private fun StreakChip(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, accent: Color) {
+    val colors = MaterialTheme.colorScheme
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.clip(CircleShape).background(accent.tintOnWhite(0.12f)).padding(horizontal = 10.dp, vertical = 4.dp),
+    ) {
+        Icon(icon, null, tint = accent, modifier = Modifier.size(14.dp))
+        Spacer(Modifier.size(4.dp))
+        Text(label, style = MaterialTheme.typography.labelMedium, color = colors.onSurface, fontWeight = FontWeight.Medium)
+    }
+}
+
+/**
+ * The 7-day "stay hydrated" challenge: log water seven days running. Progress is the hydration
+ * streak (capped at 7); a filled row of dots and encouraging, non-guilt copy — the same tone as the
+ * streak. Rolls forward on its own as the streak grows; celebrates on completion.
+ */
+@Composable
+private fun HydrationChallengeCard(days: Int, onOpen: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    val target = HYDRATION_CHALLENGE_TARGET
+    val done = days >= target
+    Card(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onOpen),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = colors.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    ) {
+        Column(Modifier.padding(20.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    Modifier.size(38.dp).clip(RoundedCornerShape(12.dp)).background(ElectricBlue.copy(alpha = 0.15f)),
+                    contentAlignment = Alignment.Center,
+                ) { Icon(Icons.Outlined.WaterDrop, null, tint = ElectricBlue, modifier = Modifier.size(20.dp)) }
+                Spacer(Modifier.size(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        if (done) "Hydration challenge complete!" else "7-day hydration challenge",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = colors.onSurface,
+                    )
+                    Text(
+                        when {
+                            done -> "Seven days running — beautifully hydrated. Keep it going."
+                            days == 0 -> "Log water today to start your 7-day streak."
+                            else -> "$days of $target days — a glass a day keeps it going."
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = colors.onSurfaceVariant,
+                    )
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                repeat(target) { i ->
+                    Box(
+                        Modifier
+                            .weight(1f)
+                            .height(8.dp)
+                            .clip(CircleShape)
+                            .background(if (i < days) ElectricBlue else colors.surfaceVariant.copy(alpha = 0.6f)),
+                    )
+                }
             }
         }
     }

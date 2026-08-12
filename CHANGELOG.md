@@ -8,6 +8,19 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ## [Unreleased] — Single-source-of-truth bug batch (28 Jul device walkthrough)
 
+### Added (12 Aug 2026) — Nutrition meal cards; weekly streak + 7-day hydration challenge
+- **Focus foods are now attractive cards**, not a flat text list: each food gets its own rounded
+  card with an accent header band, an icon, name + benefit, and a "Why this helps" expandable
+  (client's "replace text-only food suggestions with meal/recipe cards"). Content unchanged
+  (`PhaseFood`) — presentation only.
+- **Weekly streak shown beside the daily streak** on Home (a second chip: "N-week streak", from the
+  existing `StreakEngine.weeklyStreak`, the 4-of-7-days-a-week contract). Each chip appears only once
+  it means something.
+- **7-day hydration challenge** on Home: "log water 7 days running", progress = the hydration streak
+  capped at 7, shown as a filled dot row with encouraging non-guilt copy (start / N-of-7 / complete).
+  Rolls forward on its own; no new storage — derived from the streak engine.
+- Verified: 360 unit tests green; `:app:assembleRelease` green.
+
 ### Fixed (12 Aug 2026) — connectivity: the sync indicator reads "not synced yet", never "offline"
 - The lingering sync indicator was being read as "you're offline" when it actually means "this row
   hasn't reached the server yet" — a reassuring state, since the change is already safe on the
