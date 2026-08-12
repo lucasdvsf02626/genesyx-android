@@ -128,8 +128,13 @@ fun GenesyxNavGraph(
             ReminderSettingsScreen(onBack = { navController.popBackStack() })
         }
 
-        // ── Tracker details (reached from Track's "Your Trackers" list + Home deep links)
-        composable(Screen.CycleDetail.route) {
+        // ── Tracker details (reached from Track's "Your Trackers" list + Home/notification deep
+        // links). Each carries genesyx://tracker/{name} so a notification can route to the exact
+        // tracker; opened cold, the nav host builds a synthetic back stack to the start destination.
+        composable(
+            Screen.CycleDetail.route,
+            deepLinks = listOf(navDeepLink { uriPattern = "genesyx://tracker/cycle" }),
+        ) {
             CycleDetailScreen(onBack = { navController.popBackStack() })
         }
         composable(
@@ -146,17 +151,26 @@ fun GenesyxNavGraph(
                 onOpenPlan = { navController.navigate(Screen.NutritionDetail.route) },
             )
         }
-        composable(Screen.SleepDetail.route) {
+        composable(
+            Screen.SleepDetail.route,
+            deepLinks = listOf(navDeepLink { uriPattern = "genesyx://tracker/sleep" }),
+        ) {
             SleepDetailScreen(onBack = { navController.popBackStack() })
         }
-        composable(Screen.SymptomsDetail.route) {
+        composable(
+            Screen.SymptomsDetail.route,
+            deepLinks = listOf(navDeepLink { uriPattern = "genesyx://tracker/symptoms" }),
+        ) {
             SymptomsDetailScreen(
                 onBack = { navController.popBackStack() },
                 onEditToday = { navController.navigate(Screen.Log.create()) },
                 onOpenHistory = { navController.navigate(Screen.LogHistory.route) },
             )
         }
-        composable(Screen.NutritionDetail.route) {
+        composable(
+            Screen.NutritionDetail.route,
+            deepLinks = listOf(navDeepLink { uriPattern = "genesyx://tracker/nutrition" }),
+        ) {
             NutritionDetailScreen(
                 onBack = { navController.popBackStack() },
                 onLog = { navController.navigate(Screen.Log.create()) },

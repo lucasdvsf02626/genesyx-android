@@ -60,6 +60,7 @@ import com.genesyx.app.domain.model.DailyLog
 import com.genesyx.app.domain.model.EnergyLevel
 import com.genesyx.app.domain.model.Mood
 import com.genesyx.app.domain.model.Supplement
+import com.genesyx.app.domain.model.SupplementLogRows
 import com.genesyx.app.ui.components.Eyebrow
 import com.genesyx.app.ui.components.GxPrimaryButton
 import com.genesyx.app.ui.components.ScreenHeader
@@ -465,9 +466,12 @@ private fun SupplementsDialog(selected: Set<String>, custom: List<String>, onTog
         title = { Text("Supplements") },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
-                Supplement.loggable.forEach { s -> SupplementRow(display = s.displayName, stored = s.wireName) }
-                // The user's own entries (Nutrition → Your supplements); stored under their own name.
-                custom.forEach { name -> SupplementRow(display = name, stored = name) }
+                // Built-ins, then the user's own entries, then any already-logged string that no
+                // longer matches a current entry (renamed/other device) — so nothing logged is
+                // ever hidden or un-untoggleable. See SupplementLogRows.
+                SupplementLogRows.forDay(selected, custom).forEach { row ->
+                    SupplementRow(display = row.display, stored = row.stored)
+                }
             }
         },
         confirmButton = { TextButton(onClick = onDismiss) { Text("Done", color = ElectricLavender) } },
