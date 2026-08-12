@@ -70,11 +70,11 @@ fun LearnScreen(
 ) {
     val colors = MaterialTheme.colorScheme
     val introSeen by viewModel.introSeen.collectAsState()
-    val firstOpen by viewModel.firstOpenEpochDay.collectAsState()
     var selectedCategory by rememberSaveable { mutableStateOf<ArticleCategory?>(null) }
 
-    // The drip gate: only articles whose week has been revealed. A no-op while everything is week 0.
-    val available = LearnDrip.available(LocalDate.now(), firstOpen)
+    // The drip gate: only articles whose publish date has arrived. Always-available articles are
+    // shown from day one; a future-dated one stays hidden until its date.
+    val available = LearnDrip.published(LocalDate.now())
     val visible = available.filter { selectedCategory == null || it.category == selectedCategory }
     // The featured hero only leads the unfiltered list; inside a filter it's just another article.
     val featured = if (selectedCategory == null) visible.firstOrNull { it.featured } else null
@@ -225,6 +225,7 @@ internal fun ArticleCategory.accent(): Color = when (this) {
     ArticleCategory.TRACKING -> ElectricBlue
     ArticleCategory.INSIGHTS -> ElectricPink
     ArticleCategory.WELLNESS -> ElectricLavender
+    ArticleCategory.GUIDES -> ElectricPink
 }
 
 /**

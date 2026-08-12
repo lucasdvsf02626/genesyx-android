@@ -46,17 +46,13 @@ import com.genesyx.app.ui.navigation.Screen
 import com.genesyx.app.ui.theme.ElectricLavender
 
 /** Client-side search over the bundled articles. No debounce, no index — it's a few string
- *  compares. Searches only what [LearnDrip] has revealed, so an unreleased week can't be found. */
+ *  compares. Searches only what [LearnDrip] has revealed, so an unreleased article can't be found. */
 @Composable
-fun LearnSearchScreen(
-    navController: NavController,
-    viewModel: LearnViewModel = hiltViewModel(),
-) {
+fun LearnSearchScreen(navController: NavController) {
     val colors = MaterialTheme.colorScheme
     var query by rememberSaveable { mutableStateOf("") }
     val focusRequester = remember { FocusRequester() }
-    val firstOpen by viewModel.firstOpenEpochDay.collectAsState()
-    val results = searchArticles(query, LearnDrip.available(LocalDate.now(), firstOpen))
+    val results = searchArticles(query, LearnDrip.published(LocalDate.now()))
 
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
 

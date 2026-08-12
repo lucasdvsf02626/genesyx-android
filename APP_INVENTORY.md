@@ -1,228 +1,526 @@
-# Genesyx — Product Inventory
+# Genesyx Android — Repository and App Inventory
 
-Describes **current `main` at 1.3.1 (versionCode 12)**, targeting **Android 16**
-(compileSdk/targetSdk 36, minSdk 26), **Room schema v5**. Every claim below was verified against the
-tree on **2026-07-27** (file:line references throughout). Source root:
-`app/src/main/kotlin/com/genesyx/app/`.
+**Purpose:** the code-backed map of the current Genesyx Android checkout: app surfaces, tracked
+data, derived logic, persistence and sync, notifications, backend gates, privacy and verification.
 
-`FeatureFlags` [`core/FeatureFlags.kt`]: `PH_TRACKING` **on** (:11), `PUSH_NOTIFICATIONS` **on**
-(:37, local reminders), `ADMIN_CLIENTS` off (:18), `PARTNER_INVITES` off (:27).
+This inventory was refreshed from the repository on **12 August 2026**. It describes the inspected
+source, not a promise that every source feature is deployed to Supabase or published through Play.
 
-Six bottom tabs — **Home, Track, Nutrition, Insights, Learn, Profile** — in that order
-[`ui/navigation/Screen.kt:55`]; deliberately one over the Material 3 maximum of five (Learn took
-Profile's slot, :35). The bottom bar hides on every other screen [`ui/navigation/Screen.kt:58-84`].
-
----
-
-## 1. SCREENS — 26 routes
-
-Start destination is Splash [`ui/navigation/GenesyxNavGraph.kt:41`].
-
-| Screen | Route | Purpose | Entry points |
-|---|---|---|---|
-| Splash | `splash` | Signed-out landing; brand statement and the two ways in. | Launch destination with no session; after account deletion |
-| Onboarding Intro | `onboarding_intro` | Explains the three things the app does before asking anything. | "Start Your Personalised Quiz" on Splash |
-| Onboarding Quiz | `onboarding_quiz` | Five questions (stage, cycle regularity, supplements, sex preference, support need). | "Continue" on Intro |
-| Readiness Summary | `readiness_summary` | Closes the quiz; routes to guide or account. | Final quiz answer |
-| Waitlist | `waitlist` | Collects an email for a nutrition guide. | "Unlock My Free Guide" on Readiness Summary |
-| Home | `home` | Daily dashboard. First-run setup card when no cycle is set [`ui/home/HomeScreen.kt:462-515`]; otherwise cycle hero + 3 metrics (Cycle day / Next period / Ovulation, :251-283), Today's focus (:296-316), hydration ring card (:318-407), pH nudge card (:414-459, flag-gated), "Log today", signed-out sign-in banner. Avatar menu: Sign in / Profile / Cycle setup (:169-187). **No pregnancy link on Home.** | Bottom tab; launch destination when signed in |
-| Track | `track` | Month calendar of cycle phases + "Your Trackers" list of six rows with real per-signal summaries (`TrackerSummaryLogic`), each opening a detail screen. | Bottom tab; pH card on Insights |
-| Cycle Detail | `tracker/cycle` | Phase + metrics + explicitly-estimated fertile window / ovulation; edit settings. | Track "Your Trackers" |
-| Hydration Detail | `tracker/hydration` | The canonical hydration editor: quick-add + manual entry (clamped), 7-day bars, days-on-goal, streak, daily history. Writes only through `DailyLogRepository`. | Track "Your Trackers"; Home hydration card (`genesyx://tracker/hydration`) |
-| Vaginal pH Detail | `tracker/ph` | The pH tracker section (validation, chart, history). | Track "Your Trackers"; Home pH card (`genesyx://tracker/ph`) |
-| Sleep Detail | `tracker/sleep` | Week summary + hours/minutes editor. | Track "Your Trackers" |
-| Symptoms Detail | `tracker/symptoms` | 4-week heatmap + dated history into the log flow. | Track "Your Trackers" |
-| Nutrition Detail | `tracker/nutrition` | Supplement summary into the logging flow. | Track "Your Trackers" |
-| Nutrition | `nutrition` | Phase-aware food focus, hydration stepper + goal dialog, supplement plan card, article entry. | Bottom tab |
-| Insights | `insights` | All-real-data trend cards — see §3. | Bottom tab |
-| Learn | `learn` | Landing for ten bundled articles: featured hero, category chips, search. | Bottom tab; "See all articles" on Nutrition |
-| Learn Search | `learn/search` | Free-text search over title, excerpt, tags. | Search icon on Learn |
-| Article Detail | `learn/article/{slug}` | Reads one article; CTA buttons, related articles, share, medical disclaimer on 6 of 10. | Article rows anywhere |
-| Log | `log` | Records the day: mood, energy, symptom chips + custom add, Sleep / Water / Supplements dialog tiles [`ui/screens/LogScreen.kt:231-238`], notes. Saves online **or offline** (offline queues — see §5). Back with unsaved edits raises "Discard your changes?" (`BackHandler`, :120-121, :264-288). | "Log today" on Home; "Add to today's log" on Track; article CTAs; `genesyx://log` |
-| Log History | `log_history` | Everything tracked, newest first (daily logs + pH readings per day). | "My logs" card on Insights |
-| Reminder Settings | `reminder_settings` | Master toggle + per-reminder toggles for the local reminder engine. | Profile → Reminders [`ui/profile/ProfileScreen.kt:203`] |
-| Pregnancy | `pregnancy` | Placeholder pregnancy mode (static copy, "—" trimester). | Profile focus toggle only [`ui/profile/ProfileScreen.kt:149-152`] |
-| Profile | `profile` | Account, focus toggle, Reminders row, tracking rows, theme selector, privacy link, log out, delete account. | Bottom tab; avatar menu on Home |
-| Auth | `auth` | Email/password sign-in / sign-up, "Continue with Google". | Splash; Home banner; Readiness Summary; Waitlist |
-| Invite | `invite/{code}` | Accepts a partner invite from a link (feature gated off). | Deep link only |
-| Clients | `clients` | Admin client list. **Unreachable** — the Profile row is gated off. | None |
-
-**Deep links.** In-app / notification navigation (nav graph only): `genesyx://{home,track,nutrition,insights,log}`, `genesyx://tracker/{hydration,ph}`. Externally launchable (manifest intent-filters): only the invite pair — `genesyx://invite/{code}` and `https://genesis-cycle-guide.lovable.app/invite/{code}` [`AndroidManifest.xml:37-53`].
-
----
-
-## 2. TRACKERS — what the app records
-
-| Tracker | What she records | Constraints / model | Logged from | Detail screen |
-|---|---|---|---|---|
-| Cycle | Last period date, cycle length, period length | Phases, fertile window and ovulation are **derived estimates** (`domain/cycle/CycleEngine.kt`), nothing per-day stored | Cycle dialog (Home / Track / Cycle Detail) | `tracker/cycle` |
-| Mood | One of the mood options | Facet of the daily log | Log screen | — |
-| Energy | Segmented level | Facet of the daily log | Log screen | — |
-| Symptoms | Preset chips + free-text custom symptoms | Facet of the daily log | Log screen | `tracker/symptoms` |
-| Sleep | Hours + minutes | Facet of the daily log | Log screen; Sleep Detail | `tracker/sleep` |
-| Hydration | Water in ml | Scored against the **user-set goal** — range 1000–5000 ml, default 2400, step 200 [`domain/streaks/StreakEngine.kt:62-70`], clamped at the single writer [`data/PreferencesRepository.kt:43-62`] | Log screen; Hydration Detail (canonical editor); Nutrition stepper | `tracker/hydration` |
-| Supplements | Folate, Omega-3, Vitamin D, Zinc | One vocabulary across log, Nutrition and Insights | Log screen; Nutrition Detail | `tracker/nutrition` |
-| Vaginal pH | A pH value | Input **3.8–7.0**, step 0.1, default 4.2; two bands — Healthy **3.8–4.5**, Elevated **> 4.5** [`domain/ph/PhStatus.kt:20-32`] — approved for 1.3.2. Out-of-range writes are rejected in the data layer [`data/PhRepository.kt:65-69`]. Pre-migration readings persist as **"urine (legacy)"** (`PhCopy.LEGACY_MARKER`): excluded from vaginal insights, muted/hollow on the chart. | pH dialog (Track / pH Detail) | `tracker/ph` |
-| Notes | Free text | Facet of the daily log | Log screen | — |
-
----
-
-## 3. FEATURES
-
-| Feature | Data source | Flagged? | Status |
-|---|---|---|---|
-| Cycle phase engine (derived, nothing stored) | Computed from settings [`domain/cycle/CycleEngine.kt`] | No | live |
-| Cycle settings | Room is truth, written through to Supabase [`data/CycleRepository.kt:44-54`] | No | live |
-| Daily log (mood, energy, symptoms, sleep, water, supplements, notes) | Room is truth, written through with an **offline queue** [`data/DailyLogRepository.kt:76-98`] | No | live |
-| Daily-log offline sync queue | `PENDING_UPSERT` + `DailyLogSyncWorker` with WorkManager backoff; refresh skips unsynced rows | No | live |
-| Log back-guard | Confirm-discard dialog + `BackHandler` [`ui/screens/LogScreen.kt:120-121,264-288`] | No | live |
-| Hydration tracking, user-set goal, streaks, week buckets | Daily-log facet + DataStore goal; one week-bucketing impl (`domain/time/WeekBuckets`) | No | live |
-| Intraday hydration coaching | `HydrationCoach` on Home + Nutrition | No | live |
-| Vaginal pH tracking + **sync** | Room is truth, syncs to Supabase with a retry queue [`data/PhRepository.kt`, `data/sync/PhSyncWorker.kt`]; card copy discloses the sync [`ui/components/PhTrackerCard.kt:126-130`] | `PH_TRACKING` **on** | live |
-| **Local reminders** | Strictly on-device — WorkManager, no FCM/token. 6 `ReminderKind`s (daily log, missed-log, hydration, weekly insights, re-engagement; nutrition reserved) across 4 channels; self-rescheduling chain; pure/tested `ReminderPolicy` (quiet-hours wrap, already-logged-today, daily cap, re-engagement pacing); `BootReceiver`; `cancelAll()` on sign-out/delete. The Profile master toggle is genuinely consumed [`notifications/ReminderPolicy.kt:72`]. Default-enabled: daily log, missed-log, weekly insights, re-engagement. | `PUSH_NOTIFICATIONS` **on** | live |
-| Insights — **all real data** | `InsightsViewModel` combines the real repos; every card has a genuine empty state. Cards: Log-history entry, Weekly summary, Consistency, Vaginal pH (flag-gated), Hydration, Nutrition consistency, Supplement adherence, Sleep, Cycle regularity, Symptom patterns, Ovulation [`ui/insights/InsightsScreen.kt:91-131`] | No | live |
-| Streak engine v2 + cross-platform contract | `domain/tracking/tracking_test_vectors.json` — 16 vectors mirrored into the iOS repo; `TrackingVectorTest` runs them against the real engine | No | live |
-| Learn (10 bundled articles, search, filters, related, share, CTAs) | Compiled into the app [`domain/content/LearnContent.kt`] | No | live |
-| Email/password auth + Google sign-in | Supabase (local fallback when unconfigured) | Google self-gates on client ID | live |
-| Session persistence + launch routing | Stored session decides the first screen | No | live |
-| Account deletion (remote-first) | Server delete must succeed before local wipe [`auth/AuthRepository.kt`] | No | live |
-| Theme (system/light/dark), display name, focus mode | Persisted preferences | No | live |
-| Waitlist email capture | Stored server-side (`waitlist_emails`, insert-only RLS) before the success screen shows; offline shows an error [`ui/onboarding/WaitlistViewModel.kt`] | No | live (1.3.1) |
-| Password change | Re-verifies the current password, then updates via Supabase Auth; loading/error/success in the dialog [`auth/SupabaseAuthService.kt`] | No | live (1.3.1) |
-| Guest pH adoption on sign-in | Guest readings are reassigned to the account and queued for push [`data/PhRepository.kt` `adoptGuestReadings`] | Follows `PH_TRACKING` | live (1.3.1) |
-| Onboarding quiz answers | Held in memory, discarded on completion [`ui/onboarding/OnboardingQuizScreen.kt:53`] | No | dormant |
-| Pregnancy mode | Static placeholder copy | No | dormant |
-| Partner invites and linking | Writes a Room row, sends no email, links a placeholder | `PARTNER_INVITES` **off** | dormant |
-| Client management + demo seeding | Remote source is a stub | `ADMIN_CLIENTS` **off** | dormant |
-
----
-
-## 4. USER JOURNEYS
-
-### A. First run to a working account
-
-Splash → Intro (three benefits) → five-question quiz (answers required per step; two "Did you know?"
-modals; back preserves answers) → Readiness Summary → "Unlock My Free Guide" (Waitlist) or
-"Register / Login". The dashboard is reachable only through an account; signing in clears the
-onboarding stack and lands on Home. Cycle settings, daily logs and pH readings pull from the server
-in the background. Later cold starts go straight to Home while the session persists.
-
-### B. Setting up a cycle and logging a day
-
-1. Before setup, Home shows the first-run setup card (last-period date picker + "Start tracking").
-2. Saving cycle settings stores locally and pushes to the server; Home fills with the cycle hero,
-   three metrics and Today's focus; Track paints the phase-coloured month calendar.
-3. "Log today" opens the Log screen pre-filled with anything already recorded for today. Everything
-   is optional.
-4. **Saving works online or offline.** An offline save lands in Room as `PENDING_UPSERT` and a
-   WorkManager job retries with backoff until it reaches the server ("push failed — queued for
-   retry" → `Worker result SUCCESS`). Verified on-device 2026-07-13.
-5. Back with unsaved edits asks "Discard your changes?" instead of silently dropping them.
-6. Home's hydration ring, streak and week dots update; the streak counts consecutive days with any
-   water logged; "days on goal" counts days the user-set goal was actually hit.
-
-### C. Reading the Learn section
-
-Ten articles: one featured hero, five category chips, auto-focused search, related-article links
-that replace rather than stack, share (title + excerpt + site root), medical disclaimer on six of
-ten, CTAs that jump into Log/Track/Nutrition/Insights or another article.
-
-### D. Tracking vaginal pH
-
-*(Relabelled from urine pH in the post-v1.2 migration. Range/thresholds approved for 1.3.2.)*
-
-1. Entry points: Track "Your Trackers" → Vaginal pH detail; Home pH-nudge card (deep link); Insights
-   pH card.
-2. "Log pH" records a value; out-of-range (outside 3.8–7.0) is rejected and never stored.
-3. Values round to one decimal and save to the device immediately; a signed-in user's reading also
-   pushes to Supabase, with a queued retry on failure. Guests stay entirely on-device.
-4. Deleting a reading tombstones it so the deletion syncs; the server hard-deletes on account
-   erasure.
-5. Pre-migration readings surface as "urine (legacy)": excluded from vaginal insight/status
-   computation, muted/hollow on the chart, and the Home nudge asks for a fresh vaginal reading
-   rather than presenting the old value as current.
-6. Insights shows current value, status, trend, 7- and 30-day averages, and neutral written copy
-   (`domain/ph/PhCopy.kt` — no condition names, no dietary advice, GP/pharmacist signposting;
-   enforced by banned-phrase tests).
-
-### E. Deleting an account
-
-Profile → "Delete account" (signed-in only) → confirmation → server deletes the account **first**;
-only then is local data wiped and the session cleared; failure keeps the user signed in with the
-error shown. Success clears the back stack to Splash. Reminders are cancelled on sign-out/delete.
-
----
-
-## 5. DATA & SYNC
-
-**Stored on the device.** Room v5 [`data/local/GenesyxDatabase.kt:34`], seven tables scoped per
-user: `cycle_settings`, `daily_logs`, `ph_readings`, `profiles`, `clients`, `partner_invites`,
-`partner_links`. DataStore holds the session and preferences: theme, reminders master + per-kind
-toggles, focus mode, hydration goal, Learn-hint and pH-notice dismissals.
-
-**The device is the source of truth.** Every write lands locally first; the server is a mirror.
-
-**What syncs to Supabase** (only when built with server credentials; otherwise stub no-ops):
-profiles, cycle settings, daily logs, **and pH readings**. Client records and partner rows never
-leave the device. Reminders add no server surface — strictly local.
-
-**Offline behaviour by data type:**
-
-- *Daily logs* — offline writes **queue** (`PENDING_UPSERT`, `DailyLogSyncWorker`, WorkManager
-  backoff). `DailyLogRepository.refresh` skips rows with unsynced local changes — the rule that
-  makes offline writes safe, covered by `a_pull_must_not_overwrite_an_unsynced_local_edit`.
-- *pH readings* — same shape: pending status + `PhSyncWorker` retry; pull-merge by record id
-  prefers whichever copy was updated last and never overwrites unsynced local edits.
-- *Cycle settings* — the local write persists and drives the UI, but a failed remote push is only
-  logged; **nothing retries it**, and a later refresh can overwrite a never-pushed offline edit
-  with the server's older copy [`data/CycleRepository.kt:44-66`]. The one remaining offline gap.
-
-**Guests** (`LOCAL_USER_ID`): daily-log and pH writes are marked `SYNCED` without a push (no server
-target under RLS). Since 1.3.1, guest **pH readings** are adopted into the account on sign-in
-(reassigned + queued for push); guest **daily logs** still are not — that migration remains open.
-
-**Deletion.** Account deletion is remote-first. pH deletions tombstone locally so they propagate;
-the server-side `delete_current_user` hard-deletes `ph_readings` rows (GDPR erase removes rows, not
-tombstones).
-
----
-
-## 6. GAPS & DORMANT
-
-**Gated off by a compile-time flag — code present, unreachable.**
-
-| What | Flag | Why it is off |
-|---|---|---|
-| Client management screen | `ADMIN_CLIENTS` | Admin tool, not a user feature. Route exists; nothing links to it. |
-| Partner invites and linking | `PARTNER_INVITES` | Sends no email, links no real account. The invite deep links remain registered; accepting one links a placeholder partner. |
-
-**Reachable, but not doing what the interface implies.**
-
-- **Quiz answers are never used** — the readiness summary is identical for every answer set.
-- **Pregnancy mode is a placeholder** — static copy, "—" trimester, no due-date entry.
-- **The onboarding-complete preference has no callers** — persisted plumbing exists, nothing writes
-  or reads it.
-- **Guest daily logs don't migrate on sign-in** (guest pH readings do, since 1.3.1 — the daily-log
-  equivalent remains open).
-- **An offline cycle-settings change can still be lost server-side** — see §5; unlike daily logs
-  there is no pending status or retry.
-
-**Environment-dependent.**
-
-- Without compiled-in server credentials the app runs fully offline against stubs, and auth falls
-  back to a local service that does not verify passwords.
-- Google sign-in shows unconditionally but reports "isn't configured" without a compiled-in client
-  ID.
-
----
-
-## 7. RELEASE HISTORY (condensed — details in `CHANGELOG.md`)
-
-| Version | Highlights |
+| Repository snapshot | Current value |
 |---|---|
-| v1.0 (code 6–7) | Core app: cycle engine, daily log, Track calendar, Nutrition, pH (urine, flag-on), Learn (10 articles), auth, account deletion. Uploaded to Play Internal testing Jul 2026. |
-| v1.1 (PR #9) | Daily-log offline queue; streak engine v2 + cross-platform vector contract; user-set hydration goal; log back-guard; auth hardening. |
-| v1.2 (PR #10) | Local reminders (`PUSH_NOTIFICATIONS` on); Track "Your Trackers" + six detail screens; Home hydration-ring/pH-nudge cards + deep links; all-real-data Insights + Weekly Summary; supplement adherence; intraday hydration coaching. |
-| 1.2.1 (code 10) | Corrective versionCode bump after the code-9 Play collision. Archived, never uploaded — **superseded, do not upload**. |
-| 1.3.0 (code 11) | Android 16 target (SDK 36); Vaginal pH migration (two-band model, Room v5, legacy "urine (legacy)" handling, Supabase `measurement_type`). Uploaded to Play **Internal testing** 2026-07-27; Health apps declaration re-submitted. |
-| **1.3.1 (code 12)** | **Current.** Change password works (Supabase Auth + re-verification); guest pH readings adopted on sign-in; waitlist email stored server-side (`waitlist_emails`, insert-only RLS — table must exist in Supabase before rollout). |
+| Branch / HEAD | `main` / `43b371c` |
+| Gradle source identity | **1.3.2 (versionCode 13)** |
+| Next-release warning | Current source contains post-code-13 work; do not reuse code 13 for a new Play upload |
+| Play state | Not live-verified by this inventory; historical repository notes are not current proof |
+| Application ID | `com.genesyx.app` |
+| SDK | compile/target 36, min 26 |
+| Main stack | Kotlin, Jetpack Compose, Material 3, Hilt, Room, DataStore, WorkManager, Supabase Kotlin |
+| Main navigation | Seven bottom tabs: Home, Track, pH, Nutrition, Insights, Learn, Profile |
+| Local database | Room schema v7, eight entity types |
+| Preferences/session | Preferences DataStore (`genesyx_prefs`) |
+| Cloud | Supabase Auth + PostgREST + RPCs where configured |
+| Notifications | Local WorkManager reminders; no FCM/device token |
+| Analytics | No-op logger; no Firebase/GA/Crashlytics sink |
+
+## 1. Release identity and critical boundary
+
+`app/build.gradle.kts` still declares `versionName = "1.3.2"` and `versionCode = 13`. The checkout
+also contains later work—Room v7, private intimacy logging, user supplements, seven tabs, backdated
+logs, sync-status UI and Learn/reminder additions—that repository history assigns to a following
+release.
+
+Therefore:
+
+- **1.3.2 (13) is the current Gradle identity, not a safe new release identity.**
+- Before shipping the present tree, choose the next unused `versionCode` (repository planning points
+  to code 14), set the intended `versionName`, apply required backend migrations, build a fresh signed
+  AAB/APK and verify their baked-in identity.
+- A local `assembleRelease` can fall back to debug signing if `keystore.properties` is absent. A
+  green local release build is not proof of a Play-signable artifact.
+- Release tasks intentionally fail when Supabase credentials are missing, preventing the
+  password-free local auth fallback from shipping.
+- Upload validation, Internal publication, Play installation and Production availability are four
+  separate evidence levels.
+
+## 2. Product and truth model
+
+Genesyx Android is a native fertility-preparation, cycle-awareness and wellbeing-tracking app. It
+combines projected cycle context, daily logging, hydration and nutrition guidance, vaginal pH,
+real-data summaries, bundled Learn content, local reminders and dormant partner/client seams.
+
+The app should keep these concepts distinct:
+
+- **Recorded:** mood, energy, symptoms, sleep, water, supplements, notes, private intimacy, cycle
+  settings and pH readings.
+- **Derived:** phase, predicted fertile window, estimated ovulation, streaks and summaries.
+- **Guidance:** educational and nutrition content; not diagnosis or treatment.
+- **Prediction:** cycle outputs based on one cycle-settings row. The app does not have period-event
+  history and cannot truthfully claim cycle-to-cycle learning or measured fertility.
+
+## 3. Architecture and data flow
+
+```text
+Single Activity
+    ↓
+Jetpack Compose routes/screens
+    ↓
+Hilt ViewModels + StateFlow
+    ↓
+Repositories
+    ├─ Room source of truth
+    ├─ Preferences DataStore
+    ├─ Supabase Auth/PostgREST when configured
+    └─ WorkManager offline queues and local reminders
+```
+
+This is pragmatic MVVM with `data`, `domain` and `ui` packages, not strict use-case-layer Clean
+Architecture. `GenesyxApplication` initializes channels; `MainActivity` hosts Compose, resolves the
+start state and re-arms sync/reminder work on foreground. Hilt modules provide Room, DataStore,
+Supabase/stubs, repositories and scheduling dependencies.
+
+Current insight calculations are mostly separate pure objects under `ui/insights`. Track builds its
+own summary layer. A future intelligent-partner programme should introduce one shared pure domain
+engine so Track, Insights, Home and notifications cannot disagree about evidence thresholds.
+
+## 4. Navigation and screens
+
+### Seven bottom tabs
+
+The bottom bar contains, in order:
+
+1. Home
+2. Track
+3. pH
+4. Nutrition
+5. Insights
+6. Learn
+7. Profile
+
+The dedicated pH tab reuses the canonical `tracker/ph` route. Home, Track, Insights and the pH deep
+link reach that one surface. Bottom-tab navigation uses saved/restored state. Seven labels are tight
+on 360 dp devices and require small-screen/font-scale QA.
+
+### Onboarding and account routes
+
+- Splash
+- Introduction
+- Five-question quiz
+- Readiness Summary
+- Waitlist
+- Auth
+
+Quiz answers remain in-memory and are discarded. The repository knows about the new owner-only
+`quiz_answers` backend contract only as an audit constraint; Android does not yet persist or edit
+those answers. Waitlist storage uses the `join_waitlist` RPC where Supabase is configured.
+
+### Main and secondary destinations
+
+| Surface | Route | Current purpose |
+|---|---|---|
+| Home | `home` | Cycle context, hydration, pH nudge, daily action, streak/new-article state |
+| Track | `track` | Calendar, day markers, tracker summaries and date navigation |
+| pH | `tracker/ph` | Canonical vaginal-pH entry, chart and history; also a bottom tab |
+| Nutrition | `nutrition` | Phase-aware foods, hydration, custom supplements and Genesyx-range empty state |
+| Insights | `insights` | Real repository-derived cards and empty states |
+| Learn | `learn` | Bundled articles, categories and search |
+| Profile | `profile` | Account, profile/settings, reminders, sync state and legal/support |
+| Log | `log?date={date}` | Today or backdated daily-log editor |
+| Log history | `log_history` | Chronological recorded data |
+| Cycle detail | `tracker/cycle` | Phase/projection details and settings |
+| Hydration detail | `tracker/hydration` | Daily editor, goal, history and seven-day view |
+| Sleep detail | `tracker/sleep` | Weekly duration summary and editor |
+| Symptoms detail | `tracker/symptoms` | Four-week heatmap and dated history |
+| Nutrition detail | `tracker/nutrition` | Supplement summary/log route |
+| Learn search | `learn/search` | Search available articles |
+| Article | `learn/article/{slug}` | Article content, sources, related links and CTAs |
+| Reminder settings | `reminder_settings` | Master, kind, schedule and quiet-hours controls |
+| Pregnancy | `pregnancy` | Preview/static placeholder only |
+| Invite | `invite/{code}` | Added only when partner feature flag is enabled |
+| Clients | `clients` | Dormant admin surface |
+
+Current notification/in-app deep links include Home, Track, Nutrition, Insights, Log, Learn, pH,
+hydration and — as of 12 Aug (Phase 2) — `tracker/{cycle,sleep,symptoms,nutrition}`. Individual
+intelligent-report destinations are still to come with the guidance programme (Phases 6–8).
+
+## 5. Tracking model
+
+### Daily log
+
+One date-keyed `DailyLog` may contain:
+
+- Mood
+- Energy
+- Symptoms
+- Sleep minutes
+- Supplement-name strings
+- Notes
+- Water millilitres
+- Private intimacy (`sexualActivity`: nullable; null means not recorded)
+
+The Log route accepts a date. Non-future Track days can add or edit that exact record. A first-load
+guard prevents asynchronous database state from being overwritten by a blank editor.
+
+The shared `isMeaningful()` contract counts water, mood, energy, symptoms, sleep, supplements or a
+note. Private intimacy is intentionally excluded to preserve the existing Android tracking-vector and
+streak contract.
+
+### Cycle
+
+- One settings row per user: last-period date, typical cycle length and period length.
+- Cycle length 21–35 days; period length 1–10 days.
+- Estimated ovulation: `cycleLength - 14`.
+- Predicted fertile window: five days before through one day after estimated ovulation.
+- No period-event/cycle history, so no cycle-to-cycle regularity or multi-cycle pattern claim.
+
+All customer-facing cycle copy should qualify projected fertility. Any “You’re in your fertile
+window” wording without “predicted” or “estimated” is a copy defect. As of 12 Aug the fertile
+overlay, Track current-phase card, calendar legend and ovulatory hero all carry the qualifier,
+pinned by `NutritionContentTest`'s content-safety guards.
+
+### Vaginal pH
+
+- New input range **3.8–7.0**, step 0.1, default 4.2.
+- Healthy **3.8–4.5**; Elevated **>4.5**.
+- Legacy urine readings remain labelled and excluded from vaginal classification/insights.
+- Repository rounds, validates, writes Room first and queues Supabase retries.
+- Current insight can show status, direction, rolling 7/30-day averages and descriptive copy.
+- Two vaginal readings in seven days are required for the written pH insight; charts need at least
+  two readings in the selected range.
+- Medical copy and source links are centralised; no diagnosis, dietary treatment or condition claim.
+
+### Hydration
+
+- `waterMl` is the canonical storage, sync, goal and calculation unit.
+- Display choices are ML or cups; one Android cup is fixed at 250 ml.
+- Goal range 1,000–5,000 ml; default 2,400 ml.
+- Custom quick-add glass amount is stored separately and clamped 100–1,000 ml.
+- Current Insights uses a rolling seven-day average, previous-seven comparison and goal scoring.
+- The model stores one daily total, not drink timestamps. It cannot infer time-of-day drinking
+  routines from existing data.
+
+### Sleep
+
+- Stored as minutes on the daily log.
+- Current card is Monday–Sunday and unlocks with one positive logged night.
+- The UI calls the entry “Last night,” but the value shares the selected daily row. Any connection
+  from sleep to next-day energy needs an explicitly approved date-joining rule.
+- No actual bedtime, wake time or sleep-event history exists.
+
+### Symptoms
+
+- Stored as a set of strings on the daily log.
+- Four-week heatmap and dated history are implemented.
+- The pattern-ready threshold is seven symptom days **within the same rolling 28-day window the
+  grid displays** (corrected 12 Aug — it previously counted all-time history, letting weeks-old
+  symptoms qualify a "pattern" the visible grid contradicted). The summary copy names the window.
+
+### Supplements and nutrition
+
+- Fixed logged vocabulary includes Folate, Omega-3, Vitamin D, Zinc and Iron; the scored default
+  plan excludes Iron.
+- User supplements have ID, name, optional dose, coarse time of day and optional product ID.
+- Room + WorkManager sync infrastructure exists for user supplements.
+- Daily adherence stores names in `daily_logs.supplements` (a cross-platform `text[]`). As of
+  12 Aug the Log dialog can never *hide* a logged string — renamed/other-device entries render as
+  orphan rows (`SupplementLogRows`). Robust *scoring* of custom supplements by stable ID remains a
+  BLOCKED cross-platform contract change: the fixed plan (4 built-ins) is still the adherence
+  denominator, and custom entries are recorded, not scored.
+- `SupplementTime` is Morning/Afternoon/Evening/Anytime—not an exact reminder time.
+- The `genesyx_products` catalogue renders a coming-soon state when the backend has no products.
+
+## 6. Insights and present evidence thresholds
+
+All current cards use actual Room/repository data and show empty states; there are no hardcoded
+sample charts in production paths.
+
+| Surface | Current evidence and limitation |
+|---|---|
+| Weekly summary | Current Mon–Sun week; unlocks with one meaningful day; comparisons need one relevant point in each week |
+| Consistency | Shared streak engine; four meaningful days make a qualifying week |
+| pH | Vaginal-only; status/latest-two direction and rolling averages |
+| Hydration | Rolling seven days; can appear after one positive water entry |
+| Supplements | Current week; one built-in scored entry can unlock |
+| Sleep | Current Mon–Sun week; one positive night can unlock |
+| Cycle | Describes current settings, not historical regularity |
+| Symptoms | 28-day display; qualification now uses the same rolling window (12 Aug) |
+| Ovulation | Estimate from current cycle settings |
+| My logs | Full chronological owner history |
+
+The current source does **not** implement:
+
+- A unified Evidence State model.
+- One shared Guidance/Intelligence engine.
+- 7/14/21/30-day reports or “Your picture” programme.
+- Cross-signal observation contracts.
+- Per-insight evidence denominators and contributing-date explanations.
+- Data signatures, reviewed/dismissed state or material-change deduplication.
+- Multi-cycle learning.
+
+Customer-facing copy must not turn low coverage into “a pattern.” One useful rule already exists:
+four meaningful days qualify a week. The intelligent programme should add signal-specific coverage
+instead of weakening that shared contract.
+
+## 7. Learn and content
+
+- **Twenty** bundled Android articles ship with categories, search, related links, share and CTAs:
+  the 10 launch articles plus 10 "guide" how-tos ported from iOS 1.2.0 (18) on 12 Aug (category
+  `GUIDES`, always-available). Slugs/ids match iOS for cross-platform read-state/deep-link parity.
+- `LearnDrip` reveals by **fixed calendar date** (`Article.publishedAt`, cross-platform contract
+  with iOS, 12 Aug) — everyone sees a dated article on the same real day. Every Learn surface plus
+  the Home card and `NEW_ARTICLE` reminder resolve through it, so a future-dated article is hidden
+  everywhere at once, including a stale deep link.
+- All current `publishedAt` values are null (always-available), so the dated **weekly series is not
+  yet ported** — that's the remaining content task, now unblocked by the date-based mechanism.
+- `NEW_ARTICLE` reminder exists and is opt-in; it stays silent while no dated article is due today.
+- Medical/disclaimer copy and pH citations are compiled into the app. The `LearnContentTest`
+  banned-phrase guard dropped bare `"diagnos"`/`"douch"` (substring false-positives on responsible
+  disclaimer language) on 12 Aug — condition-name and pseudoscience bans are unchanged; flagged for
+  medical-reviewer confirmation.
+
+Do not create placeholder articles simply to fill the weekly series; port only reviewed content.
+
+## 8. Notifications
+
+Notifications are entirely local:
+
+- No Firebase Cloud Messaging dependency, token or remote-push pipeline.
+- Four channels: tracking, nutrition/wellness, insights and re-engagement.
+- Independent self-rescheduling one-time WorkManager chains.
+- Re-armed on app foreground and reboot; cancelled on sign-out/delete.
+- Android 13+ permission requested only after the customer enables reminders.
+- Quiet hours and a global cap of two per day; re-engagement is exempt.
+
+Current kinds:
+
+1. Daily log
+2. Missed log
+3. Hydration
+4. Nutrition (reserved/not scheduled)
+5. Weekly insights
+6. Re-engagement
+7. Predicted fertile-window start
+8. New article (opt-in)
+
+Current gaps against the Android intelligent-partner goal:
+
+- No sleep, pH, symptom-pattern or per-supplement reminder kinds.
+- No exact per-supplement time model.
+- Hydration policy does not yet inspect goal completion strongly enough.
+- Weekly Insights currently unlocks from insufficient general evidence.
+- No 7/14/21/30-day report-ready notification.
+- No account-scoped candidate/signature/review ledger.
+- Independent workers can race against the daily counter; intelligent candidates need one serialized
+  priority arbiter.
+- Fertile-window lock-screen copy exposes sensitive context; there is no discreet/descriptive mode,
+  `VISIBILITY_PRIVATE` public fallback or copy-privacy scan.
+- No immediate time/timezone-change receiver.
+- WorkManager is deferrable delivery, not an exact-alarm guarantee.
+
+## 9. Persistence and sync
+
+### Room v7
+
+Eight entity types:
+
+1. `cycle_settings`
+2. `daily_logs`
+3. `ph_readings`
+4. `profiles`
+5. `clients`
+6. `partner_invites`
+7. `partner_links`
+8. `user_supplements`
+
+Upgrade migrations preserve data:
+
+- 2→3: pH sync metadata/tombstones
+- 3→4: daily-log sync status
+- 4→5: pH measurement type
+- 5→6: user supplements
+- 6→7: nullable private intimacy field
+
+Only downgrade allows destructive fallback.
+
+### DataStore
+
+Stores theme, focus, push master, hydration goal/unit/glass size, Learn/read/drip state,
+onboarding/notices, streak celebrations, reminder schedules/counters and the local session mirror.
+The session mirror contains signed-in state, user ID, email and display name.
+
+### Offline-first queues
+
+Daily logs, pH and user supplements follow the strong path:
+
+1. Write Room immediately.
+2. Mark signed-in work pending.
+3. Attempt Supabase push.
+4. On failure, enqueue unique connected WorkManager work with exponential backoff.
+5. Pull/merge without overwriting unsynced local rows.
+6. Re-arm on foreground.
+7. Show combined pending count in Profile with Sync now.
+
+Cycle settings and profile writes do not have equivalent durable pending queues. A failed offline
+cycle/profile push is a remaining asymmetry. Guest pH and supplements are adopted on sign-in;
+guest daily logs are not.
+
+## 10. Supabase/backend boundary
+
+Current source directly addresses:
+
+- `profiles`
+- `cycle_settings`
+- `daily_logs`
+- `ph_readings`
+- `user_supplements`
+- `genesyx_products`
+- `join_waitlist` RPC
+- `delete_current_user` RPC
+
+RLS is the server privacy boundary; client queries additionally filter the current user ID.
+
+### Blocking backend gates
+
+Two source features are ahead of the documented production schema:
+
+- `docs/migrations/2026-07-29_user_supplements.sql` is marked **PROPOSED — NOT YET APPLIED**.
+- `daily_logs.sexual_activity` is marked **NOT YET IN PRODUCTION**.
+
+Before shipping a client that writes either field/table:
+
+1. Apply in staging.
+2. Verify authenticated REST read/write and cross-account RLS isolation.
+3. Verify tombstones/merge and offline retry.
+4. Verify `delete_current_user` removes user supplements and intimacy-bearing logs while preserving
+   the shared product catalogue.
+5. Apply in production and repeat verification.
+6. Only then build and upload the new Android version.
+
+Partner invites remain a local placeholder and `PARTNER_INVITES` is off. Android must not present
+partner invitation or health-data sharing as an implemented customer feature.
+
+## 11. Authentication, privacy and account lifecycle
+
+- Supabase email/password authentication.
+- Google Credential Manager → ID token → Supabase.
+- Password and email changes with reauthentication.
+- Sign-out.
+- Remote-first account deletion through `delete_current_user`.
+- Newly minted-token/email checks defend against a stale ambient session.
+- Sign-out cancels reminders, clears every Room table and clears local session state.
+- Local permissive auth exists only when Supabase config is absent; release builds are guarded
+  against missing credentials.
+
+Privacy caveats that require explicit product/release treatment:
+
+- Room uses ordinary SQLite; no SQLCipher/encrypted Room layer is configured.
+- Preferences DataStore is not encrypted.
+- Android backup is enabled and current backup rules do not explicitly exclude Room/DataStore
+  health data.
+- Production suppresses debug logs, but info/warning/error may still reach Logcat.
+- Notification lock-screen privacy is incomplete for sensitive cycle content.
+- Private intimacy is owner-scoped and excluded from partner code and streak qualification.
+- Analytics is currently a no-op logger, not a production analytics service.
+
+## 12. Feature flags and dormant capabilities
+
+| Capability | Flag/state |
+|---|---|
+| Vaginal pH | `PH_TRACKING` on |
+| Local reminders | `PUSH_NOTIFICATIONS` on |
+| Partner invite/linking | `PARTNER_INVITES` off; placeholder/local behaviour only |
+| Admin Clients | `ADMIN_CLIENTS` off; remote source incomplete |
+| Pregnancy tracking | Preview/static only |
+| Quiz-answer persistence | Not implemented on Android |
+| Unified 7/14/21/30 intelligent partner | Not implemented |
+| User supplements | Implemented in source; production schema gate outstanding |
+| Private intimacy | Implemented in source; production column gate outstanding |
+
+## 13. Verification state
+
+Repository `CHANGELOG.md` records, for the 12 August source work:
+
+- **327 unit tests green**.
+- `:app:assembleRelease` green, including R8/lint for the recorded runs.
+- Room v7 migration/schema checks added for private intimacy.
+
+Those results were not rerun during this inventory edit. Before release, independently run at least:
+
+```bash
+./gradlew :app:testDebugUnitTest
+./gradlew :app:lintDebug
+./gradlew :app:assembleRelease :app:bundleRelease
+```
+
+Then verify:
+
+- Connected/instrumented tests on an emulator/device.
+- Backdated edits and sync queue recovery.
+- pH, intimacy and supplement round-trips against the deployed Supabase schema.
+- Sign-out and deletion clearing.
+- Notification permission, schedule, privacy and cold/warm deep-link routing.
+- Seven-tab layout on a small device and large font scale.
+- Signed APK/AAB application ID, versionName/versionCode, certificate and SHA-256.
+- Play Internal publication and Play-installed package identity separately.
+
+## 14. Android implementation status
+
+| Desired Android capability | Current Android source |
+|---|---|
+| Seven tabs with pH | Implemented |
+| Backdated daily logging | Implemented |
+| Private intimacy | Implemented locally; production column gate |
+| Calendar signal markers | Implemented |
+| pH 3.8–7.0 + legacy handling | Implemented |
+| Hydration display preferences | Implemented: ML/cups display with millilitres as canonical storage |
+| Custom supplements | Stronger Room/sync source exists, but backend migration is unapplied |
+| Per-supplement clock reminders | Not implemented |
+| Full Android notification controls and evidence-aware planner | Partially implemented |
+| Quiz-answer persistence + Tracking Preferences | Not implemented |
+| Profile Health/Personal editors | Mostly implemented; verify every row is repository-backed |
+| Weekly Learn programme | Date-based drip engine live + 10 guides ported (20 articles); dated weekly series not yet ported |
+| Partner invite/accept/decline/unlink | Not implemented; feature remains off |
+| Unified intelligent 7/14/21/30 programme | Not implemented |
+
+## 15. Repository map
+
+```text
+app/src/main/kotlin/com/genesyx/app/
+  auth/                  authentication and account lifecycle
+  core/                  config, feature flags, logging and DI primitives
+  data/                  repositories, Room/DataStore/remote/sync
+  di/                    Hilt modules
+  domain/                pure models, cycle, pH, hydration, streak and content logic
+  notifications/         kinds, policy, scheduler, workers, notifier and channels
+  ui/                    Compose screens, ViewModels, components and navigation
+
+app/src/test/             JVM unit tests
+app/src/androidTest/      instrumented/Compose/database tests
+app/schemas/              exported Room schemas
+docs/migrations/          proposed/deployment SQL
+docs/schema.sql           documented backend shape
+app/build.gradle.kts      build identity and release guards
+CHANGELOG.md              newest source/release evidence
+```
+
+## 16. Maintenance rules
+
+Update this file whenever a change adds or removes:
+
+1. A screen, tab, route, deep link or notification destination.
+2. A tracked field, threshold, metric, prediction or insight.
+3. A Room entity/version/migration, DataStore key, repository or WorkManager queue.
+4. A Supabase table/column/RLS policy/RPC or deletion obligation.
+5. An authentication, notification, privacy, partner or analytics behaviour.
+6. A capability moving between dormant, source-only, backend-blocked, tested or Play-released.
+7. A versionName/versionCode or compiled/uploaded/published artifact state.
+
+Always check current source and `CHANGELOG.md`. Keep **source identity**, **tested source**,
+**backend-deployed state**, **signed artifact**, **Play-upload validation**, **Play publication** and
+**Play-installed identity** separate. Never turn a prediction into a measurement or sparse data into
+a customer-facing pattern.
+
+---
+
+_Last audited from the Android repository on 12 August 2026: `main` / `43b371c`. Current Gradle
+identity: **1.3.2 (13)**; current source includes post-code-13 work and is not release-ready under
+that reused version code._

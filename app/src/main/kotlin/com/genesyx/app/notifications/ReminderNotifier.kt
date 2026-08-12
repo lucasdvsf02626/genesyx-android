@@ -71,8 +71,7 @@ class ReminderNotifier @Inject constructor(
                 val info = CycleEngine.getCyclePhase(it, today)
                 info.dayOfCycle == info.fertileWindow.startDay
             } == true,
-            newArticleReleasedToday =
-                LearnDrip.releasedOn(today, preferences.firstOpenEpochDay.value).isNotEmpty(),
+            newArticleReleasedToday = LearnDrip.releasedOn(today).isNotEmpty(),
         )
 
         if (!ReminderPolicy.shouldPost(kind, now, settings, ctx)) return

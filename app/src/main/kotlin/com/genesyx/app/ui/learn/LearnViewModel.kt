@@ -18,9 +18,6 @@ class LearnViewModel @Inject constructor(
 ) : ViewModel() {
     val introSeen: StateFlow<Boolean> = preferences.learnIntroSeen
 
-    /** Anchors the weekly drip; seeded set-if-absent on app start (MainActivity). */
-    val firstOpenEpochDay: StateFlow<Long?> = preferences.firstOpenEpochDay
-
     fun dismissIntro() = preferences.setLearnIntroSeen(true)
 
     fun markRead(slug: String) = preferences.markArticleRead(slug)

@@ -173,8 +173,10 @@ class HomeViewModel @Inject constructor(
         val restoreDate = today.minusDays(1)
             .takeIf { yesterday -> !active(yesterday) && active(today.minusDays(2)) }
 
-        // Only a drip article (week ≥ 1) is ever "new" — the ten launch articles never trigger this.
-        val newArticle = LearnDrip.newestDripArticle(today, session.firstOpenEpochDay)
+        // Only a dated article released within the last week is ever "new" — always-available
+        // articles never trigger this. (firstOpenEpochDay is retained on the session snapshot for
+        // now but no longer gates the drip, which is calendar-date based since 12 Aug.)
+        val newArticle = LearnDrip.newestReleased(today)
             ?.takeIf { it.slug != session.lastSeenArticleSlug }
 
         val base = HomeUiState(

@@ -57,11 +57,10 @@ fun ArticleDetailScreen(
     navController: NavController,
     viewModel: LearnViewModel = hiltViewModel(),
 ) {
-    val firstOpen by viewModel.firstOpenEpochDay.collectAsState()
-    // An unrevealed drip article is treated exactly like an unknown slug — a stale deep link or
+    // An unrevealed dated article is treated exactly like an unknown slug — a stale deep link or
     // notification must not skip the weekly gate.
     val article = articleBySlug(slug)
-        ?.takeIf { LearnDrip.isAvailable(it, LocalDate.now(), firstOpen) }
+        ?.takeIf { LearnDrip.isPublished(it, LocalDate.now()) }
     if (article == null) {
         ArticleNotFound(onBack = { navController.popBackStack() })
         return
@@ -144,9 +143,9 @@ fun ArticleDetailScreen(
                 )
             }
 
-            // Same gate as the lists: a related link must not tunnel into an unrevealed week.
+            // Same gate as the lists: a related link must not tunnel into an unreleased article.
             val related = relatedArticles(article)
-                .filter { LearnDrip.isAvailable(it, LocalDate.now(), firstOpen) }
+                .filter { LearnDrip.isPublished(it, LocalDate.now()) }
             if (related.isNotEmpty()) {
                 Spacer(Modifier.height(32.dp))
                 Text(
@@ -179,6 +178,7 @@ fun ArticleDetailScreen(
 private fun ArticleCta.route(): String = when (type) {
     CtaType.OPEN_LOG -> Screen.Log.create()
     CtaType.OPEN_TRACK -> Screen.Track.route
+    CtaType.OPEN_PH -> Screen.PhDetail.route
     CtaType.OPEN_NUTRITION -> Screen.Nutrition.route
     CtaType.OPEN_INSIGHTS -> Screen.Insights.route
     // Non-null by construction — ArticleCta's init block rejects OPEN_ARTICLE without a targetSlug.

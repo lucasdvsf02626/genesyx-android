@@ -8,6 +8,84 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ## [Unreleased] — Single-source-of-truth bug batch (28 Jul device walkthrough)
 
+### Added (12 Aug 2026) — weekly-education programme: date-based drip + 10 guides ported (item 7)
+- **Learn drip switched from weeks-since-first-open to fixed calendar dates** (`Article.publishedAt:
+  LocalDate?`), the agreed cross-platform contract with iOS 1.2.0 (18): everyone sees a given
+  article on the same real date. `LearnDrip` is now `isPublished` / `published(today)` /
+  `newestReleased(today)` / `releasedOn(today)`; all six call sites (Learn list, search, article,
+  related, Home "new this week" card, `NEW_ARTICLE` reminder) updated; the unused `firstOpenEpochDay`
+  drip plumbing dropped from the Learn/Home read paths (the DataStore key is retained). New
+  `LearnDripTest` (4) — the engine was previously untested.
+- **10 "guide" how-to articles ported from iOS** (`guide-vaginal-ph-tracker` … `guide-understanding-
+  vaginal-ph`), always-available, slugs/ids matched to iOS for cross-platform read-state and
+  deep-link parity. Adds a `GUIDES` category and an `OPEN_PH` article CTA. Learn grows 10 → 20 with
+  reviewed content — no invented placeholders. Hero art falls back to the category gradient (no new
+  drawables). `g7`/`g8` related links to the not-yet-ported weekly series (`w1`/`w7`) are held out
+  until that series lands (the Android integrity test rejects a dangling related id).
+- **Cross-platform banned-phrase-guard reconciliation (flag for medical reviewer):** the bare
+  substrings `"diagnos"` and `"douch"` were removed from `LearnContentTest`'s banned list — they are
+  false positives on the *responsible disclaimer/caveat* language iOS ships and this app must carry
+  ("it isn't a diagnosis", listing "douches" among times a reading is less representative). Every
+  condition-name ban (bacterial vaginosis, bv, infection, thrush, candida, yeast) and pseudoscience
+  ban (alkaline, balance/optimize your ph) is unchanged, so diagnosis *claims* and pH pseudoscience
+  stay blocked. Matches iOS's reviewed list intent.
+- **Streak (item 7a) confirmed COMPLETE, unchanged**: Home flame chip, one-shot milestone dialog,
+  restore-streak card, new-article card all shipped in `43b371c`.
+- **Still BLOCKED:** the 11-article dated weekly series (needs the same port pass, now unblocked by
+  the date-based mechanism) and the client's week-7 Shettles-method piece (deliberately withheld on
+  iOS too — its subject can't be written without banned sex-selection claims; a medical-reviewer
+  decision).
+- Verified: **346 unit tests green** (+4), `:app:lintDebug` clean, `:app:assembleRelease` +
+  `:app:bundleRelease` green.
+
+### Added (12 Aug 2026) — tracking-system completion (missing-features programme, Phase 2)
+- **Exact tracker deep links.** `genesyx://tracker/{cycle,sleep,symptoms,nutrition}` now resolve
+  to their detail screens (hydration and pH already had theirs), so a notification can route to the
+  exact tracker. Groundwork for Phase 5's per-tracker reminders; opened cold, the nav host builds a
+  synthetic back stack to the start destination, same as the existing hydration/pH links.
+- **No logged supplement is ever hidden.** The Log's Supplements dialog now renders, in order,
+  built-ins → the user's current custom entries → **orphan rows** (any string already stored on
+  that day that no longer matches a current entry — a custom supplement since renamed, or one
+  written by another device/build). Previously such a string stayed in the stored set but showed
+  no row, invisible and un-untoggleable. New pure `SupplementLogRows.forDay` + 5 tests; storage
+  and the cross-platform `daily_logs.supplements` contract are unchanged (every row still toggles
+  the exact string it reads).
+- **Verified IMPLEMENTED, left unchanged** (evidence in APP_INVENTORY §5): cycle setup/projection +
+  predicted-fertile calendar, pH create/edit/delete/history/chart with legacy exclusion, hydration
+  ml-canonical + display units + coaching, sleep editor + weekly coverage, symptom heatmap +
+  rolling-window qualification (Phase 1), private-intimacy owner-only field + calendar marker +
+  streak exclusion.
+- **BLOCKED, flagged for decision:** robust custom-supplement *adherence scoring* by stable ID (not
+  name) requires changing the shared `daily_logs.supplements` `text[]` contract — a cross-platform
+  decision, not implemented. Today's fix keeps identity safe at the display layer only.
+- Verified: **342 unit tests green** (+5), `:app:assembleRelease` green.
+
+### Fixed (12 Aug 2026) — correctness baseline (missing-features programme, Phase 1)
+- **Every fertility statement now carries predicted/estimated.** The fertile overlay
+  (`CycleContent.kt`) reads "Your predicted fertile window is open" / "estimated higher-fertility
+  days"; the ovulatory hero "High chance of conception today" became "Predicted peak fertility
+  today"; Track's current-phase card says "predicted fertile window"; the calendar legend labels
+  fertile/ovulation "(predicted)". Two new content-safety tests pin the qualifier on every fertile
+  sentence and ban certainty phrases ("high chance of conception", "confirmed ovulation").
+- **Consistency copy matched to the engine contract**: "Five days makes the week count" said five
+  while `WEEK_COMPLETE_DAYS` is four — the sentence is now built FROM the constant, so it cannot
+  drift again. `StreakEngineTest`'s stale "5-of-7" class doc corrected too.
+- **Symptom-pattern qualification scoped to the displayed window**: the summary and the
+  7-day pattern threshold now count the same rolling 28 days the heatmap shows (previously
+  all-time — weeks-old symptoms could qualify a "pattern" the visible grid contradicted). Copy
+  says "in the last four weeks". Two regression tests pin the scoping.
+- **Weekly summary supplement delta gated on real evidence**: a last week with no meaningful log
+  is missing data, not a week of zero supplements — the delta is now null in that case (water and
+  sleep already had this guard). Regression tests cover both the suppressed and the genuine-zero
+  comparison.
+- **One sleep entry is an observation, not an average**: the single-night card no longer says
+  "averaging … across the one night"; it reports the value and what to log next.
+- Left deliberately unchanged, verified honest: `HydrationInsightLogic` (rolling 7v7, logged-days
+  denominator), `OvulationLogic` (fully qualified copy), `WeeklySummaryLogic` water/sleep guards,
+  `DailyLog.isMeaningful()`, `StreakEngine`, tracking vectors, pH contracts.
+- Verified: **337 unit tests green** (+7), `:app:lintDebug` clean, `:app:assembleRelease` +
+  `:app:bundleRelease` green.
+
 ### Added (12 Aug 2026) — client-feedback batch, phase 4 COMPLETE: streak UI, drip gate, new-article reminder
 - **Home streak UI wired** (the 10 Aug groundwork's pending half): a flame streak chip under the
   greeting (any-activity streak, hidden below 2 days), the one-shot **milestone celebration

@@ -413,15 +413,13 @@ private fun SupplementAvatar(initial: String, index: Int, bordered: Boolean = fa
 private fun ArticlesSection(
     onOpen: (String) -> Unit,
     onSeeAll: () -> Unit,
-    learnViewModel: com.genesyx.app.ui.learn.LearnViewModel = hiltViewModel(),
 ) {
     val colors = MaterialTheme.colorScheme
-    val firstOpen by learnViewModel.firstOpenEpochDay.collectAsState()
     Column {
         Eyebrow("Learn more", color = colors.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp, bottom = 10.dp))
-        // A taster, not the library — all ten rows made the tab scroll forever. Learn is one tap
-        // away. Same LearnDrip gate as every other article surface.
-        LearnDrip.available(java.time.LocalDate.now(), firstOpen).take(3).forEach { a ->
+        // A taster, not the library — showing every row made the tab scroll forever. Learn is one
+        // tap away. Same LearnDrip gate (published-by-date) as every other article surface.
+        LearnDrip.published(java.time.LocalDate.now()).take(3).forEach { a ->
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
