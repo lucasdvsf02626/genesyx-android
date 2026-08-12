@@ -95,6 +95,15 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val idToken = googleClient.getIdToken(activityContext, BuildConfig.GOOGLE_WEB_CLIENT_ID)
+                // Diagnostic only — the SHAPE of the token, never the token itself. A real Google ID
+                // token starts "eyJ" and has exactly two dots; anything else (an access token, a
+                // client id, empty) is the "malformed jwt" Supabase rejects. DEV-only (Logger.d is
+                // suppressed in release). See the 12 Aug Supabase auth audit.
+                logger.d(
+                    "Auth",
+                    "Google ID token: len=${idToken.length}, jwtShaped=" +
+                        "${idToken.startsWith("eyJ") && idToken.count { it == '.' } == 2}",
+                )
                 when (val result = authRepository.signInWithGoogle(idToken)) {
                     is DataResult.Success -> {
                         _uiState.value = AuthUiState()

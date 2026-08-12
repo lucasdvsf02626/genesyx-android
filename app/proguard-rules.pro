@@ -47,3 +47,13 @@
 
 # Compose is R8-safe out of the box; keep enum values used via valueOf/entries reflection.
 -keepclassmembers enum * { *; }
+
+# ── Google sign-in: Credential Manager + Google Identity ────────────────────────────────
+# R8 full mode (default on AGP 8+) can strip/rename the credential classes whose data is read
+# reflectively from the returned Bundle (GoogleIdTokenCredential.createFrom), which fails only on
+# the minified release build — "Google sign-in works in debug, does nothing in release". These libs
+# ship consumer rules, but keep them explicitly as belt-and-braces. See the 12 Aug Supabase auth
+# audit (§4 Android, proguard row).
+-keep class com.google.android.libraries.identity.googleid.** { *; }
+-keep class androidx.credentials.** { *; }
+-dontwarn com.google.android.libraries.identity.googleid.**
