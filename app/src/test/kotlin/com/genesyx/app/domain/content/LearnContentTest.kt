@@ -44,10 +44,10 @@ class LearnContentTest {
     }
 
     @Test
-    fun `twenty always-available articles, each tagged`() {
-        // 10 launch + 10 guides ported from iOS 1.2.0 (18), 12 Aug. The dated weekly series is not
-        // yet ported; when it is, this count and the drip tests update together.
-        assertEquals(20, learnArticles.size)
+    fun `thirty-one articles, each tagged`() {
+        // 10 launch + 10 guides + 11 weekly-series, all ported from iOS 1.2.0 (18), 12 Aug.
+        // (Week-7 Shettles piece deliberately absent on both platforms — banned claim language.)
+        assertEquals(31, learnArticles.size)
         learnArticles.forEach { assertTrue("${it.slug} has no tags", it.tags.isNotEmpty()) }
     }
 
@@ -118,6 +118,18 @@ class LearnContentTest {
                 "guide-track-ph-in-nutrition",
                 "guide-cycle-and-phases",
                 "guide-understanding-vaginal-ph",
+                // The weekly series — all eleven carry the disclaimer.
+                "fertile-window",
+                "vaginal-ph-explained",
+                "nutrition-before-conception",
+                "cervical-mucus",
+                "hydration-and-reproductive-health",
+                "timing-sex-when-ttc",
+                "sleep-stress-and-your-cycle",
+                "understanding-ovulation-tests",
+                "supporting-sperm-health",
+                "fertility-supplements-explained",
+                "when-to-ask-for-support",
             ),
             learnArticles.filter { it.disclaimerRequired }.map { it.slug }.toSet(),
         )
@@ -159,14 +171,16 @@ class LearnContentTest {
         val banned = listOf(
             "boy or girl", "sex-selection", "sway", "alkaline diet", "alkaline water",
             "optimize your ph", "balance your ph", "conceiving a boy", "conceiving a girl",
-            // Condition-naming stays banned — this is the real protection against diagnosis framing.
-            "bacterial vaginosis", "bv", "infection", "thrush", "candida", "yeast", "treat", "cure",
+            // Condition-naming stays banned — this is the real protection against diagnosis and
+            // treatment framing: if a piece can't name the condition, it can't claim to treat it.
+            "bacterial vaginosis", "bv", "infection", "thrush", "candida", "yeast",
             // NOTE (12 Aug 2026, cross-platform reconciliation — flag for medical reviewer):
-            // bare "diagnos" and "douch" were REMOVED. They are substring false-positives on the
-            // *responsible disclaimer/caveat* language iOS 1.2.0 (18) ships and this app must carry —
-            // "it isn't a diagnosis", "doesn't diagnose anything", and listing "douches" among the
-            // times a pH reading is less representative. Diagnosis *claims* remain blocked by the
-            // condition-name bans above; douching *pseudoscience* remains blocked by
+            // the bare verbs "diagnos", "douch", "treat" and "cure" were REMOVED. They are substring
+            // false-positives on the *responsible disclaimer/caveat/clinical-signposting* language
+            // iOS 1.2.0 (18) ships and this app must carry — "it isn't a diagnosis", listing
+            // "douches" as a measurement caveat, "treat sleep as the thing you can change",
+            // "treatment for cancer", "a commitment to treatment". Diagnosis and treatment *claims*
+            // remain blocked by the condition-name bans above; pH pseudoscience remains blocked by
             // "balance your ph"/"alkaline". This matches iOS's reviewed banned list intent.
         )
         learnArticles.forEach { article ->

@@ -41,17 +41,35 @@ class LearnDripTest {
         assertFalse(LearnDrip.isPublished(dated(today.plusDays(1)), today))
     }
 
+    // Real weekly-series anchors (ported from iOS 1.2.0 (18)).
+    private val firstWeekly = LocalDate.of(2026, 8, 23)  // "fertile-window"
+    private val secondWeekly = LocalDate.of(2026, 8, 30) // "vaginal-ph-explained"
+
     @Test
-    fun `published returns every always-available article and hides nothing spuriously`() {
-        val published = LearnDrip.published(today)
-        assertEquals(learnArticles.size, published.size)
-        assertTrue(learnArticles.all { it in published })
+    fun `before the series starts, only always-available articles are published`() {
+        val before = LocalDate.of(2026, 8, 1)
+        val published = LearnDrip.published(before)
+        assertTrue("every always-available article shows", learnArticles.filter { it.publishedAt == null }.all { it in published })
+        assertTrue("no dated article leaks early", published.none { it.publishedAt != null })
+        assertNull(LearnDrip.newestReleased(before))
+        assertTrue(LearnDrip.releasedOn(before).isEmpty())
     }
 
     @Test
-    fun `no dated content has shipped yet, so nothing releases on a given day`() {
-        assertTrue(learnArticles.all { it.publishedAt == null })
-        assertTrue(LearnDrip.releasedOn(today).isEmpty())
-        assertNull(LearnDrip.newestReleased(today))
+    fun `a dated article appears on its date and not before`() {
+        val dayBefore = firstWeekly.minusDays(1)
+        val fertile = articleBySlug("fertile-window")!!
+        assertFalse(LearnDrip.isPublished(fertile, dayBefore))
+        assertTrue(LearnDrip.isPublished(fertile, firstWeekly))
+        assertTrue("hidden the day before", articleBySlug("fertile-window") !in LearnDrip.published(dayBefore))
+    }
+
+    @Test
+    fun `releasedOn and newestReleased key off the exact publish date`() {
+        assertEquals(listOf("vaginal-ph-explained"), LearnDrip.releasedOn(secondWeekly).map { it.slug })
+        assertEquals("vaginal-ph-explained", LearnDrip.newestReleased(secondWeekly)?.slug)
+        // A week after the LAST release in the series (2026-11-01), nothing counts as "new" — the
+        // consecutive-Sunday cadence means every earlier date still has a release within 7 days.
+        assertNull(LearnDrip.newestReleased(LocalDate.of(2026, 11, 8)))
     }
 }

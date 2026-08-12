@@ -989,9 +989,7 @@ val learnArticles: List<Article> = listOf(
         category = ArticleCategory.GUIDES,
         tags = listOf("guide", "cycle", "phases", "how to"),
         readingTime = "5 min read",
-        // "w1" (weekly series) re-added when that series is ported — the Android integrity test
-        // rejects a related id that doesn't resolve, so only landed articles are listed.
-        relatedArticleIds = listOf("g4", "g2"),
+        relatedArticleIds = listOf("w1", "g4", "g2"),
         cta = ArticleCta(CtaType.OPEN_TRACK, "Open your calendar"),
         disclaimerRequired = true,
     ),
@@ -1056,8 +1054,7 @@ val learnArticles: List<Article> = listOf(
         category = ArticleCategory.GUIDES,
         tags = listOf("guide", "sleep", "how to", "tracking"),
         readingTime = "3 min read",
-        // "w7" (weekly series) re-added when that series is ported (see g7).
-        relatedArticleIds = listOf("g2", "a7"),
+        relatedArticleIds = listOf("w7", "g2", "a7"),
         cta = ArticleCta(CtaType.OPEN_TRACK, "Log last night's sleep"),
         disclaimerRequired = false,
     ),
@@ -1187,5 +1184,559 @@ val learnArticles: List<Article> = listOf(
         relatedArticleIds = emptyList(),
         cta = ArticleCta(CtaType.OPEN_PH, "Open the pH tracker"),
         disclaimerRequired = true,
+    ),
+
+    // ── The weekly series (shipped now, revealed on fixed Sundays) — ported from iOS 1.2.0 (18),
+    // 12 Aug 2026. Cross-platform contract: same slugs/ids and the same publish dates as iOS.
+    // Week-7 of the client's plan (the Shettles method, 2026-11-08) is deliberately absent on both
+    // platforms — its subject can't be written without the sex-selection claim language the
+    // banned-phrase guard exists to keep out. The eleven below run on consecutive Sundays.
+    Article(
+        id = "w1",
+        slug = "fertile-window",
+        title = "Understanding your fertile window",
+        excerpt = "Six days — and the useful end of them comes before the event you are trying to catch.",
+        body = listOf(
+            ArticleBlock.Paragraph(
+                "Across a whole cycle there are roughly six days when pregnancy is possible: the " +
+                    "five leading up to ovulation, and ovulation day itself. Everything else is " +
+                    "outside the window.",
+            ),
+            ArticleBlock.Paragraph(
+                "The part that surprises people is which end matters. Sperm can survive several days " +
+                    "in fertile cervical fluid. An egg, once released, is viable for less than a " +
+                    "day. So the window opens well before ovulation and effectively closes with it.",
+            ),
+            ArticleBlock.Heading("Why a predicted date is a prediction"),
+            ArticleBlock.Paragraph(
+                "Your app estimates ovulation from your cycle history. That estimate is honest " +
+                    "arithmetic, not a measurement — and ovulation is the part of the cycle that " +
+                    "moves most. Illness, travel, a hard fortnight and a bad run of sleep can all " +
+                    "shift it by days.",
+            ),
+            ArticleBlock.Paragraph(
+                "The stretch after ovulation is the steadier half. Which means a cycle that ran " +
+                    "long usually ran long at the start, not the end.",
+            ),
+            ArticleBlock.Heading("Signs that come from your body rather than the calendar"),
+            ArticleBlock.BulletList(
+                listOf(
+                    "Cervical fluid turning clearer, wetter and more stretchy over several days.",
+                    "A small sustained rise in resting temperature — which confirms ovulation has happened rather than predicting it.",
+                    "Ovulation tests picking up the hormone surge that precedes release by a day or so.",
+                ),
+            ),
+            ArticleBlock.Paragraph(
+                "None of these is a stopwatch. Read together across a couple of cycles they tell " +
+                    "you far more than any one of them alone.",
+            ),
+            ArticleBlock.Callout(
+                "Treat the predicted date as the middle of a window, not a deadline. If you are " +
+                    "only ever aiming at one day, you are aiming at the least reliable part of the " +
+                    "estimate.",
+            ),
+        ),
+        category = ArticleCategory.TRACKING,
+        tags = listOf("cycle", "fertile window", "ovulation", "timing"),
+        readingTime = "4 min read",
+        relatedArticleIds = listOf("w4", "w6", "w8"),
+        cta = ArticleCta(CtaType.OPEN_TRACK, "Open your cycle"),
+        disclaimerRequired = true,
+        publishedAt = LocalDate.of(2026, 8, 23),
+    ),
+    Article(
+        id = "w2",
+        slug = "vaginal-ph-explained",
+        title = "What your vaginal pH is actually telling you",
+        excerpt = "One reading means very little. A pattern across two months means quite a lot.",
+        body = listOf(
+            ArticleBlock.Paragraph(
+                "Vaginal pH is a measure of acidity. A healthy vaginal environment is acidic, and " +
+                    "it is kept that way largely by the bacteria that live there — lactobacilli, " +
+                    "which produce lactic acid as they go about their business.",
+            ),
+            ArticleBlock.Paragraph(
+                "That acidity is not a target you hit. It is a by-product of an ecosystem doing well.",
+            ),
+            ArticleBlock.Heading("Why a single reading tells you almost nothing"),
+            ArticleBlock.Paragraph(
+                "pH shifts naturally across the cycle, and it responds to your period, to recent " +
+                    "sex, to washing, and to the time of day you measured. One elevated number on " +
+                    "one morning is noise until something repeats.",
+            ),
+            ArticleBlock.Heading("What a trend can show"),
+            ArticleBlock.BulletList(
+                listOf(
+                    "Whether your readings sit in a consistent range, or move around a lot.",
+                    "Whether the movement lines up with a point in your cycle, which would make it a pattern rather than a surprise.",
+                    "Whether something you changed a month ago shows up in the numbers, or does not.",
+                ),
+            ),
+            ArticleBlock.Heading("What it is not"),
+            ArticleBlock.Paragraph(
+                "It is not a fertility score, and it is not something to correct through diet. Food " +
+                    "does not meaningfully move vaginal pH, and no eating pattern has been shown to " +
+                    "change it. Anything claiming otherwise is selling you something.",
+            ),
+            ArticleBlock.Paragraph(
+                "If your readings sit persistently outside the usual range, or you have symptoms " +
+                    "that bother you, that is a conversation for a clinician rather than a number to " +
+                    "manage alone.",
+            ),
+            ArticleBlock.Callout(
+                "Log weekly, note the cycle day, and look at the shape after two months. One " +
+                    "reading is a data point. Eight is a picture.",
+            ),
+        ),
+        category = ArticleCategory.TRACKING,
+        tags = listOf("ph", "tracking", "cycle"),
+        readingTime = "4 min read",
+        relatedArticleIds = listOf("g1", "g3", "w1"),
+        cta = ArticleCta(CtaType.OPEN_PH, "Log a pH reading"),
+        disclaimerRequired = true,
+        publishedAt = LocalDate.of(2026, 8, 30),
+    ),
+    Article(
+        id = "w3",
+        slug = "nutrition-before-conception",
+        title = "Eating in the months before conception",
+        excerpt = "The one thing with strong evidence has a deadline, and it lands before most people start looking.",
+        body = listOf(
+            ArticleBlock.Paragraph(
+                "Most preconception nutrition advice is ordinary good-eating advice repeated more " +
+                    "urgently. There is one genuine exception, and it is worth knowing because its " +
+                    "timing is counterintuitive.",
+            ),
+            ArticleBlock.Heading("Folic acid, and why the timing matters"),
+            ArticleBlock.Paragraph(
+                "Folic acid lowers the risk of neural tube conditions. The neural tube closes in " +
+                    "the first few weeks after conception — often before a pregnancy has been " +
+                    "confirmed. So the useful window is before you are pregnant, not after you find " +
+                    "out.",
+            ),
+            ArticleBlock.Paragraph(
+                "UK guidance is 400 micrograms daily while trying, and through the first twelve " +
+                    "weeks. Some people are advised a higher dose, and that is a question for your " +
+                    "GP rather than a shelf.",
+            ),
+            ArticleBlock.Heading("Vitamin D, in this climate"),
+            ArticleBlock.Paragraph(
+                "A daily supplement is advised for adults in the UK through autumn and winter, when " +
+                    "there is not enough sunlight to make your own. That is general population " +
+                    "advice rather than fertility advice, but it applies to you as much as anyone.",
+            ),
+            ArticleBlock.Heading("The rest, honestly"),
+            ArticleBlock.BulletList(
+                listOf(
+                    "A varied diet with enough iron matters, particularly if your periods are heavy.",
+                    "Being significantly under or over weight can affect ovulation, and small sustainable change beats a crash.",
+                    "Caffeine and alcohol are worth moderating, and the guidance on both is easy to find and dull to follow.",
+                    "No single food, drink or eating pattern has been shown to make conception happen faster.",
+                ),
+            ),
+            ArticleBlock.Callout(
+                "If you change one thing this month, make it the folic acid. It is cheap, the " +
+                    "evidence is strong, and it stops being useful at roughly the moment you find " +
+                    "out you needed it.",
+            ),
+        ),
+        category = ArticleCategory.NUTRITION,
+        tags = listOf("nutrition", "preconception", "supplements", "folic acid"),
+        readingTime = "4 min read",
+        relatedArticleIds = listOf("a5", "a6", "w10"),
+        cta = ArticleCta(CtaType.OPEN_NUTRITION, "Open Nutrition"),
+        disclaimerRequired = true,
+        publishedAt = LocalDate.of(2026, 9, 6),
+    ),
+    Article(
+        id = "w4",
+        slug = "cervical-mucus",
+        title = "What cervical mucus can tell you",
+        excerpt = "The one common fertility sign that predicts rather than confirms — and it costs nothing.",
+        body = listOf(
+            ArticleBlock.Paragraph(
+                "Cervical fluid changes through the cycle, and the change is not subtle once you " +
+                    "know what you are looking at. It is also the only everyday sign that tells you " +
+                    "the fertile window is opening rather than closing.",
+            ),
+            ArticleBlock.Heading("The pattern, roughly"),
+            ArticleBlock.BulletList(
+                listOf(
+                    "Just after your period: little or nothing, or slightly tacky.",
+                    "As oestrogen rises: creamy, then wetter, then clearer.",
+                    "At the most fertile point: clear, slippery and stretchy, often compared to raw egg white.",
+                    "After ovulation: it dries up or thickens again, usually within a day or two.",
+                ),
+            ),
+            ArticleBlock.Heading("Why it beats temperature for timing"),
+            ArticleBlock.Paragraph(
+                "A temperature rise confirms ovulation has already happened. That is useful for " +
+                    "understanding your cycle in hindsight and useless for catching the window. " +
+                    "Fluid changes days ahead of the event, which is the part you can act on.",
+            ),
+            ArticleBlock.Heading("What throws it off"),
+            ArticleBlock.Paragraph(
+                "Recent sex, lubricants and some medications all change what you see. So does a " +
+                    "cycle where ovulation comes late or does not arrive at all — the pattern can " +
+                    "build, fade, and build again.",
+            ),
+            ArticleBlock.Paragraph(
+                "If you never see the wetter, clearer phase across several cycles, that is worth " +
+                    "mentioning to a clinician. It is information, not a verdict.",
+            ),
+            ArticleBlock.Callout(
+                "Check at the same point each day and write down what you notice in one word. The " +
+                    "vocabulary matters far less than doing it consistently.",
+            ),
+        ),
+        category = ArticleCategory.TRACKING,
+        tags = listOf("cycle", "fertile window", "tracking", "cervical mucus"),
+        readingTime = "4 min read",
+        relatedArticleIds = listOf("w1", "w6", "a3"),
+        cta = ArticleCta(CtaType.OPEN_LOG, "Open today's log"),
+        disclaimerRequired = true,
+        publishedAt = LocalDate.of(2026, 9, 13),
+    ),
+    Article(
+        id = "w5",
+        slug = "hydration-and-reproductive-health",
+        title = "Hydration and reproductive health",
+        excerpt = "The real effects are smaller than the marketing and larger than nothing.",
+        body = listOf(
+            ArticleBlock.Paragraph(
+                "Hydration gets attached to fertility claims it cannot support. It is worth " +
+                    "separating what is established from what is merely repeated.",
+            ),
+            ArticleBlock.Heading("What is established"),
+            ArticleBlock.BulletList(
+                listOf(
+                    "Cervical fluid is mostly water, so being persistently dehydrated gives your body less to work with.",
+                    "Mild dehydration measurably affects mood, concentration and perceived effort, which is enough to make a hard month harder.",
+                    "Thirst is a decent guide for most people, most of the time.",
+                ),
+            ),
+            ArticleBlock.Heading("What is not"),
+            ArticleBlock.Paragraph(
+                "Drinking more water has not been shown to make conception happen faster, to change " +
+                    "vaginal pH, or to alter anything about a future pregnancy. Any product " +
+                    "suggesting otherwise is charging you for tap water and a story.",
+            ),
+            ArticleBlock.Heading("A more useful way to think about it"),
+            ArticleBlock.Paragraph(
+                "Hydration is a floor, not a lever. Being adequately hydrated removes a small " +
+                    "obstacle. Being extraordinarily hydrated does not remove a larger one, and " +
+                    "drinking far beyond thirst carries its own risk.",
+            ),
+            ArticleBlock.Callout(
+                "If you are rarely thirsty and your urine is pale, you are fine. Spend the " +
+                    "attention you were about to spend on water on your sleep instead.",
+            ),
+        ),
+        category = ArticleCategory.WELLNESS,
+        tags = listOf("hydration", "wellness", "cycle"),
+        readingTime = "3 min read",
+        relatedArticleIds = listOf("a4", "g5", "w7"),
+        cta = ArticleCta(CtaType.OPEN_TRACK, "Open Hydration"),
+        disclaimerRequired = true,
+        publishedAt = LocalDate.of(2026, 9, 20),
+    ),
+    Article(
+        id = "w6",
+        slug = "timing-sex-when-ttc",
+        title = "Timing sex when you are trying to conceive",
+        excerpt = "Every two to three days, throughout. The elaborate schedules do worse.",
+        body = listOf(
+            ArticleBlock.Paragraph(
+                "The guidance here is unglamorous and has barely changed in years: sex every two to " +
+                    "three days across the cycle gives you the best chance, without anyone having to " +
+                    "track anything.",
+            ),
+            ArticleBlock.Heading("Why regular beats targeted"),
+            ArticleBlock.Paragraph(
+                "Aiming at a predicted day assumes the prediction is right. It often is not — " +
+                    "ovulation is the most movable part of the cycle. Regular sex means the window " +
+                    "is covered whenever it actually opens.",
+            ),
+            ArticleBlock.Paragraph(
+                "It also avoids the failure mode where a couple saves themselves for a date, misses " +
+                    "it, and waits another month.",
+            ),
+            ArticleBlock.Heading("On the elaborate approaches"),
+            ArticleBlock.Paragraph(
+                "There is a long tradition of methods promising better odds through precise timing, " +
+                    "particular positions, or diet. The evidence for them is weak, and the cost is " +
+                    "not neutral: they turn something that should be ordinary into a scheduled " +
+                    "performance, and that is its own kind of pressure.",
+            ),
+            ArticleBlock.Heading("What actually helps"),
+            ArticleBlock.BulletList(
+                listOf(
+                    "Regular sex spread across the cycle rather than concentrated into two days.",
+                    "Skipping standard lubricants during the fertile window, or choosing one designed not to interfere.",
+                    "Not treating a month without a result as a verdict. Most couples take several months.",
+                ),
+            ),
+            ArticleBlock.Callout(
+                "If the schedule is making it worse, drop the schedule. Every two to three days " +
+                    "needs no tracking, no tests, and no arguing about what day it is.",
+            ),
+        ),
+        category = ArticleCategory.TRACKING,
+        tags = listOf("timing", "fertile window", "cycle", "wellness"),
+        readingTime = "3 min read",
+        relatedArticleIds = listOf("w1", "w4", "w11"),
+        cta = ArticleCta(CtaType.OPEN_LOG, "Open today's log"),
+        disclaimerRequired = true,
+        publishedAt = LocalDate.of(2026, 9, 27),
+    ),
+    Article(
+        id = "w7",
+        slug = "sleep-stress-and-your-cycle",
+        title = "Sleep, stress and your cycle",
+        excerpt = "Stress does affect cycles. That is not the same as your cycle being your fault.",
+        body = listOf(
+            ArticleBlock.Paragraph(
+                "Two things are true at once, and the gap between them is where most of the " +
+                    "unhelpful advice lives. Sustained stress and disrupted sleep can affect the " +
+                    "hormonal signalling that drives ovulation. And being told to relax has never " +
+                    "helped anyone conceive.",
+            ),
+            ArticleBlock.Heading("What the mechanism actually is"),
+            ArticleBlock.Paragraph(
+                "The signal that triggers ovulation starts in the brain. Severe physiological " +
+                    "stress — serious illness, extreme exercise, significant undereating, chronic " +
+                    "sleep deprivation — can suppress that signal, delaying ovulation or " +
+                    "occasionally skipping it. This is a real effect with a real pathway.",
+            ),
+            ArticleBlock.Paragraph(
+                "Ordinary life stress is a different magnitude. It is not established that a " +
+                    "difficult few weeks at work will stop you conceiving, and being told it might " +
+                    "adds a burden without adding information.",
+            ),
+            ArticleBlock.Heading("Sleep is the more actionable half"),
+            ArticleBlock.BulletList(
+                listOf(
+                    "Shift work and habitual short sleep are associated with more cycle irregularity.",
+                    "Timing appears to matter, not only duration — a consistent schedule beats a long lie-in after a bad week.",
+                    "Poor sleep also degrades everything you would otherwise use to cope, which is the quieter cost.",
+                ),
+            ),
+            ArticleBlock.Heading("What to do with this"),
+            ArticleBlock.Paragraph(
+                "Treat sleep as the thing you can change and stress as the thing you can manage " +
+                    "rather than eliminate. If your cycles have become markedly irregular, raise it " +
+                    "with a clinician instead of absorbing it.",
+            ),
+            ArticleBlock.Callout(
+                "Nobody has ever relaxed their way to ovulation on command. Fix the sleep schedule, " +
+                    "which is boring, measurable, and actually within reach.",
+            ),
+        ),
+        category = ArticleCategory.WELLNESS,
+        tags = listOf("sleep", "stress", "wellness", "cycle"),
+        readingTime = "4 min read",
+        relatedArticleIds = listOf("a9", "w5", "w11"),
+        cta = ArticleCta(CtaType.OPEN_LOG, "Log how you slept"),
+        disclaimerRequired = true,
+        publishedAt = LocalDate.of(2026, 10, 4),
+    ),
+    Article(
+        id = "w8",
+        slug = "understanding-ovulation-tests",
+        title = "Understanding ovulation tests",
+        excerpt = "They detect a hormone surge, not an egg — and that distinction explains most of the confusion.",
+        body = listOf(
+            ArticleBlock.Paragraph(
+                "An ovulation test detects luteinising hormone in urine. LH surges shortly before " +
+                    "an egg is released, so a positive test tells you the window is closing rather " +
+                    "than opening.",
+            ),
+            ArticleBlock.Heading("What a positive means"),
+            ArticleBlock.Paragraph(
+                "Ovulation usually follows the surge within a day or so. That makes a positive test " +
+                    "useful as a last call, and it is why tests pair badly with a strategy of " +
+                    "waiting for one before doing anything.",
+            ),
+            ArticleBlock.Heading("Why they mislead"),
+            ArticleBlock.BulletList(
+                listOf(
+                    "A surge can happen without an egg being released, so a positive is not proof of ovulation.",
+                    "Some people surge twice, or have a long low surge the test reads inconsistently.",
+                    "Testing once a day can miss a short surge entirely.",
+                    "Some conditions and medications raise baseline LH, producing positives that mean nothing.",
+                ),
+            ),
+            ArticleBlock.Heading("Using them without being ruled by them"),
+            ArticleBlock.Paragraph(
+                "Tests are most useful for learning where in your cycle ovulation tends to fall, " +
+                    "over two or three months. Once you know that, they have largely done their " +
+                    "job — and regular sex across the window is more reliable than chasing a line.",
+            ),
+            ArticleBlock.Callout(
+                "If a test has ever made you feel you missed your chance for the month, it is " +
+                    "working against you. It is a clue about your pattern, not a starting pistol.",
+            ),
+        ),
+        category = ArticleCategory.TRACKING,
+        tags = listOf("ovulation", "tracking", "tests", "fertile window"),
+        readingTime = "4 min read",
+        relatedArticleIds = listOf("w1", "w4", "w6"),
+        cta = ArticleCta(CtaType.OPEN_TRACK, "Open your cycle"),
+        disclaimerRequired = true,
+        publishedAt = LocalDate.of(2026, 10, 11),
+    ),
+    Article(
+        id = "w9",
+        slug = "supporting-sperm-health",
+        title = "Supporting sperm health",
+        excerpt = "Half the equation, most of the silence, and a three-month lag on anything you change.",
+        body = listOf(
+            ArticleBlock.Paragraph(
+                "Around half of difficulty conceiving involves a male factor, and it is the half " +
+                    "that tends to get investigated last. It is also the half where lifestyle change " +
+                    "has a clear timeline.",
+            ),
+            ArticleBlock.Heading("The three-month lag"),
+            ArticleBlock.Paragraph(
+                "Sperm take roughly two to three months to develop. Anything changed today shows up " +
+                    "in a test around a season later. That cuts both ways: a bad month is not " +
+                    "permanent, and a good week is not a result.",
+            ),
+            ArticleBlock.Heading("What has reasonable evidence"),
+            ArticleBlock.BulletList(
+                listOf(
+                    "Stopping smoking, which affects both count and motility.",
+                    "Reducing heavy alcohol intake.",
+                    "Managing weight, since obesity is associated with lower counts.",
+                    "Avoiding sustained heat — hot tubs, saunas, and a laptop resting where you would expect.",
+                    "Treating anabolic steroid use as directly relevant, because it suppresses production and the effect can outlast the use.",
+                ),
+            ),
+            ArticleBlock.Heading("What is oversold"),
+            ArticleBlock.Paragraph(
+                "The supplement market here is large and the evidence is thin. Some antioxidant " +
+                    "formulations show small effects in some studies. None is established enough to " +
+                    "justify what they cost.",
+            ),
+            ArticleBlock.Heading("Getting it tested"),
+            ArticleBlock.Paragraph(
+                "A semen analysis is quick, non-invasive and available through a GP. NHS guidance " +
+                    "is to see a GP after a year of trying, and sooner if the woman is 36 or over. " +
+                    "When you go, both partners should be assessed rather than one.",
+            ),
+            ArticleBlock.Callout(
+                "If only one of you is being tracked, measured and supplemented, the investigation " +
+                    "is running at half strength.",
+            ),
+        ),
+        category = ArticleCategory.WELLNESS,
+        tags = listOf("sperm health", "partner", "wellness", "preconception"),
+        readingTime = "4 min read",
+        relatedArticleIds = listOf("w11", "w3", "w10"),
+        cta = ArticleCta(CtaType.OPEN_LOG, "Open today's log"),
+        disclaimerRequired = true,
+        publishedAt = LocalDate.of(2026, 10, 18),
+    ),
+    Article(
+        id = "w10",
+        slug = "fertility-supplements-explained",
+        title = "Fertility supplements, and what the evidence says",
+        excerpt = "Two have real evidence behind them. The rest are priced as though they do.",
+        body = listOf(
+            ArticleBlock.Paragraph(
+                "Walk into any pharmacy and the conception shelf will offer you a dozen blends at " +
+                    "several times the price of their components. It is worth knowing which parts " +
+                    "are doing the work.",
+            ),
+            ArticleBlock.Heading("The two worth the money"),
+            ArticleBlock.BulletList(
+                listOf(
+                    "Folic acid, 400 micrograms daily while trying and through the first twelve weeks. Strong evidence, trivial cost.",
+                    "Vitamin D, 10 micrograms daily through UK autumn and winter. General health advice that happens to apply to you.",
+                ),
+            ),
+            ArticleBlock.Heading("The rest, briefly"),
+            ArticleBlock.Paragraph(
+                "Coenzyme Q10, inositol, omega-3s and assorted antioxidant blends appear in most " +
+                    "conception formulas. Some have promising early research, usually in specific " +
+                    "groups rather than the general population. None has evidence approaching that " +
+                    "for folic acid, and none should be bought on the strength of its packaging.",
+            ),
+            ArticleBlock.Paragraph(
+                "Inositol is the most likely exception if you have PCOS, and that is a conversation " +
+                    "with a clinician rather than a shelf decision.",
+            ),
+            ArticleBlock.Heading("What to watch for"),
+            ArticleBlock.BulletList(
+                listOf(
+                    "Blends where an active ingredient appears at a dose far below the one that was studied.",
+                    "Vitamin A, which should be avoided at high doses when trying to conceive.",
+                    "Any product implying it improves your odds by a specific amount. That claim is not supportable.",
+                    "Herbal preparations sold as cycle regulators, which are not tested to the same standard and can interact with medication.",
+                ),
+            ),
+            ArticleBlock.Callout(
+                "Buy the folic acid, buy the vitamin D, and put what you were going to spend on the " +
+                    "blend towards something that will actually improve your month.",
+            ),
+        ),
+        category = ArticleCategory.NUTRITION,
+        tags = listOf("supplements", "nutrition", "preconception", "evidence"),
+        readingTime = "5 min read",
+        relatedArticleIds = listOf("a6", "w3", "w9"),
+        cta = ArticleCta(CtaType.OPEN_NUTRITION, "Open Nutrition"),
+        disclaimerRequired = true,
+        publishedAt = LocalDate.of(2026, 10, 25),
+    ),
+    Article(
+        id = "w11",
+        slug = "when-to-ask-for-support",
+        title = "When to ask for fertility support",
+        excerpt = "There is a threshold, it is earlier than most people think, and waiting past it costs you options.",
+        body = listOf(
+            ArticleBlock.Paragraph(
+                "Most couples conceive within a year. That statistic is meant to reassure, and it " +
+                    "does — but it also gets used to talk people out of asking for help at exactly " +
+                    "the point where asking becomes useful.",
+            ),
+            ArticleBlock.Heading("The thresholds"),
+            ArticleBlock.BulletList(
+                listOf(
+                    "Trying for twelve months without success: see your GP. That is the standard NHS threshold.",
+                    "Aged 36 or over: see your GP sooner rather than waiting out the year. The shorter window is deliberate.",
+                    "At any point, if your cycles are very irregular or absent, if you have known endometriosis or PCOS, if you have had pelvic surgery or treatment for cancer, or if either of you is already aware of a fertility problem — go now rather than waiting out the clock.",
+                ),
+            ),
+            ArticleBlock.Heading("Why waiting is not neutral"),
+            ArticleBlock.Paragraph(
+                "Investigation takes time. Referral takes time. Treatment takes time, and " +
+                    "eligibility criteria in many areas are tied to age. Six months of waiting to " +
+                    "see whether it resolves can quietly become eighteen by the time anyone is doing " +
+                    "anything.",
+            ),
+            ArticleBlock.Heading("What the first appointment is like"),
+            ArticleBlock.Paragraph(
+                "Mostly conversation and basic tests: blood tests to check ovulation, a semen " +
+                    "analysis, questions about your cycles and history. It is not a commitment to " +
+                    "treatment, and it is not a failure. Both partners should be seen.",
+            ),
+            ArticleBlock.Heading("Bringing your log"),
+            ArticleBlock.Paragraph(
+                "Several months of cycle dates, symptoms and readings is genuinely useful to a " +
+                    "clinician, and far more reliable than trying to recall it in the room. That is " +
+                    "the most practical thing this app can do for you here.",
+            ),
+            ArticleBlock.Callout(
+                "If you have hit the threshold, book the appointment. You can always cancel it. " +
+                    "What you cannot do is get the months back.",
+            ),
+        ),
+        category = ArticleCategory.WELLNESS,
+        tags = listOf("support", "clinician", "wellness", "cycle"),
+        readingTime = "5 min read",
+        relatedArticleIds = listOf("w9", "w1", "a10"),
+        cta = ArticleCta(CtaType.OPEN_INSIGHTS, "Open Insights"),
+        disclaimerRequired = true,
+        publishedAt = LocalDate.of(2026, 11, 1),
     ),
 )
