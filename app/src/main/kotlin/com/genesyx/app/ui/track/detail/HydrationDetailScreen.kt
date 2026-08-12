@@ -126,7 +126,7 @@ fun HydrationDetailScreen(
             }
             Spacer(Modifier.height(4.dp))
             Text(
-                "Changes save automatically to your log and sync when you're online.",
+                "Changes save to your log straight away, and sync to your account automatically.",
                 style = MaterialTheme.typography.bodySmall,
                 color = colors.onSurfaceVariant,
             )

@@ -141,19 +141,27 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel = hi
             }
 
             // Sync status — only shown when something is actually waiting. Guests never see it
-            // (their rows are written SYNCED), and a clean queue keeps the screen quiet.
+            // (their rows are written SYNCED), and a clean queue keeps the screen quiet. The copy is
+            // deliberately a "not synced YET" state, never "offline": the change is safe on the
+            // device and syncs on its own, so a lingering count is reassuring, not an error.
             if (signedIn && pendingSync > 0) {
                 Spacer(Modifier.height(12.dp))
                 Row(
-                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(colors.surface).padding(start = 16.dp, top = 4.dp, bottom = 4.dp, end = 4.dp),
+                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(colors.surface).padding(start = 16.dp, top = 8.dp, bottom = 8.dp, end = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(
-                        if (pendingSync == 1) "1 change waiting to sync" else "$pendingSync changes waiting to sync",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = colors.onSurfaceVariant,
-                        modifier = Modifier.weight(1f),
-                    )
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            if (pendingSync == 1) "1 change not synced yet" else "$pendingSync changes not synced yet",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = colors.onSurface,
+                        )
+                        Text(
+                            "Saved on your device — they'll sync to your account automatically.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = colors.onSurfaceVariant,
+                        )
+                    }
                     TextButton(onClick = { viewModel.syncNow() }) { Text("Sync now", color = ElectricLavender) }
                 }
             }

@@ -8,6 +8,22 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ## [Unreleased] — Single-source-of-truth bug batch (28 Jul device walkthrough)
 
+### Fixed (12 Aug 2026) — connectivity: the sync indicator reads "not synced yet", never "offline"
+- The lingering sync indicator was being read as "you're offline" when it actually means "this row
+  hasn't reached the server yet" — a reassuring state, since the change is already safe on the
+  device. There is no `isOnline()` gate or offline banner in the app (v1.0's was removed with the
+  offline queue); the only surface is the Profile sync row. Reworded it to
+  **"N changes not synced yet · Saved on your device — they'll sync to your account automatically"**
+  (was "N changes waiting to sync"), and fixed the Hydration-detail line that implied offline
+  ("…sync when you're online" → "…sync to your account automatically"). No copy now implies the app
+  is offline.
+- **Log loss verified solved on-device:** `DailyLogRepositoryTest` — **11/11 instrumented tests pass**
+  on the emulator, covering the offline write → PENDING queue, past-date persistence, and the
+  `a_pull_must_not_overwrite_an_unsynced_local_edit` rule (the one that guarantees a connection drop
+  never loses a log). Sync uses `NetworkType.CONNECTED` (any network incl. mobile data) and the
+  drains self-heal on app start.
+- Verified: 360 unit tests green; connected DailyLog suite 11/11.
+
 ### Fixed (12 Aug 2026) — Google sign-in errors now name the real cause
 - The catch-all Google failure message ("Couldn't reach Google. Check your connection.") hid the most
   common real cause — the app's **signing certificate isn't registered** as an Android OAuth client
