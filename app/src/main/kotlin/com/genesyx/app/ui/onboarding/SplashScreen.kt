@@ -1,6 +1,13 @@
 package com.genesyx.app.ui.onboarding
 
 import android.content.res.Configuration
+import androidx.compose.animation.core.EaseInOutSine
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.StartOffset
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -21,6 +28,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -29,6 +37,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.genesyx.app.R
@@ -68,17 +77,7 @@ fun SplashScreen(onStart: () -> Unit, onSignIn: () -> Unit) {
             .background(colors.background),
     ) {
         // Decorative floating eggs
-        eggs.forEach { egg ->
-            Image(
-                painter = painterResource(if (egg.male) R.drawable.egg_male else R.drawable.egg_female),
-                contentDescription = null,
-                modifier = Modifier
-                    .offset(x = egg.x.dp, y = egg.y.dp)
-                    .size(egg.size.dp)
-                    .rotate(egg.rotation)
-                    .alpha(egg.alpha),
-            )
-        }
+        eggs.forEachIndexed { index, egg -> FloatingEgg(egg, index) }
 
         Column(
             modifier = Modifier
@@ -138,6 +137,48 @@ fun SplashScreen(onStart: () -> Unit, onSignIn: () -> Unit) {
             Spacer(Modifier.height(8.dp))
         }
     }
+}
+
+/**
+ * One decorative egg with the web app's `gx-float` drift restored: ±12dp vertical and ±6dp
+ * horizontal on independent 10–14s loops, staggered 0–3s per egg so the field never moves in
+ * lockstep. The offsets are applied in the layout lambda, so the loop never recomposes the image.
+ */
+@Composable
+private fun FloatingEgg(egg: Egg, index: Int) {
+    val transition = rememberInfiniteTransition(label = "eggFloat")
+    val duration = 10_000 + (index % 5) * 1_000
+    val stagger = StartOffset((index % 4) * 1_000)
+    val dy by transition.animateFloat(
+        initialValue = -12f,
+        targetValue = 12f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(duration, easing = EaseInOutSine),
+            repeatMode = RepeatMode.Reverse,
+            initialStartOffset = stagger,
+        ),
+        label = "dy",
+    )
+    val dx by transition.animateFloat(
+        initialValue = -6f,
+        targetValue = 6f,
+        // A different period from dy keeps the path an ellipse-ish wander, not a diagonal.
+        animationSpec = infiniteRepeatable(
+            animation = tween(duration + 1_500, easing = EaseInOutSine),
+            repeatMode = RepeatMode.Reverse,
+            initialStartOffset = stagger,
+        ),
+        label = "dx",
+    )
+    Image(
+        painter = painterResource(if (egg.male) R.drawable.egg_male else R.drawable.egg_female),
+        contentDescription = null,
+        modifier = Modifier
+            .offset { IntOffset((egg.x + dx).dp.roundToPx(), (egg.y + dy).dp.roundToPx()) }
+            .size(egg.size.dp)
+            .rotate(egg.rotation)
+            .alpha(egg.alpha),
+    )
 }
 
 @Preview(name = "Splash — light", showBackground = true, showSystemUi = true)
