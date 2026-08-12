@@ -377,7 +377,7 @@ private fun NewArticleCard(title: String, onOpen: () -> Unit) {
             .fillMaxWidth()
             .clickable(onClick = onOpen)
             .clearAndSetSemantics {
-                contentDescription = "New article this week: $title. Opens the article."
+                contentDescription = "A read for your week: $title. Opens the article."
             },
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = colors.surface),
@@ -393,7 +393,7 @@ private fun NewArticleCard(title: String, onOpen: () -> Unit) {
             ) { Icon(Icons.AutoMirrored.Outlined.MenuBook, null, tint = ElectricLavender, modifier = Modifier.size(20.dp)) }
             Spacer(Modifier.size(12.dp))
             Column(Modifier.weight(1f)) {
-                Text("New this week", style = MaterialTheme.typography.labelSmall, color = ElectricLavender)
+                Text("A read for your week", style = MaterialTheme.typography.labelSmall, color = ElectricLavender)
                 Text(title, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
             }
             Icon(Icons.Filled.ChevronRight, null, tint = colors.onSurfaceVariant, modifier = Modifier.size(20.dp))

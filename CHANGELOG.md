@@ -8,6 +8,26 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ## [Unreleased] — Single-source-of-truth bug batch (28 Jul device walkthrough)
 
+### Added (12 Aug 2026) — weekly series ported (11 articles) + Home "a read for your week"
+- **The 11-article dated weekly series ported from iOS 1.2.0 (18)** (`fertile-window` 23 Aug →
+  `when-to-ask-for-support` 1 Nov, consecutive Sundays), same slugs/ids/publish-dates as iOS. Learn
+  is now **31 articles** (10 launch + 10 guides + 11 weekly). Each reveals on its own calendar date
+  via `LearnDrip`; future-dated ones stay hidden on every surface (list, search, article, related,
+  Home card, `NEW_ARTICLE` reminder). The `g7→w1`/`g8→w7` related links held out last commit are
+  restored. The client's week-7 Shettles piece stays absent (banned sex-selection claim language) —
+  same as iOS. `LearnDripTest` now exercises real dated behaviour (hidden-before-date, released-on,
+  newest-within-window).
+- **Banned-phrase guard: `"treat"`/`"cure"` removed** alongside the earlier `"diagnos"`/`"douch"` —
+  the same substring false-positives on responsible clinical-signposting the series carries ("treat
+  sleep as the thing you can change", "treatment for cancer", "a commitment to treatment"). Every
+  condition-name and pseudoscience ban stays; flagged for medical-reviewer confirmation.
+- **Home: the last block is now a persistent "A read for your week"** (was "New this week", which
+  only appeared the week a drip landed). It shows the freshly released weekly article when one
+  dropped in the last 7 days, otherwise a deterministic weekly rotation over the published editorial
+  articles (guides excluded), so the block is always present and always points at real content.
+- Verified: **347 unit tests green**, `:app:lintDebug` + `:app:assembleRelease` + `:app:bundleRelease`
+  green.
+
 ### Added (12 Aug 2026) — weekly-education programme: date-based drip + 10 guides ported (item 7)
 - **Learn drip switched from weeks-since-first-open to fixed calendar dates** (`Article.publishedAt:
   LocalDate?`), the agreed cross-platform contract with iOS 1.2.0 (18): everyone sees a given

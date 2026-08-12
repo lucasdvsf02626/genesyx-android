@@ -20,6 +20,8 @@ import com.genesyx.app.domain.hydration.HydrationUnit
 import com.genesyx.app.domain.model.CycleSettings
 import com.genesyx.app.domain.model.PhMeasurement
 import com.genesyx.app.domain.model.PhReading
+import com.genesyx.app.domain.content.Article
+import com.genesyx.app.domain.content.ArticleCategory
 import com.genesyx.app.domain.content.LearnDrip
 import com.genesyx.app.domain.model.isMeaningful
 import com.genesyx.app.domain.streaks.Milestone
@@ -173,11 +175,10 @@ class HomeViewModel @Inject constructor(
         val restoreDate = today.minusDays(1)
             .takeIf { yesterday -> !active(yesterday) && active(today.minusDays(2)) }
 
-        // Only a dated article released within the last week is ever "new" — always-available
-        // articles never trigger this. (firstOpenEpochDay is retained on the session snapshot for
-        // now but no longer gates the drip, which is calendar-date based since 12 Aug.)
-        val newArticle = LearnDrip.newestReleased(today)
-            ?.takeIf { it.slug != session.lastSeenArticleSlug }
+        // "A read for your week": the freshly released weekly-series article when one landed in the
+        // last seven days, otherwise a deterministic weekly rotation so the block is always present
+        // and always points at real, published content.
+        val weeklyRead = LearnDrip.newestReleased(today) ?: weeklyRotation(today)
 
         val base = HomeUiState(
             userName = session.displayName ?: "Guest",
@@ -200,8 +201,8 @@ class HomeViewModel @Inject constructor(
             streakDays = streaks.dailyActivity,
             newMilestones = streaks.newMilestones,
             restoreDate = restoreDate,
-            newArticleSlug = newArticle?.slug,
-            newArticleTitle = newArticle?.title,
+            newArticleSlug = weeklyRead?.slug,
+            newArticleTitle = weeklyRead?.title,
         )
         if (settings == null) return base
 
@@ -220,6 +221,18 @@ class HomeViewModel @Inject constructor(
             todayFocusTitle = focus.title,
             todayFocusBody = focus.body,
         )
+    }
+
+    /**
+     * A deterministic "read for your week" for weeks with no fresh weekly-series drop: it advances
+     * one article per ISO-ish week (epoch-day / 7) through the published editorial articles, skipping
+     * the how-to guides so the Home block surfaces a genuine read rather than a manual. Deterministic,
+     * so it's stable within a week and identical across a process restart — no randomness.
+     */
+    private fun weeklyRotation(today: LocalDate): Article? {
+        val pool = LearnDrip.published(today).filter { it.category != ArticleCategory.GUIDES }
+        if (pool.isEmpty()) return null
+        return pool[((today.toEpochDay() / 7) % pool.size).toInt()]
     }
 
     private fun greetingFor(time: LocalTime): String = when (time.hour) {

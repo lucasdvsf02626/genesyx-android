@@ -262,16 +262,21 @@ instead of weakening that shared contract.
 
 ## 7. Learn and content
 
-- **Twenty** bundled Android articles ship with categories, search, related links, share and CTAs:
-  the 10 launch articles plus 10 "guide" how-tos ported from iOS 1.2.0 (18) on 12 Aug (category
-  `GUIDES`, always-available). Slugs/ids match iOS for cross-platform read-state/deep-link parity.
+- **Thirty-one** bundled Android articles ship with categories, search, related links, share and
+  CTAs: 10 launch + 10 "guide" how-tos + the 11-article dated weekly series, all ported from iOS
+  1.2.0 (18) on 12 Aug with matching slugs/ids (and, for the series, matching publish dates
+  23 Aug → 1 Nov). Slugs/ids match iOS for cross-platform read-state/deep-link parity.
 - `LearnDrip` reveals by **fixed calendar date** (`Article.publishedAt`, cross-platform contract
   with iOS, 12 Aug) — everyone sees a dated article on the same real day. Every Learn surface plus
   the Home card and `NEW_ARTICLE` reminder resolve through it, so a future-dated article is hidden
   everywhere at once, including a stale deep link.
-- All current `publishedAt` values are null (always-available), so the dated **weekly series is not
-  yet ported** — that's the remaining content task, now unblocked by the date-based mechanism.
+- The 11 weekly-series articles carry `publishedAt` dates (23 Aug → 1 Nov 2026, consecutive
+  Sundays); the other 20 are always-available. The week-7 Shettles piece is deliberately absent on
+  both platforms (banned sex-selection claim language).
 - `NEW_ARTICLE` reminder exists and is opt-in; it stays silent while no dated article is due today.
+- Home's last block is a persistent **"A read for your week"**: the freshly released weekly article
+  when one dropped in the last 7 days, else a deterministic weekly rotation over published editorial
+  articles.
 - Medical/disclaimer copy and pH citations are compiled into the app. The `LearnContentTest`
   banned-phrase guard dropped bare `"diagnos"`/`"douch"` (substring false-positives on responsible
   disclaimer language) on 12 Aug — condition-name and pseudoscience bans are unchanged; flagged for
@@ -477,7 +482,7 @@ Then verify:
 | Full Android notification controls and evidence-aware planner | Partially implemented |
 | Quiz-answer persistence + Tracking Preferences | Not implemented |
 | Profile Health/Personal editors | Mostly implemented; verify every row is repository-backed |
-| Weekly Learn programme | Date-based drip engine live + 10 guides ported (20 articles); dated weekly series not yet ported |
+| Weekly Learn programme | Date-based drip live; 31 articles ported from iOS (10 launch + 10 guides + 11 dated weekly series) |
 | Partner invite/accept/decline/unlink | Not implemented; feature remains off |
 | Unified intelligent 7/14/21/30 programme | Not implemented |
 
