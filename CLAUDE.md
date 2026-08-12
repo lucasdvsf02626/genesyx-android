@@ -2,60 +2,69 @@
 
 Project Name: Genesyx Android
 
-**v1.3.2 (versionCode 13) is on `main` and LIVE on Play Internal testing (uploaded 2026-07-27).**
-Read this first. Honest state, verified against the tree on **2026-07-27**.
+**`main` is at v1.3.2 (versionCode 13), but Play does NOT serve it yet:** a live Play Console
+audit (2026-07-28) found Internal testing on **1.3.0 (11)** and Production on **1.2.0 (9)** —
+codes 12 and 13 were never uploaded. The verified 1.3.2 artifact awaits upload at
+`~/Documents/Genesyx Releases/1.3.2-code13/`.
+Read this first. Honest state, verified against the tree on **2026-07-30**.
 
 > **⚠️ If you read an older copy of this file, four things it told you are now FALSE:**
 > 1. **pH is NOT local-only.** pH readings sync to Supabase. Never restore "stored on this device"
 >    copy — see "pH sync is live" below.
 > 2. **pH is VAGINAL pH now, not urine pH.** Two-band model (Healthy 3.8–4.5 / Elevated > 4.5),
->    Room v5, pre-migration readings shown as "urine (legacy)". Ranges are PROVISIONAL pending
->    client sign-off.
-> 3. **`main` is at versionCode 13, versionName "1.3.2"**, targeting Android 16 (SDK 36). The
->    archived `1.2.1-code10`, `1.3.0-code11` and `1.3.1-code12` builds are all **superseded — never
->    upload them** (code10 predates API 36 + vaginal pH; code11 predates the 1.3.1 features; code12's
+>    pre-migration readings shown as "urine (legacy)". Ranges are **client-approved (28 Jul
+>    2026)**: input 3.8–7.0, step 0.1, default 4.2 — no longer provisional.
+> 3. **`main` is at versionCode 13, versionName "1.3.2"**, targeting Android 16 (SDK 36), Room
+>    **v6** — and it is AHEAD of the archived code-13 binaries: manual supplement entry + the
+>    Genesyx range (`aecac1a`, Room v5→v6) is source-only, targets the NEXT versionCode (14), and
+>    **must not ship** before the `user_supplements`/`genesyx_products` Supabase migration is
+>    applied (REST-probed 29 Jul: tables don't exist yet, PGRST205). The archived `1.2.1-code10`,
+>    `1.3.0-code11` and `1.3.1-code12` builds are all **superseded — never upload them** (code12's
 >    waitlist flow is broken — see CHANGELOG 1.3.2).
-> 4. **The app IS uploaded to Play** — 1.3.2 (13) on Internal testing 2026-07-27, with the Health
->    apps declaration re-submitted (wellness / menstrual health, not Medical).
+> 4. **Play does NOT serve 1.3.2.** Internal testing = **1.3.0 (11)** (rolled out 27 Jul, Health
+>    apps declaration re-submitted same day); Production = **1.2.0 (9)**. The code-13 upload was
+>    started 28 Jul but never completed; the corrected Health apps + Data Safety console drafts
+>    are saved but **not sent for review**.
 
-## 🔖 STOPPED HERE — resume from this (2026-07-27, evening)
+## 🔖 STOPPED HERE — resume from this (2026-07-30)
 
-**1.3.2 (versionCode 13) is built, archived, and live on Play Internal testing.** Artifacts:
-`~/Documents/Genesyx Releases/1.3.2-code13/`. One dense release day: 1.3.0 (API 36 + vaginal pH) →
-Health declaration cleared → 1.3.1 (change password, guest pH adoption, waitlist storage) → 1.3.2
-(waitlist rewired to the `join_waitlist` RPC after server-side verification proved 1.3.1's direct
-upsert failed every join). The `join_waitlist` SECURITY DEFINER function is **deployed to production
-Supabase and verified over the anon REST path** (trim/lowercase, duplicate no-op, table fully
-unreadable/unwritable to clients — zero policies, no client grants).
+**The 1.3.2 (versionCode 13) release artifact is built, verified and archived
+(`~/Documents/Genesyx Releases/1.3.2-code13/`) but NOT yet on Play** — Internal testing still
+serves 1.3.0 (11). Since the 27 Jul release day: the client approved the vaginal-pH ranges
+(28 Jul); the cross-screen consistency bug batch, ml/cups toggle, pH citations, cycle-phase
+timeline card and calendar clipping fixes landed; and manual supplement entry + the Genesyx range
+(Room v6) shipped **in source only** — it targets versionCode 14 and is blocked on its Supabase
+migration. The `join_waitlist` SECURITY DEFINER RPC is deployed to production Supabase and
+REST-verified (trim/lowercase, duplicate no-op, table unreadable/unwritable to clients).
 
 **Session-by-session history lives in `CHANGELOG.md`.** Read it before anything else.
-**Product state lives in `APP_INVENTORY.md`** (repo root) — rewritten 2026-07-27 against the tree:
-all 26 routes, the tracker matrix, live-vs-dormant features, data/sync behaviour, gaps.
+**Product state lives in `APP_INVENTORY.md`** (repo root).
 
 **Next actions, in order:**
-1. **Smoke-test the 1.3.2 Internal-testing install on-device** — especially the three flows new
-   today, which unit tests can't exercise against real Supabase: change password (incl. wrong
-   current password), waitlist join (incl. duplicate), guest pH reading → sign-in → reading appears.
-   Plus the 1.3.0 checks: vaginal pH two-band display, "urine (legacy)" markers, Home deep links, a
-   reminder firing.
-2. **Play Data Safety form** — must now ALSO declare email-address collection (the waitlist),
-   besides the pH-sync review.
-3. **Close the remaining Release gates** (see `CHANGELOG.md` gates table — OWNER items):
-   client sign-off on the PROVISIONAL vaginal-pH ranges + copy; `genesyx.co.uk` privacy-policy
-   wording (vaginal pH + waitlist email); the pH server-side deletion re-check (S6).
-4. **Promote to Production** once 1–3 clear.
-5. Schedule the iOS parity fix (labels, two-band thresholds, `measurement_type`, copy — and the
-   waitlist RPC if iOS gains the screen).
+1. **Finish the code-13 upload to Internal testing**, then smoke-test the Play-installed build
+   on-device: change password (incl. wrong current password), waitlist join (incl. duplicate),
+   guest pH reading → sign-in → reading appears; plus the 1.3.0 checks — vaginal pH two-band
+   display, "urine (legacy)" markers, Home deep links, a reminder firing.
+2. **Send the corrected Play console drafts for review** — the Health apps declaration and Data
+   Safety form (pH sync + waitlist email declared) are saved as drafts only. Resolve the Play
+   URL-validator 429 warning on the deletion/privacy routes.
+3. **Backend gates:** Supabase DPA check; live end-to-end deletion of an account containing a pH
+   reading (the old S6 proof predates pH sync); `genesyx.co.uk` privacy-policy wording (vaginal
+   pH + waitlist email).
+4. **Owner approval, then promote to Production.**
+5. Before any code-14 build: apply + REST-verify the `user_supplements`/`genesyx_products`
+   migration. Schedule the iOS parity fix (labels, two-band thresholds, `measurement_type`, copy,
+   logged-days hydration average — and the waitlist RPC if iOS gains the screen).
 
 ## Where the code actually is
 
 | | |
 |---|---|
-| `main` | versionCode **13**, versionName **"1.3.2"**, compile/targetSdk **36**, Room **v5** |
+| `main` | versionCode **13**, versionName **"1.3.2"**, compile/targetSdk **36**, Room **v6** |
 | Working branch | none |
-| Unit tests | **247 passing, 0 failures** (`./gradlew :app:testDebugUnitTest`) |
-| Release build | `:app:bundleRelease` + `:app:assembleRelease` GREEN (2026-07-27), R8/minify clean |
-| Play status | 1.3.2 (13) on **Internal testing** since 2026-07-27; Production promotion pending gates |
+| Unit tests | **304 passing, 0 failures** (`./gradlew :app:testDebugUnitTest`, 29 Jul) |
+| Release build | `:app:bundleRelease` + `:app:assembleRelease` GREEN (2026-07-29), R8/minify clean |
+| Play status | Internal testing **1.3.0 (11)**, Production **1.2.0 (9)** (Console audit 28 Jul); code-13 upload pending |
 
 `FeatureFlags` on `main`: `PH_TRACKING = true`, `PUSH_NOTIFICATIONS = true` (local reminders),
 `ADMIN_CLIENTS = false`, `PARTNER_INVITES = false`.
@@ -70,7 +79,7 @@ all 26 routes, the tracker matrix, live-vs-dormant features, data/sync behaviour
   (`measurement_type`, legacy rows stamped `urine`), Supabase production migration applied 22 Jul,
   neutral `PhCopy` insight copy with banned-phrase guards.
 
-## The offline queue (daily logs) — Room schema v5
+## The offline queue (daily logs) — Room schema v6
 
 Offline log saves QUEUE instead of being refused: `daily_logs.syncStatus` (`LogSyncStatus`) — an
 offline write lands as `PENDING_UPSERT`; `DailyLogSyncWorker` drains it with WorkManager backoff.
@@ -90,8 +99,8 @@ pull-merge on sign-in. Guests (`LOCAL_USER_ID`) stay on-device (and do not migra
 
 - The pH card copy (`ui/components/PhTrackerCard.kt`) says *"pH entries sync to your Genesyx
   account."* **Keep it** — the sync must be disclosed, not buried.
-- The feature is **Vaginal pH**: input 3.5–7.0, step 0.1, default 4.2; Healthy 3.8–4.5, Elevated
-  > 4.5 (`domain/ph/PhStatus.kt` — PROVISIONAL, pending client sign-off). Copy lives in
+- The feature is **Vaginal pH**: input 3.8–7.0, step 0.1, default 4.2; Healthy 3.8–4.5, Elevated
+  > 4.5 (`domain/ph/PhStatus.kt` — client-approved 28 Jul 2026). Copy lives in
   `domain/ph/PhCopy.kt` and is pinned by verbatim + banned-phrase tests — no condition names, no
   dietary advice, GP/pharmacist signposting only. Genesyx is a wellness app, not a medical device.
 
