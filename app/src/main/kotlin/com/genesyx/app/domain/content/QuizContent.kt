@@ -57,12 +57,13 @@ val quizQuestions: List<QuizQuestion> = listOf(
     ),
     QuizQuestion(
         id = "gender",
-        question = "When it comes to your baby's sex, what feels right for you?",
+        question = "Do you have a preference for your baby's sex?",
         helper = "This is just for you — we keep it gentle and private.",
         options = listOf(
-            QuizOption("hope", "I have a hope in mind"),
-            QuizOption("either", "I'm happy either way"),
-            QuizOption("private", "I'd rather not say"),
+            QuizOption("girl", "Girl"),
+            QuizOption("boy", "Boy"),
+            QuizOption("no_preference", "No preference"),
+            QuizOption("prefer_not_to_say", "Prefer not to say"),
         ),
     ),
     QuizQuestion(
