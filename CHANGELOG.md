@@ -8,6 +8,29 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ## [Unreleased] — Single-source-of-truth bug batch (28 Jul device walkthrough)
 
+### Release ops (12 Aug 2026) — code 14 built and archived; migrations reconciled; upload gated
+- **Version bumped 1.3.2 (13) → 1.4.0 (14)** (`app/build.gradle.kts`). Signed release AAB + APK built
+  (R8/lint clean), identity verified `com.genesyx.app 14 / 1.4.0 / SDK 36`, signing cert SHA-1
+  `8DEB4763…B2CC73` / SHA-256 `C3D51F4B…A446C17D` = registered release key. Archived at
+  `~/Documents/Genesyx Releases/1.4.0-code14/` with `SHA256SUMS.txt`
+  (AAB `c82479bc…a395f4`).
+- **Migrations reconciled against the shared DB (no SQL change needed):**
+  - `daily_logs.sexual_activity` — use iOS's `supabase/migrations/20260810_daily_logs_sexual_activity.sql`
+    (shared source of truth, idempotent `add column if not exists`).
+  - `user_supplements` + `genesyx_products` — Android's `docs/migrations/2026-07-29_user_supplements.sql`
+    (Android-only feature; additive; iOS ignores it). Its `delete_current_user()` update adds the
+    `user_supplements` delete on top of the current 5-delete body — confirmed no iOS migration
+    modifies that function, and `quiz_answers` is covered by its own FK cascade on `auth.users`, so
+    nothing is clobbered.
+  - Android DTO wire-names verified against every migration column (`sexual_activity`, `time_of_day`,
+    `product_id`, `sort_order`, tombstones).
+- **Production state (REST-probed 12 Aug, anon key):** `user_supplements` + `genesyx_products` = 404
+  PGRST205 (NOT applied); `quiz_answers` = 401 (exists — iOS applied); `daily_logs.sexual_activity`
+  = inconclusive via anon (table-grant blocks column resolution — verify with service/authenticated).
+- **UPLOAD IS GATED:** the AAB must NOT go to Play until the migrations are applied and verified in
+  production (owner-only — no service-role/CLI access this session). Order: apply migrations → verify
+  RLS/tombstones/deletion → upload code 14. Runbook handed to owner.
+
 ### Daily digest — 12 Aug 2026
 One session, all committed to `main` as **code-14 source** (not on Play; Play internal still serves
 1.3.0 (11)); unit suite **344 green**, `:app:lintDebug` + `:app:assembleRelease` + `:app:bundleRelease`
