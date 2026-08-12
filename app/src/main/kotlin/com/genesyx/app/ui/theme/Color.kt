@@ -19,6 +19,16 @@ val BabyPink = Color(0xFFDEBED2)
 val PhOptimal = Color(0xFF3FA37A) // Healthy
 val PhElevated = Color(0xFFC98A3C) // Elevated
 
+// Calendar day-marker dots — matched to the iOS Track calendar (cross-platform design parity,
+// 12 Aug 2026): pH teal-blue, symptoms brown/gold, intimacy purple. Read against pale phase tints
+// with a white hairline ring, so mid-tone light values carry on both themes.
+val MarkerPh = Color(0xFF1F6E93)
+val MarkerSymptoms = Color(0xFF9A5B12)
+val MarkerIntimacy = Color(0xFF8E3FA3)
+// Fertile-window capsule badge (iOS calendarFertile / fertileRing).
+val CalendarFertile = Color(0xFFC0E6EF)
+val FertileRing = Color(0xFF1B6C80)
+
 // Nutrition focus-food accents (per phase, hardcoded in web)
 val FoodPeriod = Color(0xFFF48FB1)
 val FoodFollicular = Color(0xFFA5D6A7)

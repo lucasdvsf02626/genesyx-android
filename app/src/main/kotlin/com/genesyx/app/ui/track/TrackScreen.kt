@@ -78,10 +78,14 @@ import com.genesyx.app.ui.components.PhReadingRow
 import com.genesyx.app.ui.components.tintOnWhite
 import com.genesyx.app.ui.navigation.Screen
 import com.genesyx.app.ui.theme.BabyLavender
+import com.genesyx.app.ui.theme.CalendarFertile
 import com.genesyx.app.ui.theme.ElectricBlue
 import com.genesyx.app.ui.theme.ElectricLavender
-import com.genesyx.app.ui.theme.ElectricPink
+import com.genesyx.app.ui.theme.FertileRing
 import com.genesyx.app.ui.theme.GenesyxTheme
+import com.genesyx.app.ui.theme.MarkerIntimacy
+import com.genesyx.app.ui.theme.MarkerPh
+import com.genesyx.app.ui.theme.MarkerSymptoms
 import com.genesyx.app.ui.theme.PhOptimal
 import com.genesyx.app.ui.theme.PowderBlue
 import com.genesyx.app.ui.theme.PowderPink
@@ -278,14 +282,32 @@ fun TrackContent(
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         ) {
             val info = settings?.let { CycleEngine.getCyclePhase(it, today) }
+            val inFertile = info != null && info.dayOfCycle in info.fertileWindow
             Column(Modifier.padding(20.dp)) {
                 Eyebrow("Current phase", color = ElectricLavender)
                 Spacer(Modifier.height(6.dp))
-                Text(
-                    info?.let { phaseLabel.getValue(it.phase) } ?: "—",
-                    style = MaterialTheme.typography.headlineMedium.copy(fontSize = 22.sp),
-                    color = colors.onSurface,
-                )
+                // Phase name + a "Fertile window" capsule when applicable — the badge carries the
+                // calendar's fertile accent up here (matches iOS), so the two screens agree.
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        info?.let { phaseLabel.getValue(it.phase) } ?: "—",
+                        style = MaterialTheme.typography.headlineMedium.copy(fontSize = 22.sp),
+                        color = colors.onSurface,
+                    )
+                    if (inFertile) {
+                        Spacer(Modifier.size(8.dp))
+                        Text(
+                            "Fertile window",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = FertileRing,
+                            modifier = Modifier
+                                .clip(CircleShape)
+                                .background(CalendarFertile)
+                                .padding(horizontal = 10.dp, vertical = 4.dp),
+                        )
+                    }
+                }
                 Spacer(Modifier.height(8.dp))
                 Text(
                     text = when {
@@ -443,8 +465,7 @@ private fun DayCell(
             )
             if (markers.isNotEmpty()) {
                 Spacer(Modifier.height(2.dp))
-                // Up to six markers now — rows of three keep the dots inside a ~40dp cell where a
-                // single six-dot row would touch the cell edges.
+                // Three markers (pH, symptoms, intimacy) — a single row of three fits a ~40dp cell.
                 markers.chunked(3).forEach { chunk ->
                     Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
                         chunk.forEach { marker ->
@@ -465,26 +486,20 @@ private fun DayCell(
     }
 }
 
-/** Dot colour and screen-reader name per marker, matched to the "Your trackers" row colours so the
- *  same signal reads as the same colour in both places. */
+/** Dot colour and screen-reader name per marker — the iOS Track calendar's three signals and its
+ *  exact dot colours (pH teal-blue, symptoms brown/gold, intimacy purple). */
 private val DayMarker.color: Color
     get() = when (this) {
-        DayMarker.LOG -> PowderPink
-        DayMarker.SYMPTOMS -> ElectricLavender
-        DayMarker.WATER -> ElectricBlue
-        DayMarker.SUPPLEMENTS -> PowderBlue
-        DayMarker.PH -> PhOptimal
-        DayMarker.ACTIVITY -> ElectricPink
+        DayMarker.PH -> MarkerPh
+        DayMarker.SYMPTOMS -> MarkerSymptoms
+        DayMarker.ACTIVITY -> MarkerIntimacy
     }
 
 private val DayMarker.label: String
     get() = when (this) {
-        DayMarker.LOG -> "how you felt"
-        DayMarker.SYMPTOMS -> "symptoms & notes"
-        DayMarker.WATER -> "water"
-        DayMarker.SUPPLEMENTS -> "supplements"
-        DayMarker.PH -> "pH"
-        DayMarker.ACTIVITY -> "intimacy"
+        DayMarker.PH -> "pH test"
+        DayMarker.SYMPTOMS -> "Symptoms / notes"
+        DayMarker.ACTIVITY -> "Intimacy"
     }
 
 @Composable
@@ -514,10 +529,13 @@ private fun EmptyCalendar(onClick: () -> Unit) {
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun Legend() {
+    // Plain phase labels, matching the iOS Track legend. The prediction is disclosed by the faded
+    // future cells + the "Faded days are predictions" caption below, and the claim *sentences*
+    // (phase card, day dialog) stay qualified — the legend only names a calendar colour.
     val items = listOf(
         "Period" to PowderPink.tintOnWhite(0.55f),
-        "Fertile window (predicted)" to PowderBlue.tintOnWhite(0.55f),
-        "Ovulation (predicted)" to ElectricLavender,
+        "Fertile window" to PowderBlue.tintOnWhite(0.55f),
+        "Ovulation" to ElectricLavender,
         "Luteal" to BabyLavender.tintOnWhite(0.25f),
     )
     Column {

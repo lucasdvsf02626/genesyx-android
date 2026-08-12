@@ -8,6 +8,27 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ## [Unreleased] — Single-source-of-truth bug batch (28 Jul device walkthrough)
 
+### Changed (12 Aug 2026) — Track calendar matched to the iOS design
+- **Calendar markers reduced from six to iOS's three**: pH ("pH test"), symptoms/notes
+  ("Symptoms / notes"), intimacy ("Intimacy") — with iOS's exact dot colours (pH teal-blue
+  `#1F6E93`, symptoms brown/gold `#9A5B12`, intimacy purple `#8E3FA3`, new tokens in `Color.kt`).
+  Everyday logging (mood/energy/sleep, water, supplements) is still recorded and shown in the
+  day-detail dialog; it no longer crowds the cell with a dot each. `DayMarkers` order and rules now
+  mirror iOS `DayMarkers.markers`. `DayMarkersTest` rewritten for the three-marker model.
+- **Current-phase card gains the "Fertile window" capsule badge** beside the phase name (pale-cyan
+  `#C0E6EF` / teal `#1B6C80`), matching iOS.
+- **Legend labels back to iOS's plain wording** ("Fertile window", "Ovulation" — the "(predicted)"
+  qualifier from Phase 1 stays on the claim *sentences* in the phase card and day dialog, and the
+  "Faded days are predictions" caption still discloses the prediction; the legend only names a
+  calendar colour).
+- **Kept deliberately (platform idiom):** tracker rows open as Android nav routes, not iOS sheets —
+  they power the `genesyx://tracker/*` deep links. Section order was already identical to iOS.
+- **One flagged Android/iOS difference:** the phase-card sentence stays "You're in your **predicted**
+  fertile window" (the implementation programme's content-safety rule), whereas the iOS screenshot
+  shows it unqualified. Reconcile with the medical reviewer.
+- Verified: 344 unit tests green, `:app:lintDebug` + `:app:assembleRelease` + `:app:bundleRelease`
+  green.
+
 ### Added (12 Aug 2026) — weekly series ported (11 articles) + Home "a read for your week"
 - **The 11-article dated weekly series ported from iOS 1.2.0 (18)** (`fertile-window` 23 Aug →
   `when-to-ask-for-support` 1 Nov, consecutive Sundays), same slugs/ids/publish-dates as iOS. Learn
