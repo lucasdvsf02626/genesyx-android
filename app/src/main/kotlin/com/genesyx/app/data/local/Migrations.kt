@@ -64,9 +64,18 @@ val MIGRATION_5_6 = object : Migration(5, 6) {
     }
 }
 
+/** v6 -> v7: private intimacy column on daily logs. Nullable — NULL is "not recorded", which is
+ *  what every existing row truthfully is. Room stores Boolean? as INTEGER. */
+val MIGRATION_6_7 = object : Migration(6, 7) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE daily_logs ADD COLUMN sexualActivity INTEGER")
+    }
+}
+
 val GENESYX_MIGRATIONS: Array<Migration> = arrayOf(
     MIGRATION_2_3,
     MIGRATION_3_4,
     MIGRATION_4_5,
     MIGRATION_5_6,
+    MIGRATION_6_7,
 )

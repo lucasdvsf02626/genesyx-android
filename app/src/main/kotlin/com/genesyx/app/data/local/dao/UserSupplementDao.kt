@@ -24,6 +24,10 @@ interface UserSupplementDao {
     @Query("SELECT * FROM user_supplements WHERE syncStatus != 'SYNCED'")
     suspend fun pending(): List<UserSupplementEntity>
 
+    /** Live count of unsynced rows — powers the Profile sync-status row. */
+    @Query("SELECT COUNT(*) FROM user_supplements WHERE userId = :userId AND syncStatus != 'SYNCED'")
+    fun observePendingCount(userId: String): Flow<Int>
+
     @Query("UPDATE user_supplements SET syncStatus = :status WHERE id = :id")
     suspend fun setStatus(id: String, status: SupplementSyncStatus)
 

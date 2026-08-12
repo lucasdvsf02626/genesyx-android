@@ -52,7 +52,9 @@ import com.genesyx.app.ui.theme.ElectricLavender
 fun HydrationGoalDialog(
     current: Int,
     unit: HydrationUnit,
+    glassMl: Int,
     onUnitChange: (HydrationUnit) -> Unit,
+    onGlassChange: (Int) -> Unit,
     onDismiss: () -> Unit,
     onSave: (Int) -> Unit,
 ) {
@@ -84,6 +86,25 @@ fun HydrationGoalDialog(
                         draft = (draft + StreakEngine.GOAL_STEP_ML).coerceIn(StreakEngine.GOAL_RANGE_ML)
                     }
                 }
+                Spacer(Modifier.height(20.dp))
+                // Applied immediately, like the display unit: an input preference, not part of the
+                // goal draft — the quick-add buttons pour this much per tap.
+                Eyebrow("Glass size", color = colors.onSurfaceVariant)
+                Spacer(Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    GoalStepper(Icons.Filled.Remove, "Smaller glass", colors.surfaceVariant, colors.onSurface) {
+                        onGlassChange((glassMl - HydrationFormat.GLASS_STEP_ML).coerceIn(HydrationFormat.GLASS_RANGE_ML))
+                    }
+                    Text("${glassMl}ml", fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = colors.onSurface)
+                    GoalStepper(Icons.Filled.Add, "Bigger glass", ElectricLavender, Color.White) {
+                        onGlassChange((glassMl + HydrationFormat.GLASS_STEP_ML).coerceIn(HydrationFormat.GLASS_RANGE_ML))
+                    }
+                }
+
                 Spacer(Modifier.height(20.dp))
                 Eyebrow("Show amounts as", color = colors.onSurfaceVariant)
                 Spacer(Modifier.height(8.dp))

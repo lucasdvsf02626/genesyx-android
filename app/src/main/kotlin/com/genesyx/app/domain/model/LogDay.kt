@@ -14,7 +14,8 @@ data class LogDay(
     /** True when the daily log has any user-entered content (not just an empty/default shell). */
     val hasDailyContent: Boolean = dailyLog != null && with(dailyLog) {
         mood != null || energy != null || symptoms.isNotEmpty() ||
-            sleepMinutes != null || supplements.isNotEmpty() || !notes.isNullOrBlank() || waterMl > 0
+            sleepMinutes != null || supplements.isNotEmpty() || !notes.isNullOrBlank() ||
+            waterMl > 0 || sexualActivity != null
     }
 
     /** Nothing worth showing for this day. */

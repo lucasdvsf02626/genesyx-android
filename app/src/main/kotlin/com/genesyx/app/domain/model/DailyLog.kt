@@ -20,6 +20,13 @@ data class DailyLog(
     val supplements: Set<String> = emptySet(),
     val notes: String? = null,
     val waterMl: Int = 0,
+    /**
+     * Private intimacy record — null = not recorded, true = recorded (v7). Never surfaced to any
+     * partner feature. Deliberately NOT part of [isMeaningful]: the qualifying-action set is pinned
+     * by the cross-platform tracking contract (tracking_test_vectors.json), and this field is
+     * always entered alongside fields that already qualify the day.
+     */
+    val sexualActivity: Boolean? = null,
 )
 
 /**

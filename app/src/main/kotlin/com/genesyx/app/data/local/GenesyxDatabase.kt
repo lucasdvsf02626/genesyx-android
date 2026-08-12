@@ -34,7 +34,7 @@ import com.genesyx.app.data.local.entity.UserSupplementEntity
         PartnerLinkEntity::class,
         UserSupplementEntity::class,
     ],
-    version = 6,
+    version = 7,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)

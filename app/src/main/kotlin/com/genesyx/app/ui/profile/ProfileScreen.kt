@@ -59,22 +59,15 @@ import com.genesyx.app.domain.model.FocusMode
 import com.genesyx.app.domain.model.PartnerInvite
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import com.genesyx.app.domain.model.ThemeMode
+import com.genesyx.app.ui.components.CycleSettingsDialog
 import com.genesyx.app.ui.components.Eyebrow
+import com.genesyx.app.ui.components.HydrationGoalDialog
 import com.genesyx.app.ui.components.ScreenHeader
 import com.genesyx.app.ui.components.isValidEmail
 import com.genesyx.app.ui.navigation.Screen
 import com.genesyx.app.ui.theme.BabyLavender
 import com.genesyx.app.ui.theme.ElectricLavender
 import com.genesyx.app.ui.theme.ElectricPink
-
-private val detailCopy = mapOf(
-    "Health Profile" to "Your health profile is built from your cycle setup and daily logs — cycle " +
-        "length, period dates, flow, symptoms, mood and energy. Keep logging so your insights stay " +
-        "personal to you.",
-    "Tracking Preferences" to "Genesyx tracks your cycle day and phase, daily logs, nutrition " +
-        "guidance and insights — all in one calm place. Update your cycle settings any time your " +
-        "rhythm changes, and keep notifications on for gentle daily reminders.",
-)
 
 @Composable
 fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel = hiltViewModel()) {
@@ -86,6 +79,7 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel = hi
     val focus by viewModel.focusMode.collectAsState()
     val partner by viewModel.partner.collectAsState()
     val invites by viewModel.invites.collectAsState()
+    val pendingSync by viewModel.pendingSync.collectAsState()
     val deleting by viewModel.deleting.collectAsState()
     val deleteError by viewModel.deleteError.collectAsState()
     val accountDeleted by viewModel.deleted.collectAsState()
@@ -109,6 +103,9 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel = hi
 
     var nameOpen by remember { mutableStateOf(false) }
     var pwOpen by remember { mutableStateOf(false) }
+    var emailOpen by remember { mutableStateOf(false) }
+    var healthOpen by remember { mutableStateOf(false) }
+    var trackingOpen by remember { mutableStateOf(false) }
     var detail by remember { mutableStateOf<String?>(null) }
     var delOpen by remember { mutableStateOf(false) }
 
@@ -139,6 +136,24 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel = hi
                 Column(Modifier.weight(1f)) {
                     Text(name, style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
                     Text(email ?: "Sign in to sync your data", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                }
+            }
+
+            // Sync status — only shown when something is actually waiting. Guests never see it
+            // (their rows are written SYNCED), and a clean queue keeps the screen quiet.
+            if (signedIn && pendingSync > 0) {
+                Spacer(Modifier.height(12.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(colors.surface).padding(start = 16.dp, top = 4.dp, bottom = 4.dp, end = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        if (pendingSync == 1) "1 change waiting to sync" else "$pendingSync changes waiting to sync",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = colors.onSurfaceVariant,
+                        modifier = Modifier.weight(1f),
+                    )
+                    TextButton(onClick = { viewModel.syncNow() }) { Text("Sync now", color = ElectricLavender) }
                 }
             }
 
@@ -173,6 +188,8 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel = hi
             CardGroup {
                 RowItem("Edit name", onClick = { if (signedIn) nameOpen = true else goSignIn() })
                 Divider()
+                RowItem("Change email", onClick = { if (signedIn) emailOpen = true else goSignIn() })
+                Divider()
                 RowItem("Change password", onClick = { if (signedIn) pwOpen = true else goSignIn() })
             }
 
@@ -188,10 +205,13 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel = hi
             Spacer(Modifier.height(16.dp))
             GroupLabel("Tracking")
             CardGroup {
-                listOf("Personal Details", "Health Profile", "Tracking Preferences").forEachIndexed { i, label ->
-                    RowItem(label, onClick = { detail = label })
-                    if (i < 2) Divider()
-                }
+                RowItem("Personal Details", onClick = { detail = "Personal Details" })
+                Divider()
+                // These two used to open static copy — dead ends. They now open the same editors
+                // the rest of the app uses, so "previous entries can actually be updated".
+                RowItem("Health Profile", onClick = { healthOpen = true })
+                Divider()
+                RowItem("Tracking Preferences", onClick = { trackingOpen = true })
             }
 
             // ── Reminders. A single master switch can't express per-category schedules, so this is a
@@ -270,6 +290,48 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel = hi
             onDismiss = { if (!pwChanging) pwOpen = false },
         )
     }
+    if (emailOpen) {
+        val emailChanging by viewModel.emailChanging.collectAsState()
+        val emailError by viewModel.emailError.collectAsState()
+        val emailRequested by viewModel.emailChangeRequested.collectAsState()
+        LaunchedEffect(Unit) { viewModel.resetEmailState() }
+        ChangeEmailDialog(
+            currentEmail = email,
+            changing = emailChanging,
+            remoteError = emailError,
+            requested = emailRequested,
+            onSubmit = { password, new -> viewModel.changeEmail(password, new) },
+            onDismiss = { if (!emailChanging) emailOpen = false },
+        )
+    }
+    if (healthOpen) {
+        val cycleSettings by viewModel.cycleSettings.collectAsState()
+        CycleSettingsDialog(
+            current = cycleSettings,
+            onDismiss = { healthOpen = false },
+            onSave = {
+                viewModel.saveCycleSettings(it)
+                healthOpen = false
+            },
+        )
+    }
+    if (trackingOpen) {
+        val goal by viewModel.hydrationGoalMl.collectAsState()
+        val unit by viewModel.hydrationUnit.collectAsState()
+        val glass by viewModel.hydrationGlassMl.collectAsState()
+        HydrationGoalDialog(
+            current = goal,
+            unit = unit,
+            glassMl = glass,
+            onUnitChange = { viewModel.setHydrationUnit(it) },
+            onGlassChange = { viewModel.setHydrationGlassMl(it) },
+            onDismiss = { trackingOpen = false },
+            onSave = {
+                viewModel.setHydrationGoalMl(it)
+                trackingOpen = false
+            },
+        )
+    }
     detail?.let { d ->
         AlertDialog(
             onDismissRequest = { detail = null },
@@ -282,7 +344,14 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel = hi
                         DetailLine("Name", name)
                         DetailLine("Email", if (signedIn) (email ?: "—") else "Not signed in")
                         DetailLine("Account", if (signedIn) "Signed in & syncing" else "Guest — sign in to sync your data")
-                        Text("Tap \"Edit name\" under Account to update how you appear.", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                        Row {
+                            TextButton(onClick = { detail = null; if (signedIn) nameOpen = true else goSignIn() }) {
+                                Text("Edit name", color = ElectricLavender, fontWeight = FontWeight.SemiBold)
+                            }
+                            TextButton(onClick = { detail = null; if (signedIn) emailOpen = true else goSignIn() }) {
+                                Text("Change email", color = ElectricLavender, fontWeight = FontWeight.SemiBold)
+                            }
+                        }
                     }
                     "Help & Support" -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Text("Questions, feedback or need a hand? Email our team and we'll get back to you.", style = MaterialTheme.typography.bodyLarge, color = colors.onSurfaceVariant)
@@ -298,7 +367,7 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel = hi
                             },
                         )
                     }
-                    else -> Text(detailCopy[d] ?: "This section is ready for your saved app settings.", style = MaterialTheme.typography.bodyLarge, color = colors.onSurfaceVariant)
+                    else -> Text("This section is ready for your saved app settings.", style = MaterialTheme.typography.bodyLarge, color = colors.onSurfaceVariant)
                 }
             },
             confirmButton = { TextButton(onClick = { detail = null }) { Text("Done", color = ElectricLavender) } },
@@ -490,6 +559,72 @@ private fun EditNameDialog(initial: String, onDismiss: () -> Unit, onSave: (Stri
         },
         confirmButton = { TextButton(onClick = { if (name.isNotBlank()) onSave(name.trim()) }) { Text("Save", color = ElectricLavender, fontWeight = FontWeight.SemiBold) } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel", color = colors.onSurfaceVariant) } },
+    )
+}
+
+@Composable
+private fun ChangeEmailDialog(
+    currentEmail: String?,
+    changing: Boolean,
+    remoteError: String?,
+    requested: Boolean,
+    onSubmit: (password: String, newEmail: String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val colors = MaterialTheme.colorScheme
+    var newEmail by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var localErr by remember { mutableStateOf<String?>(null) }
+    val err = localErr ?: remoteError
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(20.dp),
+        containerColor = colors.surface,
+        title = { Text("Change email", style = MaterialTheme.typography.titleLarge, color = colors.onSurface) },
+        text = {
+            if (requested) {
+                // The address hasn't changed yet — saying "updated" here would be a lie the user
+                // discovers at their next sign-in. Supabase flips it once the link is followed.
+                Text(
+                    "Check ${newEmail.trim()} for a confirmation link. Your email changes once you follow it.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colors.onSurfaceVariant,
+                )
+            } else {
+                Column {
+                    Text(
+                        "Currently ${currentEmail ?: "—"}. We'll send a confirmation link to the new address.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = colors.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    OutlinedTextField(newEmail, { newEmail = it }, label = { Text("New email") }, singleLine = true, enabled = !changing, modifier = Modifier.fillMaxWidth())
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(password, { password = it }, label = { Text("Current password") }, singleLine = true, enabled = !changing, visualTransformation = PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth())
+                    if (err != null) { Spacer(Modifier.height(6.dp)); Text(err, style = MaterialTheme.typography.bodyMedium, color = colors.error) }
+                }
+            }
+        },
+        confirmButton = {
+            if (requested) {
+                TextButton(onClick = onDismiss) { Text("Done", color = ElectricLavender, fontWeight = FontWeight.SemiBold) }
+            } else {
+                TextButton(
+                    enabled = !changing,
+                    onClick = {
+                        when {
+                            !isValidEmail(newEmail) -> localErr = "Enter a valid email"
+                            newEmail.trim().equals(currentEmail?.trim() ?: "", ignoreCase = true) -> localErr = "That's already your email"
+                            password.isBlank() -> localErr = "Enter your current password"
+                            else -> { localErr = null; onSubmit(password, newEmail.trim()) }
+                        }
+                    },
+                ) { Text(if (changing) "Sending…" else "Send link", color = ElectricLavender, fontWeight = FontWeight.SemiBold) }
+            }
+        },
+        dismissButton = {
+            if (!requested) TextButton(onClick = onDismiss, enabled = !changing) { Text("Cancel", color = colors.onSurfaceVariant) }
+        },
     )
 }
 

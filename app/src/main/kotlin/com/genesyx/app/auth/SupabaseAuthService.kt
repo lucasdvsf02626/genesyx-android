@@ -102,6 +102,28 @@ class SupabaseAuthService @Inject constructor(
         }
     }
 
+    /** Same shape as [changePassword]: re-auth, then ask Supabase to start the email change. */
+    override suspend fun changeEmail(currentPassword: String, newEmail: String): DataResult<Unit> {
+        return try {
+            val email = client.auth.currentSessionOrNull()?.user?.email
+                ?: throw IllegalStateException("No signed-in account.")
+            try {
+                client.auth.signInWith(Email) {
+                    this.email = email
+                    this.password = currentPassword
+                }
+            } catch (t: Throwable) {
+                logger.e("Auth", "change-email re-auth failed", t)
+                return DataResult.Error(t, "Current password is incorrect")
+            }
+            client.auth.updateUser { this.email = newEmail }
+            DataResult.Success(Unit)
+        } catch (t: Throwable) {
+            logger.e("Auth", "change-email failed", t)
+            DataResult.Error(t, t.message)
+        }
+    }
+
     /**
      * Runs an auth [attempt] and returns the session it established — never an ambient one.
      *

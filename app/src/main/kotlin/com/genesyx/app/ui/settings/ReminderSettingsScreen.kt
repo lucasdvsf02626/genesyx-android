@@ -202,6 +202,13 @@ fun ReminderSettingsScreen(
                     checked = settings.isEnabled(ReminderKind.MISSED_LOG),
                     onCheckedChange = { onToggle(ReminderKind.MISSED_LOG, it) },
                 )
+                DetailDivider()
+                ReminderRow(
+                    "Fertile window",
+                    "A heads-up when your predicted window starts",
+                    checked = settings.isEnabled(ReminderKind.FERTILE_WINDOW),
+                    onCheckedChange = { onToggle(ReminderKind.FERTILE_WINDOW, it) },
+                )
             }
 
             SectionHeader("Nutrition & wellness")
@@ -238,6 +245,13 @@ fun ReminderSettingsScreen(
                         }
                     }
                 }
+                DetailDivider()
+                ReminderRow(
+                    "New article",
+                    "A note when a new weekly read is ready",
+                    checked = settings.isEnabled(ReminderKind.NEW_ARTICLE),
+                    onCheckedChange = { onToggle(ReminderKind.NEW_ARTICLE, it) },
+                )
             }
 
             SectionHeader("Quiet hours")

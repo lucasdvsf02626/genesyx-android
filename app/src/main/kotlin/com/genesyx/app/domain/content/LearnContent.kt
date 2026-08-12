@@ -2,6 +2,7 @@ package com.genesyx.app.domain.content
 
 import androidx.annotation.DrawableRes
 import com.genesyx.app.R
+import java.time.LocalDate
 
 /**
  * Learn-section content. Bundled in the app (like [CycleContent] / [NutritionContent]) rather than
@@ -59,6 +60,12 @@ data class Article(
     val cta: ArticleCta? = null,
     /** Renders the medical disclaimer above the footer. */
     val disclaimerRequired: Boolean = false,
+    /**
+     * Weekly drip: 0 = available from install (all launch articles); N ≥ 1 = revealed N weeks
+     * after the user's first open, so a September installer gets the same week-1 experience as a
+     * January one. Content still ships in the binary — this only gates visibility.
+     */
+    val dripWeek: Int = 0,
 )
 
 /** Shown whenever [Article.disclaimerRequired]. */
@@ -72,14 +79,53 @@ fun articleBySlug(slug: String): Article? = learnArticles.firstOrNull { it.slug 
 fun relatedArticles(article: Article): List<Article> =
     article.relatedArticleIds.mapNotNull { id -> learnArticles.firstOrNull { it.id == id } }
 
-/** Case-insensitive match over title, excerpt, and tags. Ten articles — no index needed. */
-fun searchArticles(query: String): List<Article> {
+/** Case-insensitive match over title, excerpt, and tags. Ten articles — no index needed.
+ *  [articles] lets callers search only what the drip has revealed. */
+fun searchArticles(query: String, articles: List<Article> = learnArticles): List<Article> {
     val q = query.trim().lowercase()
     if (q.isEmpty()) return emptyList()
-    return learnArticles.filter { a ->
+    return articles.filter { a ->
         a.title.lowercase().contains(q) ||
             a.excerpt.lowercase().contains(q) ||
             a.tags.any { it.lowercase().contains(q) }
+    }
+}
+
+/**
+ * The weekly reveal. Pure date arithmetic relative to the user's FIRST OPEN (persisted once in
+ * preferences), never the calendar — everyone gets week 1 in their first week. With no drip
+ * articles in the list (every launch article is week 0) every function here is a no-op, which is
+ * how the infrastructure ships ahead of the content: the 12-week programme lands as articles with
+ * `dripWeek` 1..12 once its copy passes review, and nothing else changes.
+ */
+object LearnDrip {
+
+    fun weeksSinceFirstOpen(firstOpenEpochDay: Long?, today: LocalDate): Int {
+        if (firstOpenEpochDay == null) return 0
+        val days = today.toEpochDay() - firstOpenEpochDay
+        return (days / 7).toInt().coerceAtLeast(0)
+    }
+
+    /** Everything the user can see today. The gate every list/search/lookup surface goes through. */
+    fun available(today: LocalDate, firstOpenEpochDay: Long?): List<Article> {
+        val weeks = weeksSinceFirstOpen(firstOpenEpochDay, today)
+        return learnArticles.filter { it.dripWeek <= weeks }
+    }
+
+    fun isAvailable(article: Article, today: LocalDate, firstOpenEpochDay: Long?): Boolean =
+        article.dripWeek <= weeksSinceFirstOpen(firstOpenEpochDay, today)
+
+    /** The most recently revealed drip article, or null when none has been revealed (or none exist).
+     *  Week-0 launch articles never count as "new" — the Home card and the notification key off this. */
+    fun newestDripArticle(today: LocalDate, firstOpenEpochDay: Long?): Article? =
+        available(today, firstOpenEpochDay).filter { it.dripWeek > 0 }.maxByOrNull { it.dripWeek }
+
+    /** Drip articles whose reveal day is exactly [today] — what the weekly notification fires on. */
+    fun releasedOn(today: LocalDate, firstOpenEpochDay: Long?): List<Article> {
+        if (firstOpenEpochDay == null) return emptyList()
+        return learnArticles.filter {
+            it.dripWeek > 0 && firstOpenEpochDay + it.dripWeek * 7L == today.toEpochDay()
+        }
     }
 }
 

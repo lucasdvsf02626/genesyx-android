@@ -5,8 +5,10 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
+import com.genesyx.app.domain.hydration.HydrationFormat
 import com.genesyx.app.domain.hydration.HydrationUnit
 import com.genesyx.app.domain.model.FocusMode
 import com.genesyx.app.domain.model.ThemeMode
@@ -35,6 +37,10 @@ class GenesyxPreferencesDataStore @Inject constructor(
         val CELEBRATED_MILESTONES = stringSetPreferencesKey("celebrated_milestones")
         val HYDRATION_GOAL_ML = intPreferencesKey("hydration_goal_ml")
         val HYDRATION_UNIT = stringPreferencesKey("hydration_unit")
+        val HYDRATION_GLASS_ML = intPreferencesKey("hydration_glass_ml")
+        val FIRST_OPEN_EPOCH_DAY = longPreferencesKey("first_open_epoch_day")
+        val READ_ARTICLE_SLUGS = stringSetPreferencesKey("read_article_slugs")
+        val LAST_SEEN_ARTICLE_SLUG = stringPreferencesKey("last_seen_article_slug")
         val SIGNED_IN = booleanPreferencesKey("signed_in")
         val USER_ID = stringPreferencesKey("user_id")
         val EMAIL = stringPreferencesKey("email")
@@ -68,6 +74,14 @@ class GenesyxPreferencesDataStore @Inject constructor(
         p[Keys.HYDRATION_UNIT]?.let { runCatching { HydrationUnit.valueOf(it) }.getOrNull() } ?: HydrationUnit.ML
     }
 
+    /** Her glass size — what one tap of a quick-add button pours. */
+    val hydrationGlassMl: Flow<Int> = dataStore.data.map { it[Keys.HYDRATION_GLASS_ML] ?: HydrationFormat.DEFAULT_GLASS_ML }
+
+    /** The epoch-day of the user's first open — the anchor the Learn drip counts weeks from. */
+    val firstOpenEpochDay: Flow<Long?> = dataStore.data.map { it[Keys.FIRST_OPEN_EPOCH_DAY] }
+    val readArticleSlugs: Flow<Set<String>> = dataStore.data.map { it[Keys.READ_ARTICLE_SLUGS] ?: emptySet() }
+    val lastSeenArticleSlug: Flow<String?> = dataStore.data.map { it[Keys.LAST_SEEN_ARTICLE_SLUG] }
+
     val signedIn: Flow<Boolean> = dataStore.data.map { it[Keys.SIGNED_IN] ?: false }
     val userId: Flow<String?> = dataStore.data.map { it[Keys.USER_ID] }
     val email: Flow<String?> = dataStore.data.map { it[Keys.EMAIL] }
@@ -83,6 +97,18 @@ class GenesyxPreferencesDataStore @Inject constructor(
     suspend fun setCelebratedMilestones(ids: Set<String>) = dataStore.edit { it[Keys.CELEBRATED_MILESTONES] = ids }.let {}
     suspend fun setHydrationGoalMl(ml: Int) = dataStore.edit { it[Keys.HYDRATION_GOAL_ML] = ml }.let {}
     suspend fun setHydrationUnit(unit: HydrationUnit) = dataStore.edit { it[Keys.HYDRATION_UNIT] = unit.name }.let {}
+    suspend fun setHydrationGlassMl(ml: Int) = dataStore.edit { it[Keys.HYDRATION_GLASS_ML] = ml }.let {}
+
+    /** Set-if-absent: an existing user's anchor is the day this build first ran, never rewritten. */
+    suspend fun ensureFirstOpenRecorded(epochDay: Long) = dataStore.edit {
+        if (it[Keys.FIRST_OPEN_EPOCH_DAY] == null) it[Keys.FIRST_OPEN_EPOCH_DAY] = epochDay
+    }.let {}
+
+    suspend fun addReadArticleSlug(slug: String) = dataStore.edit {
+        it[Keys.READ_ARTICLE_SLUGS] = (it[Keys.READ_ARTICLE_SLUGS] ?: emptySet()) + slug
+    }.let {}
+
+    suspend fun setLastSeenArticleSlug(slug: String) = dataStore.edit { it[Keys.LAST_SEEN_ARTICLE_SLUG] = slug }.let {}
 
     suspend fun setSession(userId: String, email: String?, displayName: String?) {
         dataStore.edit {

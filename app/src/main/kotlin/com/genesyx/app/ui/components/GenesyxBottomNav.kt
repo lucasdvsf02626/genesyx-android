@@ -7,6 +7,7 @@ import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Eco
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.Science
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -29,6 +30,7 @@ private data class BottomNavItem(val screen: Screen, val label: String, val icon
 private val items = listOf(
     BottomNavItem(Screen.Home, "Home", Icons.Outlined.Home),
     BottomNavItem(Screen.Track, "Track", Icons.Outlined.CalendarMonth),
+    BottomNavItem(Screen.PhDetail, "pH", Icons.Outlined.Science),
     BottomNavItem(Screen.Nutrition, "Nutrition", Icons.Outlined.Eco),
     BottomNavItem(Screen.Insights, "Insights", Icons.Outlined.BarChart),
     BottomNavItem(Screen.Learn, "Learn", Icons.AutoMirrored.Outlined.MenuBook),
@@ -59,7 +61,7 @@ fun GenesyxBottomNav(navController: NavController) {
                 },
                 icon = { Icon(item.icon, contentDescription = item.label) },
                 label = {
-                    // Six tabs leave ~60dp per item at 360dp. labelSmall wraps "Nutrition" onto a
+                    // Seven tabs leave ~51dp per item at 360dp. labelSmall wraps "Nutrition" onto a
                     // second line, so shrink and pin to one line.
                     Text(
                         item.label,

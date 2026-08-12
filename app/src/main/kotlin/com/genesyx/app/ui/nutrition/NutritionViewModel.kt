@@ -137,4 +137,8 @@ class NutritionViewModel @Inject constructor(
 
     /** ml/cups display choice — shared app-wide via preferences. */
     fun setWaterUnit(unit: HydrationUnit) = preferencesRepository.setHydrationUnit(unit)
+
+    /** Her glass — what one tap of the stepper pours. Shared app-wide via preferences. */
+    val glassMl: StateFlow<Int> = preferencesRepository.hydrationGlassMl
+    fun setGlassMl(ml: Int) = preferencesRepository.setHydrationGlassMl(ml)
 }

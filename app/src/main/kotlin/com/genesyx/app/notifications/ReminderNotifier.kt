@@ -14,8 +14,11 @@ import com.genesyx.app.MainActivity
 import com.genesyx.app.R
 import com.genesyx.app.data.CycleRepository
 import com.genesyx.app.data.NotificationSettingsRepository
+import com.genesyx.app.data.PreferencesRepository
 import com.genesyx.app.data.SessionRepository
 import com.genesyx.app.data.local.dao.DailyLogDao
+import com.genesyx.app.domain.content.LearnDrip
+import com.genesyx.app.domain.cycle.CycleEngine
 import com.genesyx.app.notifications.model.ReminderKind
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first
@@ -37,6 +40,7 @@ class ReminderNotifier @Inject constructor(
     private val session: SessionRepository,
     private val dailyLogDao: DailyLogDao,
     private val cycleRepository: CycleRepository,
+    private val preferences: PreferencesRepository,
 ) {
     suspend fun postIfAllowed(kind: ReminderKind) {
         val settings = settingsRepository.current()
@@ -52,6 +56,7 @@ class ReminderNotifier @Inject constructor(
         val last14 = logs.count { !it.date.isBefore(today.minusDays(13)) }
         val last7 = logs.count { !it.date.isBefore(today.minusDays(6)) }
 
+        val cycleSettings = cycleRepository.settings.value
         val ctx = ReminderPolicy.PostContext(
             signedIn = signedIn,
             notificationsEnabledAtOs = NotificationManagerCompat.from(context).areNotificationsEnabled(),
@@ -60,8 +65,14 @@ class ReminderNotifier @Inject constructor(
             loggedYesterday = loggedYesterday,
             activeUser = last14 >= 3,
             logsInLast7Days = last7,
-            hasCycleSettings = cycleRepository.settings.value != null,
+            hasCycleSettings = cycleSettings != null,
             daysSinceLastOpen = settings.lastOpenedEpochDay?.let { today.toEpochDay() - it },
+            fertileWindowStartsToday = cycleSettings?.let {
+                val info = CycleEngine.getCyclePhase(it, today)
+                info.dayOfCycle == info.fertileWindow.startDay
+            } == true,
+            newArticleReleasedToday =
+                LearnDrip.releasedOn(today, preferences.firstOpenEpochDay.value).isNotEmpty(),
         )
 
         if (!ReminderPolicy.shouldPost(kind, now, settings, ctx)) return

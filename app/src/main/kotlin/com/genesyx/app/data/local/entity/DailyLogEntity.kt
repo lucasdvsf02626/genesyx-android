@@ -24,6 +24,8 @@ data class DailyLogEntity(
     val notes: String?,
     val waterMl: Int,
     @ColumnInfo(defaultValue = "SYNCED") val syncStatus: LogSyncStatus = LogSyncStatus.SYNCED,
+    /** v7: private intimacy record — null = not recorded. Stored as INTEGER 0/1 by Room. */
+    val sexualActivity: Boolean? = null,
 )
 
 fun DailyLogEntity.toDomain(): DailyLog =
@@ -35,6 +37,7 @@ fun DailyLogEntity.toDomain(): DailyLog =
         supplements = supplements.toSet(),
         notes = notes,
         waterMl = waterMl,
+        sexualActivity = sexualActivity,
     )
 
 fun DailyLog.toEntity(
@@ -53,4 +56,5 @@ fun DailyLog.toEntity(
         notes = notes,
         waterMl = waterMl,
         syncStatus = syncStatus,
+        sexualActivity = sexualActivity,
     )

@@ -8,6 +8,184 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ## [Unreleased] — Single-source-of-truth bug batch (28 Jul device walkthrough)
 
+### Added (12 Aug 2026) — client-feedback batch, phase 4 COMPLETE: streak UI, drip gate, new-article reminder
+- **Home streak UI wired** (the 10 Aug groundwork's pending half): a flame streak chip under the
+  greeting (any-activity streak, hidden below 2 days), the one-shot **milestone celebration
+  dialog** (dismiss = `celebrateMilestones()`, so it cannot re-fire), the **"your streak paused
+  yesterday" restore card** (opens yesterday's log via the `?date=` route), and the **"New this
+  week" article card** (drip articles only; tap marks seen + opens the article).
+- **Drip gate is now enforced** on every article surface: Learn landing, Learn search, article
+  detail (an unrevealed slug renders as not-found — stale deep links can't tunnel in), related
+  links, and Nutrition's 3-article taster all filter through `LearnDrip.available`. Opening an
+  article records it in `read_article_slugs` (mark-as-read). Still a visual no-op until articles
+  with `dripWeek ≥ 1` ship — the 12-week programme remains a content task gated on copy review.
+- **`ReminderKind.NEW_ARTICLE`** (insights channel, `genesyx://learn`, request code 8): daily
+  10:00 check gated on `LearnDrip.releasedOn` — fires at most once per drip week by construction.
+  **Opt-in** (not in `DEFAULT_ENABLED`); toggle added to Reminder settings under Insights; the
+  `genesyx://learn` deep link registered on the Learn tab. +3 `ReminderPolicyTest` cases.
+
+### Changed (12 Aug 2026) — partner loose ends closed (client item 8, code half)
+- The invite destination + its two deep links (`genesyx://invite/{code}`, https app link) are now
+  registered **only when `PARTNER_INVITES` is on** — previously the screen stayed reachable by
+  deep link with the flag off and would "link" a placeholder partner. An invite link now just
+  opens the app.
+- Auth sign-up subtitle no longer promises "partner info" (feature is dormant): now "Save your
+  cycle and nutrition info securely."
+
+### Changed (12 Aug 2026) — Splash eggs float again (client item 5)
+- Restored the web app's `gx-float` drift the Android port dropped: each of the 8 Splash eggs
+  wanders ±12dp vertically / ±6dp horizontally on independent 10–14s eased loops, staggered 0–3s,
+  with different x/y periods so the path reads as a wander, not a diagonal. Offsets apply in the
+  layout lambda — no per-frame recomposition.
+
+### Changed (12 Aug 2026) — pH gets its own bottom tab; out of Nutrition (client item 1)
+- The bottom bar grows to **seven tabs**: Home, Track, **pH**, Nutrition, Insights, Learn,
+  Profile (client-chosen layout — add, don't displace). The canonical `tracker/ph` destination is
+  promoted to the tab, so the Home nudge card, Track "Your Trackers" row, Insights card and the
+  `genesyx://tracker/ph` deep link all land on the same screen — no duplicate pH surface.
+- `TrackerDetailScaffold.onBack` is now nullable: the pH screen passes null (a tab has no back
+  arrow); the other five tracker details are unchanged. `PhDetail.route` left `noBottomNavRoutes`
+  so the bar shows.
+- **`PhTrackerSection` removed from the Nutrition tab** — pH no longer appears under Nutrition;
+  its slot in the action-first ordering closes up (hydration → your supplements → …). Insights'
+  "Open tracker" now navigates to the pH tab instead of Track.
+- Seven labels are tight at 360dp (~51dp per item); "pH" is the shortest label on the bar. Check
+  on a small screen before release.
+- Verified: 327 unit tests green, `:app:assembleRelease` green (R8 + lint).
+
+### Changed (12 Aug 2026) — preference question reworded to the client's four options
+- The onboarding quiz's sex-preference question (`QuizContent.kt`, id `gender`) now asks
+  "Do you have a preference for your baby's sex?" with the client-requested options
+  **Girl / Boy / No preference / Prefer not to say** (was the three softened options
+  "I have a hope in mind" / "I'm happy either way" / "I'd rather not say"). Neutral preference
+  capture only — no sway/selection claims anywhere; the banned-phrase guards on pH/Learn copy
+  are untouched. Answers remain in-memory and unpersisted (wiring to the server-side
+  `quiz_answers` table is still a separate, open item).
+- Verified: 327 unit tests green.
+
+### Added (10 Aug 2026) — client-feedback batch, phase 1: backdated logging, sync visibility, Profile editors
+- **Backdated log editing.** `log` route gained an optional `?date=` argument; `LogViewModel`
+  resolves it (malformed/future → today, `LogViewModelTest`) and every write path — form seed,
+  water mini-card, save — targets that date. The Track calendar's day dialog gained
+  "Edit this day" / "Add a log" on non-future days, so entries land on, and stay on, the day the
+  user tapped. The repository layer already supported arbitrary dates; only the UI pinned "today".
+- **Sync status made visible.** New `SyncStatusRepository` sums unsynced rows across daily logs,
+  pH readings and supplements (new `observePendingCount` DAO queries). Profile shows
+  "N changes waiting to sync" with **Sync now** only when something is actually queued; each sync
+  scheduler gained `syncNow()` (REPLACE-enqueue so a drain stuck behind a mis-evaluated network
+  constraint re-evaluates), and `MainActivity.onStart` re-enqueues the drains (KEEP) as the same
+  self-heal already applied to reminder chains. Guards: `SyncStatusRepositoryTest`.
+- **Profile dead ends are now editors.** "Health Profile" opens the shared `CycleSettingsDialog`;
+  "Tracking Preferences" opens the shared `HydrationGoalDialog` (goal + ml/cups unit);
+  "Personal Details" links straight to the name and email editors. New **Change email** flow
+  (Account group + dialog): re-auth with current password, then Supabase sends a confirmation
+  link — the persisted session deliberately keeps the old address until the link is followed
+  (`AuthService.changeEmail` on both implementations; guarded by the new `AuthRepositoryTest`
+  case). The static `detailCopy` paragraphs are gone.
+- Verified: 313 unit tests green (was 304), `:app:assembleRelease` green.
+
+### Verified (10 Aug 2026) — audited against the tightened `profiles` column grants (no code change needed)
+- The shared production database moved `profiles` UPDATE to a per-column grant (managed from the
+  backend side) and relocated onboarding quiz answers to a new owner-only `quiz_answers` table.
+  Audited every `profiles` write in this app against the new grants, checking the *serialized*
+  payload, not just call sites (encodeDefaults is off in supabase-kt 3.0.3, verified from its
+  sources: `SupabaseClientBuilder.kt:67`):
+  - `updateDisplayName` / `updateTheme` (`SupabaseProfileRemoteDataSource.kt:52/61`) are partial
+    updates naming only `display_name` / `theme` — both granted.
+  - `upsertProfile` (`:33`, sole caller `ProfileRepository.createMissing:74`) serializes only
+    `{id, display_name}` in practice — the DTO's other fields equal their defaults and are
+    omitted from the wire. Compatible, including the upsert's conflict-update arm.
+  - This app never writes `partner_id` (`PartnerRepository` is entirely local Room; the feature
+    flag has been off since v1.0), never touches `profiles.quiz_answers` (quiz answers are not
+    persisted anywhere yet), and never sends `created_at`/`updated_at`.
+- Follow-ups noted, not actioned: harden `upsertProfile` so `partner_id` can never re-enter the
+  write path; if the onboarding-preference work is unblocked it must target the new
+  `quiz_answers` table (not a `profiles` column); `docs/schema.sql` needs a sync pass once the
+  backend changes settle.
+
+### In progress (10 Aug 2026) — client-feedback batch, phase 4: streaks + article-drip groundwork (completed 12 Aug — see above)
+- Groundwork landed, tree green (327 tests): `Article.dripWeek` + pure `LearnDrip` reveal logic
+  (weeks since first open; a no-op while every bundled article is week 0); DataStore keys
+  `first_open_epoch_day` (seeded set-if-absent on app start — existing users anchor to today),
+  `read_article_slugs`, `last_seen_article_slug`; `HomeViewModel` now computes earned-but-
+  uncelebrated milestones, the "log yesterday to reconnect your streak" restore date, and the
+  "new article this week" card state.
+- Still to come before phase 4 is done: Home UI (streak chip, milestone celebration dialog,
+  restore prompt, new-article card), the drip gate on the Learn/search/article/Nutrition
+  surfaces, mark-as-read, and the opt-in weekly `NEW_ARTICLE` reminder + `genesyx://learn` link.
+
+### Added (10 Aug 2026) — client-feedback batch, phase 3: pH history, tucked disclaimers, action-first Nutrition, custom glass
+- **pH history list.** The Vaginal pH screen now lists every reading, newest first, grouped by day
+  ("Previous readings"); tapping one opens the existing log dialog prefilled for edit/delete.
+  Legacy "urine (legacy)" rows render exactly as elsewhere.
+- **Disclaimers moved behind a tap.** New shared `ExpandableInfo` component ("About this tracker"
+  row with an info icon) replaces the always-visible disclaimer paragraph on the pH screen and in
+  the pH log dialog. The disclaimer string itself is untouched — `PhCopy` verbatim/banned-phrase
+  guards stay green. Deleted the three orphaned urine-strip PNGs (~200 KB, zero references).
+- **Nutrition reads action-first.** Order is now hydration → pH → your supplements → Genesyx range
+  → focus foods → suggested plan → articles; the two faded hydration stat lines merged into one
+  compact "N days on goal · N steady weeks" line; the Learn section shows three articles + "See
+  all" instead of all ten.
+- **Custom glass size.** New `hydration_glass_ml` preference (default 250 ml, clamped 100–1000,
+  single writer in `PreferencesRepository`, pinned by new clamp tests). The goal dialog gained a
+  "Glass size" stepper (shared by Nutrition, Hydration detail and Profile → Tracking Preferences);
+  the Nutrition card's ± buttons and the Hydration detail's first quick-add pair now pour her
+  glass instead of a fixed 200 ml. The cups *display* unit stays the fixed 250 ml metric cup.
+- Verified: 327 unit tests green, `:app:assembleRelease` green.
+
+### Added (10 Aug 2026) — client-feedback batch, phase 2: intimacy logging, richer calendar markers, fertile-window reminder
+- **Private intimacy logging (Room v6→v7).** `daily_logs` gained a nullable `sexualActivity`
+  column (`MIGRATION_6_7`; null = not recorded — the truthful state of every existing row, pinned
+  by a new 6→7 migration test). A quiet switch on the log form ("Intimacy · Private to you")
+  records it; it shows in the day summary and calendar only to the owner and is structurally
+  untouched by partner code. Deliberately NOT a streak qualifying action — the cross-platform
+  tracking contract stays unchanged. **Server gate:** `daily_logs.sexual_activity boolean` must
+  join the pending pre-code-14 Supabase batch; until it is applied, a log carrying an intimacy
+  record queues and retries (a null one syncs fine — the field is omitted from the wire while
+  null, pinned by `DailyLogDtoTest`). `docs/schema.sql` documents the column as not-yet-applied.
+- **Calendar markers now distinguish six signals.** Symptoms & notes split out of the catch-all
+  "how you felt" dot, and intimacy earned its own; dots render in rows of three so six still fit
+  a cell. Legend and TalkBack descriptions follow automatically. `DayMarkersTest` extended.
+- **Fertile days carry a ring** on top of the tint (faded on predicted days) so the window reads
+  at a glance, and a new **fertile-window reminder** (`ReminderKind.FERTILE_WINDOW`, tracking
+  channel) posts a morning heads-up on the predicted window's first day — a daily 09:00 check
+  gated in `ReminderPolicy` (needs cycle settings, respects quiet hours and the daily cap;
+  "predicted" wording throughout). Toggle added to Reminder settings; default-on for fresh
+  permission grants only. Guards: four new `ReminderPolicyTest` cases.
+- Verified: 324 unit tests green, androidTest compiles, `:app:assembleRelease` green,
+  Room schema `7.json` exported and matching the migration DDL.
+- **Toolchain note:** the working tree carried an uncommitted, half-finished AGP 9.3.1 /
+  Kotlin 2.2.10 / Gradle 9.5 upgrade that failed configuration (Hilt/KSP plugin classloader).
+  Stashed (`git stash`, alongside the older 9.2.1 attempt) and also saved as a patch in the
+  session scratchpad; the tree builds on the committed toolchain again.
+
+### Fixed (30 Jul 2026) — production `ph_value_range` constraint aligned with the vaginal model
+- A read-only production audit found the urine-era `CHECK (ph_value BETWEEN 4.5 AND 9.0)` still
+  live on `ph_readings` — it had survived the 22 Jul vaginal migration and rejected every vaginal
+  reading below 4.5 (the entire lower Healthy band): 57 rows in the table, minimum exactly 4.5,
+  zero below. Affected readings were never lost — they queue as `PENDING_UPSERT` on-device and
+  drain automatically now the constraint accepts them.
+- Replaced in production (single transaction, pre-checked against all existing rows) with a
+  measurement-type-aware constraint: vaginal **3.8–7.0**, urine (legacy) **4.5–9.0**.
+  `docs/schema.sql` updated to match. Old prod clients (≤ code 10) omit `measurement_type`, take
+  the column's `'urine'` default, and are unaffected.
+- Known edges, accepted: readings 3.5–3.7 entered on 1.3.0 (its floor predated the approved 3.8)
+  stay device-local; a legacy urine row edited below 4.5 keeps type `urine` and won't sync
+  (same as before the change). Also catalogued in prod: `partner_invites` (v1.0, feature-flagged
+  off) — cascade covers inviter rows on account deletion; invitee-side rows are a code-14
+  deletion-function consideration.
+
+### Changed (30 Jul 2026) — CLAUDE.md corrected to the verified release state
+- CLAUDE.md's header no longer claims 1.3.2 (13) is live on Play. It now records the audited
+  state: Internal testing serves **1.3.0 (11)**, Production **1.2.0 (9)**, and the verified
+  code-13 archive awaits upload. Also corrected: Room **v6**, 304 unit tests, the client-approved
+  pH input floor (3.8, no longer provisional), and that the supplements feature is source-only,
+  targeting code 14 behind its unapplied Supabase migration.
+- Archive identity re-verified: aapt2 reports `com.genesyx.app` 13 / 1.3.2 / SDK 36; apksigner
+  cert SHA-1 matches the registered release key. The archive binaries (29 Jul 22:12, built at
+  `fd15178`) predate `b488519` — **the calendar clipping fixes are NOT in code 13**; they ship
+  with code 14.
+
 ### Changed (29 Jul 2026, night) — code-13 re-archive; calendar clipping fixes; supplements build starts
 - **`1.3.2-code13` archive refreshed** (`~/Documents/Genesyx Releases/1.3.2-code13/`, new
   `SHA256SUMS.txt`): the binaries now include the day-marker/phase-timeline session and the 29 Jul

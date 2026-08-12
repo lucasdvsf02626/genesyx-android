@@ -15,6 +15,9 @@ import javax.inject.Singleton
 /** Schedules a background retry of the pH sync queue. Abstracted so PhRepository stays JVM-testable. */
 interface PhSyncScheduler {
     fun schedule()
+
+    /** User-initiated retry ("Sync now"): re-enqueue so a stuck drain's constraint re-evaluates. */
+    fun syncNow()
 }
 
 @Singleton
@@ -22,15 +25,26 @@ class WorkManagerPhSyncScheduler @Inject constructor(
     @ApplicationContext private val context: Context,
 ) : PhSyncScheduler {
     override fun schedule() {
+        // KEEP: if a drain is already queued, don't stack duplicates — it already covers all PENDING rows.
+        enqueue(ExistingWorkPolicy.KEEP)
+    }
+
+    override fun syncNow() {
+        // REPLACE: a request queued behind a mis-evaluated network constraint (captive portal,
+        // failed validation) waits forever under KEEP. Replacing is safe — the drain is idempotent,
+        // it just re-pushes whatever is still PENDING.
+        enqueue(ExistingWorkPolicy.REPLACE)
+    }
+
+    private fun enqueue(policy: ExistingWorkPolicy) {
         val request = OneTimeWorkRequestBuilder<PhSyncWorker>()
             .setConstraints(
                 Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build(),
             )
             .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
             .build()
-        // KEEP: if a drain is already queued, don't stack duplicates — it already covers all PENDING rows.
         WorkManager.getInstance(context)
-            .enqueueUniqueWork(WORK_NAME, ExistingWorkPolicy.KEEP, request)
+            .enqueueUniqueWork(WORK_NAME, policy, request)
     }
 
     private companion object {

@@ -23,6 +23,10 @@ interface DailyLogDao {
     @Query("SELECT * FROM daily_logs WHERE syncStatus != 'SYNCED'")
     suspend fun pending(): List<DailyLogEntity>
 
+    /** Live count of unsynced rows — powers the Profile sync-status row. */
+    @Query("SELECT COUNT(*) FROM daily_logs WHERE userId = :userId AND syncStatus != 'SYNCED'")
+    fun observePendingCount(userId: String): Flow<Int>
+
     @Query("UPDATE daily_logs SET syncStatus = :status WHERE userId = :userId AND date = :date")
     suspend fun setStatus(userId: String, date: LocalDate, status: LogSyncStatus)
 }

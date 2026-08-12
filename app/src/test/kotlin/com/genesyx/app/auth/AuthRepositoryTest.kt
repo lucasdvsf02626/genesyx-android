@@ -76,6 +76,19 @@ class AuthRepositoryTest {
     }
 
     @Test
+    fun `changeEmail delegates but does NOT touch the persisted session`() = runTest {
+        // Success only means "confirmation email sent" — the address flips server-side after the
+        // link is followed, so persisting the new email here would show an address that isn't real.
+        coEvery { authService.changeEmail("pw", "new@b.co") } returns DataResult.Success(Unit)
+
+        val result = repo(backgroundScope).changeEmail("pw", "new@b.co")
+
+        assertTrue(result is DataResult.Success)
+        coVerify { authService.changeEmail("pw", "new@b.co") }
+        verify(exactly = 0) { session.signIn(any(), any(), any()) }
+    }
+
+    @Test
     fun `signInWithPassword persists the session with the auth uid`() = runTest {
         val user = AuthUser(id = "uid-123", email = "a@b.co", displayName = "a", emailVerified = true)
         coEvery { authService.signInWithPassword(any(), any()) } returns

@@ -80,6 +80,7 @@ import com.genesyx.app.ui.navigation.Screen
 import com.genesyx.app.ui.theme.BabyLavender
 import com.genesyx.app.ui.theme.ElectricBlue
 import com.genesyx.app.ui.theme.ElectricLavender
+import com.genesyx.app.ui.theme.ElectricPink
 import com.genesyx.app.ui.theme.GenesyxTheme
 import com.genesyx.app.ui.theme.PhOptimal
 import com.genesyx.app.ui.theme.PowderBlue
@@ -304,7 +305,7 @@ fun TrackContent(
         // ── Add to today's log
         GxPrimaryButton(
             text = "Add to today's log",
-            onClick = { onNavigate(Screen.Log.route) },
+            onClick = { onNavigate(Screen.Log.create()) },
             leadingIcon = Icons.Filled.Add,
         )
 
@@ -337,6 +338,10 @@ fun TrackContent(
             today = today,
             hydrationUnit = hydrationUnit,
             onDismiss = { selectedDay = null },
+            onEdit = {
+                selectedDay = null
+                onNavigate(Screen.Log.create(day.date))
+            },
         )
     }
 }
@@ -399,6 +404,9 @@ private fun DayCell(
     }
     val border = when {
         cell.isToday -> BorderStroke(2.dp, colors.onSurface)
+        // The fertile window is the signal the app exists for — the tint alone was easy to skim
+        // past, so fertile days carry a ring on top of it (predicted ones stay faded).
+        type == DayType.FERTILE -> BorderStroke(1.5.dp, ElectricBlue.copy(alpha = if (predicted) 0.5f else 0.9f))
         predicted -> BorderStroke(1.dp, colors.outline)
         type == DayType.FOLLICULAR -> BorderStroke(1.dp, colors.outline)
         else -> null
@@ -435,17 +443,21 @@ private fun DayCell(
             )
             if (markers.isNotEmpty()) {
                 Spacer(Modifier.height(2.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                    markers.forEach { marker ->
-                        Box(
-                            Modifier
-                                .size(4.5.dp)
-                                .clip(CircleShape)
-                                .background(marker.color)
-                                // A hairline ring keeps a pale dot separable from a pale phase
-                                // tint without having to special-case every background.
-                                .border(0.5.dp, Color.White.copy(alpha = 0.9f), CircleShape),
-                        )
+                // Up to six markers now — rows of three keep the dots inside a ~40dp cell where a
+                // single six-dot row would touch the cell edges.
+                markers.chunked(3).forEach { chunk ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                        chunk.forEach { marker ->
+                            Box(
+                                Modifier
+                                    .size(4.5.dp)
+                                    .clip(CircleShape)
+                                    .background(marker.color)
+                                    // A hairline ring keeps a pale dot separable from a pale phase
+                                    // tint without having to special-case every background.
+                                    .border(0.5.dp, Color.White.copy(alpha = 0.9f), CircleShape),
+                            )
+                        }
                     }
                 }
             }
@@ -458,17 +470,21 @@ private fun DayCell(
 private val DayMarker.color: Color
     get() = when (this) {
         DayMarker.LOG -> PowderPink
+        DayMarker.SYMPTOMS -> ElectricLavender
         DayMarker.WATER -> ElectricBlue
         DayMarker.SUPPLEMENTS -> PowderBlue
         DayMarker.PH -> PhOptimal
+        DayMarker.ACTIVITY -> ElectricPink
     }
 
 private val DayMarker.label: String
     get() = when (this) {
         DayMarker.LOG -> "how you felt"
+        DayMarker.SYMPTOMS -> "symptoms & notes"
         DayMarker.WATER -> "water"
         DayMarker.SUPPLEMENTS -> "supplements"
         DayMarker.PH -> "pH"
+        DayMarker.ACTIVITY -> "intimacy"
     }
 
 @Composable
@@ -569,6 +585,7 @@ private fun DayDetailDialog(
     today: LocalDate,
     hydrationUnit: HydrationUnit,
     onDismiss: () -> Unit,
+    onEdit: () -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
     val phase = day.info.phase
@@ -621,6 +638,15 @@ private fun DayDetailDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) { Text("Close", color = ElectricLavender) }
+        },
+        dismissButton = {
+            // Predictions aren't loggable, so future days keep a read-only dialog.
+            if (!isFuture) {
+                val hasLog = logDay != null && !logDay.isEmpty
+                TextButton(onClick = onEdit) {
+                    Text(if (hasLog) "Edit this day" else "Add a log", color = ElectricLavender)
+                }
+            }
         },
     )
 }

@@ -5,7 +5,9 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.genesyx.app.data.local.GenesyxDatabase
 import com.genesyx.app.data.local.MIGRATION_3_4
+import com.genesyx.app.data.local.MIGRATION_6_7
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -46,6 +48,29 @@ class DailyLogMigrationTest {
             assertEquals(1500, c.getInt(1))
             assertEquals("kept", c.getString(2))
             assertEquals("SYNCED", c.getString(3)) // defaulted, not left null
+        }
+    }
+
+    @Test
+    fun migrate6To7_preservesLogs_andLeavesIntimacyUnrecorded() {
+        helper.createDatabase(DB, 6).apply {
+            execSQL(
+                "INSERT INTO daily_logs (userId, date, moodId, energyId, symptoms, sleepMinutes, " +
+                    "supplements, notes, waterMl, syncStatus) VALUES " +
+                    "('user-a', 20000, 'good', 'low', '', 450, '', 'kept', 1500, 'SYNCED')",
+            )
+            close()
+        }
+
+        val db = helper.runMigrationsAndValidate(DB, 7, true, MIGRATION_6_7)
+
+        db.query("SELECT userId, notes, sexualActivity FROM daily_logs WHERE userId = 'user-a'").use { c ->
+            assertEquals(1, c.count) // the row survived
+            c.moveToFirst()
+            assertEquals("user-a", c.getString(0))
+            assertEquals("kept", c.getString(1))
+            // NULL, not 0: pre-migration days are truthfully "not recorded", never "recorded no".
+            assertTrue(c.isNull(2))
         }
     }
 

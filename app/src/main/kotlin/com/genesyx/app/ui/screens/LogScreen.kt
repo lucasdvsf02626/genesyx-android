@@ -35,6 +35,8 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -63,6 +65,8 @@ import com.genesyx.app.ui.components.GxPrimaryButton
 import com.genesyx.app.ui.components.ScreenHeader
 import com.genesyx.app.ui.theme.ElectricBlue
 import com.genesyx.app.ui.theme.ElectricLavender
+import com.genesyx.app.ui.theme.ElectricPink
+import java.time.format.DateTimeFormatter
 
 private val DEFAULT_SYMPTOMS = listOf("Headache", "Fatigue", "Cramps", "Nausea", "Bloating", "Acne", "Backache", "Tender breasts")
 
@@ -83,13 +87,23 @@ fun LogScreen(onClose: () -> Unit, viewModel: LogViewModel = hiltViewModel()) {
         Column(
             modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
         ) {
-            ScreenHeader(title = "Log Today", subtitle = "Quick notes about how you're feeling.", onBack = onClose)
+            ScreenHeader(title = logTitle(viewModel), subtitle = logSubtitle(viewModel), onBack = onClose)
         }
         return
     }
 
-    LogForm(initial = viewModel.todaysLog(), onClose = onClose, viewModel = viewModel)
+    LogForm(initial = viewModel.initialLog(), onClose = onClose, viewModel = viewModel)
 }
+
+// The header must say WHICH day is being written: an editor opened from the calendar that still
+// read "Log Today" would have users editing last Tuesday believing it was today.
+private val logDayFormat = DateTimeFormatter.ofPattern("EEEE, d MMM")
+
+private fun logTitle(viewModel: LogViewModel) =
+    if (viewModel.isToday) "Log Today" else viewModel.date.format(logDayFormat)
+
+private fun logSubtitle(viewModel: LogViewModel) =
+    if (viewModel.isToday) "Quick notes about how you're feeling." else "Add or edit this day's log."
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -102,10 +116,12 @@ private fun LogForm(initial: DailyLog, onClose: () -> Unit, viewModel: LogViewMo
     var notes by remember { mutableStateOf(initial.notes.orEmpty()) }
     var sleepMinutes by remember { mutableStateOf(initial.sleepMinutes) }
     var supplements by remember { mutableStateOf(initial.supplements) }
+    // Tri-state on the wire (null = not recorded), two-state here: the switch records or clears.
+    var intimacy by remember { mutableStateOf(initial.sexualActivity) }
     // Water is not form state: the quick-add trackers own it, so the mini-card renders the live
     // aggregate and the dialog writes straight through the repository. A snapshot here used to
     // revert any water quick-added while the form sat open.
-    val waterMl by viewModel.todayWaterMl.collectAsState()
+    val waterMl by viewModel.waterMl.collectAsState()
     val waterUnit by viewModel.hydrationUnit.collectAsState()
     val customSupplements by viewModel.customSupplementNames.collectAsState()
     var showAdd by remember { mutableStateOf(false) }
@@ -120,7 +136,16 @@ private fun LogForm(initial: DailyLog, onClose: () -> Unit, viewModel: LogViewMo
 
     // Water is excluded from the dirty check: it saves the moment the dialog closes, and the
     // repository preserves the stored total on save regardless of what this snapshot carries.
-    val edited = DailyLog(mood, energy, symptoms, sleepMinutes, supplements, notes.ifBlank { null }, initial.waterMl)
+    val edited = DailyLog(
+        mood = mood,
+        energy = energy,
+        symptoms = symptoms,
+        sleepMinutes = sleepMinutes,
+        supplements = supplements,
+        notes = notes.ifBlank { null },
+        waterMl = initial.waterMl,
+        sexualActivity = intimacy,
+    )
     val dirty = edited != initial
 
     // Leaving with unsaved edits used to bin them silently. Ask first — but only when there is
@@ -134,7 +159,7 @@ private fun LogForm(initial: DailyLog, onClose: () -> Unit, viewModel: LogViewMo
             .background(colors.background)
             .verticalScroll(rememberScrollState()),
     ) {
-        ScreenHeader(title = "Log Today", subtitle = "Quick notes about how you're feeling.", onBack = ::attemptClose)
+        ScreenHeader(title = logTitle(viewModel), subtitle = logSubtitle(viewModel), onBack = ::attemptClose)
 
         Column(Modifier.padding(horizontal = 20.dp)) {
             // Mood
@@ -243,6 +268,32 @@ private fun LogForm(initial: DailyLog, onClose: () -> Unit, viewModel: LogViewMo
             Spacer(Modifier.height(12.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 MiniCard(Icons.Filled.Medication, "Supplements", "${supplements.size} of ${Supplement.loggable.size + customSupplements.size}", ElectricLavender, Modifier.weight(1f)) { suppOpen = true }
+            }
+
+            // Intimacy — deliberately quiet: one switch, neutral words, and the privacy statement
+            // right where the record is made. Never shared with any partner feature.
+            Spacer(Modifier.height(12.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(colors.surface)
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(Modifier.size(36.dp).clip(RoundedCornerShape(12.dp)).background(ElectricPink.copy(alpha = 0.12f)), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Filled.Favorite, null, tint = ElectricPink, modifier = Modifier.size(18.dp))
+                }
+                Spacer(Modifier.size(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Eyebrow("Intimacy", color = colors.onSurfaceVariant)
+                    Text("Private to you", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                }
+                Switch(
+                    checked = intimacy == true,
+                    onCheckedChange = { intimacy = if (it) true else null },
+                    colors = SwitchDefaults.colors(checkedTrackColor = ElectricPink),
+                )
             }
 
             // Notes

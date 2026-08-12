@@ -87,6 +87,7 @@ class DailyLogRepositoryTest {
     private class RecordingScheduler : DailyLogSyncScheduler {
         var scheduled = 0
         override fun schedule() { scheduled++ }
+        override fun syncNow() { scheduled++ }
     }
 
     private object SilentLogger : Logger {

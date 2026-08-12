@@ -36,4 +36,11 @@ interface AuthService {
      * first so a borrowed unlocked phone can't silently take over the account.
      */
     suspend fun changePassword(currentPassword: String, newPassword: String): DataResult<Unit>
+
+    /**
+     * Change the signed-in user's email. Same re-auth gate as [changePassword]. Supabase sends a
+     * confirmation link and the address only changes once it's followed — so callers must NOT
+     * update the local session on Success; success here means "confirmation email sent".
+     */
+    suspend fun changeEmail(currentPassword: String, newEmail: String): DataResult<Unit>
 }

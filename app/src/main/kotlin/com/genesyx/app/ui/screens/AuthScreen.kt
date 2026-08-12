@@ -207,7 +207,7 @@ fun AuthContent(
                 )
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    if (signupMode) "Save your cycle, nutrition, and partner info securely." else "Sign in to sync your journey across devices.",
+                    if (signupMode) "Save your cycle and nutrition info securely." else "Sign in to sync your journey across devices.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = colors.onSurfaceVariant,
                     textAlign = TextAlign.Center,

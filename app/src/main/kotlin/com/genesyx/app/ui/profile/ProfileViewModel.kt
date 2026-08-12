@@ -4,10 +4,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.genesyx.app.auth.AuthRepository
 import com.genesyx.app.core.result.DataResult
+import com.genesyx.app.data.CycleRepository
 import com.genesyx.app.data.PartnerRepository
 import com.genesyx.app.data.PreferencesRepository
 import com.genesyx.app.data.ProfileRepository
 import com.genesyx.app.data.SessionRepository
+import com.genesyx.app.data.SyncStatusRepository
+import com.genesyx.app.domain.hydration.HydrationUnit
+import com.genesyx.app.domain.model.CycleSettings
 import com.genesyx.app.domain.model.FocusMode
 import com.genesyx.app.domain.model.Partner
 import com.genesyx.app.domain.model.PartnerInvite
@@ -26,6 +30,8 @@ class ProfileViewModel @Inject constructor(
     private val partnerRepository: PartnerRepository,
     private val profileRepository: ProfileRepository,
     private val authRepository: AuthRepository,
+    private val syncStatusRepository: SyncStatusRepository,
+    private val cycleRepository: CycleRepository,
 ) : ViewModel() {
 
     val isSignedIn: StateFlow<Boolean> = sessionRepository.isSignedIn
@@ -38,6 +44,23 @@ class ProfileViewModel @Inject constructor(
 
     val partner: StateFlow<Partner?> = partnerRepository.partner
     val invites: StateFlow<List<PartnerInvite>> = partnerRepository.invites
+
+    /** Unsynced local changes across all synced stores — 0 means everything reached the server. */
+    val pendingSync: StateFlow<Int> = syncStatusRepository.pendingCount
+
+    fun syncNow() = syncStatusRepository.syncNow()
+
+    // Health Profile row → the same cycle settings the Track screen edits.
+    val cycleSettings: StateFlow<CycleSettings?> = cycleRepository.settings
+    fun saveCycleSettings(settings: CycleSettings) = cycleRepository.upsert(settings)
+
+    // Tracking Preferences row → the shared hydration goal + display unit + glass size.
+    val hydrationGoalMl: StateFlow<Int> = preferencesRepository.hydrationGoalMl
+    val hydrationUnit: StateFlow<HydrationUnit> = preferencesRepository.hydrationUnit
+    val hydrationGlassMl: StateFlow<Int> = preferencesRepository.hydrationGlassMl
+    fun setHydrationGoalMl(ml: Int) = preferencesRepository.setHydrationGoalMl(ml)
+    fun setHydrationUnit(unit: HydrationUnit) = preferencesRepository.setHydrationUnit(unit)
+    fun setHydrationGlassMl(ml: Int) = preferencesRepository.setHydrationGlassMl(ml)
 
     private val _deleting = MutableStateFlow(false)
     val deleting: StateFlow<Boolean> = _deleting.asStateFlow()
@@ -120,6 +143,40 @@ class ProfileViewModel @Inject constructor(
     fun resetPasswordState() {
         _pwError.value = null
         _pwChanged.value = false
+    }
+
+    private val _emailChanging = MutableStateFlow(false)
+    val emailChanging: StateFlow<Boolean> = _emailChanging.asStateFlow()
+    private val _emailError = MutableStateFlow<String?>(null)
+    val emailError: StateFlow<String?> = _emailError.asStateFlow()
+    private val _emailChangeRequested = MutableStateFlow(false)
+    val emailChangeRequested: StateFlow<Boolean> = _emailChangeRequested.asStateFlow()
+
+    /**
+     * Start an email change. Success means "confirmation email sent", NOT "email changed" — the
+     * session keeps the old address until the link in the new inbox is followed, so the UI must
+     * say so rather than optimistically show the new address.
+     */
+    fun changeEmail(currentPassword: String, newEmail: String) {
+        if (_emailChanging.value) return
+        _emailError.value = null
+        _emailChanging.value = true
+        viewModelScope.launch {
+            val result = authRepository.changeEmail(currentPassword, newEmail)
+            _emailChanging.value = false
+            when (result) {
+                is DataResult.Success -> _emailChangeRequested.value = true
+                is DataResult.Error ->
+                    _emailError.value = result.message ?: "Couldn't change your email. Please try again."
+                DataResult.Loading -> Unit
+            }
+        }
+    }
+
+    /** Reset the dialog state when it opens or closes. */
+    fun resetEmailState() {
+        _emailError.value = null
+        _emailChangeRequested.value = false
     }
 
     fun sendInvite(email: String) = partnerRepository.sendInvite(email)

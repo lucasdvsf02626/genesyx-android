@@ -49,17 +49,19 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.genesyx.app.domain.content.Article
 import com.genesyx.app.domain.content.ArticleCategory
-import com.genesyx.app.domain.content.learnArticles
+import com.genesyx.app.domain.content.LearnDrip
 import com.genesyx.app.ui.components.Eyebrow
 import com.genesyx.app.ui.navigation.Screen
 import com.genesyx.app.ui.theme.ElectricBlue
 import com.genesyx.app.ui.theme.ElectricLavender
 import com.genesyx.app.ui.theme.ElectricPink
+import java.time.LocalDate
 
 /**
- * Learn landing. Content is a compile-time constant ([learnArticles]) so there is no loading state
- * and no error state — see docs/V1_1_NOTIFICATIONS_AND_LEARN.md §10.1. The ViewModel exists only for
- * the persisted first-time hint.
+ * Learn landing. Content is a compile-time constant so there is no loading state and no error
+ * state — see docs/V1_1_NOTIFICATIONS_AND_LEARN.md §10.1 — but the list shown is gated by
+ * [LearnDrip]: only revealed weeks appear. The ViewModel carries the persisted first-time hint
+ * and the drip anchor.
  */
 @Composable
 fun LearnScreen(
@@ -68,9 +70,12 @@ fun LearnScreen(
 ) {
     val colors = MaterialTheme.colorScheme
     val introSeen by viewModel.introSeen.collectAsState()
+    val firstOpen by viewModel.firstOpenEpochDay.collectAsState()
     var selectedCategory by rememberSaveable { mutableStateOf<ArticleCategory?>(null) }
 
-    val visible = learnArticles.filter { selectedCategory == null || it.category == selectedCategory }
+    // The drip gate: only articles whose week has been revealed. A no-op while everything is week 0.
+    val available = LearnDrip.available(LocalDate.now(), firstOpen)
+    val visible = available.filter { selectedCategory == null || it.category == selectedCategory }
     // The featured hero only leads the unfiltered list; inside a filter it's just another article.
     val featured = if (selectedCategory == null) visible.firstOrNull { it.featured } else null
     val rest = visible.filter { it != featured }

@@ -24,6 +24,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -31,27 +34,39 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.genesyx.app.core.AppLinks
 import com.genesyx.app.domain.content.Article
 import com.genesyx.app.domain.content.ArticleBlock
 import com.genesyx.app.domain.content.ArticleCta
 import com.genesyx.app.domain.content.CtaType
+import com.genesyx.app.domain.content.LearnDrip
 import com.genesyx.app.domain.content.MEDICAL_DISCLAIMER
 import com.genesyx.app.domain.content.articleBySlug
 import com.genesyx.app.domain.content.relatedArticles
+import java.time.LocalDate
 import com.genesyx.app.ui.components.Eyebrow
 import com.genesyx.app.ui.components.GxBackButton
 import com.genesyx.app.ui.components.GxPrimaryButton
 import com.genesyx.app.ui.navigation.Screen
 
 @Composable
-fun ArticleDetailScreen(slug: String, navController: NavController) {
+fun ArticleDetailScreen(
+    slug: String,
+    navController: NavController,
+    viewModel: LearnViewModel = hiltViewModel(),
+) {
+    val firstOpen by viewModel.firstOpenEpochDay.collectAsState()
+    // An unrevealed drip article is treated exactly like an unknown slug — a stale deep link or
+    // notification must not skip the weekly gate.
     val article = articleBySlug(slug)
+        ?.takeIf { LearnDrip.isAvailable(it, LocalDate.now(), firstOpen) }
     if (article == null) {
         ArticleNotFound(onBack = { navController.popBackStack() })
         return
     }
+    LaunchedEffect(article.slug) { viewModel.markRead(article.slug) }
 
     val colors = MaterialTheme.colorScheme
     Column(
@@ -129,7 +144,9 @@ fun ArticleDetailScreen(slug: String, navController: NavController) {
                 )
             }
 
+            // Same gate as the lists: a related link must not tunnel into an unrevealed week.
             val related = relatedArticles(article)
+                .filter { LearnDrip.isAvailable(it, LocalDate.now(), firstOpen) }
             if (related.isNotEmpty()) {
                 Spacer(Modifier.height(32.dp))
                 Text(
@@ -160,7 +177,7 @@ fun ArticleDetailScreen(slug: String, navController: NavController) {
 
 /** In-app destination for a CTA. Deep links (`genesyx://…`) arrive with the notification work. */
 private fun ArticleCta.route(): String = when (type) {
-    CtaType.OPEN_LOG -> Screen.Log.route
+    CtaType.OPEN_LOG -> Screen.Log.create()
     CtaType.OPEN_TRACK -> Screen.Track.route
     CtaType.OPEN_NUTRITION -> Screen.Nutrition.route
     CtaType.OPEN_INSIGHTS -> Screen.Insights.route

@@ -34,7 +34,9 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun TrackerDetailScaffold(
     title: String,
-    onBack: () -> Unit,
+    // Null hides the back arrow — used by the pH screen, which is a bottom tab rather than a
+    // detail pushed on top of Track.
+    onBack: (() -> Unit)?,
     content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
@@ -44,8 +46,10 @@ fun TrackerDetailScaffold(
             CenterAlignedTopAppBar(
                 title = { Text(title) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    if (onBack != null) {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = colors.background),

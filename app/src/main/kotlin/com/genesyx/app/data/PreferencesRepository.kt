@@ -2,6 +2,7 @@ package com.genesyx.app.data
 
 import com.genesyx.app.core.di.ApplicationScope
 import com.genesyx.app.data.local.datastore.GenesyxPreferencesDataStore
+import com.genesyx.app.domain.hydration.HydrationFormat
 import com.genesyx.app.domain.hydration.HydrationUnit
 import com.genesyx.app.domain.model.FocusMode
 import com.genesyx.app.domain.model.ThemeMode
@@ -45,6 +46,16 @@ class PreferencesRepository @Inject constructor(
         store.hydrationGoalMl.stateIn(scope, SharingStarted.Eagerly, StreakEngine.DEFAULT_GOAL_ML)
     val hydrationUnit: StateFlow<HydrationUnit> =
         store.hydrationUnit.stateIn(scope, SharingStarted.Eagerly, HydrationUnit.ML)
+    val hydrationGlassMl: StateFlow<Int> =
+        store.hydrationGlassMl.stateIn(scope, SharingStarted.Eagerly, HydrationFormat.DEFAULT_GLASS_ML)
+
+    // ── Learn drip bookkeeping ────────────────────────────────────────────────
+    val firstOpenEpochDay: StateFlow<Long?> =
+        store.firstOpenEpochDay.stateIn(scope, SharingStarted.Eagerly, null)
+    val readArticleSlugs: StateFlow<Set<String>> =
+        store.readArticleSlugs.stateIn(scope, SharingStarted.Eagerly, emptySet())
+    val lastSeenArticleSlug: StateFlow<String?> =
+        store.lastSeenArticleSlug.stateIn(scope, SharingStarted.Eagerly, null)
 
     fun setTheme(mode: ThemeMode) { scope.launch { store.setTheme(mode) } }
     fun setPush(enabled: Boolean) { scope.launch { store.setPush(enabled) } }
@@ -66,4 +77,14 @@ class PreferencesRepository @Inject constructor(
 
     /** Display unit for water amounts. Storage stays in ml whatever she picks. */
     fun setHydrationUnit(unit: HydrationUnit) { scope.launch { store.setHydrationUnit(unit) } }
+
+    /** Glass size for the quick-add buttons. Same single-writer clamp discipline as the goal. */
+    fun setHydrationGlassMl(ml: Int) {
+        scope.launch { store.setHydrationGlassMl(ml.coerceIn(HydrationFormat.GLASS_RANGE_ML)) }
+    }
+
+    /** Anchors the Learn drip. Set-if-absent, so calling it every launch is safe and cheap. */
+    fun ensureFirstOpenRecorded(epochDay: Long) { scope.launch { store.ensureFirstOpenRecorded(epochDay) } }
+    fun markArticleRead(slug: String) { scope.launch { store.addReadArticleSlug(slug) } }
+    fun setLastSeenArticleSlug(slug: String) { scope.launch { store.setLastSeenArticleSlug(slug) } }
 }

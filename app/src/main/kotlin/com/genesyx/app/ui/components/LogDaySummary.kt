@@ -45,6 +45,8 @@ fun DailyLogSummary(log: DailyLog, modifier: Modifier = Modifier, unit: Hydratio
         log.sleepMinutes?.let { InfoRow("Sleep", sleepLabel(it)) }
         if (log.supplements.isNotEmpty()) InfoRow("Supplements", log.supplements.joinToString(", "))
         if (log.waterMl > 0) InfoRow("Water", HydrationFormat.format(log.waterMl, unit))
+        // Deliberately understated wording — this is the user's own private record.
+        if (log.sexualActivity == true) InfoRow("Intimacy", "Logged")
         log.notes?.takeIf { it.isNotBlank() }?.let { InfoRow("Notes", it) }
     }
 }

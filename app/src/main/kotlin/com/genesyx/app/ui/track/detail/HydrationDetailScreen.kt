@@ -58,6 +58,7 @@ fun HydrationDetailScreen(
     viewModel: HydrationDetailViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
+    val glassMl by viewModel.glassMl.collectAsState()
     val colors = MaterialTheme.colorScheme
     var manual by remember { mutableStateOf("") }
     var editGoal by remember { mutableStateOf(false) }
@@ -97,8 +98,10 @@ fun HydrationDetailScreen(
             Eyebrow("Add water", color = colors.onSurfaceVariant)
             Spacer(Modifier.height(12.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                QuickAdd("-200", Modifier.weight(1f)) { viewModel.add(-200) }
-                QuickAdd("+200", Modifier.weight(1f)) { viewModel.add(200) }
+                // The first pair pours her glass (set in the goal dialog); the fixed pair covers
+                // the common bottle sizes. Minus-glass is the correction for a fat-fingered tap.
+                QuickAdd("-$glassMl", Modifier.weight(1f)) { viewModel.add(-glassMl) }
+                QuickAdd("+$glassMl", Modifier.weight(1f)) { viewModel.add(glassMl) }
                 QuickAdd("+300", Modifier.weight(1f)) { viewModel.add(300) }
                 QuickAdd("+500", Modifier.weight(1f)) { viewModel.add(500) }
             }
@@ -183,7 +186,9 @@ fun HydrationDetailScreen(
         HydrationGoalDialog(
             current = state.goalMl,
             unit = state.unit,
+            glassMl = glassMl,
             onUnitChange = { viewModel.setUnit(it) },
+            onGlassChange = { viewModel.setGlassMl(it) },
             onDismiss = { editGoal = false },
             onSave = { viewModel.setGoal(it); editGoal = false },
         )

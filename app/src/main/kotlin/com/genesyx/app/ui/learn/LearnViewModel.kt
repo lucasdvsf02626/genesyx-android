@@ -7,9 +7,10 @@ import kotlinx.coroutines.flow.StateFlow
 import javax.inject.Inject
 
 /**
- * Learn landing state. Articles are a compile-time constant, so the only thing worth persisting is
- * whether the first-time hint card has been dismissed. Category filtering is transient UI state and
- * stays in the composable.
+ * Learn landing state. Articles are a compile-time constant; what persists is the first-time hint
+ * dismissal and the drip bookkeeping — the first-open anchor every surface gates through
+ * ([com.genesyx.app.domain.content.LearnDrip]) and the read slugs. Category filtering is transient
+ * UI state and stays in the composable.
  */
 @HiltViewModel
 class LearnViewModel @Inject constructor(
@@ -17,5 +18,10 @@ class LearnViewModel @Inject constructor(
 ) : ViewModel() {
     val introSeen: StateFlow<Boolean> = preferences.learnIntroSeen
 
+    /** Anchors the weekly drip; seeded set-if-absent on app start (MainActivity). */
+    val firstOpenEpochDay: StateFlow<Long?> = preferences.firstOpenEpochDay
+
     fun dismissIntro() = preferences.setLearnIntroSeen(true)
+
+    fun markRead(slug: String) = preferences.markArticleRead(slug)
 }

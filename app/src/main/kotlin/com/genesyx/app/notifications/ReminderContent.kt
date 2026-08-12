@@ -36,5 +36,14 @@ object ReminderContent {
             title = "Still here whenever you are",
             body = "No pressure. Your data's exactly where you left it.",
         )
+        // "Predicted", always — the window is arithmetic from her settings, never a promise.
+        ReminderKind.FERTILE_WINDOW -> Copy(
+            title = "Fertile window ahead",
+            body = "Your predicted fertile window starts today. See your calendar for the days.",
+        )
+        ReminderKind.NEW_ARTICLE -> Copy(
+            title = "New this week",
+            body = "A new short read is ready in Learn, whenever suits.",
+        )
     }
 }

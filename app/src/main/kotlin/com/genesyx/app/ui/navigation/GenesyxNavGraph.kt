@@ -8,6 +8,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
+import com.genesyx.app.core.FeatureFlags
 import com.genesyx.app.ui.clients.ClientsScreen
 import com.genesyx.app.ui.history.LogHistoryScreen
 import com.genesyx.app.ui.home.HomeScreen
@@ -111,6 +112,14 @@ fun GenesyxNavGraph(
         // ── Secondary / modal destinations
         composable(
             Screen.Log.route,
+            // Optional: an ISO date to edit a past day (Track calendar). Absent = today.
+            arguments = listOf(
+                navArgument(Screen.Log.ARG_DATE) {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                },
+            ),
             deepLinks = listOf(navDeepLink { uriPattern = "genesyx://log" }),
         ) {
             LogScreen(onClose = { navController.popBackStack() })
@@ -134,7 +143,6 @@ fun GenesyxNavGraph(
             deepLinks = listOf(navDeepLink { uriPattern = "genesyx://tracker/ph" }),
         ) {
             PhDetailScreen(
-                onBack = { navController.popBackStack() },
                 onOpenPlan = { navController.navigate(Screen.NutritionDetail.route) },
             )
         }
@@ -144,14 +152,14 @@ fun GenesyxNavGraph(
         composable(Screen.SymptomsDetail.route) {
             SymptomsDetailScreen(
                 onBack = { navController.popBackStack() },
-                onEditToday = { navController.navigate(Screen.Log.route) },
+                onEditToday = { navController.navigate(Screen.Log.create()) },
                 onOpenHistory = { navController.navigate(Screen.LogHistory.route) },
             )
         }
         composable(Screen.NutritionDetail.route) {
             NutritionDetailScreen(
                 onBack = { navController.popBackStack() },
-                onLog = { navController.navigate(Screen.Log.route) },
+                onLog = { navController.navigate(Screen.Log.create()) },
             )
         }
         composable(Screen.LogHistory.route) {
@@ -165,7 +173,11 @@ fun GenesyxNavGraph(
         }
 
         // ── Learn
-        composable(Screen.Learn.route) { LearnScreen(navController) }
+        composable(
+            Screen.Learn.route,
+            // The NEW_ARTICLE reminder lands here.
+            deepLinks = listOf(navDeepLink { uriPattern = "genesyx://learn" }),
+        ) { LearnScreen(navController) }
         composable(Screen.LearnSearch.route) { LearnSearchScreen(navController) }
         composable(
             route = Screen.ArticleDetail.route,
@@ -186,26 +198,31 @@ fun GenesyxNavGraph(
             )
         }
 
-        // ── Partner invite deep link: genesyx://invite/{code} + https app link
-        composable(
-            route = Screen.Invite.route,
-            arguments = listOf(navArgument(Screen.Invite.ARG_CODE) { type = NavType.StringType }),
-            deepLinks = listOf(
-                navDeepLink { uriPattern = "genesyx://invite/{code}" },
-                navDeepLink { uriPattern = "https://genesis-cycle-guide.lovable.app/invite/{code}" },
-            ),
-        ) { backStackEntry ->
-            val code = backStackEntry.arguments?.getString(Screen.Invite.ARG_CODE).orEmpty()
-            InviteScreen(
-                code = code,
-                onAccepted = {
-                    navController.navigate(Screen.Home.route) {
-                        popUpTo(Screen.Splash.route) { inclusive = true }
-                    }
-                },
-                onBack = { navController.navigate(Screen.Splash.route) },
-                onSignIn = { navController.navigate(Screen.Auth.route) },
-            )
+        // ── Partner invite deep link: genesyx://invite/{code} + https app link.
+        // Registered only while the feature flag is on — with it off, the destination previously
+        // stayed reachable by deep link and would "link" a placeholder partner. An incoming invite
+        // link with the flag off now just opens the app at its start destination.
+        if (FeatureFlags.PARTNER_INVITES) {
+            composable(
+                route = Screen.Invite.route,
+                arguments = listOf(navArgument(Screen.Invite.ARG_CODE) { type = NavType.StringType }),
+                deepLinks = listOf(
+                    navDeepLink { uriPattern = "genesyx://invite/{code}" },
+                    navDeepLink { uriPattern = "https://genesis-cycle-guide.lovable.app/invite/{code}" },
+                ),
+            ) { backStackEntry ->
+                val code = backStackEntry.arguments?.getString(Screen.Invite.ARG_CODE).orEmpty()
+                InviteScreen(
+                    code = code,
+                    onAccepted = {
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(Screen.Splash.route) { inclusive = true }
+                        }
+                    },
+                    onBack = { navController.navigate(Screen.Splash.route) },
+                    onSignIn = { navController.navigate(Screen.Auth.route) },
+                )
+            }
         }
     }
 }

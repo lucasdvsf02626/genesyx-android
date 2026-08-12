@@ -4,6 +4,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import com.genesyx.app.data.local.datastore.GenesyxPreferencesDataStore
+import com.genesyx.app.domain.hydration.HydrationFormat
 import com.genesyx.app.domain.streaks.StreakEngine
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -72,5 +73,44 @@ class PreferencesRepositoryTest {
         advanceUntilIdle()
 
         assertEquals(3200, store.awaitGoalChange())
+    }
+
+    // Same single-writer clamp discipline for the glass size — a zero glass would make the
+    // quick-add buttons silent no-ops with nothing on screen to explain why.
+
+    private suspend fun GenesyxPreferencesDataStore.awaitGlassChange(): Int =
+        hydrationGlassMl.first { it != HydrationFormat.DEFAULT_GLASS_ML }
+
+    @Test
+    fun `a glass below the floor is clamped`() = runTest {
+        val store = newStore()
+        val repo = PreferencesRepository(store, backgroundScope)
+
+        repo.setHydrationGlassMl(0)
+        advanceUntilIdle()
+
+        assertEquals(HydrationFormat.GLASS_RANGE_ML.first, store.awaitGlassChange())
+    }
+
+    @Test
+    fun `a glass above the ceiling is clamped`() = runTest {
+        val store = newStore()
+        val repo = PreferencesRepository(store, backgroundScope)
+
+        repo.setHydrationGlassMl(5_000)
+        advanceUntilIdle()
+
+        assertEquals(HydrationFormat.GLASS_RANGE_ML.last, store.awaitGlassChange())
+    }
+
+    @Test
+    fun `a glass in range is stored as she set it`() = runTest {
+        val store = newStore()
+        val repo = PreferencesRepository(store, backgroundScope)
+
+        repo.setHydrationGlassMl(330)
+        advanceUntilIdle()
+
+        assertEquals(330, store.awaitGlassChange())
     }
 }

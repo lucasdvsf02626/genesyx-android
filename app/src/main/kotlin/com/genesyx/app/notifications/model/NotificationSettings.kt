@@ -45,12 +45,15 @@ data class NotificationSettings(
     fun isEnabled(kind: ReminderKind): Boolean = masterEnabled && kind in enabledKinds
 
     companion object {
-        /** Reminders on by default the first time she grants permission. Wellness nudges stay opt-in. */
+        /** Reminders on by default the first time she grants permission. Wellness nudges stay opt-in.
+         *  FERTILE_WINDOW is default-on for fresh grants — it is the core tracking signal — but a
+         *  user with a saved kind set keeps it off until she opts in from the settings screen. */
         val DEFAULT_ENABLED: Set<ReminderKind> = setOf(
             ReminderKind.DAILY_LOG,
             ReminderKind.MISSED_LOG,
             ReminderKind.WEEKLY_INSIGHTS,
             ReminderKind.REENGAGEMENT,
+            ReminderKind.FERTILE_WINDOW,
         )
 
         /** The global daily ceiling, across all channels ([ReminderKind.REENGAGEMENT] excepted). */

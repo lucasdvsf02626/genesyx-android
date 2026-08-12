@@ -48,9 +48,39 @@ class DayMarkersTest {
     }
 
     @Test
-    fun `feelings fields collapse into the single log marker`() {
-        val log = DailyLog(mood = Mood.GOOD, energy = EnergyLevel.HIGH, symptoms = setOf("cramps"))
+    fun `mood and energy collapse into the single log marker`() {
+        val log = DailyLog(mood = Mood.GOOD, energy = EnergyLevel.HIGH)
         assertEquals(listOf(DayMarker.LOG), DayMarkers.forDay(day(log = log)))
+    }
+
+    @Test
+    fun `symptoms earn their own marker, not the log one`() {
+        assertEquals(
+            listOf(DayMarker.SYMPTOMS),
+            DayMarkers.forDay(day(log = DailyLog(symptoms = setOf("cramps")))),
+        )
+    }
+
+    @Test
+    fun `a note alone earns the symptoms marker`() {
+        assertEquals(
+            listOf(DayMarker.SYMPTOMS),
+            DayMarkers.forDay(day(log = DailyLog(notes = "remember this"))),
+        )
+    }
+
+    @Test
+    fun `intimacy earns its own marker`() {
+        assertEquals(
+            listOf(DayMarker.ACTIVITY),
+            DayMarkers.forDay(day(log = DailyLog(sexualActivity = true))),
+        )
+    }
+
+    @Test
+    fun `intimacy recorded as false or not recorded earns no marker`() {
+        assertEquals(emptyList<DayMarker>(), DayMarkers.forDay(day(log = DailyLog(sexualActivity = false))))
+        assertEquals(emptyList<DayMarker>(), DayMarkers.forDay(day(log = DailyLog(sexualActivity = null))))
     }
 
     @Test
@@ -95,8 +125,10 @@ class DayMarkersTest {
         val log = DailyLog(
             mood = Mood.GREAT, energy = EnergyLevel.HIGH, symptoms = setOf("a", "b"),
             sleepMinutes = 400, supplements = setOf("Zinc"), notes = "note", waterMl = 2000,
+            sexualActivity = true,
         )
         val markers = DayMarkers.forDay(day(log = log, ph = listOf(reading(), reading())))
-        assertEquals("A cell can render at most four dots legibly", 4, markers.size)
+        // The cell renders dots in rows of three, so six is the ceiling the grid was sized for.
+        assertEquals("A cell can render at most six dots (two rows of three)", 6, markers.size)
     }
 }

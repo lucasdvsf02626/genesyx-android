@@ -70,6 +70,8 @@ class WorkManagerReminderScheduler @Inject constructor(
             ReminderKind.HYDRATION,
             ReminderKind.WEEKLY_INSIGHTS,
             ReminderKind.REENGAGEMENT,
+            ReminderKind.FERTILE_WINDOW,
+            ReminderKind.NEW_ARTICLE,
         )
     }
 }

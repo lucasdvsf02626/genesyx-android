@@ -20,6 +20,9 @@ import com.genesyx.app.domain.hydration.HydrationUnit
 import com.genesyx.app.domain.model.CycleSettings
 import com.genesyx.app.domain.model.PhMeasurement
 import com.genesyx.app.domain.model.PhReading
+import com.genesyx.app.domain.content.LearnDrip
+import com.genesyx.app.domain.model.isMeaningful
+import com.genesyx.app.domain.streaks.Milestone
 import com.genesyx.app.domain.streaks.StreakEngine
 import com.genesyx.app.domain.streaks.StreakState
 import com.genesyx.app.domain.time.WeekBuckets
@@ -67,6 +70,13 @@ data class HomeUiState(
     /** True when that latest reading is a pre-migration urine reading, so the card marks it legacy. */
     val phLatestIsLegacy: Boolean = false,
     val streakDays: Int? = null,
+    /** Earned-but-uncelebrated milestones — non-empty pops the one-shot celebration dialog. */
+    val newMilestones: Set<Milestone> = emptySet(),
+    /** Yesterday, when logging it would reconnect a just-broken streak; null otherwise. */
+    val restoreDate: LocalDate? = null,
+    // "New article this week" card — null until a drip article she hasn't seen the card for exists.
+    val newArticleSlug: String? = null,
+    val newArticleTitle: String? = null,
     val isLoading: Boolean = false,
 )
 
@@ -77,8 +87,16 @@ class HomeViewModel @Inject constructor(
     private val sessionRepository: SessionRepository,
     private val preferencesRepository: PreferencesRepository,
     private val phRepository: PhRepository,
-    streakRepository: StreakRepository,
+    private val streakRepository: StreakRepository,
 ) : ViewModel() {
+
+    /** The non-streak, non-log inputs, paired up because combine is only typed to five flows. */
+    private data class SessionAndLearn(
+        val displayName: String?,
+        val signedIn: Boolean,
+        val firstOpenEpochDay: Long?,
+        val lastSeenArticleSlug: String?,
+    )
 
     // Paired rather than passed as separate flows: combine is only typed up to five.
     private val streaksWithGoal =
@@ -88,7 +106,12 @@ class HomeViewModel @Inject constructor(
             preferencesRepository.hydrationUnit,
         ) { streaks, goalMl, unit -> Triple(streaks, goalMl, unit) }
     private val sessionInfo =
-        combine(sessionRepository.displayName, sessionRepository.isSignedIn) { name, signed -> name to signed }
+        combine(
+            sessionRepository.displayName,
+            sessionRepository.isSignedIn,
+            preferencesRepository.firstOpenEpochDay,
+            preferencesRepository.lastSeenArticleSlug,
+        ) { name, signed, firstOpen, lastSeen -> SessionAndLearn(name, signed, firstOpen, lastSeen) }
 
     val uiState: StateFlow<HomeUiState> =
         combine(
@@ -97,16 +120,20 @@ class HomeViewModel @Inject constructor(
             sessionInfo,
             streaksWithGoal,
             phRepository.readings,
-        ) { settings, logs, (displayName, signedIn), (streaks, goalMl, unit), readings ->
-            buildState(settings, logs, displayName, signedIn, streaks, goalMl, unit, readings)
+        ) { settings, logs, session, (streaks, goalMl, unit), readings ->
+            buildState(settings, logs, session, streaks, goalMl, unit, readings)
         }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
             initialValue = buildState(
                 cycleRepository.settings.value,
                 dailyLogRepository.logByDate.value,
-                sessionRepository.displayName.value,
-                sessionRepository.isSignedIn.value,
+                SessionAndLearn(
+                    sessionRepository.displayName.value,
+                    sessionRepository.isSignedIn.value,
+                    preferencesRepository.firstOpenEpochDay.value,
+                    preferencesRepository.lastSeenArticleSlug.value,
+                ),
                 streakRepository.state.value,
                 preferencesRepository.hydrationGoalMl.value,
                 preferencesRepository.hydrationUnit.value,
@@ -116,11 +143,19 @@ class HomeViewModel @Inject constructor(
 
     fun saveCycleSettings(settings: CycleSettings) = cycleRepository.upsert(settings)
 
+    /**
+     * Marks every currently-earned milestone celebrated (per [StreakRepository.markCelebrated]'s
+     * contract: dropping below a threshold and climbing back re-fires it).
+     */
+    fun celebrateMilestones() = streakRepository.markCelebrated(streakRepository.state.value.earned)
+
+    /** The "new article" card was acted on — don't show it again for this slug. */
+    fun markArticleSeen(slug: String) = preferencesRepository.setLastSeenArticleSlug(slug)
+
     private fun buildState(
         settings: CycleSettings?,
         logs: Map<LocalDate, com.genesyx.app.domain.model.DailyLog>,
-        displayName: String?,
-        signedIn: Boolean,
+        session: SessionAndLearn,
         streaks: StreakState,
         goalMl: Int,
         unit: HydrationUnit,
@@ -131,9 +166,20 @@ class HomeViewModel @Inject constructor(
         val coaching = HydrationCoach.coach(waterMl, goalMl, LocalTime.now(), unit)
         val weekOnGoal = WeekBuckets.weekDays(today).map { (logs[it]?.waterMl ?: 0) >= goalMl }
 
+        // A streak broken by exactly yesterday is restorable: filling yesterday reconnects the run
+        // (the engine just recomputes). Any older gap is history, not a prompt.
+        fun active(d: LocalDate) =
+            logs[d]?.isMeaningful() == true || readings.any { it.recordedAt.toLocalDate() == d }
+        val restoreDate = today.minusDays(1)
+            .takeIf { yesterday -> !active(yesterday) && active(today.minusDays(2)) }
+
+        // Only a drip article (week ≥ 1) is ever "new" — the ten launch articles never trigger this.
+        val newArticle = LearnDrip.newestDripArticle(today, session.firstOpenEpochDay)
+            ?.takeIf { it.slug != session.lastSeenArticleSlug }
+
         val base = HomeUiState(
-            userName = displayName ?: "Guest",
-            signedIn = signedIn,
+            userName = session.displayName ?: "Guest",
+            signedIn = session.signedIn,
             greeting = greetingFor(LocalTime.now()),
             settings = settings,
             hydrationMl = if (waterMl > 0) waterMl else null,
@@ -150,6 +196,10 @@ class HomeViewModel @Inject constructor(
             // Any logged activity, not water alone — the card is labelled "Streak", so it has to
             // count everything she tracks, and it must not reset at midnight.
             streakDays = streaks.dailyActivity,
+            newMilestones = streaks.newMilestones,
+            restoreDate = restoreDate,
+            newArticleSlug = newArticle?.slug,
+            newArticleTitle = newArticle?.title,
         )
         if (settings == null) return base
 

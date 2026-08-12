@@ -18,6 +18,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.genesyx.app.domain.ph.PhCopy
 import com.genesyx.app.domain.ph.PhStatus
 import com.genesyx.app.ui.components.CitationList
+import com.genesyx.app.ui.components.ExpandableInfo
 import com.genesyx.app.ui.insights.PhInsightLogic
 import com.genesyx.app.ui.ph.PhTrackerSection
 import com.genesyx.app.ui.ph.PhTrackerViewModel
@@ -33,16 +34,16 @@ import com.genesyx.app.ui.ph.PhTrackerViewModel
  */
 @Composable
 fun PhDetailScreen(
-    onBack: () -> Unit,
     onOpenPlan: () -> Unit,
     viewModel: PhTrackerViewModel = hiltViewModel(),
 ) {
     val readings by viewModel.readings.collectAsState()
     val status: PhStatus? = remember(readings) { PhInsightLogic.compute(readings).currentStatus }
 
-    TrackerDetailScaffold(title = "Vaginal pH", onBack = onBack) {
+    // A bottom tab since 12 Aug 2026: no back arrow — the bar is the way out.
+    TrackerDetailScaffold(title = "Vaginal pH", onBack = null) {
         Spacer(Modifier.height(8.dp))
-        PhTrackerSection(viewModel = viewModel)
+        PhTrackerSection(viewModel = viewModel, showHistory = true)
 
         Spacer(Modifier.height(16.dp))
         InfoSection(PhCopy.WHY_TITLE, PhCopy.WHY_BODY)
@@ -80,13 +81,10 @@ fun PhDetailScreen(
             modifier = Modifier.padding(horizontal = 4.dp),
         )
 
-        Spacer(Modifier.height(16.dp))
-        Text(
-            PhCopy.DISCLAIMER,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 4.dp),
-        )
+        Spacer(Modifier.height(12.dp))
+        // The disclaimer stays one tap away rather than owning the page — the body string is
+        // PhCopy.DISCLAIMER verbatim, so its pinned copy tests are untouched.
+        ExpandableInfo(label = "About this tracker", body = PhCopy.DISCLAIMER)
         Spacer(Modifier.height(32.dp))
     }
 }

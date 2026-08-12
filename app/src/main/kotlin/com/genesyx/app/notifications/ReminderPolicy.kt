@@ -16,6 +16,8 @@ object ReminderPolicy {
     /** Fixed clock positions for kinds without their own time picker in v1.1. */
     val MISSED_LOG_TIME: LocalTime = LocalTime.of(9, 0)
     val REENGAGEMENT_CHECK_TIME: LocalTime = LocalTime.of(18, 0)
+    val FERTILE_WINDOW_TIME: LocalTime = LocalTime.of(9, 0)
+    val NEW_ARTICLE_TIME: LocalTime = LocalTime.of(10, 0)
 
     private const val REENGAGEMENT_MIN_AWAY_DAYS = 3L
     private const val REENGAGEMENT_INTERVAL_DAYS = 7L
@@ -35,6 +37,10 @@ object ReminderPolicy {
         val logsInLast7Days: Int,
         val hasCycleSettings: Boolean,
         val daysSinceLastOpen: Long?,
+        /** Today is the first day of the predicted fertile window (from CycleEngine). */
+        val fertileWindowStartsToday: Boolean = false,
+        /** A weekly drip article is revealed today (from LearnDrip.releasedOn). */
+        val newArticleReleasedToday: Boolean = false,
     )
 
     /**
@@ -52,6 +58,13 @@ object ReminderPolicy {
         ReminderKind.HYDRATION -> nextAt(now, settings.hydrationTime, ALL_DAYS)
         ReminderKind.MISSED_LOG -> nextAt(now, MISSED_LOG_TIME, ALL_DAYS)
         ReminderKind.REENGAGEMENT -> nextAt(now, REENGAGEMENT_CHECK_TIME, ALL_DAYS)
+        // A daily morning check, gated in kindGate to the window's first day — the cheap shape all
+        // the other conditional kinds use, rather than trying to schedule a date a month out that
+        // shifts every time cycle settings change.
+        ReminderKind.FERTILE_WINDOW -> nextAt(now, FERTILE_WINDOW_TIME, ALL_DAYS)
+        // Same daily-check shape as FERTILE_WINDOW: the reveal day depends on the user's first
+        // open, so the gate decides, not the schedule.
+        ReminderKind.NEW_ARTICLE -> nextAt(now, NEW_ARTICLE_TIME, ALL_DAYS)
         // Phase-transition scheduling is reserved for a later version; never schedule it here.
         ReminderKind.NUTRITION -> nextAt(now, settings.hydrationTime, ALL_DAYS)
     }
@@ -140,6 +153,14 @@ object ReminderPolicy {
         }
 
         ReminderKind.HYDRATION -> true
+
+        // Fires at most once per cycle by construction: the daily check only passes on the
+        // window's first day. Wording stays "predicted" end to end — this is arithmetic, not fact.
+        ReminderKind.FERTILE_WINDOW -> ctx.hasCycleSettings && ctx.fertileWindowStartsToday
+
+        // At most once per drip week by construction — only the reveal day passes. A no-op until
+        // articles with dripWeek ≥ 1 ship.
+        ReminderKind.NEW_ARTICLE -> ctx.newArticleReleasedToday
     }
 
     private fun nextAt(now: ZonedDateTime, time: LocalTime, allowedDays: Set<java.time.DayOfWeek>): ZonedDateTime {

@@ -29,6 +29,12 @@ enum class ReminderKind(
 
     /** The quiet "still here whenever you are" for someone who has been away. */
     REENGAGEMENT(Channels.REENGAGEMENT, "genesyx://home", 6),
+
+    /** A morning heads-up on the first day of the predicted fertile window. */
+    FERTILE_WINDOW(Channels.TRACKING, "genesyx://track", 7),
+
+    /** Opt-in: fires on the day a weekly drip article is revealed. Silent while no drip content exists. */
+    NEW_ARTICLE(Channels.INSIGHTS, "genesyx://learn", 8),
     ;
 
     /** Unique WorkManager work name, so each kind's self-rescheduling chain is independent. */

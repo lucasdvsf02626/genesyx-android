@@ -35,19 +35,28 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.collectAsState
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.genesyx.app.domain.content.LearnDrip
 import com.genesyx.app.domain.content.searchArticles
+import java.time.LocalDate
 import com.genesyx.app.ui.components.GxBackButton
 import com.genesyx.app.ui.navigation.Screen
 import com.genesyx.app.ui.theme.ElectricLavender
 
-/** Client-side search over ten bundled articles. No debounce, no index — it's ten string compares. */
+/** Client-side search over the bundled articles. No debounce, no index — it's a few string
+ *  compares. Searches only what [LearnDrip] has revealed, so an unreleased week can't be found. */
 @Composable
-fun LearnSearchScreen(navController: NavController) {
+fun LearnSearchScreen(
+    navController: NavController,
+    viewModel: LearnViewModel = hiltViewModel(),
+) {
     val colors = MaterialTheme.colorScheme
     var query by rememberSaveable { mutableStateOf("") }
     val focusRequester = remember { FocusRequester() }
-    val results = searchArticles(query)
+    val firstOpen by viewModel.firstOpenEpochDay.collectAsState()
+    val results = searchArticles(query, LearnDrip.available(LocalDate.now(), firstOpen))
 
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
 

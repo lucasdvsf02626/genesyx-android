@@ -24,6 +24,10 @@ interface PhReadingDao {
     @Query("SELECT * FROM ph_readings WHERE syncStatus != 'SYNCED'")
     suspend fun pending(): List<PhReadingEntity>
 
+    /** Live count of unsynced rows — powers the Profile sync-status row. */
+    @Query("SELECT COUNT(*) FROM ph_readings WHERE userId = :userId AND syncStatus != 'SYNCED'")
+    fun observePendingCount(userId: String): Flow<Int>
+
     @Query("UPDATE ph_readings SET syncStatus = :status WHERE id = :id")
     suspend fun setStatus(id: String, status: PhSyncStatus)
 

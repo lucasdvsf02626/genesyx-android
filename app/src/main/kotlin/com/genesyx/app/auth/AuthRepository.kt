@@ -88,6 +88,16 @@ class AuthRepository @Inject constructor(
         return result
     }
 
+    /**
+     * Start an email change via the remote provider. Success means "confirmation email sent" — the
+     * persisted session deliberately keeps the old address until Supabase confirms the new one.
+     */
+    suspend fun changeEmail(currentPassword: String, newEmail: String): DataResult<Unit> {
+        val result = authService.changeEmail(currentPassword, newEmail)
+        if (result is DataResult.Error) logger.e("Auth", "change-email failed", result.throwable)
+        return result
+    }
+
     /** Permanently delete the account remotely (RPC → cascade) then wipe all local data. */
     suspend fun deleteAccount(): DataResult<Unit> =
         when (val result = authService.deleteAccount()) {

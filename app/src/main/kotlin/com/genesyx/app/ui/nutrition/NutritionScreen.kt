@@ -51,13 +51,12 @@ import androidx.navigation.NavController
 import com.genesyx.app.domain.content.PhaseFood
 import com.genesyx.app.domain.hydration.HydrationFormat
 import com.genesyx.app.domain.hydration.HydrationUnit
-import com.genesyx.app.domain.content.learnArticles
+import com.genesyx.app.domain.content.LearnDrip
 import com.genesyx.app.domain.content.supplementPlan
 import com.genesyx.app.ui.components.Eyebrow
 import com.genesyx.app.ui.components.GxPrimaryButton
 import com.genesyx.app.ui.components.HydrationGoalDialog
 import com.genesyx.app.ui.navigation.Screen
-import com.genesyx.app.ui.ph.PhTrackerSection
 import com.genesyx.app.ui.theme.ElectricBlue
 import com.genesyx.app.ui.theme.ElectricLavender
 import com.genesyx.app.ui.theme.ElectricPink
@@ -71,6 +70,7 @@ fun NutritionScreen(
     val state by viewModel.uiState.collectAsState()
     val userSupplements by viewModel.userSupplements.collectAsState()
     val catalogue by viewModel.catalogue.collectAsState()
+    val glassMl by viewModel.glassMl.collectAsState()
     var expandedFood by remember { mutableStateOf<String?>(null) }
     var planOpen by remember { mutableStateOf(false) }
     var goalOpen by remember { mutableStateOf(false) }
@@ -101,30 +101,18 @@ fun NutritionScreen(
                 waterMl = state.waterMl,
                 goalMl = state.waterGoalMl,
                 unit = state.waterUnit,
+                glassMl = glassMl,
                 coaching = state.hydrationCoaching,
                 weeklyStreak = state.weeklyStreak,
                 daysOnGoal = state.daysOnGoal,
-                onAdd = { viewModel.adjustWater(200) },
-                onRemove = { viewModel.adjustWater(-200) },
+                onAdd = { viewModel.adjustWater(glassMl) },
+                onRemove = { viewModel.adjustWater(-glassMl) },
                 onEditGoal = { goalOpen = true },
             )
 
-            if (com.genesyx.app.core.FeatureFlags.PH_TRACKING) {
-                Spacer(Modifier.height(12.dp))
-                PhTrackerSection()
-            }
-
-            if (state.cycleSetUp) {
-                Spacer(Modifier.height(12.dp))
-                FocusFoodsCard(state.foods, expandedFood) { name ->
-                    expandedFood = if (expandedFood == name) null else name
-                }
-
-                Spacer(Modifier.height(12.dp))
-                SupplementPlanCard(onReview = { planOpen = true })
-            }
-
-            // Outside the cycle gate: the user's own supplement list is independent of cycle setup.
+            // Action-first ordering: the things she DOES (log water, keep her supplement list)
+            // come before the things she READS (focus foods, suggested plan, articles).
+            // pH moved out to its own bottom tab (client request, 12 Aug 2026).
             Spacer(Modifier.height(12.dp))
             UserSupplementsCard(
                 supplements = userSupplements,
@@ -139,6 +127,16 @@ fun NutritionScreen(
                 onAdd = { viewModel.addFromCatalogue(it) },
             )
 
+            if (state.cycleSetUp) {
+                Spacer(Modifier.height(12.dp))
+                FocusFoodsCard(state.foods, expandedFood) { name ->
+                    expandedFood = if (expandedFood == name) null else name
+                }
+
+                Spacer(Modifier.height(12.dp))
+                SupplementPlanCard(onReview = { planOpen = true })
+            }
+
             // Outside the cycle gate: Learn is most useful to someone who hasn't set up a cycle yet.
             Spacer(Modifier.height(16.dp))
             ArticlesSection(
@@ -151,11 +149,13 @@ fun NutritionScreen(
     }
 
     if (goalOpen) {
-        // The shared dialog — one goal editor (and one ml/cups toggle) app-wide, not a local copy.
+        // The shared dialog — one goal editor (and one ml/cups + glass-size toggle) app-wide.
         HydrationGoalDialog(
             current = state.waterGoalMl,
             unit = state.waterUnit,
+            glassMl = glassMl,
             onUnitChange = { viewModel.setWaterUnit(it) },
+            onGlassChange = { viewModel.setGlassMl(it) },
             onDismiss = { goalOpen = false },
             onSave = { viewModel.setWaterGoal(it); goalOpen = false },
         )
@@ -197,6 +197,7 @@ private fun HydrationCard(
     waterMl: Int,
     goalMl: Int,
     unit: HydrationUnit,
+    glassMl: Int,
     coaching: String,
     weeklyStreak: Int,
     daysOnGoal: Int,
@@ -228,9 +229,9 @@ private fun HydrationCard(
                     }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    StepperButton(Icons.Filled.Remove, "Remove 200ml", colors.surfaceVariant, colors.onSurface, onRemove)
+                    StepperButton(Icons.Filled.Remove, "Remove a glass (${glassMl}ml)", colors.surfaceVariant, colors.onSurface, onRemove)
                     Spacer(Modifier.size(8.dp))
-                    StepperButton(Icons.Filled.Add, "Add 200ml", ElectricLavender, Color.White, onAdd)
+                    StepperButton(Icons.Filled.Add, "Add a glass (${glassMl}ml)", ElectricLavender, Color.White, onAdd)
                 }
             }
             Spacer(Modifier.height(16.dp))
@@ -268,17 +269,17 @@ private fun HydrationCard(
                 Spacer(Modifier.height(4.dp))
                 Text(coaching, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant.copy(alpha = 0.8f))
             }
-            if (daysOnGoal >= 1) {
-                Text(
-                    if (daysOnGoal == 1) "1 day on goal this week" else "$daysOnGoal days on goal this week",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = colors.onSurfaceVariant.copy(alpha = 0.7f),
-                )
+            // One compact stats line, not a paragraph of faded text — the card is for acting on.
+            val stats = buildList {
+                if (daysOnGoal == 1) add("1 day on goal this week")
+                if (daysOnGoal > 1) add("$daysOnGoal days on goal this week")
+                if (weeklyStreak == 1) add("1 steady week")
+                if (weeklyStreak > 1) add("$weeklyStreak steady weeks")
             }
-            if (weeklyStreak >= 1) {
+            if (stats.isNotEmpty()) {
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    if (weeklyStreak == 1) "1 steady week" else "$weeklyStreak steady weeks",
+                    stats.joinToString(" · "),
                     style = MaterialTheme.typography.bodyMedium,
                     color = colors.onSurfaceVariant.copy(alpha = 0.7f),
                 )
@@ -409,11 +410,18 @@ private fun SupplementAvatar(initial: String, index: Int, bordered: Boolean = fa
 
 /** Entry point into the Learn section. Each tile opens its own article; "See all" opens the landing. */
 @Composable
-private fun ArticlesSection(onOpen: (String) -> Unit, onSeeAll: () -> Unit) {
+private fun ArticlesSection(
+    onOpen: (String) -> Unit,
+    onSeeAll: () -> Unit,
+    learnViewModel: com.genesyx.app.ui.learn.LearnViewModel = hiltViewModel(),
+) {
     val colors = MaterialTheme.colorScheme
+    val firstOpen by learnViewModel.firstOpenEpochDay.collectAsState()
     Column {
         Eyebrow("Learn more", color = colors.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp, bottom = 10.dp))
-        learnArticles.forEach { a ->
+        // A taster, not the library — all ten rows made the tab scroll forever. Learn is one tap
+        // away. Same LearnDrip gate as every other article surface.
+        LearnDrip.available(java.time.LocalDate.now(), firstOpen).take(3).forEach { a ->
             Row(
                 modifier = Modifier
                     .fillMaxWidth()

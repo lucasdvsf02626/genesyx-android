@@ -18,6 +18,9 @@ import javax.inject.Singleton
  */
 interface DailyLogSyncScheduler {
     fun schedule()
+
+    /** User-initiated retry ("Sync now"): re-enqueue so a stuck drain's constraint re-evaluates. */
+    fun syncNow()
 }
 
 @Singleton
@@ -25,15 +28,26 @@ class WorkManagerDailyLogSyncScheduler @Inject constructor(
     @ApplicationContext private val context: Context,
 ) : DailyLogSyncScheduler {
     override fun schedule() {
+        // KEEP: a queued drain already covers every PENDING row — don't stack duplicates.
+        enqueue(ExistingWorkPolicy.KEEP)
+    }
+
+    override fun syncNow() {
+        // REPLACE: a request queued behind a mis-evaluated network constraint (captive portal,
+        // failed validation) waits forever under KEEP. Replacing is safe — the drain is idempotent,
+        // it just re-pushes whatever is still PENDING.
+        enqueue(ExistingWorkPolicy.REPLACE)
+    }
+
+    private fun enqueue(policy: ExistingWorkPolicy) {
         val request = OneTimeWorkRequestBuilder<DailyLogSyncWorker>()
             .setConstraints(
                 Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build(),
             )
             .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
             .build()
-        // KEEP: a queued drain already covers every PENDING row — don't stack duplicates.
         WorkManager.getInstance(context)
-            .enqueueUniqueWork(WORK_NAME, ExistingWorkPolicy.KEEP, request)
+            .enqueueUniqueWork(WORK_NAME, policy, request)
     }
 
     private companion object {

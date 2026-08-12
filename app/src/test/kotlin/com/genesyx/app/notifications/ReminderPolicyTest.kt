@@ -30,6 +30,8 @@ class ReminderPolicyTest {
         logs7: Int = 5,
         cycle: Boolean = true,
         awayDays: Long? = 0,
+        fertileStart: Boolean = false,
+        newArticle: Boolean = false,
     ) = ReminderPolicy.PostContext(
         signedIn = signedIn,
         notificationsEnabledAtOs = enabled,
@@ -40,6 +42,8 @@ class ReminderPolicyTest {
         logsInLast7Days = logs7,
         hasCycleSettings = cycle,
         daysSinceLastOpen = awayDays,
+        fertileWindowStartsToday = fertileStart,
+        newArticleReleasedToday = newArticle,
     )
 
     // ── nextOccurrence ────────────────────────────────────────────────────────
@@ -191,5 +195,64 @@ class ReminderPolicyTest {
             postedCounterEpochDay = now.toLocalDate().minusDays(1).toEpochDay(),
         )
         assertTrue(ReminderPolicy.shouldPost(ReminderKind.DAILY_LOG, now, stale, ctx()))
+    }
+
+    // ── Fertile window ────────────────────────────────────────────────────────
+
+    @Test
+    fun `fertile window posts only on the window's first day`() {
+        val now = at(2026, 6, 15, 9, 0)
+        assertTrue(ReminderPolicy.shouldPost(ReminderKind.FERTILE_WINDOW, now, settings, ctx(fertileStart = true)))
+        assertFalse(ReminderPolicy.shouldPost(ReminderKind.FERTILE_WINDOW, now, settings, ctx(fertileStart = false)))
+    }
+
+    @Test
+    fun `fertile window needs cycle settings`() {
+        // Without settings there is no window to predict — a notification would be a guess.
+        val now = at(2026, 6, 15, 9, 0)
+        assertFalse(
+            ReminderPolicy.shouldPost(ReminderKind.FERTILE_WINDOW, now, settings, ctx(cycle = false, fertileStart = true)),
+        )
+    }
+
+    @Test
+    fun `fertile window respects the daily cap`() {
+        val now = at(2026, 6, 15, 9, 0)
+        val capped = settings.copy(
+            notificationsPostedToday = NotificationSettings.DAILY_CAP,
+            postedCounterEpochDay = now.toLocalDate().toEpochDay(),
+        )
+        assertFalse(ReminderPolicy.shouldPost(ReminderKind.FERTILE_WINDOW, now, capped, ctx(fertileStart = true)))
+    }
+
+    @Test
+    fun `fertile window next occurrence is the fixed morning check`() {
+        val now = at(2026, 6, 15, 10, 0) // past 09:00 → tomorrow
+        val next = ReminderPolicy.nextOccurrence(ReminderKind.FERTILE_WINDOW, settings, now)
+        assertEquals(at(2026, 6, 16, 9, 0), next)
+    }
+
+    // ── New article ───────────────────────────────────────────────────────────
+
+    @Test
+    fun `new article is opt-in — the default kind set keeps it silent`() {
+        // Even on a reveal day, a user who never opted in hears nothing.
+        val now = at(2026, 6, 15, 10, 0)
+        assertFalse(ReminderPolicy.shouldPost(ReminderKind.NEW_ARTICLE, now, settings, ctx(newArticle = true)))
+    }
+
+    @Test
+    fun `new article posts only on a reveal day`() {
+        val now = at(2026, 6, 15, 10, 0)
+        val optedIn = settings.copy(enabledKinds = settings.enabledKinds + ReminderKind.NEW_ARTICLE)
+        assertTrue(ReminderPolicy.shouldPost(ReminderKind.NEW_ARTICLE, now, optedIn, ctx(newArticle = true)))
+        assertFalse(ReminderPolicy.shouldPost(ReminderKind.NEW_ARTICLE, now, optedIn, ctx(newArticle = false)))
+    }
+
+    @Test
+    fun `new article next occurrence is the fixed daily check`() {
+        val now = at(2026, 6, 15, 11, 0) // past 10:00 → tomorrow
+        val next = ReminderPolicy.nextOccurrence(ReminderKind.NEW_ARTICLE, settings, now)
+        assertEquals(at(2026, 6, 16, 10, 0), next)
     }
 }

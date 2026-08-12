@@ -85,6 +85,10 @@ class HydrationDetailViewModel @Inject constructor(
     /** Quick-add / remove. The repository clamps to a non-negative total, so a −200 can't go below 0. */
     fun add(deltaMl: Int) = dailyLogRepository.adjustWater(deltaMl)
 
+    /** Her glass size — the first pair of quick-add buttons pour this much. */
+    val glassMl: StateFlow<Int> = preferencesRepository.hydrationGlassMl
+    fun setGlassMl(ml: Int) = preferencesRepository.setHydrationGlassMl(ml)
+
     /** Manual entry. Coerced to a sane range so a typo can't store a negative or absurd total. */
     fun setWater(ml: Int) = dailyLogRepository.setWater(ml.coerceIn(0, 10_000))
 

@@ -190,12 +190,9 @@ fun PhLogDialog(
                     modifier = Modifier.fillMaxWidth(),
                 )
 
-                Spacer(Modifier.height(12.dp))
-                Text(
-                    PhCopy.DISCLAIMER,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = colors.onSurfaceVariant,
-                )
+                Spacer(Modifier.height(8.dp))
+                // Same disclaimer, one tap away — the dialog is an entry form, not a leaflet.
+                ExpandableInfo(label = "About this tracker", body = PhCopy.DISCLAIMER)
             }
         },
         confirmButton = {

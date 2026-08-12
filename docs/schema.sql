@@ -82,6 +82,7 @@ CREATE TABLE public.daily_logs (
   water_ml       integer     NOT NULL DEFAULT 0,
   supplements    text[]      NOT NULL DEFAULT '{}',
   notes          text,
+  sexual_activity boolean,                          -- NOT YET IN PRODUCTION: apply with the pending pre-code-14 batch (user_supplements/genesyx_products) BEFORE any client that writes it ships. Null = not recorded. Private per-user field (RLS below); never exposed to partner features.
   created_at     timestamptz NOT NULL DEFAULT now(),
   updated_at     timestamptz NOT NULL DEFAULT now(),
   UNIQUE (user_id, date)
@@ -135,7 +136,13 @@ CREATE TABLE public.ph_readings (
   measurement_type text        NOT NULL DEFAULT 'urine' CONSTRAINT ph_measurement_type_check CHECK (measurement_type IN ('urine', 'vaginal')), -- 'urine' (legacy, pre-1.2.x) or 'vaginal'. Apply via the ALTER flagged in CHANGELOG before deploying the client; existing rows are urine.
   created_at       timestamptz NOT NULL DEFAULT now(),
   updated_at       timestamptz NOT NULL DEFAULT now(),
-  deleted_at       timestamptz                            -- soft-delete tombstone: null = live, set = deleted (app writes it; see PhReadingDto). delete_current_user() hard-deletes regardless.
+  deleted_at       timestamptz,                           -- soft-delete tombstone: null = live, set = deleted (app writes it; see PhReadingDto). delete_current_user() hard-deletes regardless.
+  -- Applied to production 2026-07-30, replacing the urine-era `ph_value_range` CHECK (4.5–9.0),
+  -- which was still live post-vaginal-migration and rejected vaginal values below 4.5.
+  CONSTRAINT ph_value_range CHECK (
+    (measurement_type = 'vaginal' AND ph_value >= 3.8 AND ph_value <= 7.0)
+    OR (measurement_type = 'urine' AND ph_value >= 4.5 AND ph_value <= 9.0)
+  )
 );
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.ph_readings TO authenticated;

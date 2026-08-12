@@ -61,6 +61,7 @@ class SupabaseDailyLogRemoteDataSource @Inject constructor(
         supplements = supplements.toSet(),
         notes = notes,
         waterMl = waterMl,
+        sexualActivity = sexualActivity,
     )
 
     private fun DailyLog.toDto(userId: String, date: LocalDate) = DailyLogDto(
@@ -73,5 +74,6 @@ class SupabaseDailyLogRemoteDataSource @Inject constructor(
         waterMl = waterMl,
         supplements = supplements.toList(),
         notes = notes,
+        sexualActivity = sexualActivity,
     )
 }

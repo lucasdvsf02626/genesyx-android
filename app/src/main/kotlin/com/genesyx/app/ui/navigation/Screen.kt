@@ -1,5 +1,7 @@
 package com.genesyx.app.ui.navigation
 
+import java.time.LocalDate
+
 /** All navigable destinations. Mirrors the web app's `flow` + `tab` state machine. */
 sealed class Screen(val route: String) {
     // Onboarding flow
@@ -17,7 +19,12 @@ sealed class Screen(val route: String) {
     data object Profile : Screen("profile")
 
     // Modal / secondary destinations
-    data object Log : Screen("log")
+    data object Log : Screen("log?date={date}") {
+        /** Route for the log editor; omit [date] (or pass today) to log today. */
+        fun create(date: LocalDate? = null) =
+            if (date == null) "log" else "log?date=$date"
+        const val ARG_DATE = "date"
+    }
     data object LogHistory : Screen("log_history")
     data object Pregnancy : Screen("pregnancy")
     data object Auth : Screen("auth")
@@ -48,11 +55,13 @@ sealed class Screen(val route: String) {
 
     companion object {
         /**
-         * Tabs shown in the bottom navigation bar. Six, by product decision — one past the Material 3
-         * recommended maximum of five. Labels are tight at 360dp; check any label change on a small
-         * screen before shipping it.
+         * Tabs shown in the bottom navigation bar. Seven, by product decision (client-requested
+         * dedicated pH tab, 12 Aug 2026) — two past the Material 3 recommended maximum of five.
+         * Labels are tight at 360dp; check any label change on a small screen before shipping it.
+         * pH keeps its `tracker/ph` route so the Home nudge card, Track row and the
+         * `genesyx://tracker/ph` deep link all land on the tab.
          */
-        val bottomTabs by lazy { listOf(Home, Track, Nutrition, Insights, Learn, Profile) }
+        val bottomTabs by lazy { listOf(Home, Track, PhDetail, Nutrition, Insights, Learn, Profile) }
 
         /** Routes where the bottom navigation bar is hidden. */
         val noBottomNavRoutes by lazy {
@@ -71,9 +80,9 @@ sealed class Screen(val route: String) {
             ReminderSettings.route,
             // Tracker details are immersive editors reached from Track; the bar is hidden so back
             // returns to Track (or to Home when deep-linked from a Home summary card).
+            // `PhDetail` is absent: it is promoted to a bottom tab and keeps the bar.
             CycleDetail.route,
             HydrationDetail.route,
-            PhDetail.route,
             SleepDetail.route,
             SymptomsDetail.route,
             NutritionDetail.route,

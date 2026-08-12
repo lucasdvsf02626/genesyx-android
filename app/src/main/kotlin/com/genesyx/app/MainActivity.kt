@@ -19,6 +19,8 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.genesyx.app.data.NotificationSettingsRepository
+import com.genesyx.app.data.PreferencesRepository
+import com.genesyx.app.data.SyncStatusRepository
 import com.genesyx.app.domain.model.ThemeMode
 import com.genesyx.app.notifications.AppForegroundTracker
 import com.genesyx.app.notifications.ReminderScheduler
@@ -38,6 +40,8 @@ class MainActivity : ComponentActivity() {
 
     @Inject lateinit var settingsRepository: NotificationSettingsRepository
     @Inject lateinit var reminderScheduler: ReminderScheduler
+    @Inject lateinit var syncStatusRepository: SyncStatusRepository
+    @Inject lateinit var preferencesRepository: PreferencesRepository
 
     // Hoisted out of setContent so a notification tap arriving while the app is already foregrounded
     // (onNewIntent) can route through the live NavController instead of spawning a second graph.
@@ -101,6 +105,11 @@ class MainActivity : ComponentActivity() {
             settingsRepository.markOpened(LocalDate.now().toEpochDay())
             reminderScheduler.rescheduleAll(settingsRepository.current())
         }
+        // Same self-heal for the sync queues: a drain an OEM task-killer dropped stays PENDING
+        // forever otherwise. No-op when nothing is queued.
+        syncStatusRepository.scheduleDrain()
+        // Anchor for the Learn weekly drip — set once, on the first open ever, then a no-op.
+        preferencesRepository.ensureFirstOpenRecorded(LocalDate.now().toEpochDay())
     }
 
     override fun onStop() {

@@ -19,6 +19,12 @@ object HydrationFormat {
     /** Metric cup. Client-confirmed 28 Jul 2026; iOS must use the same constant. */
     const val CUP_ML = 250
 
+    /** The user's glass — the quick-add pour. An input preference only: the CUPS display unit
+     *  stays the fixed metric cup above, so "2 cups" means the same thing on every device. */
+    const val DEFAULT_GLASS_ML = CUP_ML
+    val GLASS_RANGE_ML = 100..1000
+    const val GLASS_STEP_ML = 50
+
     fun format(ml: Int, unit: HydrationUnit = HydrationUnit.ML): String = when (unit) {
         HydrationUnit.ML -> if (ml < 1000) "${ml}ml" else String.format(Locale.UK, "%.1f L", ml / 1000f)
         HydrationUnit.CUPS -> cups(ml)

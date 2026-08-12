@@ -28,8 +28,10 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.outlined.Science
 import androidx.compose.material.icons.outlined.WaterDrop
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -37,6 +39,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -67,6 +70,7 @@ import com.genesyx.app.domain.hydration.HydrationFormat
 import com.genesyx.app.domain.hydration.HydrationPace
 import com.genesyx.app.domain.model.CycleSettings
 import com.genesyx.app.domain.ph.PhCopy
+import com.genesyx.app.domain.streaks.Milestone
 import com.genesyx.app.ui.components.CycleSettingsDialog
 import com.genesyx.app.ui.components.Eyebrow
 import com.genesyx.app.ui.components.GxPrimaryButton
@@ -105,6 +109,11 @@ fun HomeScreen(
         onOpenHydration = { openTrackerDetail(Screen.HydrationDetail.route) },
         onOpenPh = { openTrackerDetail(Screen.PhDetail.route) },
         onSaveCycle = { viewModel.saveCycleSettings(it) },
+        onCelebrate = { viewModel.celebrateMilestones() },
+        onOpenArticle = { slug ->
+            viewModel.markArticleSeen(slug)
+            navController.navigate(Screen.ArticleDetail.create(slug))
+        },
     )
 }
 
@@ -116,6 +125,8 @@ fun HomeContent(
     onOpenHydration: () -> Unit = {},
     onOpenPh: () -> Unit = {},
     onSaveCycle: (CycleSettings) -> Unit,
+    onCelebrate: () -> Unit = {},
+    onOpenArticle: (String) -> Unit = {},
 ) {
     val colors = MaterialTheme.colorScheme
     var showCycleDialog by remember { mutableStateOf(false) }
@@ -150,6 +161,28 @@ fun HomeContent(
                 Column {
                     Text(state.greeting, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
                     Text(state.userName, style = MaterialTheme.typography.headlineMedium, color = colors.onBackground)
+                    // The streak chip counts ANY logged activity (StreakEngine.dailyActivity), not
+                    // water alone. Hidden below two days — a "1-day streak" congratulates noise.
+                    val streak = state.streakDays ?: 0
+                    if (streak >= 2) {
+                        Spacer(Modifier.height(6.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .clip(CircleShape)
+                                .background(ElectricPink.tintOnWhite(0.12f))
+                                .padding(horizontal = 10.dp, vertical = 4.dp),
+                        ) {
+                            Icon(Icons.Filled.LocalFireDepartment, null, tint = ElectricPink, modifier = Modifier.size(14.dp))
+                            Spacer(Modifier.size(4.dp))
+                            Text(
+                                "$streak-day streak",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = colors.onSurface,
+                                fontWeight = FontWeight.Medium,
+                            )
+                        }
+                    }
                 }
                 Box {
                     Box(
@@ -209,6 +242,12 @@ fun HomeContent(
                 }
             }
 
+            // "Log yesterday to reconnect": shown only while the break is exactly one day old.
+            state.restoreDate?.let { date ->
+                Spacer(Modifier.height(16.dp))
+                RestoreStreakCard(onLog = { onNavigate(Screen.Log.create(date)) })
+            }
+
             Spacer(Modifier.height(24.dp))
 
             if (state.cycleSetUp) {
@@ -231,8 +270,14 @@ fun HomeContent(
                 PhNudgeCard(state.phLatest, state.phLatestIsLegacy, onOpenPh)
             }
 
+            // Weekly-programme card: only a drip article (week ≥ 1) she hasn't seen ever sets these.
+            if (state.newArticleSlug != null && state.newArticleTitle != null) {
+                Spacer(Modifier.height(12.dp))
+                NewArticleCard(title = state.newArticleTitle, onOpen = { onOpenArticle(state.newArticleSlug) })
+            }
+
             Spacer(Modifier.height(20.dp))
-            GxPrimaryButton(text = "Log today", onClick = { onNavigate(Screen.Log.route) }, leadingIcon = Icons.Filled.Add)
+            GxPrimaryButton(text = "Log today", onClick = { onNavigate(Screen.Log.create()) }, leadingIcon = Icons.Filled.Add)
 
             Spacer(Modifier.height(24.dp))
         }
@@ -247,6 +292,112 @@ fun HomeContent(
             onDismiss = { cycleSeed = null; showCycleDialog = false },
             onSave = { onSaveCycle(it); cycleSeed = null; showCycleDialog = false },
         )
+    }
+
+    // One-shot celebration: `newMilestones` only holds earned-but-uncelebrated entries, and
+    // `onCelebrate` marks them all, so the dialog cannot re-fire on the next emission.
+    if (state.newMilestones.isNotEmpty()) {
+        MilestoneDialog(milestones = state.newMilestones, onDismiss = onCelebrate)
+    }
+}
+
+private fun milestoneLabel(milestone: Milestone): String = when (milestone) {
+    Milestone.DAY_7 -> "7 days of hydration in a row"
+    Milestone.DAY_14 -> "14 days of hydration in a row"
+    Milestone.WEEK_1 -> "Your first full week of logging"
+    Milestone.WEEK_4 -> "Four steady weeks of logging"
+}
+
+@Composable
+private fun MilestoneDialog(milestones: Set<Milestone>, onDismiss: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = { Icon(Icons.Filled.LocalFireDepartment, null, tint = ElectricPink) },
+        title = { Text(if (milestones.size == 1) "Milestone reached" else "Milestones reached") },
+        text = {
+            Column {
+                milestones.forEach { m ->
+                    Text(milestoneLabel(m), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                    Spacer(Modifier.height(4.dp))
+                }
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    "Small habits that hold — keep going at your own pace.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.onSurfaceVariant,
+                )
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Keep going") } },
+    )
+}
+
+@Composable
+private fun RestoreStreakCard(onLog: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onLog)
+            .clearAndSetSemantics {
+                contentDescription = "Your streak paused yesterday. Log yesterday to reconnect it. Opens yesterday's log."
+            },
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = colors.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(20.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                Modifier.size(38.dp).clip(RoundedCornerShape(12.dp)).background(ElectricPink.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center,
+            ) { Icon(Icons.Filled.LocalFireDepartment, null, tint = ElectricPink, modifier = Modifier.size(20.dp)) }
+            Spacer(Modifier.size(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text("Your streak paused yesterday", style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+                Text(
+                    "Log yesterday to reconnect it.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.onSurfaceVariant,
+                )
+            }
+            Icon(Icons.Filled.ChevronRight, null, tint = colors.onSurfaceVariant, modifier = Modifier.size(20.dp))
+        }
+    }
+}
+
+@Composable
+private fun NewArticleCard(title: String, onOpen: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onOpen)
+            .clearAndSetSemantics {
+                contentDescription = "New article this week: $title. Opens the article."
+            },
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = colors.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(20.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                Modifier.size(38.dp).clip(RoundedCornerShape(12.dp)).background(ElectricLavender.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center,
+            ) { Icon(Icons.AutoMirrored.Outlined.MenuBook, null, tint = ElectricLavender, modifier = Modifier.size(20.dp)) }
+            Spacer(Modifier.size(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text("New this week", style = MaterialTheme.typography.labelSmall, color = ElectricLavender)
+                Text(title, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+            }
+            Icon(Icons.Filled.ChevronRight, null, tint = colors.onSurfaceVariant, modifier = Modifier.size(20.dp))
+        }
     }
 }
 
