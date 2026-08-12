@@ -8,6 +8,27 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ## [Unreleased] — Single-source-of-truth bug batch (28 Jul device walkthrough)
 
+### Daily digest — 12 Aug 2026
+One session, all committed to `main` as **code-14 source** (not on Play; Play internal still serves
+1.3.0 (11)); unit suite **344 green**, `:app:lintDebug` + `:app:assembleRelease` + `:app:bundleRelease`
+green. In order:
+- **Phase 1 correctness baseline** — every fertility statement carries predicted/estimated;
+  consistency copy built from the engine's own 4-day contract; symptom qualification scoped to the
+  displayed 28-day window; weekly-summary supplement delta gated on real evidence; one sleep night
+  reads as an observation, not an average.
+- **Phase 2 tracking** — `genesyx://tracker/{cycle,sleep,symptoms,nutrition}` deep links; Log
+  Supplements dialog never hides a logged string (`SupplementLogRows`).
+- **Item 7 education** — `LearnDrip` switched to fixed calendar dates (cross-platform contract with
+  iOS); **31 articles** now ported from iOS 1.2.0 (18) (10 launch + 10 guides + 11 dated weekly
+  series, 23 Aug→1 Nov); banned-phrase guard reconciled to iOS's reviewed list (removed bare
+  `diagnos`/`douch`/`treat`/`cure` false-positives — flag for medical reviewer).
+- **Home** — the last block is a persistent "A read for your week".
+- **Track** — calendar matched to the iOS design: 3 markers (pH/symptoms/intimacy) with iOS's exact
+  dot colours, "Fertile window" capsule badge, plain legend labels.
+- **Onboarding** — gender preference options are Girl / Boy / No preference / Prefer not to say
+  (persistence to `quiz_answers` still to do).
+- **No shared-Supabase changes this session** — all client-side; iOS needs no matching change.
+
 ### Changed (12 Aug 2026) — Track calendar matched to the iOS design
 - **Calendar markers reduced from six to iOS's three**: pH ("pH test"), symptoms/notes
   ("Symptoms / notes"), intimacy ("Intimacy") — with iOS's exact dot colours (pH teal-blue
