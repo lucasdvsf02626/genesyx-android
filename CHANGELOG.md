@@ -8,6 +8,24 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ## [Unreleased] — Single-source-of-truth bug batch (28 Jul device walkthrough)
 
+### Added (13 Aug 2026) — Learn hero images wired for all 22 remaining articles
+- **Every Learn article now has a hero photo (32 of 32).** The 22 that were missing art received
+  client-supplied stock, each matched to its topic (pH scale/strips → the pH guides & explainer;
+  cycle-phase dots → the cycle guide; a woman at a wall calendar → fertile window; couple's hands →
+  timing sex; beds → the sleep articles; water → the hydration articles; nut/seed & food flatlays →
+  nutrition/sperm-health; capsules → the supplements explainer; and so on).
+- **Converted to the shipping spec**: each source PNG cropped/scaled to **1080 × 602 JPG** (16:9) in
+  `drawable-nodpi/`, named `learn_hero_<name>`, and wired with one `heroImage = R.drawable.<name>`
+  line per article. The invalid-named source PNGs (hyphenated UUIDs — illegal as Android resource
+  names, would have broken the build) were removed. Payload: ~3 MB for all 32 heroes.
+- Three photos are intentionally shared between sister topics (pH-scale, test-strip, cycle-phase) —
+  noted in `APP_INVENTORY.md` §7 so distinct art can be dropped in later with a one-line repoint.
+- Verified: **`LearnHeroImagesTest` (2 instrumented tests) passes on the emulator** — asserts no
+  article has a null hero and that **every hero drawable decodes to a real 1080 × 602 bitmap** on
+  device (catches a missing/corrupt/wrong-size asset that a compile alone wouldn't); 368 unit tests
+  green; `:app:assembleRelease` green (R8 clean). `APP_INVENTORY.md` §7 updated to "complete (32 of
+  32)".
+
 ### Docs (13 Aug 2026) — Learn hero-image inventory (22 of 32 articles need art)
 - Audited every Learn article for a hero photo: **10 of 32 have art, 22 don't** (they currently fall
   back to a category-keyed brand gradient — the layout is correct, just no photo). Recorded the full

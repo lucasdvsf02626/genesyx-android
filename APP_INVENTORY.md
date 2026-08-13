@@ -286,63 +286,54 @@ instead of weakening that shared contract.
 
 Do not create placeholder articles simply to fill the weekly series; port only reviewed content.
 
-### Hero images — art still needed (22 of 32)
+### Hero images — complete (32 of 32)
 
-Each article has an optional 16:9 hero (`Article.heroImage`, `@DrawableRes`, nullable). When null the
-UI falls back to a **brand gradient keyed to the category**, so the layout is correct and the slot is
-reserved — but the article ships without a photo. **10 of 32 articles have art; the remaining 22 need
-it.**
+Every article has a 16:9 hero (`Article.heroImage`, `@DrawableRes`). The 22 that were missing art were
+supplied and wired on **13 Aug 2026** (client-provided stock, converted to the shipping spec). All
+heroes are **1080 × 602 px JPG in `drawable-nodpi/`**, named `learn_hero_<name>`. The gradient
+fallback (category-keyed) remains in code for any future article added without art.
 
-**Photo spec to provide (match the existing heroes exactly):**
+Verified on-device: `LearnHeroImagesTest` (androidTest) asserts no article has a null hero and that
+**every hero drawable decodes to a real 1080 × 602 bitmap** — so a missing/corrupt/wrong-size asset
+fails CI, not just a screenshot.
 
-| Property | Value |
+The 22 added, with their drawables:
+
+| Article | Drawable |
 |---|---|
-| Dimensions | **1080 × 602 px** (16:9 landscape) |
-| Format | **JPG** |
-| Weight | ~50–150 KB each (all current heroes sit in this range) |
-| Location | `app/src/main/res/drawable-nodpi/` |
-| Naming | `learn_hero_<name>.jpg` (lowercase, snake_case — see the "target filename" column below) |
+| Using the vaginal pH tracker | `learn_hero_guide_ph_tracker` |
+| How the daily log works | `learn_hero_guide_log` |
+| How to log a pH reading | `learn_hero_guide_log_ph` |
+| How your nutrition focus works | `learn_hero_guide_nutrition` |
+| How the Hydration Coach works | `learn_hero_guide_hydration` |
+| Reading your pH trend | `learn_hero_guide_ph_trend` |
+| How your cycle and phases work | `learn_hero_guide_cycle` |
+| How sleep tracking works | `learn_hero_guide_sleep` |
+| How to log how you feel | `learn_hero_guide_symptoms` |
+| Understanding your vaginal pH | `learn_hero_guide_understanding_ph` |
+| Understanding your fertile window | `learn_hero_fertile_window` |
+| What your vaginal pH is actually telling you | `learn_hero_ph_explained` |
+| Eating in the months before conception | `learn_hero_before_conception` |
+| What cervical mucus can tell you | `learn_hero_cervical_mucus` |
+| Hydration and reproductive health | `learn_hero_hydration_repro` |
+| Timing sex when you are trying to conceive | `learn_hero_timing_sex` |
+| Sleep, stress and your cycle | `learn_hero_sleep_stress` |
+| Understanding ovulation tests | `learn_hero_ovulation_tests` |
+| Supporting sperm health | `learn_hero_sperm_health` |
+| Fertility supplements, and what the evidence says | `learn_hero_supplements_evidence` |
+| When to ask for fertility support | `learn_hero_ask_for_support` |
+| The Shettles Method: theory versus evidence | `learn_hero_shettles` |
 
-Once the files are dropped in `drawable-nodpi/` with the names below, wiring is a one-line
-`heroImage = R.drawable.<name>` per article.
+Note: three source photos were deliberately reused across sister topics — the pH-scale image serves
+both "Understanding your vaginal pH" and "What your pH is telling you"; the test-strip image serves
+both the pH-tracker guide and "Understanding ovulation tests"; the cycle-phase image serves both the
+cycle guide and the Shettles piece. If distinct art is preferred for any of these, drop a new JPG and
+repoint the one line.
 
-**Articles without a photo — 10 always-available "guides":**
-
-| # | Title | Category | Target filename |
-|---|---|---|---|
-| 1 | Using the vaginal pH tracker | Guides | `learn_hero_guide_ph_tracker.jpg` |
-| 2 | How the daily log works | Guides | `learn_hero_guide_log.jpg` |
-| 3 | How to log a pH reading | Guides | `learn_hero_guide_log_ph.jpg` |
-| 4 | How your nutrition focus works | Guides | `learn_hero_guide_nutrition.jpg` |
-| 5 | How the Hydration Coach works | Guides | `learn_hero_guide_hydration.jpg` |
-| 6 | Reading your pH trend | Guides | `learn_hero_guide_ph_trend.jpg` |
-| 7 | How your cycle and phases work | Guides | `learn_hero_guide_cycle.jpg` |
-| 8 | How sleep tracking works | Guides | `learn_hero_guide_sleep.jpg` |
-| 9 | How to log how you feel | Guides | `learn_hero_guide_symptoms.jpg` |
-| 10 | Understanding your vaginal pH | Guides | `learn_hero_guide_understanding_ph.jpg` |
-
-**Articles without a photo — 12 dated weekly-series editorials:**
-
-| # | Title | Category | Publishes | Target filename |
-|---|---|---|---|---|
-| 11 | Understanding your fertile window | Tracking | 23 Aug 2026 | `learn_hero_fertile_window.jpg` |
-| 12 | What your vaginal pH is actually telling you | Tracking | 30 Aug 2026 | `learn_hero_ph_explained.jpg` |
-| 13 | Eating in the months before conception | Nutrition | 6 Sep 2026 | `learn_hero_before_conception.jpg` |
-| 14 | What cervical mucus can tell you | Tracking | 13 Sep 2026 | `learn_hero_cervical_mucus.jpg` |
-| 15 | Hydration and reproductive health | Wellness | 20 Sep 2026 | `learn_hero_hydration_repro.jpg` |
-| 16 | Timing sex when you are trying to conceive | Tracking | 27 Sep 2026 | `learn_hero_timing_sex.jpg` |
-| 17 | Sleep, stress and your cycle | Wellness | 4 Oct 2026 | `learn_hero_sleep_stress.jpg` |
-| 18 | Understanding ovulation tests | Tracking | 11 Oct 2026 | `learn_hero_ovulation_tests.jpg` |
-| 19 | Supporting sperm health | Wellness | 18 Oct 2026 | `learn_hero_sperm_health.jpg` |
-| 20 | Fertility supplements, and what the evidence says | Nutrition | 25 Oct 2026 | `learn_hero_supplements_evidence.jpg` |
-| 21 | When to ask for fertility support | Wellness | 1 Nov 2026 | `learn_hero_ask_for_support.jpg` |
-| 22 | The Shettles Method: theory versus evidence | Wellness | 8 Nov 2026 | `learn_hero_shettles.jpg` |
-
-**The 10 articles that already have art** (for reference, no action): Your first week with Genesyx,
-Why logging beats remembering, Symptoms and meals: what's worth writing down, Hydration without the
-eight-glass myth, Eating with your cycle not against it, A gentle guide to supplements, What
-"insights" actually means, Reading your trends without over-reading them, Small habits that hold,
-Using what you learn.
+**The 10 articles that already had art** (unchanged): Your first week with Genesyx, Why logging beats
+remembering, Symptoms and meals: what's worth writing down, Hydration without the eight-glass myth,
+Eating with your cycle not against it, A gentle guide to supplements, What "insights" actually means,
+Reading your trends without over-reading them, Small habits that hold, Using what you learn.
 
 ## 8. Notifications
 

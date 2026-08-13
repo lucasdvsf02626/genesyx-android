@@ -588,6 +588,7 @@ val learnArticles: List<Article> = listOf(
     Article(
         id = "g1",
         slug = "guide-vaginal-ph-tracker",
+        heroImage = R.drawable.learn_hero_guide_ph_tracker,
         title = "Using the vaginal pH tracker",
         excerpt = "How to read a pH strip, match it to a value, and log it so your trend is honest.",
         body = listOf(
@@ -644,6 +645,7 @@ val learnArticles: List<Article> = listOf(
     Article(
         id = "g2",
         slug = "guide-how-the-log-works",
+        heroImage = R.drawable.learn_hero_guide_log,
         title = "How the daily log works",
         excerpt = "What to log, what to skip, and why a boring one-tap entry beats a detailed one you abandon.",
         body = listOf(
@@ -699,6 +701,7 @@ val learnArticles: List<Article> = listOf(
     Article(
         id = "g3",
         slug = "guide-how-to-log-ph",
+        heroImage = R.drawable.learn_hero_guide_log_ph,
         title = "How to log a pH reading",
         excerpt = "The exact taps to record a vaginal pH value, and how to keep your readings comparable.",
         body = listOf(
@@ -752,6 +755,7 @@ val learnArticles: List<Article> = listOf(
     Article(
         id = "g4",
         slug = "guide-nutrition-focus",
+        heroImage = R.drawable.learn_hero_guide_nutrition,
         title = "How your nutrition focus works",
         excerpt = "Why your focus foods change through your cycle, and what to actually do with them.",
         body = listOf(
@@ -806,6 +810,7 @@ val learnArticles: List<Article> = listOf(
     Article(
         id = "g5",
         slug = "guide-how-hydration-works",
+        heroImage = R.drawable.learn_hero_guide_hydration,
         title = "How the Hydration Coach works",
         excerpt = "Why the card changes through the day, and what the streak means.",
         body = listOf(
@@ -860,6 +865,7 @@ val learnArticles: List<Article> = listOf(
         // own tab now and the piece was rewritten around the trend chart, but a slug is a route and
         // a read-history key, so it stays.
         slug = "guide-track-ph-in-nutrition",
+        heroImage = R.drawable.learn_hero_guide_ph_trend,
         title = "Reading your pH trend",
         excerpt = "What the chart, the range selector, and the status colour are actually telling you.",
         body = listOf(
@@ -914,6 +920,7 @@ val learnArticles: List<Article> = listOf(
     Article(
         id = "g7",
         slug = "guide-cycle-and-phases",
+        heroImage = R.drawable.learn_hero_guide_cycle,
         title = "How your cycle and phases work",
         excerpt = "Where the phase names come from, what the app is predicting, and how much to trust it.",
         body = listOf(
@@ -996,6 +1003,7 @@ val learnArticles: List<Article> = listOf(
     Article(
         id = "g8",
         slug = "guide-sleep-tracking",
+        heroImage = R.drawable.learn_hero_guide_sleep,
         title = "How sleep tracking works",
         excerpt = "A duration you enter yourself, what the week's chart adds up to, and what it deliberately doesn't do.",
         body = listOf(
@@ -1061,6 +1069,7 @@ val learnArticles: List<Article> = listOf(
     Article(
         id = "g9",
         slug = "guide-logging-symptoms",
+        heroImage = R.drawable.learn_hero_guide_symptoms,
         title = "How to log how you feel",
         excerpt = "The daily log, what's in it, and what a month of symptoms can show you.",
         body = listOf(
@@ -1135,6 +1144,7 @@ val learnArticles: List<Article> = listOf(
     Article(
         id = "g10",
         slug = "guide-understanding-vaginal-ph",
+        heroImage = R.drawable.learn_hero_guide_understanding_ph,
         title = "Understanding your vaginal pH",
         excerpt = "What vaginal pH is, what a typical healthy range looks like, and how to take a reading you can trust.",
         body = listOf(
@@ -1194,6 +1204,7 @@ val learnArticles: List<Article> = listOf(
     Article(
         id = "w1",
         slug = "fertile-window",
+        heroImage = R.drawable.learn_hero_fertile_window,
         title = "Understanding your fertile window",
         excerpt = "Six days — and the useful end of them comes before the event you are trying to catch.",
         body = listOf(
@@ -1247,6 +1258,7 @@ val learnArticles: List<Article> = listOf(
     Article(
         id = "w2",
         slug = "vaginal-ph-explained",
+        heroImage = R.drawable.learn_hero_ph_explained,
         title = "What your vaginal pH is actually telling you",
         excerpt = "One reading means very little. A pattern across two months means quite a lot.",
         body = listOf(
@@ -1299,6 +1311,7 @@ val learnArticles: List<Article> = listOf(
     Article(
         id = "w3",
         slug = "nutrition-before-conception",
+        heroImage = R.drawable.learn_hero_before_conception,
         title = "Eating in the months before conception",
         excerpt = "The one thing with strong evidence has a deadline, and it lands before most people start looking.",
         body = listOf(
@@ -1351,6 +1364,7 @@ val learnArticles: List<Article> = listOf(
     Article(
         id = "w4",
         slug = "cervical-mucus",
+        heroImage = R.drawable.learn_hero_cervical_mucus,
         title = "What cervical mucus can tell you",
         excerpt = "The one common fertility sign that predicts rather than confirms — and it costs nothing.",
         body = listOf(
@@ -1400,6 +1414,7 @@ val learnArticles: List<Article> = listOf(
     Article(
         id = "w5",
         slug = "hydration-and-reproductive-health",
+        heroImage = R.drawable.learn_hero_hydration_repro,
         title = "Hydration and reproductive health",
         excerpt = "The real effects are smaller than the marketing and larger than nothing.",
         body = listOf(
@@ -1443,6 +1458,7 @@ val learnArticles: List<Article> = listOf(
     Article(
         id = "w6",
         slug = "timing-sex-when-ttc",
+        heroImage = R.drawable.learn_hero_timing_sex,
         title = "Timing sex when you are trying to conceive",
         excerpt = "Every two to three days, throughout. The elaborate schedules do worse.",
         body = listOf(
@@ -1492,6 +1508,7 @@ val learnArticles: List<Article> = listOf(
     Article(
         id = "w7",
         slug = "sleep-stress-and-your-cycle",
+        heroImage = R.drawable.learn_hero_sleep_stress,
         title = "Sleep, stress and your cycle",
         excerpt = "Stress does affect cycles. That is not the same as your cycle being your fault.",
         body = listOf(
@@ -1543,6 +1560,7 @@ val learnArticles: List<Article> = listOf(
     Article(
         id = "w8",
         slug = "understanding-ovulation-tests",
+        heroImage = R.drawable.learn_hero_ovulation_tests,
         title = "Understanding ovulation tests",
         excerpt = "They detect a hormone surge, not an egg — and that distinction explains most of the confusion.",
         body = listOf(
@@ -1588,6 +1606,7 @@ val learnArticles: List<Article> = listOf(
     Article(
         id = "w9",
         slug = "supporting-sperm-health",
+        heroImage = R.drawable.learn_hero_sperm_health,
         title = "Supporting sperm health",
         excerpt = "Half the equation, most of the silence, and a three-month lag on anything you change.",
         body = listOf(
@@ -1640,6 +1659,7 @@ val learnArticles: List<Article> = listOf(
     Article(
         id = "w10",
         slug = "fertility-supplements-explained",
+        heroImage = R.drawable.learn_hero_supplements_evidence,
         title = "Fertility supplements, and what the evidence says",
         excerpt = "Two have real evidence behind them. The rest are priced as though they do.",
         body = listOf(
@@ -1691,6 +1711,7 @@ val learnArticles: List<Article> = listOf(
     Article(
         id = "w11",
         slug = "when-to-ask-for-support",
+        heroImage = R.drawable.learn_hero_ask_for_support,
         title = "When to ask for fertility support",
         excerpt = "There is a threshold, it is earlier than most people think, and waiting past it costs you options.",
         body = listOf(
@@ -1746,6 +1767,7 @@ val learnArticles: List<Article> = listOf(
     Article(
         id = "w12",
         slug = "shettles-method-theory-vs-evidence",
+        heroImage = R.drawable.learn_hero_shettles,
         title = "The Shettles Method: theory versus evidence",
         excerpt = "A popular theory about timing and your baby's sex — and why careful study has not backed it up.",
         body = listOf(
