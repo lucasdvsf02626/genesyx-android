@@ -8,6 +8,23 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ## [Unreleased] — Single-source-of-truth bug batch (28 Jul device walkthrough)
 
+### Added (13 Aug 2026) — Recipe cards (scaffolding, content pending)
+- **New "Recipes for your cycle" section on Nutrition.** Each recipe is an expandable card — accent
+  header band (phase-tinted, matching that phase's focus foods), title, one-line hook, prep time and
+  phase tag — opening to nutrient chips, ingredients, and a numbered method.
+- **Content-driven, empty for now:** the library (`domain/content/RecipeContent.kt`, `recipeContent`)
+  ships empty, so the section shows a graceful **"Cycle-friendly recipes are coming soon"** card until
+  recipes are added — the same pattern as the Genesyx range catalogue. Adding `Recipe` entries there
+  needs no other code change. Recipes are curated local content (no backend, no cross-platform
+  contract), phase-tagged (`recipesFor(phase)` shows that phase's recipes plus always-shown general
+  ones; before a cycle is set up, only general ones appear).
+- Verified: `RecipesSectionTest` — **2 Compose UI tests pass on the emulator** (empty state shows the
+  coming-soon copy; a populated recipe renders its title/hook and reveals ingredient bullets, the
+  numbered method and nutrient chips when expanded, and tapping toggles it); 368 unit tests green;
+  `:app:assembleRelease` green.
+- **Next:** paste recipe content into `recipeContent` (keep the health copy within the banned-phrase
+  guard-rails — no condition names or dosing claims).
+
 ### Changed (13 Aug 2026) — Meal log: tap a meal to edit it
 - A logged meal is now **tappable to edit** (sitting, description, nutrient tags), reusing the same
   dialog pre-filled — closing the gap where meals could only be added or deleted (supplements were

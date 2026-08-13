@@ -53,6 +53,7 @@ import com.genesyx.app.domain.content.PhaseFood
 import com.genesyx.app.domain.hydration.HydrationFormat
 import com.genesyx.app.domain.hydration.HydrationUnit
 import com.genesyx.app.domain.content.LearnDrip
+import com.genesyx.app.domain.content.recipesFor
 import com.genesyx.app.ui.components.ExpandableInfo
 import com.genesyx.app.domain.content.supplementPlan
 import com.genesyx.app.ui.components.Eyebrow
@@ -75,6 +76,7 @@ fun NutritionScreen(
     val catalogue by viewModel.catalogue.collectAsState()
     val glassMl by viewModel.glassMl.collectAsState()
     var expandedFood by remember { mutableStateOf<String?>(null) }
+    var expandedRecipe by remember { mutableStateOf<String?>(null) }
     var planOpen by remember { mutableStateOf(false) }
     var goalOpen by remember { mutableStateOf(false) }
 
@@ -149,6 +151,15 @@ fun NutritionScreen(
                 Spacer(Modifier.height(12.dp))
                 SupplementPlanCard(onReview = { planOpen = true })
             }
+
+            // Recipes: phase-relevant plus always-shown general ones (empty → "coming soon"). Outside
+            // the cycle gate so the section — and its coming-soon note — is visible from day one.
+            Spacer(Modifier.height(16.dp))
+            RecipesSection(
+                recipes = recipesFor(state.phase),
+                expandedId = expandedRecipe,
+                onToggle = { expandedRecipe = if (expandedRecipe == it) null else it },
+            )
 
             // Outside the cycle gate: Learn is most useful to someone who hasn't set up a cycle yet.
             Spacer(Modifier.height(16.dp))
