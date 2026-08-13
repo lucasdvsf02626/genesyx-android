@@ -324,11 +324,11 @@ The 22 added, with their drawables:
 | When to ask for fertility support | `learn_hero_ask_for_support` |
 | The Shettles Method: theory versus evidence | `learn_hero_shettles` |
 
-Note: three source photos were deliberately reused across sister topics — the pH-scale image serves
-both "Understanding your vaginal pH" and "What your pH is telling you"; the test-strip image serves
-both the pH-tracker guide and "Understanding ovulation tests"; the cycle-phase image serves both the
-cycle guide and the Shettles piece. If distinct art is preferred for any of these, drop a new JPG and
-repoint the one line.
+Every article has its own distinct hero — no photo is shared. The three sister topics that initially
+reused a source photo were given dedicated art on 13 Aug (generated to match the pastel style):
+`learn_hero_ph_explained` (pH strip + colour chart), `learn_hero_ovulation_tests` (ovulation test
+sticks), and `learn_hero_shettles` (a neutral notebook + calendar still life, deliberately no
+sex-selection imagery).
 
 **The 10 articles that already had art** (unchanged): Your first week with Genesyx, Why logging beats
 remembering, Symptoms and meals: what's worth writing down, Hydration without the eight-glass myth,

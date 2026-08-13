@@ -8,6 +8,18 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ## [Unreleased] — Single-source-of-truth bug batch (28 Jul device walkthrough)
 
+### Changed (13 Aug 2026) — Distinct art for the 3 previously-shared heroes
+- The three heroes that were shared between sister topics now each have their own image: **What your
+  vaginal pH is telling you** (`learn_hero_ph_explained` — pH strip + colour chart), **Understanding
+  ovulation tests** (`learn_hero_ovulation_tests` — ovulation test sticks), and **The Shettles
+  Method** (`learn_hero_shettles` — a neutral notebook + calendar still life, deliberately no
+  sex-selection imagery). Generated to match the existing pastel-wellness style, cropped to the
+  1080 × 602 spec, replacing the shared files in place (no code change — the article references were
+  already distinct filenames).
+- Every Learn article now has a **unique** hero (verified: the 3 pairs are byte-distinct).
+  `LearnHeroImagesTest` still green on the emulator (all heroes decode at 1080 × 602);
+  `:app:assembleRelease` green. `APP_INVENTORY.md` §7 updated (no shared images).
+
 ### Added (13 Aug 2026) — Learn hero images wired for all 22 remaining articles
 - **Every Learn article now has a hero photo (32 of 32).** The 22 that were missing art received
   client-supplied stock, each matched to its topic (pH scale/strips → the pH guides & explainer;
