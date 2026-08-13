@@ -239,10 +239,12 @@ sample charts in production paths.
 | Consistency | Shared streak engine; four meaningful days make a qualifying week |
 | pH | Vaginal-only; status/latest-two direction and rolling averages |
 | Hydration | Rolling seven days; can appear after one positive water entry |
-| Supplements | Current week; one built-in scored entry can unlock |
+| Supplements (plan) | Current week; adherence vs the fixed 4-item starter plan; one built-in scored entry can unlock |
+| Your supplements this week | Current week; each of her own "Your supplements" (Nutrition) with an N/7-days count + Mon–Sun dot row, matched by name against `daily_logs.supplements`; hidden when she has none. Separate from the plan card, which is unchanged (13 Aug) |
 | Sleep | Current Mon–Sun week; one positive night can unlock |
 | Cycle | Describes current settings, not historical regularity |
 | Symptoms | 28-day display; qualification now uses the same rolling window (12 Aug) |
+| Intimacy (private) | Current week; days she recorded the private `DailyLog.sexualActivity` flag, with a dot row + plain count. Hidden until first recorded, labelled "Private to you", no timing/fertility framing, never shared with any partner feature (13 Aug) |
 | Ovulation | Estimate from current cycle settings |
 | My logs | Full chronological owner history |
 

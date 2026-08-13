@@ -8,6 +8,23 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ## [Unreleased] — Single-source-of-truth bug batch (28 Jul device walkthrough)
 
+### Added (13 Aug 2026) — Insights: your own supplements + a private intimacy card
+- **"Your supplements this week"** — the supplements a user adds herself ("Your supplements" in
+  Nutrition) now surface in Insights, each with an N/7-days count and a Mon–Sun dot row, matched by
+  name against `daily_logs.supplements`. Sits below the existing plan-based adherence card, which is
+  **unchanged** (the owner chose a separate section over folding them into the score). The Log already
+  offered these supplements as toggles (`LogViewModel.customSupplementNames`), so this closes the
+  Insights half. (`UserSupplementInsightLogic`, `a73c280`.)
+- **Private "Intimacy" card** — intimacy was logged (the "Private to you" toggle →
+  `DailyLog.sexualActivity`) but never surfaced afterwards. A private card now shows this week's
+  recorded days (dot row + plain count). It stays **hidden until she has recorded intimacy at least
+  once**, is labelled "Private to you", carries no timing/fertility framing or judgement, and is still
+  never shared with any partner feature. (`IntimacyInsightLogic`, `8474d9f`.)
+- Both are **client-only** — no Supabase schema change, iOS unaffected. Verified:
+  `UserSupplementInsightLogicTest` (4) + `IntimacyInsightLogicTest` (3) green; on-device both cards
+  render with the right day filled after logging (supplement 1/7, intimacy 1/7);
+  `:app:assembleRelease` green. `APP_INVENTORY.md` §6 updated with both.
+
 ### Changed (13 Aug 2026) — Distinct art for the 3 previously-shared heroes
 - The three heroes that were shared between sister topics now each have their own image: **What your
   vaginal pH is telling you** (`learn_hero_ph_explained` — pH strip + colour chart), **Understanding
