@@ -59,6 +59,7 @@ class SupabaseDailyLogRemoteDataSource @Inject constructor(
         symptoms = symptoms.toSet(),
         sleepMinutes = sleepMinutes,
         supplements = supplements.toSet(),
+        foodGroups = foodGroups.toSet(),
         notes = notes,
         waterMl = waterMl,
         sexualActivity = sexualActivity,
@@ -73,6 +74,7 @@ class SupabaseDailyLogRemoteDataSource @Inject constructor(
         sleepMinutes = sleepMinutes,
         waterMl = waterMl,
         supplements = supplements.toList(),
+        foodGroups = foodGroups.toList(),
         notes = notes,
         sexualActivity = sexualActivity,
     )

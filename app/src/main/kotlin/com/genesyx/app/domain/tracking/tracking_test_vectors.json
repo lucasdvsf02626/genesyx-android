@@ -1,6 +1,6 @@
 {
   "spec": "genesyx-tracking-v1",
-  "note": "Cross-platform vectors for the tracking engine. Mirrored verbatim in the iOS repo \u2014 keep free of platform-specific behaviour. Dates are ISO local dates. A log omitting a field means the user left it blank; sleepMinutes present-and-zero is a REAL record (an all-nighter is still logging), which is why the rule is null-vs-not-null, never > 0. 2026-07-13 is a Monday: ISO week 28 is 6-12 Jul, week 29 is 13-19 Jul. cycleCases (added 2026-07-28) pin the cycle phase calculator: dayOfCycle is 1-based, ovulationDay = cycleLength - 14 (fixed 14-day luteal phase), fertileWindow = [ovulationDay - 5, ovulationDay + 1] inclusive, phase = PERIOD while dayOfCycle <= periodLength, OVULATORY only on the ovulation day itself, FOLLICULAR before it, LUTEAL after; daysUntilNextPeriod is 0 on day 1. hydrationAverageCases (added 2026-07-28) pin the rolling hydration average: over the last 7 calendar days ending today, avgOnLoggedDaysMl = (sum of water) / (count of days with water > 0), null when nothing is logged in the window; deltaMlPerDay compares against the same statistic for the 7 days before, null when that window is empty.",
+  "note": "Cross-platform vectors for the tracking engine. NOT a copy of the iOS file and never has been: the iOS repo keeps its own vectors in its own schema, and what the two platforms share is the RULES, not this file. Keep free of platform-specific behaviour, and when a rule moves, move BOTH files in the same change. foodGroups joined the meaningful-log set on 2026-08-13 (H4), on both clients together. Dates are ISO local dates. A log omitting a field means the user left it blank; sleepMinutes present-and-zero is a REAL record (an all-nighter is still logging), which is why the rule is null-vs-not-null, never > 0. 2026-07-13 is a Monday: ISO week 28 is 6-12 Jul, week 29 is 13-19 Jul. cycleCases (added 2026-07-28) pin the cycle phase calculator: dayOfCycle is 1-based, ovulationDay = cycleLength - 14 (fixed 14-day luteal phase), fertileWindow = [ovulationDay - 5, ovulationDay + 1] inclusive, phase = PERIOD while dayOfCycle <= periodLength, OVULATORY only on the ovulation day itself, FOLLICULAR before it, LUTEAL after; daysUntilNextPeriod is 0 on day 1. hydrationAverageCases (added 2026-07-28) pin the rolling hydration average: over the last 7 calendar days ending today, avgOnLoggedDaysMl = (sum of water) / (count of days with water > 0), null when nothing is logged in the window; deltaMlPerDay compares against the same statistic for the 7 days before, null when that window is empty.",
   "config": {
     "goalMl": 2400,
     "minWeekDays": 4
@@ -409,6 +409,50 @@
         "dailyHydration": 0,
         "weeklyStreak": 0,
         "daysLoggedThisWeek": 1,
+        "daysOnGoal": 0
+      }
+    },
+    {
+      "name": "a day she only ticked her meals on is a meaningful log",
+      "today": "2026-07-13",
+      "logs": [
+        {
+          "date": "2026-07-12",
+          "foodGroups": ["vegetables"]
+        },
+        {
+          "date": "2026-07-13",
+          "foodGroups": ["protein", "fruit"]
+        }
+      ],
+      "phDates": [],
+      "expected": {
+        "dailyActivity": 2,
+        "dailyHydration": 0,
+        "weeklyStreak": 0,
+        "daysLoggedThisWeek": 1,
+        "daysOnGoal": 0
+      }
+    },
+    {
+      "name": "an empty food-group list is not a log",
+      "today": "2026-07-13",
+      "logs": [
+        {
+          "date": "2026-07-12",
+          "mood": "GOOD"
+        },
+        {
+          "date": "2026-07-13",
+          "foodGroups": []
+        }
+      ],
+      "phDates": [],
+      "expected": {
+        "dailyActivity": 1,
+        "dailyHydration": 0,
+        "weeklyStreak": 0,
+        "daysLoggedThisWeek": 0,
         "daysOnGoal": 0
       }
     }

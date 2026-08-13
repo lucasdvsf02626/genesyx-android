@@ -37,7 +37,7 @@ import com.genesyx.app.data.local.entity.UserSupplementEntity
         UserSupplementEntity::class,
         MealEntryEntity::class,
     ],
-    version = 8,
+    version = 9,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)

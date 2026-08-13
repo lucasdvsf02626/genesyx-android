@@ -143,6 +143,9 @@ private fun LogForm(initial: DailyLog, onClose: () -> Unit, viewModel: LogViewMo
         symptoms = symptoms,
         sleepMinutes = sleepMinutes,
         supplements = supplements,
+        // Carried through untouched, like water: this form cannot edit food groups (iOS logs them),
+        // and rebuilding the log without them would delete them from the shared row on every save.
+        foodGroups = initial.foodGroups,
         notes = notes.ifBlank { null },
         waterMl = initial.waterMl,
         sexualActivity = intimacy,

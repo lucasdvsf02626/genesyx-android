@@ -305,8 +305,10 @@ fun HomeContent(
 }
 
 private fun milestoneLabel(milestone: Milestone): String = when (milestone) {
-    Milestone.DAY_7 -> "7 days of hydration in a row"
-    Milestone.DAY_14 -> "14 days of hydration in a row"
+    // Not "of hydration": these follow the activity streak, so they now arrive for a week of meals
+    // or symptoms with no water logged in it at all.
+    Milestone.DAY_7 -> "7 days of logging in a row"
+    Milestone.DAY_14 -> "14 days of logging in a row"
     Milestone.WEEK_1 -> "Your first full week of logging"
     Milestone.WEEK_4 -> "Four steady weeks of logging"
 }

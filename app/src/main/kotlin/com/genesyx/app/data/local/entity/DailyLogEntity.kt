@@ -26,6 +26,12 @@ data class DailyLogEntity(
     @ColumnInfo(defaultValue = "SYNCED") val syncStatus: LogSyncStatus = LogSyncStatus.SYNCED,
     /** v7: private intimacy record — null = not recorded. Stored as INTEGER 0/1 by Room. */
     val sexualActivity: Boolean? = null,
+    /**
+     * v9: food groups eaten that day. Nullable so the ALTER needs no DEFAULT (Room compares
+     * defaults when it validates the migration); [Converters.toStringList] reads NULL back as an
+     * empty list, which is what every pre-v9 row truthfully is.
+     */
+    val foodGroups: List<String>? = null,
 )
 
 fun DailyLogEntity.toDomain(): DailyLog =
@@ -35,6 +41,7 @@ fun DailyLogEntity.toDomain(): DailyLog =
         symptoms = symptoms.toSet(),
         sleepMinutes = sleepMinutes,
         supplements = supplements.toSet(),
+        foodGroups = foodGroups?.toSet() ?: emptySet(),
         notes = notes,
         waterMl = waterMl,
         sexualActivity = sexualActivity,
@@ -53,6 +60,7 @@ fun DailyLog.toEntity(
         symptoms = symptoms.toList(),
         sleepMinutes = sleepMinutes,
         supplements = supplements.toList(),
+        foodGroups = foodGroups.toList(),
         notes = notes,
         waterMl = waterMl,
         syncStatus = syncStatus,

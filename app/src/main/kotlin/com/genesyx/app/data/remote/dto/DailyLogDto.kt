@@ -14,6 +14,12 @@ data class DailyLogDto(
     @SerialName("sleep_minutes") val sleepMinutes: Int? = null,
     @SerialName("water_ml") val waterMl: Int = 0,
     val supplements: List<String> = emptyList(),
+    /**
+     * Omitted from the wire while empty (encodeDefaults is off), so the server's `'{}'` default
+     * applies and a log with no meals recorded still syncs — including against a server that
+     * predates the column.
+     */
+    @SerialName("food_groups") val foodGroups: List<String> = emptyList(),
     val notes: String? = null,
     /**
      * Omitted from the wire while null (encodeDefaults is off in the shared serializer), so a log

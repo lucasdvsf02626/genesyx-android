@@ -19,9 +19,10 @@ import org.junit.Test
 import java.time.LocalDate
 
 /**
- * Runs [StreakEngine] against `tracking_test_vectors.json` — the cross-platform contract. The same
- * file is mirrored verbatim into the iOS repo, so both platforms are pinned to identical numbers for
- * identical inputs; a metric that drifts on one of them fails here.
+ * Runs [StreakEngine] against `tracking_test_vectors.json` — this platform's half of the
+ * cross-platform contract. What the two platforms share is the RULES, not this file: iOS keeps its
+ * own vectors in its own schema, so a rule that moves has to move in both repos in the same change.
+ * Nothing automated will notice if it doesn't.
  *
  * The vectors were derived from the tracking spec independently of this engine, so they are a real
  * check rather than a restatement of whatever the Kotlin happens to do. If a vector and the engine
@@ -67,7 +68,7 @@ class TrackingVectorTest {
     fun `the vector file actually loaded and has cases`() {
         // Guards the failure mode where the resource wiring breaks and every case silently vanishes,
         // leaving a green suite that asserts nothing.
-        assertEquals(true, cases.size >= 16)
+        assertEquals(true, cases.size >= 18)
         assertEquals(true, cycleCases.size >= 8)
         assertEquals(true, hydrationAverageCases.size >= 4)
     }
@@ -187,6 +188,7 @@ class TrackingVectorTest {
         symptoms = this["symptoms"]?.jsonArray?.map { it.jsonPrimitive.content }?.toSet().orEmpty(),
         sleepMinutes = this["sleepMinutes"]?.jsonPrimitive?.int,
         supplements = this["supplements"]?.jsonArray?.map { it.jsonPrimitive.content }?.toSet().orEmpty(),
+        foodGroups = this["foodGroups"]?.jsonArray?.map { it.jsonPrimitive.content }?.toSet().orEmpty(),
         notes = this["notes"]?.jsonPrimitive?.content,
         waterMl = this["waterMl"]?.jsonPrimitive?.int ?: 0,
     )

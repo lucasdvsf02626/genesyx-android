@@ -129,9 +129,14 @@ class DailyLogRepository @Inject constructor(
      * hydration total is owned by the quick-add trackers and may have moved while the form sat open —
      * so the stored row's water wins over the form's snapshot, never the other way round. This is
      * what stopped "My logs says 1.8 L while the tracker says 0.5 L".
+     *
+     * Food groups are held the same way for the same reason, one client further out: only iOS can
+     * log them, so a sync can drop new ones into the row while this form sits open and the form's
+     * snapshot would otherwise write them straight back out. Drop this term when Android gains a
+     * food-group editor — at that point the form owns the field and must be allowed to clear it.
      */
     fun upsertPreservingWater(date: LocalDate, log: DailyLog) =
-        mutateRow(date) { stored -> log.copy(waterMl = stored.waterMl) }
+        mutateRow(date) { stored -> log.copy(waterMl = stored.waterMl, foodGroups = stored.foodGroups) }
 
     private val writeMutex = Mutex()
 

@@ -1,4 +1,41 @@
 -- ============================================================================
+-- ⛔ SUPERSEDED — DO NOT APPLY. KEPT FOR AUDIT HISTORY ONLY.
+--
+-- This draft was never applied anywhere. Production got a different file, and this one is now
+-- historical: it records what was proposed on 29 Jul 2026, not what runs.
+--
+-- WHAT ACTUALLY SHIPPED, on live project `epltxklawpcxxbaleswg`, 13 Aug 2026:
+--   * `20260813_android_supplements_backend.sql` (migration B) created `user_supplements` and
+--     `genesyx_products` with owner-only RLS, `user_id -> auth.users(id) ON DELETE CASCADE` and
+--     `product_id -> genesyx_products(id) ON DELETE SET NULL`.
+--   * `20260813_user_supplements_delete_backstop_and_push_default_false.sql` then added the
+--     explicit deletion backstop to `delete_current_user()` and set the `profiles.push_enabled`
+--     default to `false`.
+--
+-- The canonical, applied SQL lives in the iOS / shared-backend repository
+-- `lucasdvsf02626/genesyx_apple`, under:
+--     supabase/migrations/20260813_android_supplements_backend.sql                        (migration B)
+-- (local checkout on the author's machine: /Users/lucasvalenca_sf/genesxy_apple.V1.02/)
+--
+-- ⚠️ The SECOND file above — the `delete_current_user()` backstop plus the `push_enabled` default —
+-- was applied to production but is NOT checked into that repo yet, under any name. Verified
+-- 13 Aug 2026. Do not go looking for it, and do not reconstruct it from the summary above: the
+-- applied text has to be recovered verbatim from the session that ran it. Until that happens
+-- production is the only copy, and
+-- `supabase/migrations/20260813_delete_current_user_hardening.sql` over there carries a ⛔ banner,
+-- because re-running *it* would silently revert the backstop. This is the open half of H1.
+-- Android has no `supabase/migrations/` directory and must not grow one — SQL records belong
+-- here, under `docs/migrations/`, and the backend is applied from the shared-backend repo.
+--
+-- Applying this file now would be actively harmful: it would attempt to recreate objects that
+-- already exist, and its RLS/grant shape predates the 13 Aug TRUNCATE-privilege fix (the schema
+-- default privileges on this project hand `authenticated` the full `arwdDxtm` at CREATE TABLE
+-- time, and TRUNCATE is not subject to RLS).
+--
+-- ---------------------------------------------------------------------------
+-- ORIGINAL HEADER, PRESERVED VERBATIM BELOW THIS LINE
+-- ---------------------------------------------------------------------------
+--
 -- PROPOSED — NOT YET APPLIED TO ANY SUPABASE ENVIRONMENT
 --
 -- Custom supplement entries ("Add your own supplement": name, dose, time).

@@ -219,6 +219,22 @@ class StreakEngineTest {
     }
 
     @Test
+    fun `the daily milestones follow the streak she is shown, not hydration`() {
+        // The cross-platform rule, changed on both clients on 2026-08-13. Home headlines
+        // `dailyActivity`, so keying DAY_7 off `dailyHydration` meant a woman who logged a meal and
+        // her symptoms every day for a week watched that streak climb and was congratulated for
+        // nothing — while the hydration tile, which has its own number, quietly held the badge.
+        val mealsOnly = (0 until 7).associate {
+            today.minusDays(it.toLong()) to DailyLog(foodGroups = setOf("vegetables", "protein"))
+        }
+        val s = StreakEngine.compute(mealsOnly, emptySet(), today)
+
+        assertEquals("she logged no water at all", 0, s.dailyHydration)
+        assertEquals("but she logged something every day for a week", 7, s.dailyActivity)
+        assertTrue("so the 7-day milestone is hers", Milestone.DAY_7 in s.earned)
+    }
+
+    @Test
     fun `an already-celebrated milestone is not new`() {
         val celebrated = setOf(Milestone.DAY_7.id, Milestone.WEEK_1.id)
         val s = StreakEngine.compute(waterStreak(7), emptySet(), today, celebrated = celebrated)

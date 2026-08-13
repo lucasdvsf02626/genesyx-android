@@ -96,6 +96,16 @@ val MIGRATION_7_8 = object : Migration(7, 8) {
     }
 }
 
+/** v8 -> v9: food groups on daily logs, the local half of the shared `daily_logs.food_groups`
+ *  column. Nullable and with no DEFAULT, matching the [MIGRATION_6_7] shape: Room compares column
+ *  defaults when it validates a migration, and [Converters] already reads NULL back as an empty
+ *  list — which is exactly what every pre-v9 row is. */
+val MIGRATION_8_9 = object : Migration(8, 9) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE daily_logs ADD COLUMN foodGroups TEXT")
+    }
+}
+
 val GENESYX_MIGRATIONS: Array<Migration> = arrayOf(
     MIGRATION_2_3,
     MIGRATION_3_4,
@@ -103,4 +113,5 @@ val GENESYX_MIGRATIONS: Array<Migration> = arrayOf(
     MIGRATION_5_6,
     MIGRATION_6_7,
     MIGRATION_7_8,
+    MIGRATION_8_9,
 )

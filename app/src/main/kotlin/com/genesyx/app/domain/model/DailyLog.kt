@@ -18,6 +18,12 @@ data class DailyLog(
     val symptoms: Set<String> = emptySet(),
     val sleepMinutes: Int? = null,
     val supplements: Set<String> = emptySet(),
+    /**
+     * Food groups eaten that day, as free tokens rather than an enum so a group added on iOS (the
+     * only client that can currently log them) decodes here instead of throwing. Mirrors
+     * `daily_logs.food_groups text[]`.
+     */
+    val foodGroups: Set<String> = emptySet(),
     val notes: String? = null,
     val waterMl: Int = 0,
     /**
@@ -31,8 +37,13 @@ data class DailyLog(
 
 /**
  * The single definition of a "meaningful log": any tracked field counts — water, mood, energy, a
- * symptom, sleep, supplements or a note. Both the streak engine and the weekly summary count days
- * through this one predicate, so they can never disagree about which days she logged.
+ * symptom, sleep, supplements, food groups or a note. Both the streak engine and the weekly summary
+ * count days through this one predicate, so they can never disagree about which days she logged.
+ *
+ * The qualifying set is a cross-platform contract: the iOS `TrackingEngine.isMeaningfulLog` carries
+ * the same terms, so identical backend rows must produce identical streaks on both phones. Adding a
+ * term on one client alone silently gives two different numbers for the same data, with nothing
+ * anywhere to report it. `foodGroups` joined the set on both clients together (H4).
  *
  * Sleep is `!= null`, deliberately, not `> 0`: null means "not entered", so an explicitly logged
  * zero is a real record. Someone logging an all-nighter *is* logging, and that is exactly the day
@@ -45,4 +56,5 @@ fun DailyLog.isMeaningful(): Boolean =
         symptoms.isNotEmpty() ||
         sleepMinutes != null ||
         supplements.isNotEmpty() ||
+        foodGroups.isNotEmpty() ||
         !notes.isNullOrBlank()

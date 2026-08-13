@@ -92,9 +92,15 @@ object StreakEngine {
         val weeklyStreak = countCompleteWeeks(activeDates, thisWeek)
 
         val best = maxOf(bestSoFar, dailyHydration)
+        // `dailyActivity`, not `dailyHydration`: these celebrate the streak Home actually shows her.
+        // Keying them off water meant a woman who logged a meal and her symptoms every day for a
+        // fortnight watched that streak climb and was congratulated for nothing, while hydration —
+        // which has its own number and its own tile — quietly held the badge. Water still counts; a
+        // day with water on it is an active day. The weekly pair were always activity-based.
+        // Cross-platform contract: iOS `StreakEngine.compute` was changed to match, 2026-08-13.
         val earned = buildSet {
-            if (dailyHydration >= 7) add(Milestone.DAY_7)
-            if (dailyHydration >= 14) add(Milestone.DAY_14)
+            if (dailyActivity >= 7) add(Milestone.DAY_7)
+            if (dailyActivity >= 14) add(Milestone.DAY_14)
             if (weeklyStreak >= 1) add(Milestone.WEEK_1)
             if (weeklyStreak >= 4) add(Milestone.WEEK_4)
         }
