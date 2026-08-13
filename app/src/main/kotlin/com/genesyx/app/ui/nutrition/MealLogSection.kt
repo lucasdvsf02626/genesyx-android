@@ -56,7 +56,8 @@ fun MealLogCard(
     onDelete: (String) -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
-    var logging by remember { mutableStateOf(false) }
+    // null = closed; a fresh MealEntry with a blank description = the add flow; an existing meal = edit.
+    var editing by remember { mutableStateOf<MealEntry?>(null) }
     var confirmDelete by remember { mutableStateOf<MealEntry?>(null) }
 
     Card(
@@ -77,7 +78,11 @@ fun MealLogCard(
             } else {
                 meals.forEach { meal ->
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp, horizontal = 4.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable { editing = meal }
+                            .padding(vertical = 8.dp, horizontal = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Column(Modifier.weight(1f)) {
@@ -110,14 +115,18 @@ fun MealLogCard(
                 }
             }
             Spacer(Modifier.height(12.dp))
-            GxPrimaryButton(text = "Log a meal", onClick = { logging = true })
+            GxPrimaryButton(
+                text = "Log a meal",
+                onClick = { editing = MealEntry(date = java.time.LocalDate.now(), type = MealType.BREAKFAST, description = "") },
+            )
         }
     }
 
-    if (logging) {
+    editing?.let { meal ->
         MealLogDialog(
-            onDismiss = { logging = false },
-            onSave = { onLog(it); logging = false },
+            initial = meal,
+            onDismiss = { editing = null },
+            onSave = { onLog(it); editing = null },
         )
     }
 
@@ -148,24 +157,33 @@ fun MealLogCard(
     }
 }
 
-/** Log one meal: meal type, a free-text description (1..120), and optional nutrient tags. */
+/** Add or edit one meal: meal type, a free-text description (1..120), and optional nutrient tags.
+ *  Editing keeps the meal's id, date and original logged-at time (a plain upsert). */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun MealLogDialog(
+    initial: MealEntry,
     onDismiss: () -> Unit,
     onSave: (MealEntry) -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
-    var type by remember { mutableStateOf(MealType.BREAKFAST) }
-    var description by remember { mutableStateOf("") }
-    var nutrients by remember { mutableStateOf(emptySet<Nutrient>()) }
+    val isNew = initial.description.isBlank()
+    var type by remember { mutableStateOf(initial.type) }
+    var description by remember { mutableStateOf(initial.description) }
+    var nutrients by remember { mutableStateOf(initial.nutrients.toSet()) }
     val valid = description.trim().isNotEmpty()
 
     AlertDialog(
         onDismissRequest = onDismiss,
         shape = RoundedCornerShape(20.dp),
         containerColor = colors.surface,
-        title = { Text("Log a meal", style = MaterialTheme.typography.titleLarge, color = colors.onSurface) },
+        title = {
+            Text(
+                if (isNew) "Log a meal" else "Edit meal",
+                style = MaterialTheme.typography.titleLarge,
+                color = colors.onSurface,
+            )
+        },
         text = {
             Column {
                 Eyebrow("Which meal", color = colors.onSurfaceVariant)
@@ -207,8 +225,7 @@ private fun MealLogDialog(
                 enabled = valid,
                 onClick = {
                     onSave(
-                        MealEntry(
-                            date = java.time.LocalDate.now(),
+                        initial.copy(
                             type = type,
                             description = description.trim(),
                             nutrients = nutrients.toList(),

@@ -8,6 +8,15 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ## [Unreleased] — Single-source-of-truth bug batch (28 Jul device walkthrough)
 
+### Changed (13 Aug 2026) — Meal log: tap a meal to edit it
+- A logged meal is now **tappable to edit** (sitting, description, nutrient tags), reusing the same
+  dialog pre-filled — closing the gap where meals could only be added or deleted (supplements were
+  already editable). Editing is a plain upsert: the meal keeps its id, date and original logged-at
+  time, so list order is stable. The dialog titles itself "Log a meal" vs "Edit meal".
+- Verified: `MealLogCardTest` — **3 Compose UI tests pass on the emulator** (empty-state invite;
+  tapping a meal opens the edit dialog pre-filled and a round-trip Save preserves the id/date/fields;
+  the add button opens the log dialog); `:app:assembleRelease` green.
+
 ### Added (13 Aug 2026) — Meal logging (local-only) with nutrient tags
 - **New "Today's meals" card on Nutrition.** "Log a meal" opens a dialog: pick the sitting
   (Breakfast/Lunch/Dinner/Snack), type what you ate (free text, ≤120 chars), and optionally tag
