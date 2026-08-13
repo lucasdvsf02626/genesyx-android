@@ -16,6 +16,7 @@ import com.genesyx.app.domain.model.ThemeMode
 import com.genesyx.app.domain.streaks.StreakEngine
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import java.time.LocalDate
 import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
@@ -48,6 +49,7 @@ class GenesyxPreferencesDataStore @Inject constructor(
         val HYDRATION_GLASS_ML = intPreferencesKey("hydration_glass_ml")
         val FIRST_OPEN_EPOCH_DAY = longPreferencesKey("first_open_epoch_day")
         val READ_ARTICLE_SLUGS = stringSetPreferencesKey("read_article_slugs")
+        val READ_ARTICLE_DATES = stringSetPreferencesKey("read_article_dates")
         val LAST_SEEN_ARTICLE_SLUG = stringPreferencesKey("last_seen_article_slug")
         val QUIZ_ANSWERS = stringPreferencesKey("quiz_answers")
         val SUPPLEMENT_REMINDERS = stringPreferencesKey("supplement_reminders")
@@ -90,6 +92,10 @@ class GenesyxPreferencesDataStore @Inject constructor(
     /** The epoch-day of the user's first open — the anchor the Learn drip counts weeks from. */
     val firstOpenEpochDay: Flow<Long?> = dataStore.data.map { it[Keys.FIRST_OPEN_EPOCH_DAY] }
     val readArticleSlugs: Flow<Set<String>> = dataStore.data.map { it[Keys.READ_ARTICLE_SLUGS] ?: emptySet() }
+    /** ISO dates on which she opened any article — a meaningful action for the streak. */
+    val articleReadDates: Flow<Set<LocalDate>> = dataStore.data.map { prefs ->
+        (prefs[Keys.READ_ARTICLE_DATES] ?: emptySet()).mapNotNull { runCatching { LocalDate.parse(it) }.getOrNull() }.toSet()
+    }
     val lastSeenArticleSlug: Flow<String?> = dataStore.data.map { it[Keys.LAST_SEEN_ARTICLE_SLUG] }
 
     /** Onboarding/tracking-preference answers (question id → option id), JSON-encoded. Owner data,
@@ -132,6 +138,10 @@ class GenesyxPreferencesDataStore @Inject constructor(
 
     suspend fun addReadArticleSlug(slug: String) = dataStore.edit {
         it[Keys.READ_ARTICLE_SLUGS] = (it[Keys.READ_ARTICLE_SLUGS] ?: emptySet()) + slug
+    }.let {}
+
+    suspend fun addArticleReadDate(date: LocalDate) = dataStore.edit {
+        it[Keys.READ_ARTICLE_DATES] = (it[Keys.READ_ARTICLE_DATES] ?: emptySet()) + date.toString()
     }.let {}
 
     suspend fun setLastSeenArticleSlug(slug: String) = dataStore.edit { it[Keys.LAST_SEEN_ARTICLE_SLUG] = slug }.let {}

@@ -47,6 +47,16 @@ object PhCopy {
             "stay stable and makes it harder for other bacteria to overgrow. Your own usual number " +
             "is the useful thing to know here, not a target to hit."
 
+    // Why vaginal health may matter around conception — deliberately cautious ("may", "context"),
+    // makes no causal claim, and stays inside the banned-phrase rules. FLAG FOR MEDICAL REVIEWER.
+    const val FERTILITY_TITLE = "How this relates to fertility"
+    const val FERTILITY_BODY =
+        "A settled, acidic vaginal environment is part of general reproductive wellbeing, so some " +
+            "people like to keep an eye on it while trying to conceive. Genesyx keeps this as " +
+            "background context, not a fertility test — your pH does not score your chances, and one " +
+            "reading tells you little on its own. If something feels off, a GP, nurse or pharmacist " +
+            "is the right place to check."
+
     const val MEANS_TITLE = "What your reading means"
     const val MEANS_NONE = "Log your first reading and this section will explain what it means."
     const val MEANS_HEALTHY =
@@ -118,6 +128,7 @@ object PhCopy {
         DISCLAIMER, LEGACY_MARKER, NOTICE_TITLE, NOTICE_BODY, NOTICE_DISMISS,
         INSIGHT_DEFAULT, INSIGHT_HEALTHY, INSIGHT_ELEVATED, RECOMMENDATION_ELEVATED,
         WHY_TITLE, WHY_BODY,
+        FERTILITY_TITLE, FERTILITY_BODY,
         MEANS_TITLE, MEANS_NONE, MEANS_HEALTHY, MEANS_ELEVATED,
         DO_TITLE, DO_NONE, DO_HEALTHY, DO_ELEVATED,
         SUPPLEMENTS_TITLE, SUPPLEMENTS_BODY, SUPPLEMENTS_CTA, SOURCES_TITLE,

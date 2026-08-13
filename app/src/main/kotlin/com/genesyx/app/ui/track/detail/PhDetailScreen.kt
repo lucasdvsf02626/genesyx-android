@@ -49,6 +49,9 @@ fun PhDetailScreen(
         InfoSection(PhCopy.WHY_TITLE, PhCopy.WHY_BODY)
 
         Spacer(Modifier.height(12.dp))
+        InfoSection(PhCopy.FERTILITY_TITLE, PhCopy.FERTILITY_BODY)
+
+        Spacer(Modifier.height(12.dp))
         InfoSection(PhCopy.MEANS_TITLE, PhCopy.meansFor(status))
 
         Spacer(Modifier.height(12.dp))

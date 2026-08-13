@@ -76,8 +76,11 @@ object StreakEngine {
         celebrated: Set<String> = emptySet(),
         bestSoFar: Int = 0,
         goalMl: Int = DEFAULT_GOAL_ML,
+        // Days she read a Learn article. A meaningful action too (client request), so it extends the
+        // activity streak. Optional + empty-by-default so the shared tracking vectors are unaffected.
+        articleReadDates: Set<LocalDate> = emptySet(),
     ): StreakState {
-        val activeDates = logsByDate.filterValues { it.isMeaningful() }.keys + phByDate
+        val activeDates = logsByDate.filterValues { it.isMeaningful() }.keys + phByDate + articleReadDates
 
         val dailyActivity = runEndingToday(today) { it in activeDates }
         val dailyHydration = runEndingToday(today) { (logsByDate[it]?.waterMl ?: 0) > 0 }

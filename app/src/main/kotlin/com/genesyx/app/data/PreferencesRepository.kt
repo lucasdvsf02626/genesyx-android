@@ -54,6 +54,9 @@ class PreferencesRepository @Inject constructor(
         store.firstOpenEpochDay.stateIn(scope, SharingStarted.Eagerly, null)
     val readArticleSlugs: StateFlow<Set<String>> =
         store.readArticleSlugs.stateIn(scope, SharingStarted.Eagerly, emptySet())
+    /** Dates she opened an article — feeds the activity streak (a meaningful action). */
+    val articleReadDates: StateFlow<Set<java.time.LocalDate>> =
+        store.articleReadDates.stateIn(scope, SharingStarted.Eagerly, emptySet())
     val lastSeenArticleSlug: StateFlow<String?> =
         store.lastSeenArticleSlug.stateIn(scope, SharingStarted.Eagerly, null)
 
@@ -85,6 +88,11 @@ class PreferencesRepository @Inject constructor(
 
     /** Anchors the Learn drip. Set-if-absent, so calling it every launch is safe and cheap. */
     fun ensureFirstOpenRecorded(epochDay: Long) { scope.launch { store.ensureFirstOpenRecorded(epochDay) } }
-    fun markArticleRead(slug: String) { scope.launch { store.addReadArticleSlug(slug) } }
+    fun markArticleRead(slug: String) {
+        scope.launch {
+            store.addReadArticleSlug(slug)
+            store.addArticleReadDate(java.time.LocalDate.now()) // counts today toward the streak
+        }
+    }
     fun setLastSeenArticleSlug(slug: String) { scope.launch { store.setLastSeenArticleSlug(slug) } }
 }

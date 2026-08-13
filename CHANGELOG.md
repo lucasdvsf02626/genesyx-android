@@ -8,6 +8,26 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ## [Unreleased] — Single-source-of-truth bug batch (28 Jul device walkthrough)
 
+### Added/Changed (13 Aug 2026) — Audit quick-win punch list (4 items)
+- **pH → fertility explanation** (1A): new "How this relates to fertility" section on the pH detail
+  screen — cautious copy ("may", "background context, not a fertility test", GP/pharmacist
+  signposting) that passes the banned-phrase guard. **Flagged for medical-reviewer sign-off.**
+  (`PhCopy.FERTILITY_*`, rendered in `PhDetailScreen`.)
+- **Phase card → article link** (2D): the Home "Today's focus" card now shows "Learn about this
+  phase →", opening the always-available "How your cycle and phases work" guide
+  (`HomeUiState.phaseArticleSlug`). Verified on-device (link opens the article).
+- **Article reads count toward the streak** (3A): opening a Learn article now records the date, and
+  the streak engine counts it as a meaningful action (`StreakEngine.compute(articleReadDates=…)`,
+  stored in DataStore `read_article_dates`, joined in `StreakRepository`). **Additive & optional** —
+  the shared `tracking_test_vectors.json` contract is untouched (`TrackingVectorTest` green). iOS
+  parity: iOS won't count article reads until it adds the same input.
+- **Personal Details editing obvious** (1B): the Personal Details dialog now surfaces **Change
+  password** alongside Edit name / Change email — all three amend actions in one place. (The profile
+  model holds only name/email/theme, so there were no further personal fields to add.)
+- Verified: `StreakEngineTest` (+1) + `PhCopyBannedPhraseTest` (new copy clean) + `TrackingVectorTest`
+  green — **376 unit tests** (lone failure is the known `PreferencesRepositoryTest` flake, passes on
+  rerun); all four confirmed on the emulator; `:app:assembleRelease` green.
+
 ### Added (13 Aug 2026) — Insights: your own supplements + a private intimacy card
 - **"Your supplements this week"** — the supplements a user adds herself ("Your supplements" in
   Nutrition) now surface in Insights, each with an N/7-days count and a Mon–Sun dot row, matched by

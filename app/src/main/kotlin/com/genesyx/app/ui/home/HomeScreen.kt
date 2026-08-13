@@ -253,7 +253,7 @@ fun HomeContent(
             if (state.cycleSetUp) {
                 CycleHeroCard(state) { showCycleDialog = true }
                 Spacer(Modifier.height(12.dp))
-                TodayFocusCard(state)
+                TodayFocusCard(state, onOpenArticle)
             } else {
                 // First-run: an honest setup card in place of the phase/focus content.
                 FirstRunSetupCard(onStart = { seed ->
@@ -451,7 +451,7 @@ private fun HeroMetric(label: String, value: String, modifier: Modifier = Modifi
 }
 
 @Composable
-private fun TodayFocusCard(state: HomeUiState) {
+private fun TodayFocusCard(state: HomeUiState, onOpenArticle: (String) -> Unit = {}) {
     val colors = MaterialTheme.colorScheme
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -466,6 +466,16 @@ private fun TodayFocusCard(state: HomeUiState) {
                 Text(state.todayFocusTitle, style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
                 Spacer(Modifier.height(4.dp))
                 Text(state.todayFocusBody.orEmpty(), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                state.phaseArticleSlug?.let { slug ->
+                    Spacer(Modifier.height(10.dp))
+                    Text(
+                        "Learn about this phase →",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = ElectricLavender,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.clickable { onOpenArticle(slug) },
+                    )
+                }
             } else {
                 Text("Complete your cycle setup to see focus foods.", style = MaterialTheme.typography.bodyLarge, color = colors.onSurfaceVariant)
             }

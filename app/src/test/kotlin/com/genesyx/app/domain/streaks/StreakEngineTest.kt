@@ -45,6 +45,14 @@ class StreakEngineTest {
     }
 
     @Test
+    fun `reading articles is a meaningful action and extends the activity streak`() {
+        val reads = setOf(today, today.minusDays(1), today.minusDays(2))
+        val s = StreakEngine.compute(emptyMap(), emptySet(), today, articleReadDates = reads)
+        assertEquals(3, s.dailyActivity)   // three days running, all from article reads
+        assertEquals(0, s.dailyHydration)  // but reading is not a water log
+    }
+
+    @Test
     fun `an unlogged today does not break the daily streak`() {
         // Yesterday and before are logged; today is simply not logged YET. The day is still going,
         // so the run stands at 5 — it must not read as 0 until she drinks. The old engine counted

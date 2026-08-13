@@ -57,6 +57,8 @@ data class HomeUiState(
     val ovulationDayLabel: String? = null,
     val todayFocusTitle: String? = null,
     val todayFocusBody: String? = null,
+    /** A phase-relevant Learn article the focus card links to; null until the cycle is set up. */
+    val phaseArticleSlug: String? = null,
     // Hydration summary card.
     val hydrationMl: Int? = null,
     /** Her goal, from preferences — the default only until she sets her own. */
@@ -231,6 +233,9 @@ class HomeViewModel @Inject constructor(
             ovulationDayLabel = "Day ${info.ovulationDay}",
             todayFocusTitle = focus.title,
             todayFocusBody = focus.body,
+            // The always-available phase explainer — the client's "link the phase card to a
+            // relevant article". Always-available, so it is never drip-hidden.
+            phaseArticleSlug = "guide-cycle-and-phases",
         )
     }
 

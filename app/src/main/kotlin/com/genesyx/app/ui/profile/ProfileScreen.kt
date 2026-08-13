@@ -365,12 +365,17 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel = hi
                         DetailLine("Name", name)
                         DetailLine("Email", if (signedIn) (email ?: "—") else "Not signed in")
                         DetailLine("Account", if (signedIn) "Signed in & syncing" else "Guest — sign in to sync your data")
-                        Row {
+                        // All three amend actions in one obvious place (client: "make edit controls
+                        // obvious"). These are the only editable personal fields the profile holds.
+                        Column {
                             TextButton(onClick = { detail = null; if (signedIn) nameOpen = true else goSignIn() }) {
                                 Text("Edit name", color = ElectricLavender, fontWeight = FontWeight.SemiBold)
                             }
                             TextButton(onClick = { detail = null; if (signedIn) emailOpen = true else goSignIn() }) {
                                 Text("Change email", color = ElectricLavender, fontWeight = FontWeight.SemiBold)
+                            }
+                            TextButton(onClick = { detail = null; if (signedIn) pwOpen = true else goSignIn() }) {
+                                Text("Change password", color = ElectricLavender, fontWeight = FontWeight.SemiBold)
                             }
                         }
                     }
