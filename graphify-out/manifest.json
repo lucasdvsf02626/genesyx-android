@@ -1,0 +1,1542 @@
+{
+  "app/build.gradle.kts": {
+    "mtime": 1786611623.612218,
+    "ast_hash": "6b38b5ddfa3fdf54fe73732482a58d7c",
+    "semantic_hash": "6b38b5ddfa3fdf54fe73732482a58d7c"
+  },
+  "app/src/androidTest/kotlin/com/genesyx/app/DailyLogMigrationTest.kt": {
+    "mtime": 1786611623.616929,
+    "ast_hash": "7c8cffbb9fce3d511fc239c33def4d0a",
+    "semantic_hash": "7c8cffbb9fce3d511fc239c33def4d0a"
+  },
+  "app/src/androidTest/kotlin/com/genesyx/app/HiltTestRunner.kt": {
+    "mtime": 1786611623.6170256,
+    "ast_hash": "ae0732816d189bd49d2e759818d029ac",
+    "semantic_hash": "ae0732816d189bd49d2e759818d029ac"
+  },
+  "app/src/androidTest/kotlin/com/genesyx/app/MealLogMigrationTest.kt": {
+    "mtime": 1786611623.6170256,
+    "ast_hash": "4d1d9a7683e0e5f40e8f522f1710942f",
+    "semantic_hash": "4d1d9a7683e0e5f40e8f522f1710942f"
+  },
+  "app/src/androidTest/kotlin/com/genesyx/app/PhMigrationTest.kt": {
+    "mtime": 1786611623.6170256,
+    "ast_hash": "ae1c70fd6fd73eb8f901e9e3ced0a641",
+    "semantic_hash": "ae1c70fd6fd73eb8f901e9e3ced0a641"
+  },
+  "app/src/androidTest/kotlin/com/genesyx/app/SeedOnly.kt": {
+    "mtime": 1786611623.6170256,
+    "ast_hash": "fe7fe5fafd45a9f95febb4e2e4b9e98a",
+    "semantic_hash": "fe7fe5fafd45a9f95febb4e2e4b9e98a"
+  },
+  "app/src/androidTest/kotlin/com/genesyx/app/SeedTestData.kt": {
+    "mtime": 1786611623.6170256,
+    "ast_hash": "b77ae2d0d1d8cd87bdc0d1408e6a6318",
+    "semantic_hash": "b77ae2d0d1d8cd87bdc0d1408e6a6318"
+  },
+  "app/src/androidTest/kotlin/com/genesyx/app/ToolchainSmokeTest.kt": {
+    "mtime": 1786611623.6170256,
+    "ast_hash": "80111448d304a4962f8bed76a73187af",
+    "semantic_hash": "80111448d304a4962f8bed76a73187af"
+  },
+  "app/src/androidTest/kotlin/com/genesyx/app/data/DailyLogRepositoryTest.kt": {
+    "mtime": 1786611623.6170256,
+    "ast_hash": "3859d1f4d1d9c4c8b74da1322a72fb92",
+    "semantic_hash": "3859d1f4d1d9c4c8b74da1322a72fb92"
+  },
+  "app/src/androidTest/kotlin/com/genesyx/app/notifications/ReminderNotifierInstrumentedTest.kt": {
+    "mtime": 1786611623.6170256,
+    "ast_hash": "bf32b5661b60c70c28fc36f8e07baca3",
+    "semantic_hash": "bf32b5661b60c70c28fc36f8e07baca3"
+  },
+  "app/src/androidTest/kotlin/com/genesyx/app/notifications/SupplementReminderWorkerInstrumentedTest.kt": {
+    "mtime": 1786611623.6183887,
+    "ast_hash": "e952cb169d876c07dd581fc55310334f",
+    "semantic_hash": "e952cb169d876c07dd581fc55310334f"
+  },
+  "app/src/androidTest/kotlin/com/genesyx/app/ui/components/CycleSettingsDialogTest.kt": {
+    "mtime": 1786611623.61865,
+    "ast_hash": "3c5a5876d460065bfd6363a7a45c1507",
+    "semantic_hash": "3c5a5876d460065bfd6363a7a45c1507"
+  },
+  "app/src/androidTest/kotlin/com/genesyx/app/ui/nutrition/MealLogCardTest.kt": {
+    "mtime": 1786611623.61865,
+    "ast_hash": "462255ef8f2317f7994c0a8a443ef30b",
+    "semantic_hash": "462255ef8f2317f7994c0a8a443ef30b"
+  },
+  "app/src/androidTest/kotlin/com/genesyx/app/ui/nutrition/RecipesSectionTest.kt": {
+    "mtime": 1786611623.6190836,
+    "ast_hash": "90353221fb2cb6dab84e469b55ffba4c",
+    "semantic_hash": "90353221fb2cb6dab84e469b55ffba4c"
+  },
+  "app/src/main/kotlin/com/genesyx/app/GenesyxApplication.kt": {
+    "mtime": 1786611623.6204398,
+    "ast_hash": "0a446cb79f745bc05ce94f21eacc2df6",
+    "semantic_hash": "0a446cb79f745bc05ce94f21eacc2df6"
+  },
+  "app/src/main/kotlin/com/genesyx/app/MainActivity.kt": {
+    "mtime": 1786611623.6207862,
+    "ast_hash": "ba97eb8a1011708f1f7bafe5b8e078c5",
+    "semantic_hash": "ba97eb8a1011708f1f7bafe5b8e078c5"
+  },
+  "app/src/main/kotlin/com/genesyx/app/auth/AuthRepository.kt": {
+    "mtime": 1786611623.6207862,
+    "ast_hash": "d6af285f2785928c152e71af5d36ff85",
+    "semantic_hash": "d6af285f2785928c152e71af5d36ff85"
+  },
+  "app/src/main/kotlin/com/genesyx/app/auth/AuthService.kt": {
+    "mtime": 1786611623.621193,
+    "ast_hash": "aecd20f27458c8d2a9930c5c76aaaa3c",
+    "semantic_hash": "aecd20f27458c8d2a9930c5c76aaaa3c"
+  },
+  "app/src/main/kotlin/com/genesyx/app/auth/GoogleCredentialClient.kt": {
+    "mtime": 1786611623.621193,
+    "ast_hash": "6df8cfd5965f5efc6c4d26fe6155f5e5",
+    "semantic_hash": "6df8cfd5965f5efc6c4d26fe6155f5e5"
+  },
+  "app/src/main/kotlin/com/genesyx/app/auth/LocalAuthService.kt": {
+    "mtime": 1786611623.621193,
+    "ast_hash": "21c9369b1b535801a60ee5e8600a291e",
+    "semantic_hash": "21c9369b1b535801a60ee5e8600a291e"
+  },
+  "app/src/main/kotlin/com/genesyx/app/auth/SupabaseAuthService.kt": {
+    "mtime": 1786611623.621193,
+    "ast_hash": "da5497f472aeb8808221d4b1debd0cca",
+    "semantic_hash": "da5497f472aeb8808221d4b1debd0cca"
+  },
+  "app/src/main/kotlin/com/genesyx/app/core/AppLinks.kt": {
+    "mtime": 1786611623.621193,
+    "ast_hash": "0a04baaaff6cacddb1c491f63f8ac8cf",
+    "semantic_hash": "0a04baaaff6cacddb1c491f63f8ac8cf"
+  },
+  "app/src/main/kotlin/com/genesyx/app/core/DispatcherProvider.kt": {
+    "mtime": 1786611623.6216972,
+    "ast_hash": "411f6e9ed6a73d7fdb8ce1488ff10ab6",
+    "semantic_hash": "411f6e9ed6a73d7fdb8ce1488ff10ab6"
+  },
+  "app/src/main/kotlin/com/genesyx/app/core/FeatureFlags.kt": {
+    "mtime": 1786611623.6216972,
+    "ast_hash": "a2e0c36b6eb0d64fcbfdcb4223cc60ea",
+    "semantic_hash": "a2e0c36b6eb0d64fcbfdcb4223cc60ea"
+  },
+  "app/src/main/kotlin/com/genesyx/app/core/cloud/CloudApi.kt": {
+    "mtime": 1786611623.6216972,
+    "ast_hash": "940eebba2d3777912a766033ac5a93e2",
+    "semantic_hash": "940eebba2d3777912a766033ac5a93e2"
+  },
+  "app/src/main/kotlin/com/genesyx/app/core/config/AppConfig.kt": {
+    "mtime": 1786611623.6216972,
+    "ast_hash": "ec1cf4fef39d48d2d8597431af83fc52",
+    "semantic_hash": "ec1cf4fef39d48d2d8597431af83fc52"
+  },
+  "app/src/main/kotlin/com/genesyx/app/core/di/CoreModule.kt": {
+    "mtime": 1786611623.6216972,
+    "ast_hash": "48653d3c5a5b82909dc02a20f575033f",
+    "semantic_hash": "48653d3c5a5b82909dc02a20f575033f"
+  },
+  "app/src/main/kotlin/com/genesyx/app/core/di/Qualifiers.kt": {
+    "mtime": 1786611623.6224492,
+    "ast_hash": "c42815b03bee922db5daf4dae6eac908",
+    "semantic_hash": "c42815b03bee922db5daf4dae6eac908"
+  },
+  "app/src/main/kotlin/com/genesyx/app/core/log/Analytics.kt": {
+    "mtime": 1786611623.6224492,
+    "ast_hash": "0fdfbf1365350463faf8b10848526856",
+    "semantic_hash": "0fdfbf1365350463faf8b10848526856"
+  },
+  "app/src/main/kotlin/com/genesyx/app/core/log/Logger.kt": {
+    "mtime": 1786611623.6227012,
+    "ast_hash": "ce05c4e80fed4fa16d5db79151954997",
+    "semantic_hash": "ce05c4e80fed4fa16d5db79151954997"
+  },
+  "app/src/main/kotlin/com/genesyx/app/core/result/DataResult.kt": {
+    "mtime": 1786611623.6227012,
+    "ast_hash": "ccb43630c74e1b9f8b40be404e88e876",
+    "semantic_hash": "ccb43630c74e1b9f8b40be404e88e876"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/ClientRepository.kt": {
+    "mtime": 1786611623.6227012,
+    "ast_hash": "c15372de47d9ddb33a5f3b81b4e3edb0",
+    "semantic_hash": "c15372de47d9ddb33a5f3b81b4e3edb0"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/CycleRepository.kt": {
+    "mtime": 1786611623.622825,
+    "ast_hash": "8f2b6775d8d595282c5dc794a40c5c4a",
+    "semantic_hash": "8f2b6775d8d595282c5dc794a40c5c4a"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/DailyLogRepository.kt": {
+    "mtime": 1786611623.622825,
+    "ast_hash": "c6104b8452532903b611b44f530cda1a",
+    "semantic_hash": "c6104b8452532903b611b44f530cda1a"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/GenesyxProductRepository.kt": {
+    "mtime": 1786611623.622825,
+    "ast_hash": "95a15723988f1a1ebf00bd4969ffe89c",
+    "semantic_hash": "95a15723988f1a1ebf00bd4969ffe89c"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/MealLogRepository.kt": {
+    "mtime": 1786611623.622825,
+    "ast_hash": "907bc655df9271504820f23df21b39fb",
+    "semantic_hash": "907bc655df9271504820f23df21b39fb"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/NotificationSettingsRepository.kt": {
+    "mtime": 1786611623.622825,
+    "ast_hash": "507edf8881d8648e7ac4b5928970c7b8",
+    "semantic_hash": "507edf8881d8648e7ac4b5928970c7b8"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/PartnerRepository.kt": {
+    "mtime": 1786611623.622825,
+    "ast_hash": "88d985a5456d2c70cef3dc30a8e78f5d",
+    "semantic_hash": "88d985a5456d2c70cef3dc30a8e78f5d"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/PhRepository.kt": {
+    "mtime": 1786611623.623098,
+    "ast_hash": "2550d3121f9869a534fe0681b188b4bb",
+    "semantic_hash": "2550d3121f9869a534fe0681b188b4bb"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/PreferencesRepository.kt": {
+    "mtime": 1786611623.623098,
+    "ast_hash": "ecd4bdd9f5913b36b80776765cae04b6",
+    "semantic_hash": "ecd4bdd9f5913b36b80776765cae04b6"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/ProfileRepository.kt": {
+    "mtime": 1786611623.623098,
+    "ast_hash": "dde55e6e61e7d9d5061d4a3f69df2b79",
+    "semantic_hash": "dde55e6e61e7d9d5061d4a3f69df2b79"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/QuizAnswersRepository.kt": {
+    "mtime": 1786611623.623098,
+    "ast_hash": "f834f839acf745b2b733cc8aef2ef150",
+    "semantic_hash": "f834f839acf745b2b733cc8aef2ef150"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/SessionRepository.kt": {
+    "mtime": 1786611623.623098,
+    "ast_hash": "9ed963d71c9685d3b23ecc528abe972b",
+    "semantic_hash": "9ed963d71c9685d3b23ecc528abe972b"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/StreakRepository.kt": {
+    "mtime": 1786611623.623098,
+    "ast_hash": "20c799ca3a65ab7792023e642fd3e652",
+    "semantic_hash": "20c799ca3a65ab7792023e642fd3e652"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/SupplementReminderRepository.kt": {
+    "mtime": 1786611623.623098,
+    "ast_hash": "f1b7a7e64b7c87e289e5fab132e6cf8e",
+    "semantic_hash": "f1b7a7e64b7c87e289e5fab132e6cf8e"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/SyncStatusRepository.kt": {
+    "mtime": 1786611623.623098,
+    "ast_hash": "85bf0f56e40bf03718346807c8fbd095",
+    "semantic_hash": "85bf0f56e40bf03718346807c8fbd095"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/UserSupplementRepository.kt": {
+    "mtime": 1786611623.623098,
+    "ast_hash": "304e9134dbb80ea85262a02d409b167a",
+    "semantic_hash": "304e9134dbb80ea85262a02d409b167a"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/local/Converters.kt": {
+    "mtime": 1786611623.623098,
+    "ast_hash": "25deb9218ff31079ccc9ba33aa602fa6",
+    "semantic_hash": "25deb9218ff31079ccc9ba33aa602fa6"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/local/GenesyxDatabase.kt": {
+    "mtime": 1786611623.6248715,
+    "ast_hash": "e0a9e8d62030bd658299cad1c82dabca",
+    "semantic_hash": "e0a9e8d62030bd658299cad1c82dabca"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/local/Migrations.kt": {
+    "mtime": 1786611623.6248715,
+    "ast_hash": "4a2dfd619f2d88457b21bdb70cc1d771",
+    "semantic_hash": "4a2dfd619f2d88457b21bdb70cc1d771"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/local/dao/ClientDao.kt": {
+    "mtime": 1786611623.6248715,
+    "ast_hash": "4527183903808251193a5444cc5d011a",
+    "semantic_hash": "4527183903808251193a5444cc5d011a"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/local/dao/CycleSettingsDao.kt": {
+    "mtime": 1786611623.6253557,
+    "ast_hash": "d7cc6224ec285459d89cb1443d81cc69",
+    "semantic_hash": "d7cc6224ec285459d89cb1443d81cc69"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/local/dao/DailyLogDao.kt": {
+    "mtime": 1786611623.6253557,
+    "ast_hash": "602202b277e5ac6375b18cd5088a2219",
+    "semantic_hash": "602202b277e5ac6375b18cd5088a2219"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/local/dao/MealEntryDao.kt": {
+    "mtime": 1786611623.6253557,
+    "ast_hash": "96a57c6081c668e79e611bc8a6acf6cb",
+    "semantic_hash": "96a57c6081c668e79e611bc8a6acf6cb"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/local/dao/PartnerDao.kt": {
+    "mtime": 1786611623.6253557,
+    "ast_hash": "2718cb2b0aa51904c5d6b27281cd5bea",
+    "semantic_hash": "2718cb2b0aa51904c5d6b27281cd5bea"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/local/dao/PhReadingDao.kt": {
+    "mtime": 1786611623.6253557,
+    "ast_hash": "2618c9b2168f599917364485f9056c34",
+    "semantic_hash": "2618c9b2168f599917364485f9056c34"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/local/dao/ProfileDao.kt": {
+    "mtime": 1786611623.6253557,
+    "ast_hash": "634c0b3ab4ce58b8ae7b3bb22916bfa4",
+    "semantic_hash": "634c0b3ab4ce58b8ae7b3bb22916bfa4"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/local/dao/UserSupplementDao.kt": {
+    "mtime": 1786611623.6253557,
+    "ast_hash": "f2c48f710b427a4a523d939c4e0d570b",
+    "semantic_hash": "f2c48f710b427a4a523d939c4e0d570b"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/local/datastore/GenesyxPreferencesDataStore.kt": {
+    "mtime": 1786611623.6253557,
+    "ast_hash": "16375e4fdcb7cc7d3fe3a598c82ef743",
+    "semantic_hash": "16375e4fdcb7cc7d3fe3a598c82ef743"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/local/entity/ClientEntity.kt": {
+    "mtime": 1786611623.6253557,
+    "ast_hash": "5cbf8a7f99cbe71c6febb46214afbf7d",
+    "semantic_hash": "5cbf8a7f99cbe71c6febb46214afbf7d"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/local/entity/CycleSettingsEntity.kt": {
+    "mtime": 1786611623.6260726,
+    "ast_hash": "186c089b4d991acac7464f99e1facac4",
+    "semantic_hash": "186c089b4d991acac7464f99e1facac4"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/local/entity/DailyLogEntity.kt": {
+    "mtime": 1786611623.6260726,
+    "ast_hash": "cbe2ebdcb4b4be4a91f0ae893f39788c",
+    "semantic_hash": "cbe2ebdcb4b4be4a91f0ae893f39788c"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/local/entity/LogSyncStatus.kt": {
+    "mtime": 1786611623.6260726,
+    "ast_hash": "82f5f6b5384756464a6150b4bb8d88ed",
+    "semantic_hash": "82f5f6b5384756464a6150b4bb8d88ed"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/local/entity/MealEntryEntity.kt": {
+    "mtime": 1786611623.6260726,
+    "ast_hash": "4594c30ccfb089c4b105c4f813c108b8",
+    "semantic_hash": "4594c30ccfb089c4b105c4f813c108b8"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/local/entity/PartnerInviteEntity.kt": {
+    "mtime": 1786611623.6260726,
+    "ast_hash": "de4f4e41f24fb71151ec76989ce8ad92",
+    "semantic_hash": "de4f4e41f24fb71151ec76989ce8ad92"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/local/entity/PartnerLinkEntity.kt": {
+    "mtime": 1786611623.6260726,
+    "ast_hash": "036a3a688a549f99a51b070f4d4c9216",
+    "semantic_hash": "036a3a688a549f99a51b070f4d4c9216"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/local/entity/PhReadingEntity.kt": {
+    "mtime": 1786611623.6260726,
+    "ast_hash": "2167a88a33afac7f85fd9f146d04ca25",
+    "semantic_hash": "2167a88a33afac7f85fd9f146d04ca25"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/local/entity/PhSyncStatus.kt": {
+    "mtime": 1786611623.6260726,
+    "ast_hash": "caace68f261b71963dac3eed0ea67f14",
+    "semantic_hash": "caace68f261b71963dac3eed0ea67f14"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/local/entity/ProfileEntity.kt": {
+    "mtime": 1786611623.6260726,
+    "ast_hash": "9035f1ad162a41459a8ef6f048337d6c",
+    "semantic_hash": "9035f1ad162a41459a8ef6f048337d6c"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/local/entity/SupplementSyncStatus.kt": {
+    "mtime": 1786611623.6260726,
+    "ast_hash": "3adbee405c3ca67552239e71c4550e40",
+    "semantic_hash": "3adbee405c3ca67552239e71c4550e40"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/local/entity/UserSupplementEntity.kt": {
+    "mtime": 1786611623.6260726,
+    "ast_hash": "681c00e06c18b075c9612f1db09944c2",
+    "semantic_hash": "681c00e06c18b075c9612f1db09944c2"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/remote/RemoteDataSources.kt": {
+    "mtime": 1786611623.6260726,
+    "ast_hash": "6f4d239ef230aea918a156207cd710e9",
+    "semantic_hash": "6f4d239ef230aea918a156207cd710e9"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/remote/StubRemoteDataSources.kt": {
+    "mtime": 1786611623.6274722,
+    "ast_hash": "6dbfb0ab49f1852f82cbdcd8f9f6973a",
+    "semantic_hash": "6dbfb0ab49f1852f82cbdcd8f9f6973a"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/remote/SupabaseCycleRemoteDataSource.kt": {
+    "mtime": 1786611623.6274722,
+    "ast_hash": "a50e5358eee0ae3f4b977f2fd1147d14",
+    "semantic_hash": "a50e5358eee0ae3f4b977f2fd1147d14"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/remote/SupabaseDailyLogRemoteDataSource.kt": {
+    "mtime": 1786611623.6274722,
+    "ast_hash": "81d75f6b8e4962415ee5b0392167da3a",
+    "semantic_hash": "81d75f6b8e4962415ee5b0392167da3a"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/remote/SupabasePhRemoteDataSource.kt": {
+    "mtime": 1786611623.6274722,
+    "ast_hash": "058c4cdca293085589be6b1dccb505b1",
+    "semantic_hash": "058c4cdca293085589be6b1dccb505b1"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/remote/SupabaseProfileRemoteDataSource.kt": {
+    "mtime": 1786611623.6274722,
+    "ast_hash": "1b54f07066b992d3f332d06504af7e14",
+    "semantic_hash": "1b54f07066b992d3f332d06504af7e14"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/remote/SupabaseQuizAnswersRemoteDataSource.kt": {
+    "mtime": 1786611623.6274722,
+    "ast_hash": "acde87ee06bf2d57b99423b7a0ca3ed0",
+    "semantic_hash": "acde87ee06bf2d57b99423b7a0ca3ed0"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/remote/SupabaseUserSupplementRemoteDataSource.kt": {
+    "mtime": 1786611623.6274722,
+    "ast_hash": "e4a587b5bce5f553271067a556243b1f",
+    "semantic_hash": "e4a587b5bce5f553271067a556243b1f"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/remote/SupabaseWaitlistRemoteDataSource.kt": {
+    "mtime": 1786611623.6274722,
+    "ast_hash": "9f8df954ad294a5135a81a64c58ab6bc",
+    "semantic_hash": "9f8df954ad294a5135a81a64c58ab6bc"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/remote/dto/CycleSettingsDto.kt": {
+    "mtime": 1786611623.6274722,
+    "ast_hash": "6508620495a29082480e50bdb73b7fd2",
+    "semantic_hash": "6508620495a29082480e50bdb73b7fd2"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/remote/dto/DailyLogDto.kt": {
+    "mtime": 1786611623.628705,
+    "ast_hash": "ea5931c7fdd14f2fd6dd7b794147ee63",
+    "semantic_hash": "ea5931c7fdd14f2fd6dd7b794147ee63"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/remote/dto/GenesyxProductDto.kt": {
+    "mtime": 1786611623.628705,
+    "ast_hash": "54905b26a51c56820fa4eb050a2b8af2",
+    "semantic_hash": "54905b26a51c56820fa4eb050a2b8af2"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/remote/dto/PhReadingDto.kt": {
+    "mtime": 1786611623.628705,
+    "ast_hash": "7eb43bb103d4939342f2d717bf6fb419",
+    "semantic_hash": "7eb43bb103d4939342f2d717bf6fb419"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/remote/dto/ProfileDto.kt": {
+    "mtime": 1786611623.628705,
+    "ast_hash": "50d96d06fe627c4f46f40a0769a6d896",
+    "semantic_hash": "50d96d06fe627c4f46f40a0769a6d896"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/remote/dto/QuizAnswersDto.kt": {
+    "mtime": 1786611623.628705,
+    "ast_hash": "1b70aa64e477e8a179d38968d7f3dde5",
+    "semantic_hash": "1b70aa64e477e8a179d38968d7f3dde5"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/remote/dto/UserSupplementDto.kt": {
+    "mtime": 1786611623.628705,
+    "ast_hash": "d671591f98109e93cb57f2db4064f05e",
+    "semantic_hash": "d671591f98109e93cb57f2db4064f05e"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/sync/DailyLogSyncScheduler.kt": {
+    "mtime": 1786611623.628705,
+    "ast_hash": "46218f0838800d251607964f11caca9f",
+    "semantic_hash": "46218f0838800d251607964f11caca9f"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/sync/DailyLogSyncWorker.kt": {
+    "mtime": 1786611623.6294844,
+    "ast_hash": "36c1d3ae4f0ce5133d093d1f75133683",
+    "semantic_hash": "36c1d3ae4f0ce5133d093d1f75133683"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/sync/PhSyncScheduler.kt": {
+    "mtime": 1786611623.6294844,
+    "ast_hash": "384c4a688a9c91f3bbe665a31f6c41ee",
+    "semantic_hash": "384c4a688a9c91f3bbe665a31f6c41ee"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/sync/PhSyncWorker.kt": {
+    "mtime": 1786611623.6294844,
+    "ast_hash": "c0519d835da0338a5d6ea073e4b17bf7",
+    "semantic_hash": "c0519d835da0338a5d6ea073e4b17bf7"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/sync/UserSupplementSyncScheduler.kt": {
+    "mtime": 1786611623.6294844,
+    "ast_hash": "45d98a975d10dfa77e855df15447a945",
+    "semantic_hash": "45d98a975d10dfa77e855df15447a945"
+  },
+  "app/src/main/kotlin/com/genesyx/app/data/sync/UserSupplementSyncWorker.kt": {
+    "mtime": 1786611623.6294844,
+    "ast_hash": "a234172b6f3e3708a106f09fc1226973",
+    "semantic_hash": "a234172b6f3e3708a106f09fc1226973"
+  },
+  "app/src/main/kotlin/com/genesyx/app/di/BindingsModule.kt": {
+    "mtime": 1786611623.6294844,
+    "ast_hash": "4715e062ba005060914db5ba5f6eeade",
+    "semantic_hash": "4715e062ba005060914db5ba5f6eeade"
+  },
+  "app/src/main/kotlin/com/genesyx/app/di/DataStoreModule.kt": {
+    "mtime": 1786611623.630673,
+    "ast_hash": "1967c2effc6ab2e278da4b6eb624bbbf",
+    "semantic_hash": "1967c2effc6ab2e278da4b6eb624bbbf"
+  },
+  "app/src/main/kotlin/com/genesyx/app/di/DatabaseModule.kt": {
+    "mtime": 1786611623.630673,
+    "ast_hash": "1332ba811ce78883aaf608cca998873b",
+    "semantic_hash": "1332ba811ce78883aaf608cca998873b"
+  },
+  "app/src/main/kotlin/com/genesyx/app/di/NetworkModule.kt": {
+    "mtime": 1786611623.630673,
+    "ast_hash": "02b8c1ab00fd5e1016dd7770b17387f3",
+    "semantic_hash": "02b8c1ab00fd5e1016dd7770b17387f3"
+  },
+  "app/src/main/kotlin/com/genesyx/app/domain/content/Citation.kt": {
+    "mtime": 1786611623.6308513,
+    "ast_hash": "862eb62fab41077d8939ed21bba97fce",
+    "semantic_hash": "862eb62fab41077d8939ed21bba97fce"
+  },
+  "app/src/main/kotlin/com/genesyx/app/domain/content/CycleContent.kt": {
+    "mtime": 1786611623.6310813,
+    "ast_hash": "e4f790375eee589adf00afd47cf1db72",
+    "semantic_hash": "e4f790375eee589adf00afd47cf1db72"
+  },
+  "app/src/main/kotlin/com/genesyx/app/domain/content/LearnContent.kt": {
+    "mtime": 1786611623.6310813,
+    "ast_hash": "2b83460be27aae5e7f9125bd82fab536",
+    "semantic_hash": "2b83460be27aae5e7f9125bd82fab536"
+  },
+  "app/src/main/kotlin/com/genesyx/app/domain/content/NutritionContent.kt": {
+    "mtime": 1786611623.6310978,
+    "ast_hash": "3956fd91e3aa9f8f9c23172ac538a1f5",
+    "semantic_hash": "3956fd91e3aa9f8f9c23172ac538a1f5"
+  },
+  "app/src/main/kotlin/com/genesyx/app/domain/content/QuizContent.kt": {
+    "mtime": 1786611623.6310978,
+    "ast_hash": "d52000c221e68688274933e17b91e995",
+    "semantic_hash": "d52000c221e68688274933e17b91e995"
+  },
+  "app/src/main/kotlin/com/genesyx/app/domain/content/RecipeContent.kt": {
+    "mtime": 1786611623.6310978,
+    "ast_hash": "c225578c3f182e844036d6ef687d2b29",
+    "semantic_hash": "c225578c3f182e844036d6ef687d2b29"
+  },
+  "app/src/main/kotlin/com/genesyx/app/domain/cycle/CycleEngine.kt": {
+    "mtime": 1786611623.6310978,
+    "ast_hash": "b890bd7bbbdc18d9efe3387e7f28a978",
+    "semantic_hash": "b890bd7bbbdc18d9efe3387e7f28a978"
+  },
+  "app/src/main/kotlin/com/genesyx/app/domain/hydration/HydrationCoach.kt": {
+    "mtime": 1786611623.6310978,
+    "ast_hash": "01a661c4667b7347d07ec6495ccb1f15",
+    "semantic_hash": "01a661c4667b7347d07ec6495ccb1f15"
+  },
+  "app/src/main/kotlin/com/genesyx/app/domain/hydration/HydrationFormat.kt": {
+    "mtime": 1786611623.633017,
+    "ast_hash": "276333300f52d4a9f9a6b1e269f169b0",
+    "semantic_hash": "276333300f52d4a9f9a6b1e269f169b0"
+  },
+  "app/src/main/kotlin/com/genesyx/app/domain/hydration/HydrationUnit.kt": {
+    "mtime": 1786611623.633017,
+    "ast_hash": "ccc19b44d129481ca1af62921ac49956",
+    "semantic_hash": "ccc19b44d129481ca1af62921ac49956"
+  },
+  "app/src/main/kotlin/com/genesyx/app/domain/model/Account.kt": {
+    "mtime": 1786611623.633017,
+    "ast_hash": "aa96098f139b23dd1f4fb8f15160371d",
+    "semantic_hash": "aa96098f139b23dd1f4fb8f15160371d"
+  },
+  "app/src/main/kotlin/com/genesyx/app/domain/model/Client.kt": {
+    "mtime": 1786611623.6333523,
+    "ast_hash": "c0a19f2b926f5dcf3e2406d0da9d13ce",
+    "semantic_hash": "c0a19f2b926f5dcf3e2406d0da9d13ce"
+  },
+  "app/src/main/kotlin/com/genesyx/app/domain/model/CycleModels.kt": {
+    "mtime": 1786611623.6333523,
+    "ast_hash": "b6c116cab2d3e1ddcdd479913afebb65",
+    "semantic_hash": "b6c116cab2d3e1ddcdd479913afebb65"
+  },
+  "app/src/main/kotlin/com/genesyx/app/domain/model/DailyLog.kt": {
+    "mtime": 1786611623.6333523,
+    "ast_hash": "11af640ebb5dd6673a3180a59e45d8ed",
+    "semantic_hash": "11af640ebb5dd6673a3180a59e45d8ed"
+  },
+  "app/src/main/kotlin/com/genesyx/app/domain/model/GenesyxProduct.kt": {
+    "mtime": 1786611623.6333523,
+    "ast_hash": "d3f20e3a885113b3f71420516ca55902",
+    "semantic_hash": "d3f20e3a885113b3f71420516ca55902"
+  },
+  "app/src/main/kotlin/com/genesyx/app/domain/model/LogDay.kt": {
+    "mtime": 1786611623.6333523,
+    "ast_hash": "51bd66f8f08615a1e48017018c67f2d9",
+    "semantic_hash": "51bd66f8f08615a1e48017018c67f2d9"
+  },
+  "app/src/main/kotlin/com/genesyx/app/domain/model/MealEntry.kt": {
+    "mtime": 1786611623.6333523,
+    "ast_hash": "4d544b811317a3f968239ffd4e815127",
+    "semantic_hash": "4d544b811317a3f968239ffd4e815127"
+  },
+  "app/src/main/kotlin/com/genesyx/app/domain/model/PhReading.kt": {
+    "mtime": 1786611623.6333523,
+    "ast_hash": "7bab54efb771652f1af0c32d2ac67dd4",
+    "semantic_hash": "7bab54efb771652f1af0c32d2ac67dd4"
+  },
+  "app/src/main/kotlin/com/genesyx/app/domain/model/Supplement.kt": {
+    "mtime": 1786611623.6333523,
+    "ast_hash": "28a90874d26587c46a85d56b7166b067",
+    "semantic_hash": "28a90874d26587c46a85d56b7166b067"
+  },
+  "app/src/main/kotlin/com/genesyx/app/domain/model/SupplementLogRows.kt": {
+    "mtime": 1786611623.6333523,
+    "ast_hash": "1ceb12eb50accc5fe57f3931dac11a06",
+    "semantic_hash": "1ceb12eb50accc5fe57f3931dac11a06"
+  },
+  "app/src/main/kotlin/com/genesyx/app/domain/model/UserSupplement.kt": {
+    "mtime": 1786611623.6333523,
+    "ast_hash": "672c26cd5a1974d3524cb3fc96d34b46",
+    "semantic_hash": "672c26cd5a1974d3524cb3fc96d34b46"
+  },
+  "app/src/main/kotlin/com/genesyx/app/domain/ph/PhCopy.kt": {
+    "mtime": 1786611623.6333523,
+    "ast_hash": "88a6428dc1bfc769e30b21d2b7c54af9",
+    "semantic_hash": "88a6428dc1bfc769e30b21d2b7c54af9"
+  },
+  "app/src/main/kotlin/com/genesyx/app/domain/ph/PhStatus.kt": {
+    "mtime": 1786611623.6345482,
+    "ast_hash": "d2307a8096fc3af0c77b52e694fa7024",
+    "semantic_hash": "d2307a8096fc3af0c77b52e694fa7024"
+  },
+  "app/src/main/kotlin/com/genesyx/app/domain/streaks/StreakEngine.kt": {
+    "mtime": 1786611623.6345482,
+    "ast_hash": "55944cd71f5ea76003992077c7b60806",
+    "semantic_hash": "55944cd71f5ea76003992077c7b60806"
+  },
+  "app/src/main/kotlin/com/genesyx/app/domain/time/WeekBuckets.kt": {
+    "mtime": 1786611623.6345482,
+    "ast_hash": "f07fc7dbcfb49ba0a3b94706f135ead1",
+    "semantic_hash": "f07fc7dbcfb49ba0a3b94706f135ead1"
+  },
+  "app/src/main/kotlin/com/genesyx/app/notifications/AppForegroundTracker.kt": {
+    "mtime": 1786611623.6345482,
+    "ast_hash": "144cafe434796359d00acbfe6c8ad5d8",
+    "semantic_hash": "144cafe434796359d00acbfe6c8ad5d8"
+  },
+  "app/src/main/kotlin/com/genesyx/app/notifications/BootReceiver.kt": {
+    "mtime": 1786611623.635604,
+    "ast_hash": "d034429124d22c3dbb22591ce207a272",
+    "semantic_hash": "d034429124d22c3dbb22591ce207a272"
+  },
+  "app/src/main/kotlin/com/genesyx/app/notifications/NotificationChannels.kt": {
+    "mtime": 1786611623.635604,
+    "ast_hash": "fb46cfeb4893d802e3a61c94506bf4f3",
+    "semantic_hash": "fb46cfeb4893d802e3a61c94506bf4f3"
+  },
+  "app/src/main/kotlin/com/genesyx/app/notifications/NotificationPermission.kt": {
+    "mtime": 1786611623.635604,
+    "ast_hash": "e5d38c486db7cc465ff7840e71032161",
+    "semantic_hash": "e5d38c486db7cc465ff7840e71032161"
+  },
+  "app/src/main/kotlin/com/genesyx/app/notifications/ReminderContent.kt": {
+    "mtime": 1786611623.635604,
+    "ast_hash": "f0607f97f38fa0faaea370392e198c05",
+    "semantic_hash": "f0607f97f38fa0faaea370392e198c05"
+  },
+  "app/src/main/kotlin/com/genesyx/app/notifications/ReminderNotifier.kt": {
+    "mtime": 1786611623.635604,
+    "ast_hash": "e902cdf1553c4f374054f9677b59bf1c",
+    "semantic_hash": "e902cdf1553c4f374054f9677b59bf1c"
+  },
+  "app/src/main/kotlin/com/genesyx/app/notifications/ReminderPolicy.kt": {
+    "mtime": 1786611623.635604,
+    "ast_hash": "4ec8a4acaacb744c30edb1a59d232a29",
+    "semantic_hash": "4ec8a4acaacb744c30edb1a59d232a29"
+  },
+  "app/src/main/kotlin/com/genesyx/app/notifications/ReminderScheduler.kt": {
+    "mtime": 1786611623.635604,
+    "ast_hash": "ddb73bc2c97ab15a85862ef1731e48aa",
+    "semantic_hash": "ddb73bc2c97ab15a85862ef1731e48aa"
+  },
+  "app/src/main/kotlin/com/genesyx/app/notifications/ReminderWorker.kt": {
+    "mtime": 1786611623.635604,
+    "ast_hash": "2e7a0de486e519c56f4547a79aaf8c68",
+    "semantic_hash": "2e7a0de486e519c56f4547a79aaf8c68"
+  },
+  "app/src/main/kotlin/com/genesyx/app/notifications/SupplementReminderScheduler.kt": {
+    "mtime": 1786611623.635604,
+    "ast_hash": "1e7074529082e473a5a35982da553b31",
+    "semantic_hash": "1e7074529082e473a5a35982da553b31"
+  },
+  "app/src/main/kotlin/com/genesyx/app/notifications/SupplementReminderWorker.kt": {
+    "mtime": 1786611623.635604,
+    "ast_hash": "f2020e3758768e0d769450bbf06e9359",
+    "semantic_hash": "f2020e3758768e0d769450bbf06e9359"
+  },
+  "app/src/main/kotlin/com/genesyx/app/notifications/model/NotificationSettings.kt": {
+    "mtime": 1786611623.635604,
+    "ast_hash": "b6ee3b139a6f31788cb90d9fea53930f",
+    "semantic_hash": "b6ee3b139a6f31788cb90d9fea53930f"
+  },
+  "app/src/main/kotlin/com/genesyx/app/notifications/model/ReminderKind.kt": {
+    "mtime": 1786611623.6366699,
+    "ast_hash": "1027b2b83025c273f31d929d300f23ce",
+    "semantic_hash": "1027b2b83025c273f31d929d300f23ce"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/AppViewModel.kt": {
+    "mtime": 1786611623.6366699,
+    "ast_hash": "5b46d37489178670853dd25f6c52bc78",
+    "semantic_hash": "5b46d37489178670853dd25f6c52bc78"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/clients/ClientsScreen.kt": {
+    "mtime": 1786611623.6371455,
+    "ast_hash": "ae8c3374906b3e3465ddeb45668c9f0c",
+    "semantic_hash": "ae8c3374906b3e3465ddeb45668c9f0c"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/clients/ClientsViewModel.kt": {
+    "mtime": 1786611623.637482,
+    "ast_hash": "79af4c6998da9b635eaf89a27413e5dc",
+    "semantic_hash": "79af4c6998da9b635eaf89a27413e5dc"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/components/BrandOrb.kt": {
+    "mtime": 1786611623.637482,
+    "ast_hash": "2cb5bd7ab05953cbdfebf1b28a00cfb9",
+    "semantic_hash": "2cb5bd7ab05953cbdfebf1b28a00cfb9"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/components/CitationList.kt": {
+    "mtime": 1786611623.637842,
+    "ast_hash": "ae2a85282665be3d155cfe46c6eab2a4",
+    "semantic_hash": "ae2a85282665be3d155cfe46c6eab2a4"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/components/CommonUi.kt": {
+    "mtime": 1786611623.637842,
+    "ast_hash": "3fc83820c4aec429c1f7ad137882cd8c",
+    "semantic_hash": "3fc83820c4aec429c1f7ad137882cd8c"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/components/CycleSettingsDialog.kt": {
+    "mtime": 1786611623.637842,
+    "ast_hash": "7255cb2392a47d06c7a0f42deb68c546",
+    "semantic_hash": "7255cb2392a47d06c7a0f42deb68c546"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/components/ExpandableInfo.kt": {
+    "mtime": 1786611623.637842,
+    "ast_hash": "5296b98a038dc696048e8508137c6094",
+    "semantic_hash": "5296b98a038dc696048e8508137c6094"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/components/GenesyxBottomNav.kt": {
+    "mtime": 1786611623.637842,
+    "ast_hash": "641cdd341779ad3f3def92c26e8b8b3a",
+    "semantic_hash": "641cdd341779ad3f3def92c26e8b8b3a"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/components/HydrationGoalDialog.kt": {
+    "mtime": 1786611623.637842,
+    "ast_hash": "44007fd2612031c3a5575eb6701373d0",
+    "semantic_hash": "44007fd2612031c3a5575eb6701373d0"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/components/HydrationStatusPill.kt": {
+    "mtime": 1786611623.637842,
+    "ast_hash": "db5457ac110c53f8bd8e1bee5d584e64",
+    "semantic_hash": "db5457ac110c53f8bd8e1bee5d584e64"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/components/LogDaySummary.kt": {
+    "mtime": 1786611623.637842,
+    "ast_hash": "03ef6a8ddccf4007b9e523bb5476fdee",
+    "semantic_hash": "03ef6a8ddccf4007b9e523bb5476fdee"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/components/PastDatePickerDialog.kt": {
+    "mtime": 1786611623.637842,
+    "ast_hash": "22e5c64731362960d073e6e1da5636a6",
+    "semantic_hash": "22e5c64731362960d073e6e1da5636a6"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/components/PhLogDialog.kt": {
+    "mtime": 1786611623.637842,
+    "ast_hash": "d09757b726fefc542c6a447db9aa7c48",
+    "semantic_hash": "d09757b726fefc542c6a447db9aa7c48"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/components/PhTrackerCard.kt": {
+    "mtime": 1786611623.637842,
+    "ast_hash": "13e3f1feb86389f47c1b2a21b25a2906",
+    "semantic_hash": "13e3f1feb86389f47c1b2a21b25a2906"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/components/ScreenHeader.kt": {
+    "mtime": 1786611623.637842,
+    "ast_hash": "59f9433e6c1381f2e4a8c9d2c41852e6",
+    "semantic_hash": "59f9433e6c1381f2e4a8c9d2c41852e6"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/components/Validation.kt": {
+    "mtime": 1786611623.637842,
+    "ast_hash": "b124ac2be3ef2c93809f7e9cd8924ece",
+    "semantic_hash": "b124ac2be3ef2c93809f7e9cd8924ece"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/history/LogHistoryScreen.kt": {
+    "mtime": 1786611623.637842,
+    "ast_hash": "6f0f2b59a5cd3f3d9cd8140172fa3d5b",
+    "semantic_hash": "6f0f2b59a5cd3f3d9cd8140172fa3d5b"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/history/LogHistoryViewModel.kt": {
+    "mtime": 1786611623.6393816,
+    "ast_hash": "cef2cbbf893b1687677b10e6fd8f5070",
+    "semantic_hash": "cef2cbbf893b1687677b10e6fd8f5070"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/home/HomeScreen.kt": {
+    "mtime": 1786611623.6393816,
+    "ast_hash": "172e5c1f1295bd6bedc90aa2daa17898",
+    "semantic_hash": "172e5c1f1295bd6bedc90aa2daa17898"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/home/HomeViewModel.kt": {
+    "mtime": 1786611623.6400099,
+    "ast_hash": "ad25902ddfbcf606cde9d5bcb60d8025",
+    "semantic_hash": "ad25902ddfbcf606cde9d5bcb60d8025"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/insights/ConsistencyInsightLogic.kt": {
+    "mtime": 1786611623.6400099,
+    "ast_hash": "21dcfecc1964eccc32082f889808e42f",
+    "semantic_hash": "21dcfecc1964eccc32082f889808e42f"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/insights/CycleRegularityLogic.kt": {
+    "mtime": 1786611623.640291,
+    "ast_hash": "cef5048b23d6118dde18b46dfe41e92c",
+    "semantic_hash": "cef5048b23d6118dde18b46dfe41e92c"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/insights/HydrationInsightLogic.kt": {
+    "mtime": 1786611623.640291,
+    "ast_hash": "066160749c4c6b829682f2fbc7412af2",
+    "semantic_hash": "066160749c4c6b829682f2fbc7412af2"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/insights/InsightsScreen.kt": {
+    "mtime": 1786611623.640291,
+    "ast_hash": "96d53c1007a8b09d092183ac7f8b6ae5",
+    "semantic_hash": "96d53c1007a8b09d092183ac7f8b6ae5"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/insights/InsightsViewModel.kt": {
+    "mtime": 1786611623.640291,
+    "ast_hash": "3fb940eca739f4a3de1721b8d6604665",
+    "semantic_hash": "3fb940eca739f4a3de1721b8d6604665"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/insights/OvulationLogic.kt": {
+    "mtime": 1786611623.640291,
+    "ast_hash": "88c3140fb6f3a9e227c6f4feba420aa4",
+    "semantic_hash": "88c3140fb6f3a9e227c6f4feba420aa4"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/insights/PhInsightLogic.kt": {
+    "mtime": 1786611623.640291,
+    "ast_hash": "7c0d8a77bc400693b2379bf080aacd9f",
+    "semantic_hash": "7c0d8a77bc400693b2379bf080aacd9f"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/insights/SleepInsightLogic.kt": {
+    "mtime": 1786611623.640291,
+    "ast_hash": "a501bf2c45dfa17a3b4f101c04dea1a5",
+    "semantic_hash": "a501bf2c45dfa17a3b4f101c04dea1a5"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/insights/SupplementInsightLogic.kt": {
+    "mtime": 1786611623.640291,
+    "ast_hash": "db4fc15bc802413ecdff3c57b02150e0",
+    "semantic_hash": "db4fc15bc802413ecdff3c57b02150e0"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/insights/SymptomPatternLogic.kt": {
+    "mtime": 1786611623.640291,
+    "ast_hash": "1ac8379329ba500c4165ca4e780a320b",
+    "semantic_hash": "1ac8379329ba500c4165ca4e780a320b"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/insights/WeeklySummaryLogic.kt": {
+    "mtime": 1786611623.640291,
+    "ast_hash": "782689334bb33dda1f3201434ced84e5",
+    "semantic_hash": "782689334bb33dda1f3201434ced84e5"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/learn/ArticleDetailScreen.kt": {
+    "mtime": 1786611623.640291,
+    "ast_hash": "e2741bb5e6758bf888bc6cb580563f3c",
+    "semantic_hash": "e2741bb5e6758bf888bc6cb580563f3c"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/learn/LearnScreen.kt": {
+    "mtime": 1786611623.642083,
+    "ast_hash": "699a5032f7486b780b2b53fe9defb3d3",
+    "semantic_hash": "699a5032f7486b780b2b53fe9defb3d3"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/learn/LearnSearchScreen.kt": {
+    "mtime": 1786611623.642083,
+    "ast_hash": "ad5eeef5f460997658b69e8e28297b97",
+    "semantic_hash": "ad5eeef5f460997658b69e8e28297b97"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/learn/LearnViewModel.kt": {
+    "mtime": 1786611623.642083,
+    "ast_hash": "52f94d8ed3aa070b4414c17d6f0eb367",
+    "semantic_hash": "52f94d8ed3aa070b4414c17d6f0eb367"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/navigation/GenesyxNavGraph.kt": {
+    "mtime": 1786611623.642083,
+    "ast_hash": "9d66db7bd01c6fe365791c14cc1bead1",
+    "semantic_hash": "9d66db7bd01c6fe365791c14cc1bead1"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/navigation/Screen.kt": {
+    "mtime": 1786611623.6427708,
+    "ast_hash": "f6ab7442a4fbf93ba9f5b22bd7f41456",
+    "semantic_hash": "f6ab7442a4fbf93ba9f5b22bd7f41456"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/nutrition/MealLogSection.kt": {
+    "mtime": 1786611623.6427708,
+    "ast_hash": "a948c1e670ca635c193071b942bf0a53",
+    "semantic_hash": "a948c1e670ca635c193071b942bf0a53"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/nutrition/NutritionScreen.kt": {
+    "mtime": 1786611623.6429186,
+    "ast_hash": "d6db925b04bd2e9805918af07c7f08f0",
+    "semantic_hash": "d6db925b04bd2e9805918af07c7f08f0"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/nutrition/NutritionViewModel.kt": {
+    "mtime": 1786611623.6429186,
+    "ast_hash": "3ec9301a24ef3d4ff72b0c0511dfa16a",
+    "semantic_hash": "3ec9301a24ef3d4ff72b0c0511dfa16a"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/nutrition/RecipesSection.kt": {
+    "mtime": 1786611623.6429186,
+    "ast_hash": "4686e71dbe6474542663d6567ac9d3ad",
+    "semantic_hash": "4686e71dbe6474542663d6567ac9d3ad"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/nutrition/UserSupplementsSection.kt": {
+    "mtime": 1786611623.6429186,
+    "ast_hash": "d1d28d1499c9f7f0099609b9da5c4d34",
+    "semantic_hash": "d1d28d1499c9f7f0099609b9da5c4d34"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/onboarding/OnboardingIntroScreen.kt": {
+    "mtime": 1786611623.6429186,
+    "ast_hash": "3e4daeee9f82415c31148a1a3054bb5d",
+    "semantic_hash": "3e4daeee9f82415c31148a1a3054bb5d"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/onboarding/OnboardingQuizScreen.kt": {
+    "mtime": 1786611623.6437063,
+    "ast_hash": "2e5c948bd34838ed5c391d6296de1db0",
+    "semantic_hash": "2e5c948bd34838ed5c391d6296de1db0"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/onboarding/OnboardingQuizViewModel.kt": {
+    "mtime": 1786611623.6437063,
+    "ast_hash": "b9d37f719bc8b33e8914f0c104264158",
+    "semantic_hash": "b9d37f719bc8b33e8914f0c104264158"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/onboarding/ReadinessSummaryScreen.kt": {
+    "mtime": 1786611623.6437063,
+    "ast_hash": "688147874cf1ed802f2e7473b71a95f7",
+    "semantic_hash": "688147874cf1ed802f2e7473b71a95f7"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/onboarding/SplashScreen.kt": {
+    "mtime": 1786611623.6437063,
+    "ast_hash": "2d869dfc4d0b107b9fa78d22efc4524a",
+    "semantic_hash": "2d869dfc4d0b107b9fa78d22efc4524a"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/onboarding/WaitlistScreen.kt": {
+    "mtime": 1786611623.6437063,
+    "ast_hash": "6ca7515a5ea305ba465529df463d8e9d",
+    "semantic_hash": "6ca7515a5ea305ba465529df463d8e9d"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/onboarding/WaitlistViewModel.kt": {
+    "mtime": 1786611623.6437063,
+    "ast_hash": "737578da495aec8c69095c987ff16828",
+    "semantic_hash": "737578da495aec8c69095c987ff16828"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/ph/PhTrackerSection.kt": {
+    "mtime": 1786611623.6437063,
+    "ast_hash": "c7fb2d7bafa533af38d2bc2f9b667694",
+    "semantic_hash": "c7fb2d7bafa533af38d2bc2f9b667694"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/profile/ProfileScreen.kt": {
+    "mtime": 1786611623.6437063,
+    "ast_hash": "79ee73cbf8a4c0c7b0c7fe9d0589e0f8",
+    "semantic_hash": "79ee73cbf8a4c0c7b0c7fe9d0589e0f8"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/profile/ProfileViewModel.kt": {
+    "mtime": 1786611623.645111,
+    "ast_hash": "b0c204dbed72a68136ca0d79dad8c01d",
+    "semantic_hash": "b0c204dbed72a68136ca0d79dad8c01d"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/profile/TrackingPreferencesDialog.kt": {
+    "mtime": 1786611623.645111,
+    "ast_hash": "4c87cf48ab7b4cf8477b5445da3c9f36",
+    "semantic_hash": "4c87cf48ab7b4cf8477b5445da3c9f36"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/screens/AuthScreen.kt": {
+    "mtime": 1786611623.645111,
+    "ast_hash": "7c4c9e7e9a1b7c548646ceb56b1d9f00",
+    "semantic_hash": "7c4c9e7e9a1b7c548646ceb56b1d9f00"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/screens/InviteScreen.kt": {
+    "mtime": 1786611623.6456738,
+    "ast_hash": "7a3921fac91bf7163dd14dd60e8619eb",
+    "semantic_hash": "7a3921fac91bf7163dd14dd60e8619eb"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/screens/LogScreen.kt": {
+    "mtime": 1786611623.6456738,
+    "ast_hash": "e3bb9d13a5609dd013da9b97765513c9",
+    "semantic_hash": "e3bb9d13a5609dd013da9b97765513c9"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/screens/LogViewModel.kt": {
+    "mtime": 1786611623.6456738,
+    "ast_hash": "d7cdd61bfe8839e8dc1124e321e93354",
+    "semantic_hash": "d7cdd61bfe8839e8dc1124e321e93354"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/screens/PregnancyScreen.kt": {
+    "mtime": 1786611623.6456738,
+    "ast_hash": "90b666fba4b1905244e999c5bbb30c28",
+    "semantic_hash": "90b666fba4b1905244e999c5bbb30c28"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/settings/PrePermissionSheet.kt": {
+    "mtime": 1786611623.6456738,
+    "ast_hash": "d7e1a8b367f3cede0185f1575422b331",
+    "semantic_hash": "d7e1a8b367f3cede0185f1575422b331"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/settings/ReminderSettingsScreen.kt": {
+    "mtime": 1786611623.6462805,
+    "ast_hash": "cbb2d28c92aef4d11dc3f5ab4fbad181",
+    "semantic_hash": "cbb2d28c92aef4d11dc3f5ab4fbad181"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/settings/ReminderSettingsViewModel.kt": {
+    "mtime": 1786611623.6462805,
+    "ast_hash": "d9716128bca9d8846f7c107e9d227219",
+    "semantic_hash": "d9716128bca9d8846f7c107e9d227219"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/theme/Color.kt": {
+    "mtime": 1786611623.6462805,
+    "ast_hash": "9c666ec5181a55d62566d3de394d46f6",
+    "semantic_hash": "9c666ec5181a55d62566d3de394d46f6"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/theme/Theme.kt": {
+    "mtime": 1786611623.646753,
+    "ast_hash": "a9d66ffffa146b73ceff889bdd191e3d",
+    "semantic_hash": "a9d66ffffa146b73ceff889bdd191e3d"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/theme/Type.kt": {
+    "mtime": 1786611623.646753,
+    "ast_hash": "369f4c8fa8653252ee4d30c5bf0cb6f0",
+    "semantic_hash": "369f4c8fa8653252ee4d30c5bf0cb6f0"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/track/DayMarkers.kt": {
+    "mtime": 1786611623.646753,
+    "ast_hash": "b4ee0c979ce1007b6cfa587828cb5983",
+    "semantic_hash": "b4ee0c979ce1007b6cfa587828cb5983"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/track/TrackScreen.kt": {
+    "mtime": 1786611623.6468694,
+    "ast_hash": "26ec6918476b306ddf25719dbe0fb95d",
+    "semantic_hash": "26ec6918476b306ddf25719dbe0fb95d"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/track/TrackViewModel.kt": {
+    "mtime": 1786611623.6468694,
+    "ast_hash": "562753d371c744028898d234828b8ebb",
+    "semantic_hash": "562753d371c744028898d234828b8ebb"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/track/TrackerSummaryLogic.kt": {
+    "mtime": 1786611623.6468694,
+    "ast_hash": "77f62d6c7e5512aef341695f373a6580",
+    "semantic_hash": "77f62d6c7e5512aef341695f373a6580"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/track/detail/CycleDetailScreen.kt": {
+    "mtime": 1786611623.6468694,
+    "ast_hash": "597ca64a08b6cce5083e2be1219ee22b",
+    "semantic_hash": "597ca64a08b6cce5083e2be1219ee22b"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/track/detail/HydrationDetailScreen.kt": {
+    "mtime": 1786611623.6474137,
+    "ast_hash": "4f3e8c402944ca4196fdd78e10f6c63c",
+    "semantic_hash": "4f3e8c402944ca4196fdd78e10f6c63c"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/track/detail/HydrationDetailViewModel.kt": {
+    "mtime": 1786611623.6474137,
+    "ast_hash": "ccef1a1b508a3ddca0cd3a33060fc249",
+    "semantic_hash": "ccef1a1b508a3ddca0cd3a33060fc249"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/track/detail/NutritionDetailScreen.kt": {
+    "mtime": 1786611623.6474137,
+    "ast_hash": "48fc8b7be3c061c1f4eb2dbb12235be1",
+    "semantic_hash": "48fc8b7be3c061c1f4eb2dbb12235be1"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/track/detail/PhDetailScreen.kt": {
+    "mtime": 1786611623.6474137,
+    "ast_hash": "b02cece1353fb1bc5a761274a7805efe",
+    "semantic_hash": "b02cece1353fb1bc5a761274a7805efe"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/track/detail/SleepDetailScreen.kt": {
+    "mtime": 1786611623.6474137,
+    "ast_hash": "351cd5bb4951a1881508ddc0d44b805e",
+    "semantic_hash": "351cd5bb4951a1881508ddc0d44b805e"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/track/detail/SymptomsDetailScreen.kt": {
+    "mtime": 1786611623.6474137,
+    "ast_hash": "5ff731b1f76c36643afd73705b3ea9c8",
+    "semantic_hash": "5ff731b1f76c36643afd73705b3ea9c8"
+  },
+  "app/src/main/kotlin/com/genesyx/app/ui/track/detail/TrackerDetailScaffold.kt": {
+    "mtime": 1786611623.6474137,
+    "ast_hash": "795347f254873e02df7bc3cc745b7e6e",
+    "semantic_hash": "795347f254873e02df7bc3cc745b7e6e"
+  },
+  "app/src/test/kotlin/com/genesyx/app/auth/AuthRepositoryTest.kt": {
+    "mtime": 1786611623.659634,
+    "ast_hash": "574cdec46ad1498e525df52b20bfcc07",
+    "semantic_hash": "574cdec46ad1498e525df52b20bfcc07"
+  },
+  "app/src/test/kotlin/com/genesyx/app/data/PhRepositoryRangeTest.kt": {
+    "mtime": 1786611623.659634,
+    "ast_hash": "477bdc21a7e5ec21a4d3baa451dc48fc",
+    "semantic_hash": "477bdc21a7e5ec21a4d3baa451dc48fc"
+  },
+  "app/src/test/kotlin/com/genesyx/app/data/PhRepositoryTest.kt": {
+    "mtime": 1786611623.66006,
+    "ast_hash": "2163137dee14b7f29bd9b6da10c1140c",
+    "semantic_hash": "2163137dee14b7f29bd9b6da10c1140c"
+  },
+  "app/src/test/kotlin/com/genesyx/app/data/PreferencesRepositoryTest.kt": {
+    "mtime": 1786611623.66006,
+    "ast_hash": "8e2184509b70cb5bda800f595f8ea5e6",
+    "semantic_hash": "8e2184509b70cb5bda800f595f8ea5e6"
+  },
+  "app/src/test/kotlin/com/genesyx/app/data/QuizAnswersRepositoryTest.kt": {
+    "mtime": 1786611623.66006,
+    "ast_hash": "d72519a678f18dd96376d50d1a94f2b6",
+    "semantic_hash": "d72519a678f18dd96376d50d1a94f2b6"
+  },
+  "app/src/test/kotlin/com/genesyx/app/data/SyncStatusRepositoryTest.kt": {
+    "mtime": 1786611623.66006,
+    "ast_hash": "7393ac53184134be6285e2d4573f9a6e",
+    "semantic_hash": "7393ac53184134be6285e2d4573f9a6e"
+  },
+  "app/src/test/kotlin/com/genesyx/app/data/UserSupplementRepositoryTest.kt": {
+    "mtime": 1786611623.66006,
+    "ast_hash": "68b602c8aa6be290d82f5e648e79ee12",
+    "semantic_hash": "68b602c8aa6be290d82f5e648e79ee12"
+  },
+  "app/src/test/kotlin/com/genesyx/app/data/local/datastore/GenesyxPreferencesDataStoreTest.kt": {
+    "mtime": 1786611623.6609871,
+    "ast_hash": "63c4f41ab20f08e096f8def9152d09ae",
+    "semantic_hash": "63c4f41ab20f08e096f8def9152d09ae"
+  },
+  "app/src/test/kotlin/com/genesyx/app/data/local/entity/MealEntryEntityTest.kt": {
+    "mtime": 1786611623.6609871,
+    "ast_hash": "a57a33324bf36a408c29a56113bcbb76",
+    "semantic_hash": "a57a33324bf36a408c29a56113bcbb76"
+  },
+  "app/src/test/kotlin/com/genesyx/app/data/remote/dto/DailyLogDtoTest.kt": {
+    "mtime": 1786611623.6616037,
+    "ast_hash": "203d587a4233f362995cbdc32b1173a3",
+    "semantic_hash": "203d587a4233f362995cbdc32b1173a3"
+  },
+  "app/src/test/kotlin/com/genesyx/app/data/remote/dto/QuizAnswersDtoTest.kt": {
+    "mtime": 1786611623.6619706,
+    "ast_hash": "afc176de32cf82df2f7e51cbe715475a",
+    "semantic_hash": "afc176de32cf82df2f7e51cbe715475a"
+  },
+  "app/src/test/kotlin/com/genesyx/app/domain/content/LearnContentTest.kt": {
+    "mtime": 1786611623.662151,
+    "ast_hash": "af6103943a0bc573db03230bcab08e2b",
+    "semantic_hash": "af6103943a0bc573db03230bcab08e2b"
+  },
+  "app/src/test/kotlin/com/genesyx/app/domain/content/LearnDripTest.kt": {
+    "mtime": 1786611623.6623433,
+    "ast_hash": "4a0cddfd4eaf58c15aa3c73e36573f21",
+    "semantic_hash": "4a0cddfd4eaf58c15aa3c73e36573f21"
+  },
+  "app/src/test/kotlin/com/genesyx/app/domain/content/NutritionContentTest.kt": {
+    "mtime": 1786611623.6623433,
+    "ast_hash": "9bbf093a09cfd4d326248699db1dbb05",
+    "semantic_hash": "9bbf093a09cfd4d326248699db1dbb05"
+  },
+  "app/src/test/kotlin/com/genesyx/app/domain/cycle/CycleEngineTest.kt": {
+    "mtime": 1786611623.6623433,
+    "ast_hash": "a66cbafafdcd5b57fa50f49aebdadf1f",
+    "semantic_hash": "a66cbafafdcd5b57fa50f49aebdadf1f"
+  },
+  "app/src/test/kotlin/com/genesyx/app/domain/hydration/HydrationCoachTest.kt": {
+    "mtime": 1786611623.6623433,
+    "ast_hash": "e7cd34f0008d53023bb2dcf3dcc66475",
+    "semantic_hash": "e7cd34f0008d53023bb2dcf3dcc66475"
+  },
+  "app/src/test/kotlin/com/genesyx/app/domain/hydration/HydrationFormatTest.kt": {
+    "mtime": 1786611623.6626384,
+    "ast_hash": "edae8a6959ff9fd0d1cca60c3dd371f6",
+    "semantic_hash": "edae8a6959ff9fd0d1cca60c3dd371f6"
+  },
+  "app/src/test/kotlin/com/genesyx/app/domain/model/SupplementLogRowsTest.kt": {
+    "mtime": 1786611623.6626384,
+    "ast_hash": "77ad433dab5b13dbc2b3e7c1cd0adf4b",
+    "semantic_hash": "77ad433dab5b13dbc2b3e7c1cd0adf4b"
+  },
+  "app/src/test/kotlin/com/genesyx/app/domain/model/SupplementTest.kt": {
+    "mtime": 1786611623.6630025,
+    "ast_hash": "b0db5dae22341c575cb2ad7b302b4c8c",
+    "semantic_hash": "b0db5dae22341c575cb2ad7b302b4c8c"
+  },
+  "app/src/test/kotlin/com/genesyx/app/domain/model/UserSupplementTest.kt": {
+    "mtime": 1786611623.6630025,
+    "ast_hash": "acbf652c13d406b593c2b9b4bffa9b4f",
+    "semantic_hash": "acbf652c13d406b593c2b9b4bffa9b4f"
+  },
+  "app/src/test/kotlin/com/genesyx/app/domain/ph/PhCopyBannedPhraseTest.kt": {
+    "mtime": 1786611623.6630025,
+    "ast_hash": "c579ffc612bb8a2c85043da06bfd4fd1",
+    "semantic_hash": "c579ffc612bb8a2c85043da06bfd4fd1"
+  },
+  "app/src/test/kotlin/com/genesyx/app/domain/ph/PhCopyTest.kt": {
+    "mtime": 1786611623.6634886,
+    "ast_hash": "2a7c04339ad3c3decac84fd173080103",
+    "semantic_hash": "2a7c04339ad3c3decac84fd173080103"
+  },
+  "app/src/test/kotlin/com/genesyx/app/domain/ph/PhEducationCopyTest.kt": {
+    "mtime": 1786611623.6634886,
+    "ast_hash": "58780d84d3f43ab9432053267caee828",
+    "semantic_hash": "58780d84d3f43ab9432053267caee828"
+  },
+  "app/src/test/kotlin/com/genesyx/app/domain/streaks/StreakEngineTest.kt": {
+    "mtime": 1786611623.6634886,
+    "ast_hash": "dc2850a212490f5fab70879800697581",
+    "semantic_hash": "dc2850a212490f5fab70879800697581"
+  },
+  "app/src/test/kotlin/com/genesyx/app/domain/time/WeekBucketsTest.kt": {
+    "mtime": 1786611623.6634886,
+    "ast_hash": "2b74eb074963b5fdfd911e5671a1ccd0",
+    "semantic_hash": "2b74eb074963b5fdfd911e5671a1ccd0"
+  },
+  "app/src/test/kotlin/com/genesyx/app/domain/tracking/TrackingVectorTest.kt": {
+    "mtime": 1786611623.6634886,
+    "ast_hash": "c4f60b68dc8b5d62f9c83a0602099fdd",
+    "semantic_hash": "c4f60b68dc8b5d62f9c83a0602099fdd"
+  },
+  "app/src/test/kotlin/com/genesyx/app/notifications/NotificationPermissionTest.kt": {
+    "mtime": 1786611623.6634886,
+    "ast_hash": "cc06818fbbe621a927039fa500fb5b84",
+    "semantic_hash": "cc06818fbbe621a927039fa500fb5b84"
+  },
+  "app/src/test/kotlin/com/genesyx/app/notifications/ReminderPolicyTest.kt": {
+    "mtime": 1786611623.6645038,
+    "ast_hash": "41d1333328121268209eca787c5aaf93",
+    "semantic_hash": "41d1333328121268209eca787c5aaf93"
+  },
+  "app/src/test/kotlin/com/genesyx/app/notifications/SupplementReminderSchedulerTest.kt": {
+    "mtime": 1786611623.6645038,
+    "ast_hash": "62344e2d3ff619241af9ea5e7f62bbd6",
+    "semantic_hash": "62344e2d3ff619241af9ea5e7f62bbd6"
+  },
+  "app/src/test/kotlin/com/genesyx/app/ui/AppViewModelTest.kt": {
+    "mtime": 1786611623.6645038,
+    "ast_hash": "28397a00135a062096b24cc6e20d5a9f",
+    "semantic_hash": "28397a00135a062096b24cc6e20d5a9f"
+  },
+  "app/src/test/kotlin/com/genesyx/app/ui/history/LogHistoryViewModelTest.kt": {
+    "mtime": 1786611623.66496,
+    "ast_hash": "baf177e331ead8cf845607c3ceaafdcd",
+    "semantic_hash": "baf177e331ead8cf845607c3ceaafdcd"
+  },
+  "app/src/test/kotlin/com/genesyx/app/ui/insights/ConsistencyInsightLogicTest.kt": {
+    "mtime": 1786611623.66496,
+    "ast_hash": "13f06185bf5a04bfb65144f21c27229f",
+    "semantic_hash": "13f06185bf5a04bfb65144f21c27229f"
+  },
+  "app/src/test/kotlin/com/genesyx/app/ui/insights/CycleRegularityLogicTest.kt": {
+    "mtime": 1786611623.665487,
+    "ast_hash": "db0f3b48373cf7919eed0ee5b1cd7639",
+    "semantic_hash": "db0f3b48373cf7919eed0ee5b1cd7639"
+  },
+  "app/src/test/kotlin/com/genesyx/app/ui/insights/HydrationInsightLogicTest.kt": {
+    "mtime": 1786611623.665487,
+    "ast_hash": "18c2c113af90ed516301a7575c883009",
+    "semantic_hash": "18c2c113af90ed516301a7575c883009"
+  },
+  "app/src/test/kotlin/com/genesyx/app/ui/insights/OvulationLogicTest.kt": {
+    "mtime": 1786611623.665487,
+    "ast_hash": "0951f748b7bdf1dd23758ec3173418a0",
+    "semantic_hash": "0951f748b7bdf1dd23758ec3173418a0"
+  },
+  "app/src/test/kotlin/com/genesyx/app/ui/insights/PhInsightLogicTest.kt": {
+    "mtime": 1786611623.665487,
+    "ast_hash": "23e6f51951ba9b372f97b09144746afe",
+    "semantic_hash": "23e6f51951ba9b372f97b09144746afe"
+  },
+  "app/src/test/kotlin/com/genesyx/app/ui/insights/SleepInsightLogicTest.kt": {
+    "mtime": 1786611623.665487,
+    "ast_hash": "ba50b4e1a5951005384282653f888806",
+    "semantic_hash": "ba50b4e1a5951005384282653f888806"
+  },
+  "app/src/test/kotlin/com/genesyx/app/ui/insights/SupplementInsightLogicTest.kt": {
+    "mtime": 1786611623.665487,
+    "ast_hash": "24c81df2e750d9a9fb8ddcc4cf885a9b",
+    "semantic_hash": "24c81df2e750d9a9fb8ddcc4cf885a9b"
+  },
+  "app/src/test/kotlin/com/genesyx/app/ui/insights/SymptomPatternLogicTest.kt": {
+    "mtime": 1786611623.665487,
+    "ast_hash": "96a186e6240d891da15b778993bbac84",
+    "semantic_hash": "96a186e6240d891da15b778993bbac84"
+  },
+  "app/src/test/kotlin/com/genesyx/app/ui/insights/WeeklySummaryLogicTest.kt": {
+    "mtime": 1786611623.665487,
+    "ast_hash": "1c018ded3332bda788848b2016992951",
+    "semantic_hash": "1c018ded3332bda788848b2016992951"
+  },
+  "app/src/test/kotlin/com/genesyx/app/ui/screens/AuthViewModelGoogleErrorTest.kt": {
+    "mtime": 1786611623.665487,
+    "ast_hash": "b840bc71661032cdbaaa2988994f6902",
+    "semantic_hash": "b840bc71661032cdbaaa2988994f6902"
+  },
+  "app/src/test/kotlin/com/genesyx/app/ui/screens/LogViewModelTest.kt": {
+    "mtime": 1786611623.666126,
+    "ast_hash": "c619ebd3542a5dc2a4d0885fa3e3e961",
+    "semantic_hash": "c619ebd3542a5dc2a4d0885fa3e3e961"
+  },
+  "app/src/test/kotlin/com/genesyx/app/ui/track/DayMarkersTest.kt": {
+    "mtime": 1786611623.666126,
+    "ast_hash": "7ba02836343b3feecac6f125521e614f",
+    "semantic_hash": "7ba02836343b3feecac6f125521e614f"
+  },
+  "app/src/test/kotlin/com/genesyx/app/ui/track/TrackViewModelTest.kt": {
+    "mtime": 1786611623.666479,
+    "ast_hash": "778dcfa1fb45a54e7d8c5cf0484a1845",
+    "semantic_hash": "778dcfa1fb45a54e7d8c5cf0484a1845"
+  },
+  "app/src/test/kotlin/com/genesyx/app/ui/track/TrackerSummaryLogicTest.kt": {
+    "mtime": 1786611623.666479,
+    "ast_hash": "148650ffc35762f404c0fb5e99cc9863",
+    "semantic_hash": "148650ffc35762f404c0fb5e99cc9863"
+  },
+  "app/src/test/kotlin/com/genesyx/app/ui/track/detail/SleepDetailViewModelTest.kt": {
+    "mtime": 1786611623.666479,
+    "ast_hash": "6b4aa1b10f12c1564803aa91cf86b4d9",
+    "semantic_hash": "6b4aa1b10f12c1564803aa91cf86b4d9"
+  },
+  "app/src/test/kotlin/com/genesyx/app/util/MainDispatcherRule.kt": {
+    "mtime": 1786611623.666479,
+    "ast_hash": "c0fab42e58c86993c840a88873d37791",
+    "semantic_hash": "c0fab42e58c86993c840a88873d37791"
+  },
+  "build.gradle.kts": {
+    "mtime": 1786611623.666479,
+    "ast_hash": "0e4ee70fab431b17898e86905cef422b",
+    "semantic_hash": "0e4ee70fab431b17898e86905cef422b"
+  },
+  "docs/migrations/2026-07-29_user_supplements.sql": {
+    "mtime": 1786611623.6675665,
+    "ast_hash": "fe72508cf369ff6881b86731d40fe72b",
+    "semantic_hash": "fe72508cf369ff6881b86731d40fe72b"
+  },
+  "docs/schema.sql": {
+    "mtime": 1786611623.6675665,
+    "ast_hash": "3477e9c3fc7b9b69c73c5ced2d4519b3",
+    "semantic_hash": "3477e9c3fc7b9b69c73c5ced2d4519b3"
+  },
+  "docs/supabase/verify_deletion.sql": {
+    "mtime": 1786611623.6675665,
+    "ast_hash": "4aeeddbee098894bad6e37da3dac097d",
+    "semantic_hash": "4aeeddbee098894bad6e37da3dac097d"
+  },
+  "gradlew": {
+    "mtime": 1786611623.6715283,
+    "ast_hash": "794669d78aef1dd5c7d889ef618b311a",
+    "semantic_hash": "794669d78aef1dd5c7d889ef618b311a"
+  },
+  "settings.gradle.kts": {
+    "mtime": 1786611623.6715283,
+    "ast_hash": "57fc7ef179a90930ff1d057f13f1d733",
+    "semantic_hash": "57fc7ef179a90930ff1d057f13f1d733"
+  },
+  ".github/workflows/android-ci.yml": {
+    "mtime": 1786611623.6117313,
+    "ast_hash": "5c1fd9ede0aac2a9725809a86e1c89df",
+    "semantic_hash": "5c1fd9ede0aac2a9725809a86e1c89df"
+  },
+  ".github/workflows/supabase-keepalive.yml": {
+    "mtime": 1786611623.612218,
+    "ast_hash": "86d18afc7d90abc01d1ad468e0ae5228",
+    "semantic_hash": "86d18afc7d90abc01d1ad468e0ae5228"
+  },
+  "APP_INVENTORY.md": {
+    "mtime": 1786611623.612218,
+    "ast_hash": "f5b23c9049a6b7328f66ae24ecff1f76",
+    "semantic_hash": "f5b23c9049a6b7328f66ae24ecff1f76"
+  },
+  "ARCHITECTURE.md": {
+    "mtime": 1786611623.612218,
+    "ast_hash": "c64f719e96f908d40e35430548ab358f",
+    "semantic_hash": "c64f719e96f908d40e35430548ab358f"
+  },
+  "AUTONOMOUS_RUN_LOG.md": {
+    "mtime": 1786611623.612218,
+    "ast_hash": "93a5ac7ba8baa3f83a52245653c204c2",
+    "semantic_hash": "93a5ac7ba8baa3f83a52245653c204c2"
+  },
+  "CHANGELOG.md": {
+    "mtime": 1786611623.612218,
+    "ast_hash": "7b9e18fa848401a6bf6d09109ad8a6d1",
+    "semantic_hash": "7b9e18fa848401a6bf6d09109ad8a6d1"
+  },
+  "CLAUDE.md": {
+    "mtime": 1786611623.612218,
+    "ast_hash": "d0e7c9c5beea21f25879581f6ac01079",
+    "semantic_hash": "d0e7c9c5beea21f25879581f6ac01079"
+  },
+  "FINAL_REPORT.md": {
+    "mtime": 1786611623.612218,
+    "ast_hash": "3ae900ed44ac9af7f8ba90dbeeadb9ff",
+    "semantic_hash": "3ae900ed44ac9af7f8ba90dbeeadb9ff"
+  },
+  "LAUNCH_WEEK.md": {
+    "mtime": 1786611623.612218,
+    "ast_hash": "aa38096c25013dfe84d13bc364bbb6c8",
+    "semantic_hash": "aa38096c25013dfe84d13bc364bbb6c8"
+  },
+  "MANUAL_TEST_CHECKLIST.md": {
+    "mtime": 1786611623.612218,
+    "ast_hash": "6154984c7e1e8cc5495f5eb20f7a6ca1",
+    "semantic_hash": "6154984c7e1e8cc5495f5eb20f7a6ca1"
+  },
+  "README.md": {
+    "mtime": 1786611623.612218,
+    "ast_hash": "bd83542af5729977c8a4b4ee4bfe53bb",
+    "semantic_hash": "bd83542af5729977c8a4b4ee4bfe53bb"
+  },
+  "docs/CYCLE_ENGINE.md": {
+    "mtime": 1786611623.666479,
+    "ast_hash": "f8332f26a168a6af4444336388ad8467",
+    "semantic_hash": "f8332f26a168a6af4444336388ad8467"
+  },
+  "docs/DATA_LAYER.md": {
+    "mtime": 1786611623.6675665,
+    "ast_hash": "9b9e436c1198e079938561e444116d30",
+    "semantic_hash": "9b9e436c1198e079938561e444116d30"
+  },
+  "docs/DESIGN_TOKENS.md": {
+    "mtime": 1786611623.6675665,
+    "ast_hash": "d5c2a0b113638e968662fecedc8ae4a5",
+    "semantic_hash": "d5c2a0b113638e968662fecedc8ae4a5"
+  },
+  "docs/GENESYX_P0_TEST_SCRIPT.md": {
+    "mtime": 1786611623.6675665,
+    "ast_hash": "82ffd3748a5e5e9b1ccf0c61e12af473",
+    "semantic_hash": "82ffd3748a5e5e9b1ccf0c61e12af473"
+  },
+  "docs/GENESYX_RELEASE_VERIFICATION_RUNBOOK.md": {
+    "mtime": 1786611623.6675665,
+    "ast_hash": "870d4eeaa1554e5da94f3016aaaac604",
+    "semantic_hash": "870d4eeaa1554e5da94f3016aaaac604"
+  },
+  "docs/IOS_LEARN_PARITY_HANDOFF.md": {
+    "mtime": 1786611623.6675665,
+    "ast_hash": "d12d27c9b3c129ce3cab13101f8362f6",
+    "semantic_hash": "d12d27c9b3c129ce3cab13101f8362f6"
+  },
+  "docs/LEARN_FEATURE_AUDIT.md": {
+    "mtime": 1786611623.6675665,
+    "ast_hash": "9722eced6cb161d3954dc781d533444c",
+    "semantic_hash": "9722eced6cb161d3954dc781d533444c"
+  },
+  "docs/SCREEN_LAYOUTS.md": {
+    "mtime": 1786611623.6675665,
+    "ast_hash": "338bc74403cb7b707a3912f83480b82c",
+    "semantic_hash": "338bc74403cb7b707a3912f83480b82c"
+  },
+  "docs/UIUX_SPEC.md": {
+    "mtime": 1786611623.6675665,
+    "ast_hash": "05fe38f82f284efcbcbcef67028ec68d",
+    "semantic_hash": "05fe38f82f284efcbcbcef67028ec68d"
+  },
+  "docs/V1_1_NOTIFICATIONS_AND_LEARN.md": {
+    "mtime": 1786611623.6675665,
+    "ast_hash": "46b27c13a90dd319a9c1e4fa0d7a689c",
+    "semantic_hash": "46b27c13a90dd319a9c1e4fa0d7a689c"
+  },
+  "docs/worklog/2026-07-14.md": {
+    "mtime": 1786611623.6675665,
+    "ast_hash": "094ec6fa0bab509e11d2e1d3b13204c1",
+    "semantic_hash": "094ec6fa0bab509e11d2e1d3b13204c1"
+  },
+  "docs/worklog/2026-07-16.md": {
+    "mtime": 1786611623.670576,
+    "ast_hash": "37233ceea98838a100d5e3432681b57e",
+    "semantic_hash": "37233ceea98838a100d5e3432681b57e"
+  },
+  "docs/worklog/2026-07-28.md": {
+    "mtime": 1786611623.670576,
+    "ast_hash": "c78436c54663aabe30777631cbead187",
+    "semantic_hash": "c78436c54663aabe30777631cbead187"
+  },
+  "app/src/main/assets/genesyx-logo.svg": {
+    "mtime": 1786611623.6194491,
+    "ast_hash": "504190b54c570c686ee1b2947dbe0c11",
+    "semantic_hash": "504190b54c570c686ee1b2947dbe0c11"
+  },
+  "app/src/main/res/drawable-nodpi/brand_lockup.png": {
+    "mtime": 1786611623.6482852,
+    "ast_hash": "4808ed1d2df892d11ebd109541be1df6",
+    "semantic_hash": "4808ed1d2df892d11ebd109541be1df6"
+  },
+  "app/src/main/res/drawable-nodpi/brand_lockup_dark.png": {
+    "mtime": 1786611623.6487775,
+    "ast_hash": "1f2fd22c21952ffc2cd408427b84bba2",
+    "semantic_hash": "1f2fd22c21952ffc2cd408427b84bba2"
+  },
+  "app/src/main/res/drawable-nodpi/egg_female.png": {
+    "mtime": 1786611623.6487775,
+    "ast_hash": "b195653a2f4d81ee1e3f2d4de9860f76",
+    "semantic_hash": "b195653a2f4d81ee1e3f2d4de9860f76"
+  },
+  "app/src/main/res/drawable-nodpi/egg_male.png": {
+    "mtime": 1786611623.6510978,
+    "ast_hash": "f4a50a742711461164c4261d737e12e3",
+    "semantic_hash": "f4a50a742711461164c4261d737e12e3"
+  },
+  "app/src/main/res/drawable-nodpi/home_hero_bg.jpg": {
+    "mtime": 1786611623.6510978,
+    "ast_hash": "87e742180c3769d1812bdb8baf943341",
+    "semantic_hash": "87e742180c3769d1812bdb8baf943341"
+  },
+  "app/src/main/res/drawable-nodpi/ic_launcher_foreground.png": {
+    "mtime": 1786611623.6510978,
+    "ast_hash": "95443eed66ecd980e7b89660c5b659d2",
+    "semantic_hash": "95443eed66ecd980e7b89660c5b659d2"
+  },
+  "app/src/main/res/drawable-nodpi/ic_launcher_monochrome.png": {
+    "mtime": 1786611623.6510978,
+    "ast_hash": "95443eed66ecd980e7b89660c5b659d2",
+    "semantic_hash": "95443eed66ecd980e7b89660c5b659d2"
+  },
+  "app/src/main/res/drawable-nodpi/learn_hero_eating_cycle.jpg": {
+    "mtime": 1786611623.6510978,
+    "ast_hash": "7102da5b62460914c1fd884046748bbd",
+    "semantic_hash": "7102da5b62460914c1fd884046748bbd"
+  },
+  "app/src/main/res/drawable-nodpi/learn_hero_first_week.jpg": {
+    "mtime": 1786611623.6510978,
+    "ast_hash": "53a8ef913c3a5241cb50596c33b7cc5a",
+    "semantic_hash": "53a8ef913c3a5241cb50596c33b7cc5a"
+  },
+  "app/src/main/res/drawable-nodpi/learn_hero_habits.jpg": {
+    "mtime": 1786611623.6510978,
+    "ast_hash": "fe2823212a3fca99bfe903d03aa6ec88",
+    "semantic_hash": "fe2823212a3fca99bfe903d03aa6ec88"
+  },
+  "app/src/main/res/drawable-nodpi/learn_hero_hydration.jpg": {
+    "mtime": 1786611623.6510978,
+    "ast_hash": "bf798b010977804aa58753f420fb0766",
+    "semantic_hash": "bf798b010977804aa58753f420fb0766"
+  },
+  "app/src/main/res/drawable-nodpi/learn_hero_insights.jpg": {
+    "mtime": 1786611623.6510978,
+    "ast_hash": "25c29847cbc0e870b1e4d5db55fda63d",
+    "semantic_hash": "25c29847cbc0e870b1e4d5db55fda63d"
+  },
+  "app/src/main/res/drawable-nodpi/learn_hero_logging.jpg": {
+    "mtime": 1786611623.655098,
+    "ast_hash": "85815da266583bbc576e558ea26435a9",
+    "semantic_hash": "85815da266583bbc576e558ea26435a9"
+  },
+  "app/src/main/res/drawable-nodpi/learn_hero_supplements.jpg": {
+    "mtime": 1786611623.655098,
+    "ast_hash": "3628b47e2e1aa9dedd8bcb67cdf9f79b",
+    "semantic_hash": "3628b47e2e1aa9dedd8bcb67cdf9f79b"
+  },
+  "app/src/main/res/drawable-nodpi/learn_hero_trends.jpg": {
+    "mtime": 1786611623.655098,
+    "ast_hash": "6be5740c0c8fc7f860fde872fbfe3613",
+    "semantic_hash": "6be5740c0c8fc7f860fde872fbfe3613"
+  },
+  "app/src/main/res/drawable-nodpi/learn_hero_using.jpg": {
+    "mtime": 1786611623.655098,
+    "ast_hash": "8fd8032a7880070814b151c0801edd9d",
+    "semantic_hash": "8fd8032a7880070814b151c0801edd9d"
+  },
+  "app/src/main/res/drawable-nodpi/learn_hero_what_to_log.jpg": {
+    "mtime": 1786611623.655098,
+    "ast_hash": "271a66f74c1db33f4f01e8bea81fef76",
+    "semantic_hash": "271a66f74c1db33f4f01e8bea81fef76"
+  },
+  "app/src/main/res/drawable-nodpi/logo_g.png": {
+    "mtime": 1786611623.655098,
+    "ast_hash": "5d6b1360f11653d361272a5e243f91ae",
+    "semantic_hash": "5d6b1360f11653d361272a5e243f91ae"
+  }
+}
