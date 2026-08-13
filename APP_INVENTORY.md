@@ -262,17 +262,19 @@ instead of weakening that shared contract.
 
 ## 7. Learn and content
 
-- **Thirty-one** bundled Android articles ship with categories, search, related links, share and
-  CTAs: 10 launch + 10 "guide" how-tos + the 11-article dated weekly series, all ported from iOS
+- **Thirty-two** bundled Android articles ship with categories, search, related links, share and
+  CTAs: 10 launch + 10 "guide" how-tos + the 12-article dated weekly series, all ported from iOS
   1.2.0 (18) on 12 Aug with matching slugs/ids (and, for the series, matching publish dates
-  23 Aug → 1 Nov). Slugs/ids match iOS for cross-platform read-state/deep-link parity.
+  23 Aug → 8 Nov). Slugs/ids match iOS for cross-platform read-state/deep-link parity.
 - `LearnDrip` reveals by **fixed calendar date** (`Article.publishedAt`, cross-platform contract
   with iOS, 12 Aug) — everyone sees a dated article on the same real day. Every Learn surface plus
   the Home card and `NEW_ARTICLE` reminder resolve through it, so a future-dated article is hidden
   everywhere at once, including a stale deep link.
-- The 11 weekly-series articles carry `publishedAt` dates (23 Aug → 1 Nov 2026, consecutive
-  Sundays); the other 20 are always-available. The week-7 Shettles piece is deliberately absent on
-  both platforms (banned sex-selection claim language).
+- The 12 weekly-series articles carry `publishedAt` dates (23 Aug → 8 Nov 2026, consecutive
+  Sundays); the other 20 are always-available. The week-12 Shettles piece (8 Nov,
+  `shettles-method-theory-vs-evidence`) is now included on Android, framed as **explicitly-unproven
+  theory** with guard-railed language — kept within the banned-phrase rules (no sex-selection
+  claims); flag for the medical reviewer before it goes live.
 - `NEW_ARTICLE` reminder exists and is opt-in; it stays silent while no dated article is due today.
 - Home's last block is a persistent **"A read for your week"**: the freshly released weekly article
   when one dropped in the last 7 days, else a deterministic weekly rotation over published editorial
@@ -283,6 +285,64 @@ instead of weakening that shared contract.
   medical-reviewer confirmation.
 
 Do not create placeholder articles simply to fill the weekly series; port only reviewed content.
+
+### Hero images — art still needed (22 of 32)
+
+Each article has an optional 16:9 hero (`Article.heroImage`, `@DrawableRes`, nullable). When null the
+UI falls back to a **brand gradient keyed to the category**, so the layout is correct and the slot is
+reserved — but the article ships without a photo. **10 of 32 articles have art; the remaining 22 need
+it.**
+
+**Photo spec to provide (match the existing heroes exactly):**
+
+| Property | Value |
+|---|---|
+| Dimensions | **1080 × 602 px** (16:9 landscape) |
+| Format | **JPG** |
+| Weight | ~50–150 KB each (all current heroes sit in this range) |
+| Location | `app/src/main/res/drawable-nodpi/` |
+| Naming | `learn_hero_<name>.jpg` (lowercase, snake_case — see the "target filename" column below) |
+
+Once the files are dropped in `drawable-nodpi/` with the names below, wiring is a one-line
+`heroImage = R.drawable.<name>` per article.
+
+**Articles without a photo — 10 always-available "guides":**
+
+| # | Title | Category | Target filename |
+|---|---|---|---|
+| 1 | Using the vaginal pH tracker | Guides | `learn_hero_guide_ph_tracker.jpg` |
+| 2 | How the daily log works | Guides | `learn_hero_guide_log.jpg` |
+| 3 | How to log a pH reading | Guides | `learn_hero_guide_log_ph.jpg` |
+| 4 | How your nutrition focus works | Guides | `learn_hero_guide_nutrition.jpg` |
+| 5 | How the Hydration Coach works | Guides | `learn_hero_guide_hydration.jpg` |
+| 6 | Reading your pH trend | Guides | `learn_hero_guide_ph_trend.jpg` |
+| 7 | How your cycle and phases work | Guides | `learn_hero_guide_cycle.jpg` |
+| 8 | How sleep tracking works | Guides | `learn_hero_guide_sleep.jpg` |
+| 9 | How to log how you feel | Guides | `learn_hero_guide_symptoms.jpg` |
+| 10 | Understanding your vaginal pH | Guides | `learn_hero_guide_understanding_ph.jpg` |
+
+**Articles without a photo — 12 dated weekly-series editorials:**
+
+| # | Title | Category | Publishes | Target filename |
+|---|---|---|---|---|
+| 11 | Understanding your fertile window | Tracking | 23 Aug 2026 | `learn_hero_fertile_window.jpg` |
+| 12 | What your vaginal pH is actually telling you | Tracking | 30 Aug 2026 | `learn_hero_ph_explained.jpg` |
+| 13 | Eating in the months before conception | Nutrition | 6 Sep 2026 | `learn_hero_before_conception.jpg` |
+| 14 | What cervical mucus can tell you | Tracking | 13 Sep 2026 | `learn_hero_cervical_mucus.jpg` |
+| 15 | Hydration and reproductive health | Wellness | 20 Sep 2026 | `learn_hero_hydration_repro.jpg` |
+| 16 | Timing sex when you are trying to conceive | Tracking | 27 Sep 2026 | `learn_hero_timing_sex.jpg` |
+| 17 | Sleep, stress and your cycle | Wellness | 4 Oct 2026 | `learn_hero_sleep_stress.jpg` |
+| 18 | Understanding ovulation tests | Tracking | 11 Oct 2026 | `learn_hero_ovulation_tests.jpg` |
+| 19 | Supporting sperm health | Wellness | 18 Oct 2026 | `learn_hero_sperm_health.jpg` |
+| 20 | Fertility supplements, and what the evidence says | Nutrition | 25 Oct 2026 | `learn_hero_supplements_evidence.jpg` |
+| 21 | When to ask for fertility support | Wellness | 1 Nov 2026 | `learn_hero_ask_for_support.jpg` |
+| 22 | The Shettles Method: theory versus evidence | Wellness | 8 Nov 2026 | `learn_hero_shettles.jpg` |
+
+**The 10 articles that already have art** (for reference, no action): Your first week with Genesyx,
+Why logging beats remembering, Symptoms and meals: what's worth writing down, Hydration without the
+eight-glass myth, Eating with your cycle not against it, A gentle guide to supplements, What
+"insights" actually means, Reading your trends without over-reading them, Small habits that hold,
+Using what you learn.
 
 ## 8. Notifications
 

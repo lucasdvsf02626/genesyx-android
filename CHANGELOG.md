@@ -8,6 +8,17 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ## [Unreleased] — Single-source-of-truth bug batch (28 Jul device walkthrough)
 
+### Docs (13 Aug 2026) — Learn hero-image inventory (22 of 32 articles need art)
+- Audited every Learn article for a hero photo: **10 of 32 have art, 22 don't** (they currently fall
+  back to a category-keyed brand gradient — the layout is correct, just no photo). Recorded the full
+  gap in `APP_INVENTORY.md` §7 with the **exact spec to supply** (1080 × 602 px JPG, 16:9,
+  `drawable-nodpi/`, ~50–150 KB) and a per-article **target filename** so delivered art wires in with
+  a one-line `heroImage = R.drawable.<name>` each. The 22 break down as 10 always-available "guides"
+  + the 12 dated weekly-series editorials.
+- Same edit corrected two now-stale inventory claims: the article count (31 → **32**) and the Shettles
+  piece (was "deliberately absent" → now **present** on Android as week-12 explicitly-unproven theory,
+  8 Nov 2026, guard-railed language, pending medical-reviewer sign-off).
+
 ### Added (13 Aug 2026) — Recipe cards (scaffolding, content pending)
 - **New "Recipes for your cycle" section on Nutrition.** Each recipe is an expandable card — accent
   header band (phase-tinted, matching that phase's focus foods), title, one-line hook, prep time and
