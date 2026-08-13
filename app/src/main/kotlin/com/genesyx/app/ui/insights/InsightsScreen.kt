@@ -78,6 +78,7 @@ fun InsightsScreen(
     val consistency by viewModel.consistencyInsights.collectAsState()
     val hydration by viewModel.hydrationInsights.collectAsState()
     val supplements by viewModel.supplementInsights.collectAsState()
+    val yourSupplements by viewModel.userSupplementInsights.collectAsState()
     val sleep by viewModel.sleepInsights.collectAsState()
     val cycleRegularity by viewModel.cycleRegularityInsights.collectAsState()
     val symptoms by viewModel.symptomInsights.collectAsState()
@@ -124,6 +125,13 @@ fun InsightsScreen(
             // Directly after Hydration: the two nutrition signals sit together.
             Spacer(Modifier.height(12.dp))
             SupplementCard(supplements)
+
+            // Her own supplements ("Your supplements" in Nutrition), each with its week — only when
+            // she has some. Sits under the plan-based card, not folded into it.
+            if (yourSupplements.hasSupplements) {
+                Spacer(Modifier.height(12.dp))
+                YourSupplementsCard(yourSupplements)
+            }
 
             Spacer(Modifier.height(12.dp))
             SleepCard(sleep)
@@ -451,6 +459,47 @@ private fun SupplementCard(state: SupplementInsights) {
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             StreakTile("Days logged", state.daysLogged, "/7", Modifier.weight(1f))
             StreakTile("Supplements taken", state.suppTotal, "", Modifier.weight(1f))
+        }
+    }
+}
+
+@Composable
+private fun YourSupplementsCard(state: UserSupplementInsights) {
+    val colors = MaterialTheme.colorScheme
+    InsightsCard {
+        Text("Your supplements this week", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+        Spacer(Modifier.height(4.dp))
+        Text(
+            "The supplements you added, and the days you logged each this week.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = colors.onSurfaceVariant,
+        )
+        state.rows.forEach { row ->
+            Spacer(Modifier.height(16.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(row.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, color = colors.onSurface)
+                    Text(
+                        "${row.daysLogged} / 7 days",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = colors.onSurfaceVariant,
+                    )
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    row.perDay.forEachIndexed { i, on ->
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Box(
+                                Modifier
+                                    .size(14.dp)
+                                    .clip(CircleShape)
+                                    .background(if (on) ElectricLavender else colors.outlineVariant),
+                            )
+                            Spacer(Modifier.height(3.dp))
+                            Text(weekdayLabels[i], fontSize = 9.sp, color = colors.onSurfaceVariant)
+                        }
+                    }
+                }
+            }
         }
     }
 }

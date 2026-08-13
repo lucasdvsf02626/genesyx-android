@@ -7,6 +7,7 @@ import com.genesyx.app.data.DailyLogRepository
 import com.genesyx.app.data.PhRepository
 import com.genesyx.app.data.PreferencesRepository
 import com.genesyx.app.data.StreakRepository
+import com.genesyx.app.data.UserSupplementRepository
 import com.genesyx.app.domain.cycle.CycleEngine
 import com.genesyx.app.domain.model.DayType
 import com.genesyx.app.domain.model.Phase
@@ -139,6 +140,7 @@ class InsightsViewModel @Inject constructor(
     cycleRepository: CycleRepository,
     streakRepository: StreakRepository,
     preferencesRepository: PreferencesRepository,
+    userSupplementRepository: UserSupplementRepository,
 ) : ViewModel() {
 
     val weeklySummary: StateFlow<WeeklySummaryInsights> =
@@ -190,6 +192,20 @@ class InsightsViewModel @Inject constructor(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5_000),
                 initialValue = SupplementInsights(),
+            )
+
+    /** Her own "Your supplements" (from Nutrition), with each one's this-week log count. */
+    val userSupplementInsights: StateFlow<UserSupplementInsights> =
+        combine(
+            userSupplementRepository.supplements,
+            dailyLogRepository.logByDate,
+        ) { supplements, logs ->
+            UserSupplementInsightLogic.compute(supplements.map { it.name }, logs)
+        }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = UserSupplementInsights(),
             )
 
     val sleepInsights: StateFlow<SleepInsights> =
