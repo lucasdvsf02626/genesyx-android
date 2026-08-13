@@ -217,6 +217,16 @@ class InsightsViewModel @Inject constructor(
                 initialValue = SleepInsights(),
             )
 
+    /** Private intimacy, this week — hidden until she has recorded it at least once. */
+    val intimacyInsights: StateFlow<IntimacyInsights> =
+        dailyLogRepository.logByDate
+            .map { logs -> IntimacyInsightLogic.compute(logs) }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = IntimacyInsights(),
+            )
+
     val symptomInsights: StateFlow<SymptomPatternInsights> =
         dailyLogRepository.logByDate
             .map { logs -> SymptomPatternLogic.compute(logs) }

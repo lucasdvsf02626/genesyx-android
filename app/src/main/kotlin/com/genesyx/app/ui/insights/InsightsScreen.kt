@@ -82,6 +82,7 @@ fun InsightsScreen(
     val sleep by viewModel.sleepInsights.collectAsState()
     val cycleRegularity by viewModel.cycleRegularityInsights.collectAsState()
     val symptoms by viewModel.symptomInsights.collectAsState()
+    val intimacy by viewModel.intimacyInsights.collectAsState()
     val ovulation by viewModel.ovulationInsights.collectAsState()
 
     Column(
@@ -142,6 +143,12 @@ fun InsightsScreen(
 
             Spacer(Modifier.height(12.dp))
             SymptomPatternsCard(symptoms)
+
+            // Private to her — only appears once she has recorded intimacy at least once.
+            if (intimacy.hasData) {
+                Spacer(Modifier.height(12.dp))
+                IntimacyCard(intimacy)
+            }
 
             Spacer(Modifier.height(12.dp))
             OvulationCard(ovulation)
@@ -501,6 +508,50 @@ private fun YourSupplementsCard(state: UserSupplementInsights) {
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun IntimacyCard(state: IntimacyInsights) {
+    val colors = MaterialTheme.colorScheme
+    InsightsCard {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Intimacy", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+            Spacer(Modifier.weight(1f))
+            Text("Private to you", style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant)
+        }
+        Spacer(Modifier.height(14.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(
+                    "This week",
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
+                    color = colors.onSurface,
+                )
+                Text(
+                    "${state.daysThisWeek} / 7 days",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colors.onSurfaceVariant,
+                )
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                state.perDay.forEachIndexed { i, on ->
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Box(
+                            Modifier
+                                .size(14.dp)
+                                .clip(CircleShape)
+                                .background(if (on) ElectricLavender else colors.outlineVariant),
+                        )
+                        Spacer(Modifier.height(3.dp))
+                        Text(weekdayLabels[i], fontSize = 9.sp, color = colors.onSurfaceVariant)
+                    }
+                }
+            }
+        }
+        Spacer(Modifier.height(12.dp))
+        Text(state.insight, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
     }
 }
 
