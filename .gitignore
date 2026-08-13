@@ -15,3 +15,9 @@
 *.zip
 keystore.properties
 /app/release
+
+# graphify: local-only artifacts (the graph itself is committed)
+graphify-out/cost.json
+graphify-out/.graphify_root
+graphify-out/cache/
+graphify-out/20*/
