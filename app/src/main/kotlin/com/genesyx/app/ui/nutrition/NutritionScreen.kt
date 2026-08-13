@@ -71,6 +71,7 @@ fun NutritionScreen(
     val colors = MaterialTheme.colorScheme
     val state by viewModel.uiState.collectAsState()
     val userSupplements by viewModel.userSupplements.collectAsState()
+    val todaysMeals by viewModel.todaysMeals.collectAsState()
     val catalogue by viewModel.catalogue.collectAsState()
     val glassMl by viewModel.glassMl.collectAsState()
     var expandedFood by remember { mutableStateOf<String?>(null) }
@@ -123,6 +124,13 @@ fun NutritionScreen(
                 onSave = { viewModel.saveSupplement(it) },
                 onDelete = { viewModel.deleteSupplement(it.id) },
                 onSetReminder = { id, name, minutes -> viewModel.setSupplementReminder(id, name, minutes) },
+            )
+
+            Spacer(Modifier.height(12.dp))
+            MealLogCard(
+                meals = todaysMeals,
+                onLog = { viewModel.logMeal(it) },
+                onDelete = { viewModel.deleteMeal(it) },
             )
 
             Spacer(Modifier.height(12.dp))

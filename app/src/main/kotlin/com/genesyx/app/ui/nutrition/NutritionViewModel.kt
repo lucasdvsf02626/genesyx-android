@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.genesyx.app.data.CycleRepository
 import com.genesyx.app.data.DailyLogRepository
 import com.genesyx.app.data.GenesyxProductRepository
+import com.genesyx.app.data.MealLogRepository
 import com.genesyx.app.data.PreferencesRepository
 import com.genesyx.app.data.StreakRepository
 import com.genesyx.app.data.SupplementReminderRepository
@@ -18,6 +19,7 @@ import com.genesyx.app.domain.cycle.CycleEngine
 import com.genesyx.app.domain.hydration.HydrationCoach
 import com.genesyx.app.domain.hydration.HydrationUnit
 import com.genesyx.app.domain.model.GenesyxProduct
+import com.genesyx.app.domain.model.MealEntry
 import com.genesyx.app.domain.model.Phase
 import com.genesyx.app.domain.model.UserSupplement
 import com.genesyx.app.domain.streaks.StreakEngine
@@ -58,9 +60,20 @@ class NutritionViewModel @Inject constructor(
     private val preferencesRepository: PreferencesRepository,
     private val userSupplementRepository: UserSupplementRepository,
     private val supplementReminderRepository: SupplementReminderRepository,
+    private val mealLogRepository: MealLogRepository,
     genesyxProductRepository: GenesyxProductRepository,
     streakRepository: StreakRepository,
 ) : ViewModel() {
+
+    /** Today's logged meals — local-only, live from Room. */
+    val todaysMeals: StateFlow<List<MealEntry>> =
+        mealLogRepository.mealsForDate(LocalDate.now())
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** Log a meal for today. Returns false if the description was blank. */
+    fun logMeal(entry: MealEntry): Boolean = mealLogRepository.log(entry)
+
+    fun deleteMeal(id: String) = mealLogRepository.delete(id)
 
     /** The user's own supplement entries — live from Room, synced in the background. */
     val userSupplements: StateFlow<List<UserSupplement>> = userSupplementRepository.supplements

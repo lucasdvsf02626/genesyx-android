@@ -8,6 +8,24 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ## [Unreleased] — Single-source-of-truth bug batch (28 Jul device walkthrough)
 
+### Added (13 Aug 2026) — Meal logging (local-only) with nutrient tags
+- **New "Today's meals" card on Nutrition.** "Log a meal" opens a dialog: pick the sitting
+  (Breakfast/Lunch/Dinner/Snack), type what you ate (free text, ≤120 chars), and optionally tag
+  nutrients from a curated fertility-prep set (Protein, Iron, Folate, Omega-3, Fibre, Calcium,
+  Vitamin C). Logged meals list newest-first with their time and tags; each can be deleted.
+- **Deliberately local-only** (owner-approved scope): meals live only in Room — **no Supabase table,
+  no sync, no shared-schema change**, so the iOS build on the same project is untouched. The card copy
+  says "Kept on this device" — the local-only nature is disclosed, never implied as synced.
+- **Room schema v7 → v8**: new `meal_entries` table (`MIGRATION_7_8`, additive, no destructive
+  fallback), scoped by `userId` like every other table so accounts stay isolated on a shared device;
+  `database.clearAllTables()` on sign-out / account deletion already wipes it, so no extra teardown.
+- Verified: `MealEntryEntityTest` (wire-value mapping + unknown-value fallback) — **368 unit tests
+  green** (the lone failure was the known `PreferencesRepositoryTest` coroutine flake, passes on
+  isolated rerun); **`MealLogMigrationTest` passes on the emulator** (`runMigrationsAndValidate`
+  confirms the DDL matches Room's generated v8 schema and existing daily logs survive the upgrade);
+  `:app:assembleRelease` green (R8 clean) and the release APK launches on the fresh v8 schema with no
+  Room/migration errors.
+
 ### Added (12 Aug 2026) — Per-supplement daily reminders
 - **Each supplement can now carry its own daily reminder.** In the Nutrition "Your supplements"
   editor a supplement gains a *Daily reminder* switch; turning it on opens the system time picker and

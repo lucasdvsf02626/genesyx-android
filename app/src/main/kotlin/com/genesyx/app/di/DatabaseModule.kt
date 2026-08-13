@@ -7,6 +7,7 @@ import com.genesyx.app.data.local.GenesyxDatabase
 import com.genesyx.app.data.local.dao.ClientDao
 import com.genesyx.app.data.local.dao.CycleSettingsDao
 import com.genesyx.app.data.local.dao.DailyLogDao
+import com.genesyx.app.data.local.dao.MealEntryDao
 import com.genesyx.app.data.local.dao.PartnerDao
 import com.genesyx.app.data.local.dao.PhReadingDao
 import com.genesyx.app.data.local.dao.ProfileDao
@@ -43,4 +44,5 @@ object DatabaseModule {
     @Provides fun provideClientDao(db: GenesyxDatabase): ClientDao = db.clientDao()
     @Provides fun providePartnerDao(db: GenesyxDatabase): PartnerDao = db.partnerDao()
     @Provides fun provideUserSupplementDao(db: GenesyxDatabase): UserSupplementDao = db.userSupplementDao()
+    @Provides fun provideMealEntryDao(db: GenesyxDatabase): MealEntryDao = db.mealEntryDao()
 }

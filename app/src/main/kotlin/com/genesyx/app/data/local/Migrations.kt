@@ -72,10 +72,35 @@ val MIGRATION_6_7 = object : Migration(6, 7) {
     }
 }
 
+/** v7 -> v8: the `meal_entries` table (local-only meal log — no Supabase mirror, so no sync
+ *  columns). DDL must match Room's expected schema for
+ *  [com.genesyx.app.data.local.entity.MealEntryEntity] exactly (see app/schemas/…/8.json after
+ *  building) or Room rejects the database at open. `date` is an epoch-day INTEGER (see Converters). */
+val MIGRATION_7_8 = object : Migration(7, 8) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `meal_entries` (" +
+                "`id` TEXT NOT NULL, " +
+                "`userId` TEXT NOT NULL, " +
+                "`date` INTEGER NOT NULL, " +
+                "`mealType` TEXT NOT NULL, " +
+                "`description` TEXT NOT NULL, " +
+                "`nutrients` TEXT NOT NULL, " +
+                "`loggedAt` TEXT NOT NULL, " +
+                "PRIMARY KEY(`id`))",
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_meal_entries_userId_date` " +
+                "ON `meal_entries` (`userId`, `date`)",
+        )
+    }
+}
+
 val GENESYX_MIGRATIONS: Array<Migration> = arrayOf(
     MIGRATION_2_3,
     MIGRATION_3_4,
     MIGRATION_4_5,
     MIGRATION_5_6,
     MIGRATION_6_7,
+    MIGRATION_7_8,
 )
