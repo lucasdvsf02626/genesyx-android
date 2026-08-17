@@ -40,6 +40,10 @@ class LocalAuthService @Inject constructor() : AuthService {
     override suspend fun changeEmail(currentPassword: String, newEmail: String): DataResult<Unit> =
         DataResult.Error(IllegalStateException("Email change needs the online service"), "Email change isn't available offline")
 
+    // Local mode has no inbox to write to, so there is nothing truthful to send.
+    override suspend fun resetPassword(email: String): DataResult<Unit> =
+        DataResult.Error(IllegalStateException("Password reset needs the online service"), "Password reset isn't available offline")
+
     private fun localSession(email: String, displayName: String?): DataResult<AuthSession> {
         val name = displayName?.takeIf { it.isNotBlank() } ?: email.substringBefore("@")
         return DataResult.Success(

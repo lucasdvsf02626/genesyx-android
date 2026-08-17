@@ -125,6 +125,13 @@ object LearnDrip {
     /** Dated articles whose reveal day is exactly [today] — what the weekly notification fires on. */
     fun releasedOn(today: LocalDate): List<Article> =
         learnArticles.filter { it.publishedAt == today }
+
+    /**
+     * The 12-week plan, in calendar order. Includes pieces that have not landed yet — the
+     * 12-week screen may *name* a future week; it must not open one.
+     */
+    val weeklySeries: List<Article>
+        get() = learnArticles.filter { it.publishedAt != null }.sortedBy { it.publishedAt }
 }
 
 val learnArticles: List<Article> = listOf(

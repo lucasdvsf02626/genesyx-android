@@ -22,6 +22,17 @@ data class HydrationCoaching(
  */
 object HydrationCoach {
 
+    /**
+     * Secondary explainer for the Nutrition hydration card. Quotes the old "eight glasses"
+     * myth as history, not as the unit the app uses (storage stays ml; display is cups/ml).
+     */
+    const val WHY_TITLE = "Why hydration?"
+    const val WHY_TEXT =
+        "Steady hydration supports your energy and mood. The old 'eight glasses a day' rule " +
+            "came from a 1945 recommendation whose next sentence got lost: most of that water " +
+            "already comes from food. Thirst is a reasonable guide. Anchor a cup to meals and " +
+            "routines, and you won't have to think about it."
+
     /** The waking window the day's pace is measured across. Outside it, expectation is 0 or 1. */
     const val START_HOUR = 8
     const val END_HOUR = 22

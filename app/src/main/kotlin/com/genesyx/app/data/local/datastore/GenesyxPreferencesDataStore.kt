@@ -51,6 +51,8 @@ class GenesyxPreferencesDataStore @Inject constructor(
         val READ_ARTICLE_SLUGS = stringSetPreferencesKey("read_article_slugs")
         val READ_ARTICLE_DATES = stringSetPreferencesKey("read_article_dates")
         val LAST_SEEN_ARTICLE_SLUG = stringPreferencesKey("last_seen_article_slug")
+        val LAST_SEEN_PHASE = stringPreferencesKey("last_seen_phase")
+        val LAST_SEEN_PHASE_EPOCH_DAY = longPreferencesKey("last_seen_phase_epoch_day")
         val QUIZ_ANSWERS = stringPreferencesKey("quiz_answers")
         val SUPPLEMENT_REMINDERS = stringPreferencesKey("supplement_reminders")
         val SIGNED_IN = booleanPreferencesKey("signed_in")
@@ -97,6 +99,8 @@ class GenesyxPreferencesDataStore @Inject constructor(
         (prefs[Keys.READ_ARTICLE_DATES] ?: emptySet()).mapNotNull { runCatching { LocalDate.parse(it) }.getOrNull() }.toSet()
     }
     val lastSeenArticleSlug: Flow<String?> = dataStore.data.map { it[Keys.LAST_SEEN_ARTICLE_SLUG] }
+    val lastSeenPhase: Flow<String?> = dataStore.data.map { it[Keys.LAST_SEEN_PHASE] }
+    val lastSeenPhaseEpochDay: Flow<Long?> = dataStore.data.map { it[Keys.LAST_SEEN_PHASE_EPOCH_DAY] }
 
     /** Onboarding/tracking-preference answers (question id → option id), JSON-encoded. Owner data,
      *  cleared on sign-out so it never bleeds into the next account; the server row survives. */
@@ -145,6 +149,11 @@ class GenesyxPreferencesDataStore @Inject constructor(
     }.let {}
 
     suspend fun setLastSeenArticleSlug(slug: String) = dataStore.edit { it[Keys.LAST_SEEN_ARTICLE_SLUG] = slug }.let {}
+
+    suspend fun setLastSeenPhase(phase: String, epochDay: Long) = dataStore.edit {
+        it[Keys.LAST_SEEN_PHASE] = phase
+        it[Keys.LAST_SEEN_PHASE_EPOCH_DAY] = epochDay
+    }.let {}
 
     suspend fun setQuizAnswers(answers: Map<String, String>) = dataStore.edit {
         it[Keys.QUIZ_ANSWERS] = json.encodeToString(mapSerializer, answers)

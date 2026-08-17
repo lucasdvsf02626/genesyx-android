@@ -42,6 +42,8 @@ sealed class Screen(val route: String) {
     // Learn. Bottom tab (took Profile's slot); also entered from Nutrition's "Learn more" section.
     data object Learn : Screen("learn")
     data object LearnSearch : Screen("learn/search")
+    data object HowToUse : Screen("learn/how-to-use")
+    data object TwelveWeekPlan : Screen("learn/twelve-week-plan")
     data object ArticleDetail : Screen("learn/article/{slug}") {
         fun create(slug: String) = "learn/article/$slug"
         const val ARG_SLUG = "slug"
@@ -89,6 +91,8 @@ sealed class Screen(val route: String) {
             // Reading and searching are immersive. `Learn` itself keeps the bar (it's a tab).
             ArticleDetail.route,
             LearnSearch.route,
+            HowToUse.route,
+            TwelveWeekPlan.route,
             )
         }
     }

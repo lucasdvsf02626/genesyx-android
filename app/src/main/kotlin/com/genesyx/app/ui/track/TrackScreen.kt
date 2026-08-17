@@ -62,6 +62,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import android.content.res.Configuration
+import com.genesyx.app.domain.content.AppGuide
 import com.genesyx.app.domain.content.phaseLabel
 import com.genesyx.app.domain.cycle.CycleEngine
 import com.genesyx.app.domain.hydration.HydrationUnit
@@ -75,6 +76,7 @@ import com.genesyx.app.ui.components.DailyLogSummary
 import com.genesyx.app.ui.components.Eyebrow
 import com.genesyx.app.ui.components.GxPrimaryButton
 import com.genesyx.app.ui.components.PhReadingRow
+import com.genesyx.app.ui.learn.HowThisWorksLink
 import com.genesyx.app.ui.components.tintOnWhite
 import com.genesyx.app.ui.navigation.Screen
 import com.genesyx.app.ui.theme.BabyLavender
@@ -337,6 +339,12 @@ fun TrackContent(
         Eyebrow("Your trackers", color = colors.onSurfaceVariant)
         Spacer(Modifier.height(10.dp))
         YourTrackersCard(summaries = summaries, onNavigate = onNavigate)
+
+        HowThisWorksLink(
+            slug = AppGuide.TRACK,
+            label = AppGuide.TRACK_LABEL,
+            onOpen = { onNavigate(Screen.ArticleDetail.create(it)) },
+        )
 
         Spacer(Modifier.height(24.dp))
     }

@@ -48,11 +48,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.genesyx.app.domain.content.AppGuide
 import com.genesyx.app.domain.model.DayType
 import com.genesyx.app.domain.model.Phase
 import com.genesyx.app.ui.components.Eyebrow
 import com.genesyx.app.ui.components.ScreenHeader
 import com.genesyx.app.ui.components.tintOnWhite
+import com.genesyx.app.ui.learn.HowThisWorksLink
 import com.genesyx.app.ui.navigation.Screen
 import com.genesyx.app.ui.theme.BabyLavender
 import com.genesyx.app.ui.theme.ElectricBlue
@@ -152,6 +154,12 @@ fun InsightsScreen(
 
             Spacer(Modifier.height(12.dp))
             OvulationCard(ovulation)
+
+            HowThisWorksLink(
+                slug = AppGuide.INSIGHTS,
+                label = AppGuide.INSIGHTS_LABEL,
+                onOpen = { navController.navigate(Screen.ArticleDetail.create(it)) },
+            )
 
             Spacer(Modifier.height(24.dp))
         }
@@ -310,6 +318,13 @@ private fun WeeklySummaryCard(state: WeeklySummaryInsights) {
             Spacer(Modifier.height(6.dp))
             Text(state.moodEnergyLine, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
         }
+
+        Spacer(Modifier.height(8.dp))
+        Text(
+            "Days with meals  ${state.daysWithMeals}/7",
+            style = MaterialTheme.typography.bodyMedium,
+            color = colors.onSurfaceVariant,
+        )
 
         // Deltas against last week, only for metrics both weeks can support — see WeeklySummaryLogic.
         val deltas = buildList {

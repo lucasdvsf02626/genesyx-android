@@ -1,5 +1,7 @@
 package com.genesyx.app.ui.track.detail
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -13,15 +15,21 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.genesyx.app.core.AppLinks
+import com.genesyx.app.domain.content.AppGuide
+import com.genesyx.app.domain.content.LearnNavigation
 import com.genesyx.app.domain.ph.PhCopy
 import com.genesyx.app.domain.ph.PhStatus
 import com.genesyx.app.ui.components.CitationList
 import com.genesyx.app.ui.components.ExpandableInfo
 import com.genesyx.app.ui.insights.PhInsightLogic
+import com.genesyx.app.ui.learn.HowThisWorksLink
 import com.genesyx.app.ui.ph.PhTrackerSection
 import com.genesyx.app.ui.ph.PhTrackerViewModel
+import java.time.LocalDate
 
 /**
  * The canonical vaginal-pH tracker, and the screen the product leans on: below the tracker card it
@@ -35,6 +43,7 @@ import com.genesyx.app.ui.ph.PhTrackerViewModel
 @Composable
 fun PhDetailScreen(
     onOpenPlan: () -> Unit,
+    onOpenArticle: (String) -> Unit = {},
     viewModel: PhTrackerViewModel = hiltViewModel(),
 ) {
     val readings by viewModel.readings.collectAsState()
@@ -49,7 +58,25 @@ fun PhDetailScreen(
         InfoSection(PhCopy.WHY_TITLE, PhCopy.WHY_BODY)
 
         Spacer(Modifier.height(12.dp))
+        InfoSection(PhCopy.ACCURACY_TITLE, PhCopy.ACCURACY_BODY)
+
+        Spacer(Modifier.height(12.dp))
         InfoSection(PhCopy.FERTILITY_TITLE, PhCopy.FERTILITY_BODY)
+
+        Spacer(Modifier.height(12.dp))
+        TrackerDetailCard {
+            Text(PhCopy.SUPPORT_TITLE, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
+            Spacer(Modifier.height(8.dp))
+            Text(PhCopy.SUPPORT_BODY, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.height(8.dp))
+            Text(PhCopy.SUPPORT_SIGNPOST, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+
+        Spacer(Modifier.height(12.dp))
+        InfoSection(PhCopy.SEEK_HELP_TITLE, PhCopy.SEEK_HELP_BODY)
+
+        Spacer(Modifier.height(12.dp))
+        ShettlesAndScienceCard(onOpenArticle = onOpenArticle)
 
         Spacer(Modifier.height(12.dp))
         InfoSection(PhCopy.MEANS_TITLE, PhCopy.meansFor(status))
@@ -88,6 +115,11 @@ fun PhDetailScreen(
         // The disclaimer stays one tap away rather than owning the page — the body string is
         // PhCopy.DISCLAIMER verbatim, so its pinned copy tests are untouched.
         ExpandableInfo(label = "About this tracker", body = PhCopy.DISCLAIMER)
+        HowThisWorksLink(
+            slug = AppGuide.PH,
+            label = AppGuide.PH_LABEL,
+            onOpen = onOpenArticle,
+        )
         Spacer(Modifier.height(32.dp))
     }
 }
@@ -107,5 +139,30 @@ private fun InfoSection(title: String, body: String) {
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+    }
+}
+
+@Composable
+private fun ShettlesAndScienceCard(onOpenArticle: (String) -> Unit) {
+    val context = LocalContext.current
+    fun openUrl(url: String) {
+        runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
+    }
+    TrackerDetailCard {
+        Text(PhCopy.SHETTLES_TITLE, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
+        Spacer(Modifier.height(8.dp))
+        Text(PhCopy.SHETTLES_BODY, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        TextButton(
+            onClick = {
+                val slug = LearnNavigation.publishedSlug(AppLinks.SHETTLES_ARTICLE_SLUG, LocalDate.now())
+                if (slug != null) onOpenArticle(slug) else openUrl(AppLinks.SHETTLES_THEORY_URL)
+            },
+            contentPadding = ButtonDefaults.TextButtonContentPadding,
+            modifier = Modifier.padding(top = 4.dp),
+        ) { Text(PhCopy.SHETTLES_LINK) }
+        TextButton(
+            onClick = { openUrl(AppLinks.SCIENCE_URL) },
+            contentPadding = ButtonDefaults.TextButtonContentPadding,
+        ) { Text("Science and evidence on genesyx.co.uk") }
     }
 }

@@ -36,6 +36,8 @@ data class WeeklySummaryInsights(
     /** "Mostly good, energy often high" — empty when neither mood nor energy was logged. */
     val moodEnergyLine: String = "",
     val insight: String = "Log a day or two and your week in review will appear here.",
+    /** Days this week she recorded at least one known food group. */
+    val daysWithMeals: Int = 0,
 )
 
 data class PhInsights(

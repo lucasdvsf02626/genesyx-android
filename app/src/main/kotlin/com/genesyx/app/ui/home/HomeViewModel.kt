@@ -14,6 +14,7 @@ import com.genesyx.app.domain.content.phaseHeroText
 import com.genesyx.app.domain.content.phaseSubLabel
 import com.genesyx.app.domain.content.phaseTags
 import com.genesyx.app.domain.cycle.CycleEngine
+import com.genesyx.app.domain.cycle.PhaseChange
 import com.genesyx.app.domain.hydration.HydrationCoach
 import com.genesyx.app.domain.hydration.HydrationPace
 import com.genesyx.app.domain.hydration.HydrationUnit
@@ -59,6 +60,8 @@ data class HomeUiState(
     val todayFocusBody: String? = null,
     /** A phase-relevant Learn article the focus card links to; null until the cycle is set up. */
     val phaseArticleSlug: String? = null,
+    /** True on the first day of a newly entered phase — a phase-entry moment, not the always-on card. */
+    val phaseJustChanged: Boolean = false,
     // Hydration summary card.
     val hydrationMl: Int? = null,
     /** Her goal, from preferences — the default only until she sets her own. */
@@ -107,6 +110,8 @@ class HomeViewModel @Inject constructor(
         val signedIn: Boolean,
         val firstOpenEpochDay: Long?,
         val lastSeenArticleSlug: String?,
+        val lastSeenPhase: String?,
+        val lastSeenPhaseEpochDay: Long?,
     )
 
     // Paired rather than passed as separate flows: combine is only typed up to five.
@@ -122,7 +127,10 @@ class HomeViewModel @Inject constructor(
             sessionRepository.isSignedIn,
             preferencesRepository.firstOpenEpochDay,
             preferencesRepository.lastSeenArticleSlug,
-        ) { name, signed, firstOpen, lastSeen -> SessionAndLearn(name, signed, firstOpen, lastSeen) }
+            combine(preferencesRepository.lastSeenPhase, preferencesRepository.lastSeenPhaseEpochDay) { p, d -> p to d },
+        ) { name, signed, firstOpen, lastSeen, (phase, day) ->
+            SessionAndLearn(name, signed, firstOpen, lastSeen, phase, day)
+        }
 
     val uiState: StateFlow<HomeUiState> =
         combine(
@@ -144,6 +152,8 @@ class HomeViewModel @Inject constructor(
                     sessionRepository.isSignedIn.value,
                     preferencesRepository.firstOpenEpochDay.value,
                     preferencesRepository.lastSeenArticleSlug.value,
+                    preferencesRepository.lastSeenPhase.value,
+                    preferencesRepository.lastSeenPhaseEpochDay.value,
                 ),
                 streakRepository.state.value,
                 preferencesRepository.hydrationGoalMl.value,
@@ -222,6 +232,15 @@ class HomeViewModel @Inject constructor(
         val info = CycleEngine.getCyclePhase(settings, today)
         val inFertile = info.dayOfCycle in info.fertileWindow
         val focus = phaseHeroCopy.getValue(info.phase).focus
+        val change = PhaseChange.evaluate(
+            current = info.phase,
+            storedPhase = session.lastSeenPhase,
+            storedEpochDay = session.lastSeenPhaseEpochDay,
+            today = today,
+        )
+        if (change.persistPhase != null && change.persistEpochDay != null) {
+            preferencesRepository.setLastSeenPhase(change.persistPhase, change.persistEpochDay)
+        }
         return base.copy(
             cycleSetUp = true,
             cycleEyebrow = "DAY ${info.dayOfCycle} · ${phaseSubLabel(info.phase, inFertile).uppercase()}",
@@ -236,6 +255,7 @@ class HomeViewModel @Inject constructor(
             // The always-available phase explainer — the client's "link the phase card to a
             // relevant article". Always-available, so it is never drip-hidden.
             phaseArticleSlug = "guide-cycle-and-phases",
+            phaseJustChanged = change.justChanged,
         )
     }
 

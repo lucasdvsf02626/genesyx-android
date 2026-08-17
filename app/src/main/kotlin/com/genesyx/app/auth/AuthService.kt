@@ -43,4 +43,10 @@ interface AuthService {
      * update the local session on Success; success here means "confirmation email sent".
      */
     suspend fun changeEmail(currentPassword: String, newEmail: String): DataResult<Unit>
+
+    /**
+     * Email a password-reset link to [email]. The caller supplies the address because this is the
+     * signed-out path: there is no session to read an address from. Must never establish a session.
+     */
+    suspend fun resetPassword(email: String): DataResult<Unit>
 }

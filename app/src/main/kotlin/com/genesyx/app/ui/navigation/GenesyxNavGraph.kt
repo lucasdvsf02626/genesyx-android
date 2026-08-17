@@ -14,8 +14,10 @@ import com.genesyx.app.ui.history.LogHistoryScreen
 import com.genesyx.app.ui.home.HomeScreen
 import com.genesyx.app.ui.insights.InsightsScreen
 import com.genesyx.app.ui.learn.ArticleDetailScreen
+import com.genesyx.app.ui.learn.HowToUseScreen
 import com.genesyx.app.ui.learn.LearnScreen
 import com.genesyx.app.ui.learn.LearnSearchScreen
+import com.genesyx.app.ui.learn.TwelveWeekPlanScreen
 import com.genesyx.app.ui.onboarding.OnboardingIntroScreen
 import com.genesyx.app.ui.onboarding.OnboardingQuizScreen
 import com.genesyx.app.ui.onboarding.ReadinessSummaryScreen
@@ -122,7 +124,10 @@ fun GenesyxNavGraph(
             ),
             deepLinks = listOf(navDeepLink { uriPattern = "genesyx://log" }),
         ) {
-            LogScreen(onClose = { navController.popBackStack() })
+            LogScreen(
+                onClose = { navController.popBackStack() },
+                onOpenArticle = { slug -> navController.navigate(Screen.ArticleDetail.create(slug)) },
+            )
         }
         composable(Screen.ReminderSettings.route) {
             ReminderSettingsScreen(onBack = { navController.popBackStack() })
@@ -149,6 +154,7 @@ fun GenesyxNavGraph(
         ) {
             PhDetailScreen(
                 onOpenPlan = { navController.navigate(Screen.NutritionDetail.route) },
+                onOpenArticle = { slug -> navController.navigate(Screen.ArticleDetail.create(slug)) },
             )
         }
         composable(
@@ -192,6 +198,8 @@ fun GenesyxNavGraph(
             // The NEW_ARTICLE reminder lands here.
             deepLinks = listOf(navDeepLink { uriPattern = "genesyx://learn" }),
         ) { LearnScreen(navController) }
+        composable(Screen.HowToUse.route) { HowToUseScreen(navController) }
+        composable(Screen.TwelveWeekPlan.route) { TwelveWeekPlanScreen(navController) }
         composable(Screen.LearnSearch.route) { LearnSearchScreen(navController) }
         composable(
             route = Screen.ArticleDetail.route,

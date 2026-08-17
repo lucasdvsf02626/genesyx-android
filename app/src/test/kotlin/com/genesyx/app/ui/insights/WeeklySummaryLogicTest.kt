@@ -31,6 +31,17 @@ class WeeklySummaryLogicTest {
     }
 
     @Test
+    fun `days with meals counts only known food groups`() {
+        val logs = mapOf(
+            thisMon to DailyLog(foodGroups = setOf("vegetables", "protein")),
+            thisMon.plusDays(1) to DailyLog(foodGroups = setOf("seaweed")),
+            thisMon.plusDays(2) to DailyLog(waterMl = 500),
+        )
+        val r = WeeklySummaryLogic.compute(logs, today)
+        assertEquals(1, r.daysWithMeals)
+    }
+
+    @Test
     fun `days logged count meaningful days in each week`() {
         val logs = mapOf(
             thisMon to DailyLog(waterMl = 500),

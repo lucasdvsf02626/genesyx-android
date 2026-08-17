@@ -4,10 +4,12 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.genesyx.app.data.DailyLogRepository
+import com.genesyx.app.data.MealLogRepository
 import com.genesyx.app.data.PreferencesRepository
 import com.genesyx.app.data.UserSupplementRepository
 import com.genesyx.app.domain.hydration.HydrationUnit
 import com.genesyx.app.domain.model.DailyLog
+import com.genesyx.app.domain.model.MealEntry
 import com.genesyx.app.domain.model.Supplement
 import com.genesyx.app.ui.navigation.Screen
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -22,6 +24,7 @@ import javax.inject.Inject
 class LogViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val dailyLogRepository: DailyLogRepository,
+    private val mealLogRepository: MealLogRepository,
     preferencesRepository: PreferencesRepository,
     userSupplementRepository: UserSupplementRepository,
 ) : ViewModel() {
@@ -67,6 +70,21 @@ class LogViewModel @Inject constructor(
 
     /** Writes through the same repository path as the quick-add trackers. */
     fun setWater(ml: Int) = dailyLogRepository.setWater(ml, date)
+
+    /** Live food-group set for [date] — same row the Nutrition chips write. */
+    val foodGroups: StateFlow<Set<String>> = dailyLogRepository.logByDate
+        .map { it[date]?.foodGroups.orEmpty() }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, dailyLogRepository.logOn(date).foodGroups)
+
+    fun toggleFoodGroup(id: String) = dailyLogRepository.toggleFoodGroup(id, date)
+
+    /** Free-text meals for [date] — same Room store the Nutrition tab uses. */
+    val meals: StateFlow<List<MealEntry>> = mealLogRepository.mealsForDate(date)
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    fun logMeal(entry: MealEntry): Boolean = mealLogRepository.log(entry.copy(date = date))
+
+    fun deleteMeal(id: String) = mealLogRepository.delete(id)
 
     /**
      * Saves online or off. The repository writes to Room and queues the push if it fails, so there is

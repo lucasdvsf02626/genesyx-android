@@ -163,6 +163,32 @@ class AuthRepositoryTest {
     }
 
     @Test
+    fun `sendPasswordReset addresses the typed email and does not persist a session`() = runTest {
+        // She is at the signed-out gate. The reset must go to what she typed — there is no
+        // session email to fall back on — and asking for the email must never grant a session.
+        coEvery { authService.resetPassword("ada@example.com") } returns DataResult.Success(Unit)
+
+        val result = repo(backgroundScope).sendPasswordReset("ada@example.com")
+
+        assertTrue(result is DataResult.Success)
+        coVerify { authService.resetPassword("ada@example.com") }
+        verify(exactly = 0) { session.signIn(any(), any(), any()) }
+    }
+
+    @Test
+    fun `sendPasswordReset surfaces a failed send rather than reporting success`() = runTest {
+        // Swallowing a failure would leave her looking at a confirmation for an email that was
+        // never sent — and she has no other route in, so she would simply wait.
+        coEvery { authService.resetPassword(any()) } returns
+            DataResult.Error(RuntimeException("offline"))
+
+        val result = repo(backgroundScope).sendPasswordReset("ada@example.com")
+
+        assertTrue(result is DataResult.Error)
+        verify(exactly = 0) { session.signIn(any(), any(), any()) }
+    }
+
+    @Test
     fun `signOut clears local session and data even when the remote sign-out fails`() = runTest {
         // Offline: the remote call fails, but "Log out" must still log the user out locally —
         // otherwise the button silently does nothing and they stay signed in.

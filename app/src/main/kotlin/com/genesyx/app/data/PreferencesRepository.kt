@@ -59,6 +59,10 @@ class PreferencesRepository @Inject constructor(
         store.articleReadDates.stateIn(scope, SharingStarted.Eagerly, emptySet())
     val lastSeenArticleSlug: StateFlow<String?> =
         store.lastSeenArticleSlug.stateIn(scope, SharingStarted.Eagerly, null)
+    val lastSeenPhase: StateFlow<String?> =
+        store.lastSeenPhase.stateIn(scope, SharingStarted.Eagerly, null)
+    val lastSeenPhaseEpochDay: StateFlow<Long?> =
+        store.lastSeenPhaseEpochDay.stateIn(scope, SharingStarted.Eagerly, null)
 
     fun setTheme(mode: ThemeMode) { scope.launch { store.setTheme(mode) } }
     fun setPush(enabled: Boolean) { scope.launch { store.setPush(enabled) } }
@@ -95,4 +99,8 @@ class PreferencesRepository @Inject constructor(
         }
     }
     fun setLastSeenArticleSlug(slug: String) { scope.launch { store.setLastSeenArticleSlug(slug) } }
+
+    fun setLastSeenPhase(phase: String, epochDay: Long) {
+        scope.launch { store.setLastSeenPhase(phase, epochDay) }
+    }
 }

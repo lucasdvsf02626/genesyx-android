@@ -35,6 +35,15 @@ class LogViewModelTest {
     }
 
     @Test
+    fun `a past date is the same date meals and food groups must write to`() {
+        // The editor's date is the only source of truth: Nutrition chips and meal notes must
+        // land on that day, not on today, when she opens last Tuesday from the calendar.
+        val date = LogViewModel.resolveDate("2026-08-04", today)
+        assertEquals(LocalDate.of(2026, 8, 4), date)
+        assertEquals(date, LocalDate.parse("2026-08-04"))
+    }
+
+    @Test
     fun `garbage falls back to today`() {
         assertEquals(today, LogViewModel.resolveDate("not-a-date", today))
         assertEquals(today, LogViewModel.resolveDate("", today))

@@ -138,6 +138,23 @@ class DailyLogRepository @Inject constructor(
     fun upsertPreservingWater(date: LocalDate, log: DailyLog) =
         mutateRow(date) { stored -> log.copy(waterMl = stored.waterMl, foodGroups = stored.foodGroups) }
 
+    /**
+     * Add or remove one food group for a day. The Nutrition chips own this field, so the Log
+     * form still goes through [upsertPreservingWater] and cannot wipe a tap made here.
+     */
+    fun toggleFoodGroup(id: String, date: LocalDate = LocalDate.now()) =
+        mutateRow(date) { current ->
+            val next = if (id in current.foodGroups) current.foodGroups - id else current.foodGroups + id
+            current.copy(foodGroups = next)
+        }
+
+    /**
+     * Add every id in [ids] without removing anything already recorded. Recipes use this so
+     * "Log vegetables, protein…" never un-ticks a group she already had.
+     */
+    fun logFoodGroups(ids: Set<String>, date: LocalDate = LocalDate.now()) =
+        mutateRow(date) { current -> current.copy(foodGroups = current.foodGroups + ids) }
+
     private val writeMutex = Mutex()
 
     /**

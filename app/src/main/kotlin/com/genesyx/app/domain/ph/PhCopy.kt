@@ -47,8 +47,7 @@ object PhCopy {
             "stay stable and makes it harder for other bacteria to overgrow. Your own usual number " +
             "is the useful thing to know here, not a target to hit."
 
-    // Why vaginal health may matter around conception — deliberately cautious ("may", "context"),
-    // makes no causal claim, and stays inside the banned-phrase rules. FLAG FOR MEDICAL REVIEWER.
+    // Cautious background only: no causal claim, no score, no sex-selection. Production copy.
     const val FERTILITY_TITLE = "How this relates to fertility"
     const val FERTILITY_BODY =
         "A settled, acidic vaginal environment is part of general reproductive wellbeing, so some " +
@@ -56,6 +55,35 @@ object PhCopy {
             "background context, not a fertility test — your pH does not score your chances, and one " +
             "reading tells you little on its own. If something feels off, a GP, nurse or pharmacist " +
             "is the right place to check."
+
+    const val ACCURACY_TITLE = "For a reading you can trust"
+    const val ACCURACY_BODY =
+        "For an accurate reading, test away from your period and at least 24 hours after sex. " +
+            "Lubricants, scented washes, and recent antibiotics can also shift the result."
+
+    const val SUPPORT_TITLE = "Supporting your vaginal health"
+    const val SUPPORT_BODY =
+        "Your body keeps its own balance, and it usually does that best when left alone. Warm " +
+            "water is enough for washing — the outside only, as the inside looks after itself. " +
+            "Unscented products, breathable cotton underwear, and changing out of damp swimwear " +
+            "or gym kit all help. Scented washes work against that balance rather than for it."
+    const val SUPPORT_SIGNPOST =
+        "If you notice a change in discharge, smell, or comfort that is new for you, a " +
+            "pharmacist can talk it through — no appointment needed, and it is a very ordinary " +
+            "thing to ask about."
+
+    const val SEEK_HELP_TITLE = "When to ask for support"
+    const val SEEK_HELP_BODY =
+        "Speak to a GP, nurse, pharmacist, or a sexual health clinic if readings stay high over " +
+            "several days, or if you notice a change in the colour, smell or texture of discharge, " +
+            "itching or soreness, bleeding between periods or after sex, or pain when you pee. " +
+            "This app cannot tell you what is causing a change."
+
+    const val SHETTLES_TITLE = "The Shettles method"
+    const val SHETTLES_BODY =
+        "The Shettles method is a decades-old theory about timing sex and the sex of a baby. It " +
+            "is not a proven method, and Genesyx does not use it to guide this tracker."
+    const val SHETTLES_LINK = "Read the theory versus the evidence"
 
     const val MEANS_TITLE = "What your reading means"
     const val MEANS_NONE = "Log your first reading and this section will explain what it means."
@@ -129,6 +157,10 @@ object PhCopy {
         INSIGHT_DEFAULT, INSIGHT_HEALTHY, INSIGHT_ELEVATED, RECOMMENDATION_ELEVATED,
         WHY_TITLE, WHY_BODY,
         FERTILITY_TITLE, FERTILITY_BODY,
+        ACCURACY_TITLE, ACCURACY_BODY,
+        SUPPORT_TITLE, SUPPORT_BODY, SUPPORT_SIGNPOST,
+        SEEK_HELP_TITLE, SEEK_HELP_BODY,
+        SHETTLES_TITLE, SHETTLES_BODY, SHETTLES_LINK,
         MEANS_TITLE, MEANS_NONE, MEANS_HEALTHY, MEANS_ELEVATED,
         DO_TITLE, DO_NONE, DO_HEALTHY, DO_ELEVATED,
         SUPPLEMENTS_TITLE, SUPPLEMENTS_BODY, SUPPLEMENTS_CTA, SOURCES_TITLE,

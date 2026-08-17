@@ -55,6 +55,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.genesyx.app.domain.content.AppGuide
 import com.genesyx.app.domain.hydration.HydrationFormat
 import com.genesyx.app.domain.model.DailyLog
 import com.genesyx.app.domain.model.EnergyLevel
@@ -64,6 +65,9 @@ import com.genesyx.app.domain.model.SupplementLogRows
 import com.genesyx.app.ui.components.Eyebrow
 import com.genesyx.app.ui.components.GxPrimaryButton
 import com.genesyx.app.ui.components.ScreenHeader
+import com.genesyx.app.ui.learn.HowThisWorksLink
+import com.genesyx.app.ui.nutrition.FoodGroupCard
+import com.genesyx.app.ui.nutrition.MealLogCard
 import com.genesyx.app.ui.theme.ElectricBlue
 import com.genesyx.app.ui.theme.ElectricLavender
 import com.genesyx.app.ui.theme.ElectricPink
@@ -79,7 +83,11 @@ private val moodIcons = mapOf(
 )
 
 @Composable
-fun LogScreen(onClose: () -> Unit, viewModel: LogViewModel = hiltViewModel()) {
+fun LogScreen(
+    onClose: () -> Unit,
+    onOpenArticle: (String) -> Unit = {},
+    viewModel: LogViewModel = hiltViewModel(),
+) {
     val loaded by viewModel.loaded.collectAsState()
 
     // Seeding the form from an unloaded store would show blanks over a real log, and saving that
@@ -93,7 +101,12 @@ fun LogScreen(onClose: () -> Unit, viewModel: LogViewModel = hiltViewModel()) {
         return
     }
 
-    LogForm(initial = viewModel.initialLog(), onClose = onClose, viewModel = viewModel)
+    LogForm(
+        initial = viewModel.initialLog(),
+        onClose = onClose,
+        onOpenArticle = onOpenArticle,
+        viewModel = viewModel,
+    )
 }
 
 // The header must say WHICH day is being written: an editor opened from the calendar that still
@@ -108,7 +121,12 @@ private fun logSubtitle(viewModel: LogViewModel) =
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun LogForm(initial: DailyLog, onClose: () -> Unit, viewModel: LogViewModel) {
+private fun LogForm(
+    initial: DailyLog,
+    onClose: () -> Unit,
+    onOpenArticle: (String) -> Unit,
+    viewModel: LogViewModel,
+) {
     val colors = MaterialTheme.colorScheme
 
     var mood by remember { mutableStateOf(initial.mood) }
@@ -125,6 +143,8 @@ private fun LogForm(initial: DailyLog, onClose: () -> Unit, viewModel: LogViewMo
     val waterMl by viewModel.waterMl.collectAsState()
     val waterUnit by viewModel.hydrationUnit.collectAsState()
     val customSupplements by viewModel.customSupplementNames.collectAsState()
+    val foodGroups by viewModel.foodGroups.collectAsState()
+    val meals by viewModel.meals.collectAsState()
     var showAdd by remember { mutableStateOf(false) }
     var custom by remember { mutableStateOf("") }
 
@@ -300,6 +320,20 @@ private fun LogForm(initial: DailyLog, onClose: () -> Unit, viewModel: LogViewMo
                 )
             }
 
+            Spacer(Modifier.height(16.dp))
+            FoodGroupCard(
+                logged = foodGroups,
+                phase = null,
+                onToggle = { viewModel.toggleFoodGroup(it) },
+            )
+            Spacer(Modifier.height(12.dp))
+            MealLogCard(
+                meals = meals,
+                date = viewModel.date,
+                onLog = { viewModel.logMeal(it) },
+                onDelete = { viewModel.deleteMeal(it) },
+            )
+
             // Notes
             Section("Notes")
             OutlinedTextField(
@@ -308,6 +342,12 @@ private fun LogForm(initial: DailyLog, onClose: () -> Unit, viewModel: LogViewMo
                 modifier = Modifier.fillMaxWidth().heightIn(min = 96.dp),
                 placeholder = { Text("A short note for future you…") },
                 shape = RoundedCornerShape(16.dp),
+            )
+
+            HowThisWorksLink(
+                slug = AppGuide.TRACK,
+                label = AppGuide.TRACK_LABEL,
+                onOpen = onOpenArticle,
             )
 
             Spacer(Modifier.height(20.dp))

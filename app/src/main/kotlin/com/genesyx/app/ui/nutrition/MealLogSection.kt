@@ -45,15 +45,15 @@ import com.genesyx.app.ui.theme.ElectricLavender
 import java.time.format.DateTimeFormatter
 
 /**
- * "Today's meals" — the local-only meal log. Each meal shows its sitting, what she ate, and any
- * nutrient tags. Logging opens a dialog (meal type · description · optional nutrient tags). Meals
- * live only on this device (no sync), so the copy never promises cross-device.
+ * Optional free-text meal note under the food-group chips. Each meal shows its sitting, what she
+ * ate, and any nutrient tags. Meals live only on this device (no sync).
  */
 @Composable
 fun MealLogCard(
     meals: List<MealEntry>,
     onLog: (MealEntry) -> Unit,
     onDelete: (String) -> Unit,
+    date: java.time.LocalDate = java.time.LocalDate.now(),
 ) {
     val colors = MaterialTheme.colorScheme
     // null = closed; a fresh MealEntry with a blank description = the add flow; an existing meal = edit.
@@ -67,11 +67,11 @@ fun MealLogCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Column(Modifier.padding(20.dp)) {
-            Eyebrow("Today's meals", color = ElectricLavender)
+            Eyebrow("A note about a meal", color = ElectricLavender)
             Spacer(Modifier.height(8.dp))
             if (meals.isEmpty()) {
                 Text(
-                    "Log what you eat to see how it lines up with your cycle. Kept on this device.",
+                    "Optional. The chips above are the record; add a description here if you want one. Kept on this device.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = colors.onSurfaceVariant,
                 )
@@ -117,7 +117,7 @@ fun MealLogCard(
             Spacer(Modifier.height(12.dp))
             GxPrimaryButton(
                 text = "Log a meal",
-                onClick = { editing = MealEntry(date = java.time.LocalDate.now(), type = MealType.BREAKFAST, description = "") },
+                onClick = { editing = MealEntry(date = date, type = MealType.BREAKFAST, description = "") },
             )
         }
     }
@@ -138,7 +138,7 @@ fun MealLogCard(
             title = { Text("Delete this meal?", style = MaterialTheme.typography.titleLarge, color = colors.onSurface) },
             text = {
                 Text(
-                    "\"${meal.description}\" will be removed from today's log.",
+                    "\"${meal.description}\" will be removed from this day's log.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = colors.onSurfaceVariant,
                 )

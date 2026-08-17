@@ -15,3 +15,6 @@
 *.zip
 keystore.properties
 /app/release
+# Full iOS raster dump (48 files). The eight missing recipes are already in drawable-nodpi
+# and again under ios-asset-transfer/missing/.
+/ios-asset-transfer/full-ios-copy/

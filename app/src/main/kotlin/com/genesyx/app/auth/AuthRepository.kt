@@ -97,6 +97,17 @@ class AuthRepository @Inject constructor(
     }
 
     /**
+     * Email a password-reset link to the address she typed. The signed-out path cannot read an
+     * address off the session — that is the whole point of this method. Success means "the
+     * provider accepted the request"; it must never persist a session.
+     */
+    suspend fun sendPasswordReset(email: String): DataResult<Unit> {
+        val result = authService.resetPassword(email)
+        if (result is DataResult.Error) logger.e("Auth", "password-reset failed", result.throwable)
+        return result
+    }
+
+    /**
      * Start an email change via the remote provider. Success means "confirmation email sent" — the
      * persisted session deliberately keeps the old address until Supabase confirms the new one.
      */

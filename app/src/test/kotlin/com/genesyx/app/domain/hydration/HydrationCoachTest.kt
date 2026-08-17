@@ -8,6 +8,13 @@ import java.time.LocalTime
 
 class HydrationCoachTest {
 
+    @Test
+    fun `why-text quotes the old eight-glasses myth without making it the unit`() {
+        assertTrue(HydrationCoach.WHY_TEXT.contains("eight glasses"))
+        assertTrue(HydrationCoach.WHY_TEXT.contains("cup"))
+        assertFalse(HydrationCoach.WHY_TEXT.lowercase().contains("fertility"))
+    }
+
     private val goal = 2400
 
     @Test

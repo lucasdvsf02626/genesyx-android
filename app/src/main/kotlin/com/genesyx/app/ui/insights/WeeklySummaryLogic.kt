@@ -1,5 +1,6 @@
 package com.genesyx.app.ui.insights
 
+import com.genesyx.app.domain.content.FoodGroup
 import com.genesyx.app.domain.model.DailyLog
 import com.genesyx.app.domain.model.EnergyLevel
 import com.genesyx.app.domain.model.Mood
@@ -54,6 +55,9 @@ object WeeklySummaryLogic {
             },
             moodEnergyLine = moodEnergyLine(topMood, topEnergy),
             insight = narrativeFor(daysLogged, prevDaysLogged),
+            daysWithMeals = thisWeek.count { date ->
+                FoodGroup.knownCount(logsByDate[date]?.foodGroups.orEmpty()) > 0
+            },
         )
     }
 

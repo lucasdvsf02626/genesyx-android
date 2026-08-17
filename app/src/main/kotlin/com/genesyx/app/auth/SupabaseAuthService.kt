@@ -102,6 +102,19 @@ class SupabaseAuthService @Inject constructor(
         }
     }
 
+    /**
+     * Sends the recovery email. No `redirectUrl` — same as iOS. The link lands on whatever the
+     * Supabase project's Site URL is; there is no in-app recovery handler yet.
+     */
+    override suspend fun resetPassword(email: String): DataResult<Unit> =
+        try {
+            client.auth.resetPasswordForEmail(email)
+            DataResult.Success(Unit)
+        } catch (t: Throwable) {
+            logger.e("Auth", "password-reset failed", t)
+            DataResult.Error(t, t.message)
+        }
+
     /** Same shape as [changePassword]: re-auth, then ask Supabase to start the email change. */
     override suspend fun changeEmail(currentPassword: String, newEmail: String): DataResult<Unit> {
         return try {

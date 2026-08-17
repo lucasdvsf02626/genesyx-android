@@ -51,6 +51,8 @@ data class NutritionUiState(
     val weeklyStreak: Int = 0,
     /** Days this week she actually hit [waterGoalMl], which is not the same as days she logged. */
     val daysOnGoal: Int = 0,
+    /** Today's food-group tokens. The chips own this set. */
+    val foodGroups: Set<String> = emptySet(),
 )
 
 @HiltViewModel
@@ -131,6 +133,7 @@ class NutritionViewModel @Inject constructor(
             // From the emitted map, not a `.value` side-read — the card must show the same total
             // every other collector of logByDate shows at the same instant.
             val waterMl = logs[today]?.waterMl ?: 0
+            val foodGroups = logs[today]?.foodGroups.orEmpty()
             val coaching = HydrationCoach.coach(waterMl, goalMl, LocalTime.now(), unit).message
             if (settings == null) {
                 NutritionUiState(
@@ -140,6 +143,7 @@ class NutritionViewModel @Inject constructor(
                     hydrationCoaching = coaching,
                     weeklyStreak = streaks.weeklyStreak,
                     daysOnGoal = streaks.daysOnGoal,
+                    foodGroups = foodGroups,
                 )
             } else {
                 val phase = CycleEngine.getCyclePhase(settings, today).phase
@@ -155,6 +159,7 @@ class NutritionViewModel @Inject constructor(
                     hydrationCoaching = coaching,
                     weeklyStreak = streaks.weeklyStreak,
                     daysOnGoal = streaks.daysOnGoal,
+                    foodGroups = foodGroups,
                 )
             }
         }.stateIn(
@@ -164,6 +169,10 @@ class NutritionViewModel @Inject constructor(
         )
 
     fun adjustWater(deltaMl: Int) = dailyLogRepository.adjustWater(deltaMl)
+
+    fun toggleFoodGroup(id: String) = dailyLogRepository.toggleFoodGroup(id)
+
+    fun logFoodGroups(ids: Set<String>) = dailyLogRepository.logFoodGroups(ids)
 
     fun setWaterGoal(goalMl: Int) = preferencesRepository.setHydrationGoalMl(goalMl)
 

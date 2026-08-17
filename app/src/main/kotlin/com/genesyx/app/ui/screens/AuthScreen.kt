@@ -64,8 +64,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/** Transient auth screen state (async in-flight + last error). */
-data class AuthUiState(val loading: Boolean = false, val error: String? = null)
+/** Transient auth screen state (async in-flight + last error + password-reset notice). */
+data class AuthUiState(
+    val loading: Boolean = false,
+    val error: String? = null,
+    val resetNotice: String? = null,
+)
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
@@ -145,6 +149,16 @@ class AuthViewModel @Inject constructor(
 
     companion object {
         /**
+         * Neutral whether or not the address has an account. Saying "no account with that email"
+         * would turn this screen into an account-enumeration oracle for a health app, and
+         * Supabase deliberately does not distinguish the two either.
+         */
+        const val RESET_SENT =
+            "If that email has an account, we've sent a reset link. Check your inbox."
+        const val RESET_FAILED = "We couldn't send the reset email. Please try again."
+        const val RESET_EMAIL_REQUIRED = "Enter your email first, then tap Forgot password"
+
+        /**
          * Pure mapping from a Credential Manager failure to a user message, extracted so the
          * (message-sniffing) logic is unit-testable without constructing exceptions. Credential
          * Manager collapses very different problems into a couple of types, so the developer-facing
@@ -196,6 +210,26 @@ class AuthViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Emails a reset link to [email]. She is at the signed-out gate, so the address comes from
+     * what she typed — not from a session. Asking for the email is not a way past the gate.
+     */
+    fun sendPasswordReset(email: String) {
+        if (_uiState.value.loading) return
+        _uiState.value = AuthUiState(loading = true)
+        viewModelScope.launch {
+            when (val result = authRepository.sendPasswordReset(email)) {
+                is DataResult.Success ->
+                    _uiState.value = AuthUiState(resetNotice = RESET_SENT)
+                is DataResult.Error -> {
+                    logger.e("Auth", "password-reset failed", result.throwable)
+                    _uiState.value = AuthUiState(resetNotice = RESET_FAILED)
+                }
+                DataResult.Loading -> Unit
+            }
+        }
+    }
+
     fun clearError() {
         if (_uiState.value.error != null) _uiState.value = _uiState.value.copy(error = null)
     }
@@ -213,6 +247,7 @@ fun AuthScreen(
         uiState = uiState,
         onSubmit = { signup, email, password, name -> viewModel.submit(signup, email, password, name, onSignedIn) },
         onGoogleSignIn = { viewModel.signInWithGoogle(context, onSignedIn) },
+        onForgotPassword = viewModel::sendPasswordReset,
         onClearError = viewModel::clearError,
         onBack = onBack,
     )
@@ -225,6 +260,7 @@ fun AuthContent(
     onClearError: () -> Unit,
     onBack: () -> Unit,
     onGoogleSignIn: () -> Unit = {},
+    onForgotPassword: (email: String) -> Unit = {},
 ) {
     val colors = MaterialTheme.colorScheme
     var signupMode by remember { mutableStateOf(false) }
@@ -249,6 +285,15 @@ fun AuthContent(
                 localError = null
                 onSubmit(signupMode, email.trim(), password, name.takeIf { signupMode })
             }
+        }
+    }
+
+    fun requestReset() {
+        if (!isValidEmail(email)) {
+            localError = AuthViewModel.RESET_EMAIL_REQUIRED
+        } else {
+            localError = null
+            onForgotPassword(email.trim())
         }
     }
 
@@ -292,6 +337,32 @@ fun AuthContent(
                 if (shownError != null) {
                     Spacer(Modifier.height(8.dp))
                     Text(shownError, style = MaterialTheme.typography.bodyMedium, color = colors.error, modifier = Modifier.fillMaxWidth())
+                }
+
+                // Sign-in only: there is no password to recover while creating an account, and the
+                // gate makes this her single route back in — Profile's "Change password" sits
+                // behind the very session she cannot obtain.
+                if (!signupMode) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "Forgot password?",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = ElectricLavender,
+                        textAlign = TextAlign.End,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(enabled = !uiState.loading) { requestReset() },
+                    )
+                    if (uiState.resetNotice != null) {
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            uiState.resetNotice,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = colors.onSurfaceVariant,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
                 }
 
                 Spacer(Modifier.height(20.dp))

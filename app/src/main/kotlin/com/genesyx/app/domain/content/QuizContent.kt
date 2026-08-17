@@ -13,7 +13,17 @@ data class QuizQuestion(
     val options: List<QuizOption>,
     /** Shown after answering this question, before advancing. */
     val fact: DidYouKnow? = null,
-)
+    /**
+     * When true, Continue works with no selection and the question is omitted from the saved
+     * map — that is unanswered, not [PREFER_NOT_TO_SAY].
+     */
+    val optional: Boolean = false,
+) {
+    fun canContinue(selected: String?): Boolean = selected != null || optional
+}
+
+const val GENDER_QUESTION_ID = "gender"
+const val PREFER_NOT_TO_SAY = "prefer_not_to_say"
 
 val quizQuestions: List<QuizQuestion> = listOf(
     QuizQuestion(
@@ -56,14 +66,15 @@ val quizQuestions: List<QuizQuestion> = listOf(
         ),
     ),
     QuizQuestion(
-        id = "gender",
+        id = GENDER_QUESTION_ID,
         question = "Do you have a preference for your baby's sex?",
-        helper = "This is just for you — we keep it gentle and private.",
+        helper = "Optional. Skip if you like — Genesyx does not predict or influence a baby's sex.",
+        optional = true,
         options = listOf(
             QuizOption("girl", "Girl"),
             QuizOption("boy", "Boy"),
             QuizOption("no_preference", "No preference"),
-            QuizOption("prefer_not_to_say", "Prefer not to say"),
+            QuizOption(PREFER_NOT_TO_SAY, "Prefer not to say"),
         ),
     ),
     QuizQuestion(

@@ -1,6 +1,7 @@
 package com.genesyx.app.ui.nutrition
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -22,6 +23,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,9 +31,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.genesyx.app.domain.content.Recipe
+import com.genesyx.app.domain.content.RecipeCopy
 import com.genesyx.app.domain.model.Phase
 import com.genesyx.app.ui.components.Eyebrow
 import com.genesyx.app.ui.theme.ElectricLavender
@@ -47,12 +52,13 @@ fun RecipesSection(
     recipes: List<Recipe>,
     expandedId: String?,
     onToggle: (String) -> Unit,
+    onLogGroups: ((List<String>) -> Unit)? = null,
 ) {
     val colors = MaterialTheme.colorScheme
     Column {
-        Eyebrow("Recipes", color = colors.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp, bottom = 4.dp))
+        Eyebrow(RecipeCopy.eyebrow, color = colors.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp, bottom = 4.dp))
         Text(
-            "Recipes for your cycle",
+            RecipeCopy.title,
             style = MaterialTheme.typography.titleLarge,
             color = colors.onSurface,
             modifier = Modifier.padding(start = 4.dp, bottom = 12.dp),
@@ -65,7 +71,7 @@ fun RecipesSection(
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
             ) {
                 Text(
-                    "Cycle-friendly recipes are coming soon. They'll appear here the moment they're added.",
+                    RecipeCopy.comingSoon,
                     style = MaterialTheme.typography.bodyMedium,
                     color = colors.onSurfaceVariant,
                     modifier = Modifier.padding(20.dp),
@@ -73,7 +79,12 @@ fun RecipesSection(
             }
         } else {
             recipes.forEach { recipe ->
-                RecipeCard(recipe, open = expandedId == recipe.id, onClick = { onToggle(recipe.id) })
+                RecipeCard(
+                    recipe,
+                    open = expandedId == recipe.id,
+                    onClick = { onToggle(recipe.id) },
+                    onLogGroups = onLogGroups,
+                )
             }
         }
     }
@@ -81,7 +92,12 @@ fun RecipesSection(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun RecipeCard(recipe: Recipe, open: Boolean, onClick: () -> Unit) {
+private fun RecipeCard(
+    recipe: Recipe,
+    open: Boolean,
+    onClick: () -> Unit,
+    onLogGroups: ((List<String>) -> Unit)?,
+) {
     val colors = MaterialTheme.colorScheme
     val accent = accentFor(recipe.phase)
     Card(
@@ -94,12 +110,23 @@ private fun RecipeCard(recipe: Recipe, open: Boolean, onClick: () -> Unit) {
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Column {
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .height(6.dp)
-                    .background(Brush.horizontalGradient(listOf(accent, accent.copy(alpha = 0.45f)))),
-            )
+            if (recipe.imageRes != null) {
+                Image(
+                    painter = painterResource(recipe.imageRes),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(160.dp),
+                    contentScale = ContentScale.Crop,
+                )
+            } else {
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(6.dp)
+                        .background(Brush.horizontalGradient(listOf(accent, accent.copy(alpha = 0.45f)))),
+                )
+            }
             Row(
                 modifier = Modifier.padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -109,7 +136,8 @@ private fun RecipeCard(recipe: Recipe, open: Boolean, onClick: () -> Unit) {
                     Spacer(Modifier.height(2.dp))
                     Text(recipe.subtitle, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
                     val meta = buildList {
-                        recipe.prepMinutes?.let { add("${it} min") }
+                        val cooked = RecipeCopy.meta(recipe.prepMinutes, recipe.serves)
+                        if (cooked.isNotEmpty()) add(cooked)
                         recipe.phase?.let { add(phaseWord(it)) }
                     }
                     if (meta.isNotEmpty()) {
@@ -138,7 +166,7 @@ private fun RecipeCard(recipe: Recipe, open: Boolean, onClick: () -> Unit) {
                         Spacer(Modifier.height(12.dp))
                     }
                     if (recipe.ingredients.isNotEmpty()) {
-                        Label("Ingredients", accent)
+                        Label(RecipeCopy.ingredientsHeading, accent)
                         Spacer(Modifier.height(4.dp))
                         recipe.ingredients.forEach { line ->
                             Text("· $line", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
@@ -146,7 +174,7 @@ private fun RecipeCard(recipe: Recipe, open: Boolean, onClick: () -> Unit) {
                         Spacer(Modifier.height(12.dp))
                     }
                     if (recipe.steps.isNotEmpty()) {
-                        Label("Method", accent)
+                        Label(RecipeCopy.methodHeading, accent)
                         Spacer(Modifier.height(4.dp))
                         recipe.steps.forEachIndexed { i, step ->
                             Text(
@@ -157,6 +185,18 @@ private fun RecipeCard(recipe: Recipe, open: Boolean, onClick: () -> Unit) {
                             )
                         }
                     }
+                    if (onLogGroups != null && recipe.groups.isNotEmpty()) {
+                        Spacer(Modifier.height(8.dp))
+                        TextButton(onClick = { onLogGroups(recipe.groups) }) {
+                            Text(RecipeCopy.logGroupsAction(recipe.groups), color = ElectricLavender)
+                        }
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        RecipeCopy.footnote,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = colors.onSurfaceVariant,
+                    )
                 }
             }
         }

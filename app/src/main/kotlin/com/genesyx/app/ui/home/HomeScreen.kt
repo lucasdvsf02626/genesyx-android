@@ -55,6 +55,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -72,9 +73,11 @@ import com.genesyx.app.domain.hydration.HydrationPace
 import com.genesyx.app.domain.model.CycleSettings
 import com.genesyx.app.domain.ph.PhCopy
 import com.genesyx.app.domain.streaks.Milestone
+import com.genesyx.app.domain.content.AppGuide
 import com.genesyx.app.ui.components.CycleSettingsDialog
 import com.genesyx.app.ui.components.Eyebrow
 import com.genesyx.app.ui.components.GxPrimaryButton
+import com.genesyx.app.ui.learn.HowThisWorksLink
 import com.genesyx.app.ui.components.HydrationStatusPill
 import com.genesyx.app.ui.components.PastDatePickerDialog
 import com.genesyx.app.ui.components.hydrationStatusLabel
@@ -144,6 +147,7 @@ fun HomeContent(
                 alignment = Alignment.TopCenter,
             )
         }
+        SoftEggBackdrop()
 
         Column(
             modifier = Modifier
@@ -251,6 +255,10 @@ fun HomeContent(
             Spacer(Modifier.height(24.dp))
 
             if (state.cycleSetUp) {
+                if (state.phaseJustChanged) {
+                    PhaseEntryCard(state, onOpenArticle)
+                    Spacer(Modifier.height(12.dp))
+                }
                 CycleHeroCard(state) { showCycleDialog = true }
                 Spacer(Modifier.height(12.dp))
                 TodayFocusCard(state, onOpenArticle)
@@ -281,6 +289,12 @@ fun HomeContent(
 
             Spacer(Modifier.height(20.dp))
             GxPrimaryButton(text = "Log today", onClick = { onNavigate(Screen.Log.create()) }, leadingIcon = Icons.Filled.Add)
+
+            HowThisWorksLink(
+                slug = AppGuide.HOME,
+                label = AppGuide.HOME_LABEL,
+                onOpen = onOpenArticle,
+            )
 
             Spacer(Modifier.height(24.dp))
         }
@@ -436,7 +450,7 @@ private fun CycleHeroCard(state: HomeUiState, onEdit: () -> Unit) {
             Row(Modifier.fillMaxWidth()) {
                 HeroMetric("Cycle day", state.cycleDay?.let { "Day $it" } ?: "—", Modifier.weight(1f))
                 HeroMetric("Next period", state.daysToNextLabel ?: "—", Modifier.weight(1f))
-                HeroMetric("Ovulation", state.ovulationDayLabel ?: "—", Modifier.weight(1f))
+                HeroMetric("Predicted ovulation", state.ovulationDayLabel ?: "—", Modifier.weight(1f))
             }
         }
     }
@@ -449,6 +463,67 @@ private fun HeroMetric(label: String, value: String, modifier: Modifier = Modifi
         Eyebrow(label, color = colors.onSurfaceVariant)
         Spacer(Modifier.height(4.dp))
         Text(value, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+    }
+}
+
+@Composable
+private fun SoftEggBackdrop() {
+    Box(Modifier.fillMaxSize()) {
+        Image(
+            painter = painterResource(R.drawable.egg_female),
+            contentDescription = null,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = 72.dp, end = 8.dp)
+                .size(72.dp)
+                .graphicsLayer { alpha = 0.08f },
+        )
+        Image(
+            painter = painterResource(R.drawable.egg_male),
+            contentDescription = null,
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(bottom = 120.dp, start = 4.dp)
+                .size(56.dp)
+                .graphicsLayer { alpha = 0.07f },
+        )
+    }
+}
+
+@Composable
+private fun PhaseEntryCard(state: HomeUiState, onOpenArticle: (String) -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = ElectricLavender.copy(alpha = 0.12f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    ) {
+        Column(Modifier.padding(20.dp)) {
+            Eyebrow("A new phase", color = ElectricLavender)
+            Spacer(Modifier.height(6.dp))
+            Text(
+                state.cycleHeadline,
+                style = MaterialTheme.typography.titleLarge,
+                color = colors.onSurface,
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                state.cycleSub,
+                style = MaterialTheme.typography.bodyMedium,
+                color = colors.onSurfaceVariant,
+            )
+            state.phaseArticleSlug?.let { slug ->
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    "Learn about this phase →",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = ElectricLavender,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.clickable { onOpenArticle(slug) },
+                )
+            }
+        }
     }
 }
 

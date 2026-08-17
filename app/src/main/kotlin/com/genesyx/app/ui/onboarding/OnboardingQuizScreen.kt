@@ -133,7 +133,7 @@ fun OnboardingQuizScreen(
         GxPrimaryButton(
             text = if (step == total - 1) "See My Summary" else "Continue",
             onClick = ::onContinue,
-            enabled = selected != null,
+            enabled = question.canContinue(selected),
         )
     }
 

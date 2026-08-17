@@ -21,7 +21,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -30,7 +29,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -69,7 +67,6 @@ fun LearnScreen(
     viewModel: LearnViewModel = hiltViewModel(),
 ) {
     val colors = MaterialTheme.colorScheme
-    val introSeen by viewModel.introSeen.collectAsState()
     var selectedCategory by rememberSaveable { mutableStateOf<ArticleCategory?>(null) }
 
     // The drip gate: only articles whose publish date has arrived. Always-available articles are
@@ -119,14 +116,21 @@ fun LearnScreen(
             Spacer(Modifier.height(16.dp))
         }
 
-        if (!introSeen) {
-            item {
-                IntroCard(
-                    onDismiss = viewModel::dismissIntro,
-                    modifier = Modifier.padding(horizontal = 20.dp),
-                )
-                Spacer(Modifier.height(16.dp))
-            }
+        item {
+            HubCard(
+                title = "How to use Genesyx",
+                subtitle = "Every feature, and what it is for",
+                onClick = { navController.navigate(Screen.HowToUse.route) },
+                modifier = Modifier.padding(horizontal = 20.dp),
+            )
+            Spacer(Modifier.height(8.dp))
+            HubCard(
+                title = "Start your 12-week plan here",
+                subtitle = "One new article each week. Read them as they arrive.",
+                onClick = { navController.navigate(Screen.TwelveWeekPlan.route) },
+                modifier = Modifier.padding(horizontal = 20.dp),
+            )
+            Spacer(Modifier.height(16.dp))
         }
 
         item {
@@ -194,27 +198,29 @@ private fun CategoryChips(selected: ArticleCategory?, onSelect: (ArticleCategory
     }
 }
 
-/** One dismissible card on first visit. Not a coach-mark tour. */
 @Composable
-private fun IntroCard(onDismiss: () -> Unit, modifier: Modifier = Modifier) {
+private fun HubCard(
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val colors = MaterialTheme.colorScheme
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
-            .background(ElectricLavender.copy(alpha = 0.08f))
-            .padding(start = 18.dp, top = 14.dp, bottom = 14.dp, end = 4.dp),
+            .clip(RoundedCornerShape(16.dp))
+            .background(colors.surface)
+            .clickable(onClick = onClick)
+            .padding(14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            "New here? Start with “Your first week with Genesyx”. Everything else can wait.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = colors.onSurface,
-            modifier = Modifier.weight(1f),
-        )
-        IconButton(onClick = onDismiss, modifier = Modifier.size(48.dp)) {
-            Icon(Icons.Filled.Close, "Dismiss", tint = colors.onSurfaceVariant, modifier = Modifier.size(18.dp))
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+            Spacer(Modifier.height(2.dp))
+            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
         }
+        Icon(Icons.Filled.ChevronRight, null, tint = colors.onSurfaceVariant, modifier = Modifier.size(18.dp))
     }
 }
 
