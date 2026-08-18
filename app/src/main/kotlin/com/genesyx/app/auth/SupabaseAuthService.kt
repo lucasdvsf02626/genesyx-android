@@ -102,6 +102,19 @@ class SupabaseAuthService @Inject constructor(
         }
     }
 
+    /**
+     * Supabase emails the recovery link. It answers the same way whether or not the address is
+     * registered, and we deliberately keep that: the UI shows one message for both cases.
+     */
+    override suspend fun sendPasswordReset(email: String): DataResult<Unit> =
+        try {
+            client.auth.resetPasswordForEmail(email)
+            DataResult.Success(Unit)
+        } catch (t: Throwable) {
+            logger.e("Auth", "password-reset request failed", t)
+            DataResult.Error(t, t.message)
+        }
+
     /** Same shape as [changePassword]: re-auth, then ask Supabase to start the email change. */
     override suspend fun changeEmail(currentPassword: String, newEmail: String): DataResult<Unit> {
         return try {

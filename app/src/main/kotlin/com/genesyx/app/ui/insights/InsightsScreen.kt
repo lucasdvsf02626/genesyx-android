@@ -51,6 +51,8 @@ import androidx.navigation.NavController
 import com.genesyx.app.domain.model.DayType
 import com.genesyx.app.domain.model.Phase
 import com.genesyx.app.ui.components.Eyebrow
+import com.genesyx.app.ui.components.HelpLinks
+import com.genesyx.app.ui.components.ScreenHelpLink
 import com.genesyx.app.ui.components.ScreenHeader
 import com.genesyx.app.ui.components.tintOnWhite
 import com.genesyx.app.ui.navigation.Screen
@@ -152,6 +154,14 @@ fun InsightsScreen(
 
             Spacer(Modifier.height(12.dp))
             OvulationCard(ovulation)
+
+            Spacer(Modifier.height(8.dp))
+            ScreenHelpLink(
+                text = HelpLinks.INSIGHTS_TEXT,
+                onClick = {
+                    navController.navigate(Screen.ArticleDetail.create(HelpLinks.INSIGHTS_SLUG))
+                },
+            )
 
             Spacer(Modifier.height(24.dp))
         }

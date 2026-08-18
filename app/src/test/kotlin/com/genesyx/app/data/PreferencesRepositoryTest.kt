@@ -6,10 +6,17 @@ import androidx.datastore.preferences.core.Preferences
 import com.genesyx.app.data.local.datastore.GenesyxPreferencesDataStore
 import com.genesyx.app.domain.hydration.HydrationFormat
 import com.genesyx.app.domain.streaks.StreakEngine
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.job
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -27,11 +34,36 @@ class PreferencesRepositoryTest {
 
     private var fileCounter = 0
 
+    /**
+     * Scopes owned by this test, one per store, so they can be shut down deterministically.
+     *
+     * Without an explicit `scope`, [PreferenceDataStoreFactory] runs the store on coroutines this
+     * test does not own and cannot stop. Those outlive the test method, but [TemporaryFolder]
+     * deletes its directory the moment the method returns — so a still-running store reads a path
+     * that no longer exists and dies with `FileNotFoundException`. Whether that lands inside the
+     * test or after it is pure timing, which is why this class failed intermittently rather than
+     * consistently. Owning the scope and joining its cancellation in [closeStores] removes the race
+     * instead of hiding it: JUnit runs `@After` before the `@Rule` tears down, so every store is
+     * fully stopped before the directory goes.
+     */
+    private val storeScopes = mutableListOf<CoroutineScope>()
+
     private fun newStore(): GenesyxPreferencesDataStore {
+        val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+        storeScopes += scope
         val ds: DataStore<Preferences> = PreferenceDataStoreFactory.create(
+            scope = scope,
             produceFile = { File(tmp.root, "prefs_${fileCounter++}.preferences_pb") },
         )
         return GenesyxPreferencesDataStore(ds)
+    }
+
+    @After
+    fun closeStores() = runBlocking {
+        // cancelAndJoin, not cancel: cancellation is asynchronous, and returning before the store's
+        // coroutines have actually finished would leave exactly the race this is here to close.
+        storeScopes.forEach { it.coroutineContext.job.cancelAndJoin() }
+        storeScopes.clear()
     }
 
     /**

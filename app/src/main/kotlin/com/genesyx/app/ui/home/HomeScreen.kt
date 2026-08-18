@@ -75,6 +75,8 @@ import com.genesyx.app.domain.streaks.Milestone
 import com.genesyx.app.ui.components.CycleSettingsDialog
 import com.genesyx.app.ui.components.Eyebrow
 import com.genesyx.app.ui.components.GxPrimaryButton
+import com.genesyx.app.ui.components.HelpLinks
+import com.genesyx.app.ui.components.ScreenHelpLink
 import com.genesyx.app.ui.components.HydrationStatusPill
 import com.genesyx.app.ui.components.PastDatePickerDialog
 import com.genesyx.app.ui.components.hydrationStatusLabel
@@ -282,6 +284,12 @@ fun HomeContent(
             Spacer(Modifier.height(20.dp))
             GxPrimaryButton(text = "Log today", onClick = { onNavigate(Screen.Log.create()) }, leadingIcon = Icons.Filled.Add)
 
+            Spacer(Modifier.height(8.dp))
+            ScreenHelpLink(
+                text = HelpLinks.HOME_TEXT,
+                onClick = { onOpenArticle(HelpLinks.HOME_SLUG) },
+            )
+
             Spacer(Modifier.height(24.dp))
         }
     }
@@ -434,7 +442,7 @@ private fun CycleHeroCard(state: HomeUiState, onEdit: () -> Unit) {
             Row(Modifier.fillMaxWidth()) {
                 HeroMetric("Cycle day", state.cycleDay?.let { "Day $it" } ?: "—", Modifier.weight(1f))
                 HeroMetric("Next period", state.daysToNextLabel ?: "—", Modifier.weight(1f))
-                HeroMetric("Ovulation", state.ovulationDayLabel ?: "—", Modifier.weight(1f))
+                HeroMetric("Predicted ovulation", state.ovulationDayLabel ?: "—", Modifier.weight(1f))
             }
         }
     }

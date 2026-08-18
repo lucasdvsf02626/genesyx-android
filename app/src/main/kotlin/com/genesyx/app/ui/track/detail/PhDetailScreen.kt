@@ -19,6 +19,8 @@ import com.genesyx.app.domain.ph.PhCopy
 import com.genesyx.app.domain.ph.PhStatus
 import com.genesyx.app.ui.components.CitationList
 import com.genesyx.app.ui.components.ExpandableInfo
+import com.genesyx.app.ui.components.HelpLinks
+import com.genesyx.app.ui.components.ScreenHelpLink
 import com.genesyx.app.ui.insights.PhInsightLogic
 import com.genesyx.app.ui.ph.PhTrackerSection
 import com.genesyx.app.ui.ph.PhTrackerViewModel
@@ -35,6 +37,7 @@ import com.genesyx.app.ui.ph.PhTrackerViewModel
 @Composable
 fun PhDetailScreen(
     onOpenPlan: () -> Unit,
+    onOpenArticle: (String) -> Unit,
     viewModel: PhTrackerViewModel = hiltViewModel(),
 ) {
     val readings by viewModel.readings.collectAsState()
@@ -81,6 +84,13 @@ fun PhDetailScreen(
         CitationList(
             title = PhCopy.SOURCES_TITLE,
             citations = PhCopy.SOURCES,
+            modifier = Modifier.padding(horizontal = 4.dp),
+        )
+
+        Spacer(Modifier.height(4.dp))
+        ScreenHelpLink(
+            text = HelpLinks.PH_TEXT,
+            onClick = { onOpenArticle(HelpLinks.PH_SLUG) },
             modifier = Modifier.padding(horizontal = 4.dp),
         )
 

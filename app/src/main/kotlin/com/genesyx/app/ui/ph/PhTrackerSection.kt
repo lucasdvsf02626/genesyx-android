@@ -26,6 +26,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import com.genesyx.app.data.PhRepository
 import com.genesyx.app.data.PreferencesRepository
+import com.genesyx.app.domain.model.PhMeasurement
 import com.genesyx.app.domain.model.PhReading
 import com.genesyx.app.domain.ph.PhCopy
 import com.genesyx.app.ui.components.Eyebrow
@@ -68,7 +69,14 @@ fun PhTrackerSection(
     var showDialog by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf<PhReading?>(null) }
 
-    if (!noticeSeen) {
+    // The migration notice is for people who actually HAVE pre-migration urine rows — it explains
+    // the "urine (legacy)" pills they will see on their own history. Everyone else (every new
+    // install, and every App Store reviewer) only ever had vaginal pH, so greeting them with a
+    // migration story about a feature they never used is confusing noise. Gate it on the data.
+    val hasLegacyReadings = remember(readings) {
+        readings.any { it.measurementType == PhMeasurement.URINE }
+    }
+    if (!noticeSeen && hasLegacyReadings) {
         AlertDialog(
             onDismissRequest = { viewModel.dismissVaginalNotice() },
             title = { Text(PhCopy.NOTICE_TITLE, style = MaterialTheme.typography.titleLarge) },

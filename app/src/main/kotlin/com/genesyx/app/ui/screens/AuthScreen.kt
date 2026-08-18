@@ -16,6 +16,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -23,6 +24,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -66,6 +68,13 @@ import javax.inject.Inject
 
 /** Transient auth screen state (async in-flight + last error). */
 data class AuthUiState(val loading: Boolean = false, val error: String? = null)
+
+/** Transient state for the "forgot password" request, kept apart from sign-in's own state. */
+data class ResetUiState(
+    val sending: Boolean = false,
+    val sent: Boolean = false,
+    val error: String? = null,
+)
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
@@ -199,6 +208,29 @@ class AuthViewModel @Inject constructor(
     fun clearError() {
         if (_uiState.value.error != null) _uiState.value = _uiState.value.copy(error = null)
     }
+
+    private val _resetState = MutableStateFlow(ResetUiState())
+    val resetState: StateFlow<ResetUiState> = _resetState.asStateFlow()
+
+    /**
+     * Ask for a password-reset email. The confirmation the UI shows is deliberately the same
+     * whether or not the address has an account — see [AuthRepository.sendPasswordReset].
+     */
+    fun sendPasswordReset(email: String) {
+        _resetState.value = ResetUiState(sending = true)
+        viewModelScope.launch {
+            _resetState.value = when (val result = authRepository.sendPasswordReset(email.trim())) {
+                is DataResult.Success -> ResetUiState(sent = true)
+                is DataResult.Error ->
+                    ResetUiState(error = result.message ?: "Couldn't send the reset email. Please try again.")
+                DataResult.Loading -> ResetUiState(sending = true)
+            }
+        }
+    }
+
+    fun clearResetState() {
+        _resetState.value = ResetUiState()
+    }
 }
 
 @Composable
@@ -208,6 +240,7 @@ fun AuthScreen(
     viewModel: AuthViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val resetState by viewModel.resetState.collectAsState()
     val context = LocalContext.current
     AuthContent(
         uiState = uiState,
@@ -215,6 +248,9 @@ fun AuthScreen(
         onGoogleSignIn = { viewModel.signInWithGoogle(context, onSignedIn) },
         onClearError = viewModel::clearError,
         onBack = onBack,
+        resetState = resetState,
+        onSendReset = viewModel::sendPasswordReset,
+        onClearReset = viewModel::clearResetState,
     )
 }
 
@@ -225,6 +261,9 @@ fun AuthContent(
     onClearError: () -> Unit,
     onBack: () -> Unit,
     onGoogleSignIn: () -> Unit = {},
+    resetState: ResetUiState = ResetUiState(),
+    onSendReset: (String) -> Unit = {},
+    onClearReset: () -> Unit = {},
 ) {
     val colors = MaterialTheme.colorScheme
     var signupMode by remember { mutableStateOf(false) }
@@ -232,6 +271,7 @@ fun AuthContent(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var localError by remember { mutableStateOf<String?>(null) }
+    var resetOpen by remember { mutableStateOf(false) }
 
     val shownError = localError ?: uiState.error
 
@@ -288,6 +328,22 @@ fun AuthContent(
                 Field("Email", email, { email = it; clearErrors() }, keyboardType = KeyboardType.Email)
                 Spacer(Modifier.height(16.dp))
                 Field("Password", password, { password = it; clearErrors() }, keyboardType = KeyboardType.Password, isPassword = true)
+
+                // Sign-in only: on the sign-up form there is no account to recover yet. This is the
+                // one screen a locked-out person can reach, so recovery has to live here — Profile
+                // is behind the very password they have lost.
+                if (!signupMode) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                        TextButton(onClick = { onClearReset(); resetOpen = true }) {
+                            Text(
+                                "Forgot password?",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = ElectricLavender,
+                                fontWeight = FontWeight.Medium,
+                            )
+                        }
+                    }
+                }
 
                 if (shownError != null) {
                     Spacer(Modifier.height(8.dp))
@@ -353,6 +409,108 @@ fun AuthContent(
             }
         }
     }
+
+    if (resetOpen) {
+        ForgotPasswordDialog(
+            initialEmail = email,
+            state = resetState,
+            onSubmit = onSendReset,
+            onDismiss = { resetOpen = false; onClearReset() },
+        )
+    }
+}
+
+/**
+ * Sends a recovery link to a typed address.
+ *
+ * The confirmation never says whether the address had an account: "if an account exists…". A
+ * dialog that answered differently for a registered and an unregistered address would be a free
+ * account-enumeration oracle sitting on the unauthenticated screen.
+ */
+@Composable
+private fun ForgotPasswordDialog(
+    initialEmail: String,
+    state: ResetUiState,
+    onSubmit: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val colors = MaterialTheme.colorScheme
+    var email by remember { mutableStateOf(initialEmail) }
+    var localErr by remember { mutableStateOf<String?>(null) }
+    val err = localErr ?: state.error
+
+    AlertDialog(
+        onDismissRequest = { if (!state.sending) onDismiss() },
+        shape = RoundedCornerShape(20.dp),
+        containerColor = colors.surface,
+        title = {
+            Text(
+                if (state.sent) "Check your inbox" else "Reset your password",
+                style = MaterialTheme.typography.titleLarge,
+                color = colors.onSurface,
+            )
+        },
+        text = {
+            if (state.sent) {
+                Text(
+                    "If an account exists for ${email.trim()}, we've sent it a link to set a new " +
+                        "password. It can take a minute to arrive — check your spam folder too.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colors.onSurfaceVariant,
+                )
+            } else {
+                Column {
+                    Text(
+                        "Enter your email and we'll send you a link to set a new password.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = colors.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = email,
+                        onValueChange = { email = it; localErr = null },
+                        label = { Text("Email") },
+                        singleLine = true,
+                        enabled = !state.sending,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    if (err != null) {
+                        Spacer(Modifier.height(6.dp))
+                        Text(err, style = MaterialTheme.typography.bodyMedium, color = colors.error)
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            if (state.sent) {
+                TextButton(onClick = onDismiss) {
+                    Text("Done", color = ElectricLavender, fontWeight = FontWeight.SemiBold)
+                }
+            } else {
+                TextButton(
+                    enabled = !state.sending,
+                    onClick = {
+                        if (!isValidEmail(email)) localErr = "Enter a valid email"
+                        else { localErr = null; onSubmit(email) }
+                    },
+                ) {
+                    Text(
+                        if (state.sending) "Sending…" else "Send link",
+                        color = ElectricLavender,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+            }
+        },
+        dismissButton = {
+            if (!state.sent) {
+                TextButton(onClick = onDismiss, enabled = !state.sending) {
+                    Text("Cancel", color = colors.onSurfaceVariant)
+                }
+            }
+        },
+    )
 }
 
 @Composable

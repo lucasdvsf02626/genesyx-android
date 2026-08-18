@@ -20,8 +20,9 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.outlined.HelpOutline
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -69,12 +70,12 @@ fun LearnScreen(
     viewModel: LearnViewModel = hiltViewModel(),
 ) {
     val colors = MaterialTheme.colorScheme
-    val introSeen by viewModel.introSeen.collectAsState()
     var selectedCategory by rememberSaveable { mutableStateOf<ArticleCategory?>(null) }
 
     // The drip gate: only articles whose publish date has arrived. Always-available articles are
     // shown from day one; a future-dated one stays hidden until its date.
-    val available = LearnDrip.published(LocalDate.now())
+    val today = LocalDate.now()
+    val available = LearnDrip.published(today)
     val visible = available.filter { selectedCategory == null || it.category == selectedCategory }
     // The featured hero only leads the unfiltered list; inside a filter it's just another article.
     val featured = if (selectedCategory == null) visible.firstOrNull { it.featured } else null
@@ -96,7 +97,7 @@ fun LearnScreen(
                     Eyebrow("Learn", color = ElectricLavender)
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        "Short reads",
+                        "Learn",
                         style = MaterialTheme.typography.displayLarge,
                         fontWeight = FontWeight.SemiBold,
                         color = colors.onBackground,
@@ -111,7 +112,7 @@ fun LearnScreen(
             }
             Spacer(Modifier.height(10.dp))
             Text(
-                "Tracking, nutrition, and what your patterns mean.",
+                "Short, honest reads on tracking, nutrition, and making sense of your own data.",
                 style = MaterialTheme.typography.bodyLarge,
                 color = colors.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 24.dp),
@@ -119,14 +120,24 @@ fun LearnScreen(
             Spacer(Modifier.height(16.dp))
         }
 
-        if (!introSeen) {
-            item {
-                IntroCard(
-                    onDismiss = viewModel::dismissIntro,
-                    modifier = Modifier.padding(horizontal = 20.dp),
-                )
-                Spacer(Modifier.height(16.dp))
-            }
+        // Two permanent ways in, matching iOS. These replaced a one-shot dismissible hint: once
+        // dismissed it never came back, so the only signposting into the guides and the weekly
+        // programme was gone for good — for the very people who needed it later, not on day one.
+        item {
+            EntryCard(
+                icon = Icons.Outlined.HelpOutline,
+                title = "How to use Genesyx",
+                subtitle = "Every feature, and what it is for",
+                onClick = { selectedCategory = ArticleCategory.GUIDES },
+                modifier = Modifier.padding(horizontal = 20.dp),
+            )
+            Spacer(Modifier.height(12.dp))
+            WeeklyPlanCard(
+                today = today,
+                onOpen = { navController.navigate(Screen.ArticleDetail.create(it)) },
+                modifier = Modifier.padding(horizontal = 20.dp),
+            )
+            Spacer(Modifier.height(16.dp))
         }
 
         item {
@@ -194,29 +205,78 @@ private fun CategoryChips(selected: ArticleCategory?, onSelect: (ArticleCategory
     }
 }
 
-/** One dismissible card on first visit. Not a coach-mark tour. */
+/** A permanent signpost row: icon, title, subtitle, chevron. */
 @Composable
-private fun IntroCard(onDismiss: () -> Unit, modifier: Modifier = Modifier) {
+private fun EntryCard(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val colors = MaterialTheme.colorScheme
     Row(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
-            .background(ElectricLavender.copy(alpha = 0.08f))
-            .padding(start = 18.dp, top = 14.dp, bottom = 14.dp, end = 4.dp),
+            .background(colors.surface)
+            .clickable(onClick = onClick)
+            .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            "New here? Start with “Your first week with Genesyx”. Everything else can wait.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = colors.onSurface,
-            modifier = Modifier.weight(1f),
-        )
-        IconButton(onClick = onDismiss, modifier = Modifier.size(48.dp)) {
-            Icon(Icons.Filled.Close, "Dismiss", tint = colors.onSurfaceVariant, modifier = Modifier.size(18.dp))
+        Box(
+            Modifier.size(44.dp).clip(RoundedCornerShape(14.dp))
+                .background(ElectricLavender.copy(alpha = 0.12f)),
+            contentAlignment = Alignment.Center,
+        ) { Icon(icon, null, tint = ElectricLavender, modifier = Modifier.size(22.dp)) }
+        Spacer(Modifier.size(14.dp))
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+            Spacer(Modifier.height(2.dp))
+            Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
         }
+        Icon(Icons.Filled.ChevronRight, null, tint = colors.onSurfaceVariant, modifier = Modifier.size(18.dp))
     }
 }
+
+/**
+ * The twelve-week programme's front door. It reports where the series actually is rather than
+ * promising a plan the reader cannot open: before the first release it names the date, during the
+ * run it counts what has landed and opens the most recent, and it retires itself once the last one
+ * is out and the articles are simply part of the library.
+ */
+@Composable
+private fun WeeklyPlanCard(
+    today: LocalDate,
+    onOpen: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val total = LearnDrip.weeklySeries.size
+    if (total == 0) return
+    val released = LearnDrip.seriesReleasedCount(today)
+    val latest = LearnDrip.latestSeriesArticle(today)
+    val next = LearnDrip.nextSeriesDate(today)
+    if (released == total && latest == null) return
+
+    val subtitle = when {
+        released == 0 && next != null ->
+            "One new article each week. The first arrives ${next.format(seriesDateFormat)}."
+        next != null -> "$released of $total released. Next on ${next.format(seriesDateFormat)}."
+        else -> "All $total released. Read them whenever you like."
+    }
+    EntryCard(
+        icon = Icons.AutoMirrored.Outlined.MenuBook,
+        title = if (released == 0) "Your 12-week plan starts soon" else "Start your 12-week plan here",
+        subtitle = subtitle,
+        // Nothing to open until the first one lands; tapping then just re-shows this card's own
+        // message, which is the honest outcome rather than a dead end into the drip gate.
+        onClick = { latest?.let { onOpen(it.slug) } },
+        modifier = modifier,
+    )
+}
+
+private val seriesDateFormat: java.time.format.DateTimeFormatter =
+    java.time.format.DateTimeFormatter.ofPattern("d MMM", java.util.Locale.UK)
 
 /** Placeholder hero until real artwork exists — a brand gradient keyed to the category. */
 internal fun ArticleCategory.accent(): Color = when (this) {
