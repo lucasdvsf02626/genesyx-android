@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import com.genesyx.app.domain.content.DidYouKnow
 import com.genesyx.app.domain.content.quizQuestions
 import com.genesyx.app.ui.components.GxBackButton
+import com.genesyx.app.ui.components.GxGhostButton
 import com.genesyx.app.ui.components.GxOptionPill
 import com.genesyx.app.ui.components.GxPrimaryButton
 import com.genesyx.app.ui.components.tintOnWhite
@@ -73,6 +74,16 @@ fun OnboardingQuizScreen(
     fun onContinue() {
         val fact = question.fact
         if (fact != null) pendingFact = fact else advance()
+    }
+
+    /**
+     * Leave an optional question genuinely unanswered. It drops any selection already made, so
+     * "skip" really means "no answer stored" rather than "whatever I tapped before changing my
+     * mind" — the answers map is what gets persisted and synced.
+     */
+    fun onSkip() {
+        answers.remove(question.id)
+        advance()
     }
 
     // System/gesture back mirrors the arrow: step 0 exits to intro; later steps go to the
@@ -135,6 +146,11 @@ fun OnboardingQuizScreen(
             onClick = ::onContinue,
             enabled = selected != null,
         )
+        // An optional question needs a way past it that isn't an answer. Without this the only exits
+        // were to pick something or to abandon onboarding, which is not what "optional" means.
+        if (question.optional) {
+            GxGhostButton(text = "Skip this question", onClick = ::onSkip)
+        }
     }
 
     // "Did you know?" dialog

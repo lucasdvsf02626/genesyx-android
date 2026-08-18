@@ -97,6 +97,17 @@ class AuthRepository @Inject constructor(
     }
 
     /**
+     * Ask the provider to email a password-reset link. No session needed — this is the flow for
+     * someone who cannot get in. See [AuthService.sendPasswordReset] on why the result must not be
+     * reported differently for a registered and an unregistered address.
+     */
+    suspend fun sendPasswordReset(email: String): DataResult<Unit> {
+        val result = authService.sendPasswordReset(email)
+        if (result is DataResult.Error) logger.e("Auth", "password-reset request failed", result.throwable)
+        return result
+    }
+
+    /**
      * Start an email change via the remote provider. Success means "confirmation email sent" — the
      * persisted session deliberately keeps the old address until Supabase confirms the new one.
      */

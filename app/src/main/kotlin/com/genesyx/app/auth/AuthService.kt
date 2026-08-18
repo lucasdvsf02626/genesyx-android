@@ -38,6 +38,16 @@ interface AuthService {
     suspend fun changePassword(currentPassword: String, newPassword: String): DataResult<Unit>
 
     /**
+     * Start a password reset for [email]: the provider emails a recovery link.
+     *
+     * Takes the address rather than reading the session on purpose — the person who needs this is
+     * locked out and has no session to read. Success means "the request was accepted", NOT "an
+     * account exists": callers must show the same message either way, or the screen becomes a way
+     * to test which addresses are registered.
+     */
+    suspend fun sendPasswordReset(email: String): DataResult<Unit>
+
+    /**
      * Change the signed-in user's email. Same re-auth gate as [changePassword]. Supabase sends a
      * confirmation link and the address only changes once it's followed — so callers must NOT
      * update the local session on Success; success here means "confirmation email sent".

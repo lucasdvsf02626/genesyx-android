@@ -13,6 +13,12 @@ data class QuizQuestion(
     val options: List<QuizOption>,
     /** Shown after answering this question, before advancing. */
     val fact: DidYouKnow? = null,
+    /**
+     * Skippable. Only the baby-sex preference is: it is the one question here that is nobody's
+     * business but hers, and the client's brief requires it be optional. Everything else feeds the
+     * personalisation the summary promises, so it stays required.
+     */
+    val optional: Boolean = false,
 )
 
 val quizQuestions: List<QuizQuestion> = listOf(
@@ -65,6 +71,7 @@ val quizQuestions: List<QuizQuestion> = listOf(
             QuizOption("no_preference", "No preference"),
             QuizOption("prefer_not_to_say", "Prefer not to say"),
         ),
+        optional = true,
     ),
     QuizQuestion(
         id = "support",

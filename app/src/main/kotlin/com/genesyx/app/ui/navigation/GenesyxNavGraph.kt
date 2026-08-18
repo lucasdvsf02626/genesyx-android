@@ -149,6 +149,7 @@ fun GenesyxNavGraph(
         ) {
             PhDetailScreen(
                 onOpenPlan = { navController.navigate(Screen.NutritionDetail.route) },
+                onOpenArticle = { navController.navigate(Screen.ArticleDetail.create(it)) },
             )
         }
         composable(

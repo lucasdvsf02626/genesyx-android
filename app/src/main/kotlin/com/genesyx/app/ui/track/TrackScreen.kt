@@ -74,6 +74,8 @@ import com.genesyx.app.ui.components.CycleSettingsDialog
 import com.genesyx.app.ui.components.DailyLogSummary
 import com.genesyx.app.ui.components.Eyebrow
 import com.genesyx.app.ui.components.GxPrimaryButton
+import com.genesyx.app.ui.components.HelpLinks
+import com.genesyx.app.ui.components.ScreenHelpLink
 import com.genesyx.app.ui.components.PhReadingRow
 import com.genesyx.app.ui.components.tintOnWhite
 import com.genesyx.app.ui.navigation.Screen
@@ -337,6 +339,12 @@ fun TrackContent(
         Eyebrow("Your trackers", color = colors.onSurfaceVariant)
         Spacer(Modifier.height(10.dp))
         YourTrackersCard(summaries = summaries, onNavigate = onNavigate)
+
+        Spacer(Modifier.height(8.dp))
+        ScreenHelpLink(
+            text = HelpLinks.TRACK_TEXT,
+            onClick = { onNavigate(Screen.ArticleDetail.create(HelpLinks.TRACK_SLUG)) },
+        )
 
         Spacer(Modifier.height(24.dp))
     }

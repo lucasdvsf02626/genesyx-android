@@ -52,12 +52,15 @@ import androidx.navigation.NavController
 import com.genesyx.app.domain.content.PhaseFood
 import com.genesyx.app.domain.hydration.HydrationFormat
 import com.genesyx.app.domain.hydration.HydrationUnit
+import com.genesyx.app.domain.content.ArticleCategory
 import com.genesyx.app.domain.content.LearnDrip
 import com.genesyx.app.domain.content.recipesFor
 import com.genesyx.app.ui.components.ExpandableInfo
 import com.genesyx.app.domain.content.supplementPlan
 import com.genesyx.app.ui.components.Eyebrow
 import com.genesyx.app.ui.components.GxPrimaryButton
+import com.genesyx.app.ui.components.HelpLinks
+import com.genesyx.app.ui.components.ScreenHelpLink
 import com.genesyx.app.ui.components.HydrationGoalDialog
 import com.genesyx.app.ui.navigation.Screen
 import com.genesyx.app.ui.theme.ElectricBlue
@@ -166,6 +169,14 @@ fun NutritionScreen(
             ArticlesSection(
                 onOpen = { navController.navigate(Screen.ArticleDetail.create(it)) },
                 onSeeAll = { navController.navigate(Screen.Learn.route) },
+            )
+
+            Spacer(Modifier.height(8.dp))
+            ScreenHelpLink(
+                text = HelpLinks.NUTRITION_TEXT,
+                onClick = {
+                    navController.navigate(Screen.ArticleDetail.create(HelpLinks.NUTRITION_SLUG))
+                },
             )
 
             Spacer(Modifier.height(24.dp))
@@ -475,7 +486,13 @@ private fun ArticlesSection(
         Eyebrow("Learn more", color = colors.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp, bottom = 10.dp))
         // A taster, not the library — showing every row made the tab scroll forever. Learn is one
         // tap away. Same LearnDrip gate (published-by-date) as every other article surface.
-        LearnDrip.published(java.time.LocalDate.now()).take(3).forEach { a ->
+        // Filtered to NUTRITION: an unfiltered take(3) served the first three articles in file
+        // order ("Your first week", "Why logging beats remembering", "What to log") — none of them
+        // about food, on the food tab. The list grows to five as the dripped nutrition reads land.
+        LearnDrip.published(java.time.LocalDate.now())
+            .filter { it.category == ArticleCategory.NUTRITION }
+            .take(5)
+            .forEach { a ->
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
