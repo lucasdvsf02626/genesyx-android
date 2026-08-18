@@ -24,11 +24,13 @@ class LearnSeriesTest {
             "Every series article must carry a publish date",
             series.all { it.publishedAt != null },
         )
-        assertEquals(
-            "The series must be sorted by release date",
-            series.map { it.publishedAt },
-            series.map { it.publishedAt }.sorted(),
-        )
+        // mapNotNull, not map: `map` yields List<LocalDate?>, and `sorted()` needs a non-nullable
+        // Comparable. The assertion above has already established there are no nulls to drop.
+        val dates = series.mapNotNull { it.publishedAt }
+        // Plain two-arg form: assertEquals(String, Int, Int) is the one overload Kotlin can resolve
+        // surprisingly (long vs boxed Object), and nothing else in this suite relies on it.
+        assertEquals(series.size, dates.size)
+        assertEquals("The series must be sorted by release date", dates.sorted(), dates)
         // Undated articles are the always-available library, never part of the programme.
         assertTrue(learnArticles.any { it.publishedAt == null })
     }
