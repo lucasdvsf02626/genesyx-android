@@ -125,6 +125,29 @@ object LearnDrip {
     /** Dated articles whose reveal day is exactly [today] — what the weekly notification fires on. */
     fun releasedOn(today: LocalDate): List<Article> =
         learnArticles.filter { it.publishedAt == today }
+
+    /**
+     * The weekly programme, in release order: every article that carries a date. A computed getter,
+     * not a stored val — [learnArticles] is declared below this object, so anything eager here would
+     * read it before it is initialised.
+     */
+    val weeklySeries: List<Article>
+        get() = learnArticles.filter { it.publishedAt != null }.sortedBy { it.publishedAt }
+
+    /** How many of the programme have been revealed by [today]. */
+    fun seriesReleasedCount(today: LocalDate): Int = weeklySeries.count { isPublished(it, today) }
+
+    /**
+     * The latest revealed programme article, at any age — the way in to the series. Distinct from
+     * [newestReleased], which deliberately expires after a week because it powers a "new this week"
+     * nudge; this one is a permanent entry point and must not go dark eight days after a release.
+     */
+    fun latestSeriesArticle(today: LocalDate): Article? =
+        weeklySeries.lastOrNull { isPublished(it, today) }
+
+    /** When the next unrevealed programme article lands, or null once they are all out. */
+    fun nextSeriesDate(today: LocalDate): LocalDate? =
+        weeklySeries.firstOrNull { !isPublished(it, today) }?.publishedAt
 }
 
 val learnArticles: List<Article> = listOf(
