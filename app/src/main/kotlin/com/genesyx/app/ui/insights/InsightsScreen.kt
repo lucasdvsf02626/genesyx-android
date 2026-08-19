@@ -442,6 +442,8 @@ private fun HydrationCard(state: HydrationInsights) {
     BarsCard(
         title = "Hydration",
         trailing = state.deltaMlPerDay?.let { if (it >= 0) "+${it}ml/day" else "${it}ml/day" },
+        // Home's exact figure and wording — both read StreakEngine's daysOnGoal.
+        subtitle = "${state.daysOnGoal} of 7 days on goal",
         values = state.bars,
         labels = weekdayLabels,
         barHeight = 112.dp,
@@ -915,12 +917,17 @@ private fun BarsCard(
     barHeight: androidx.compose.ui.unit.Dp,
     brush: Brush,
     insight: String,
+    subtitle: String? = null,
 ) {
     val colors = MaterialTheme.colorScheme
     InsightsCard {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
             Text(title, style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
             if (trailing != null) Text(trailing, style = MaterialTheme.typography.bodyMedium, color = ElectricLavender, fontWeight = FontWeight.Medium)
+        }
+        if (subtitle != null) {
+            Spacer(Modifier.height(4.dp))
+            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
         }
         Spacer(Modifier.height(18.dp))
         // Bars and labels are separate rows: sharing one fixed-height column let a tall bar (a day

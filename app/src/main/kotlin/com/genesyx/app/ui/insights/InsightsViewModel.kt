@@ -67,6 +67,8 @@ data class HydrationInsights(
     val bars: List<Int> = List(7) { 0 },
     val avgMlPerDay: Int? = null,
     val deltaMlPerDay: Int? = null,
+    /** Days this Mon–Sun week she hit her goal — StreakEngine's number, the same one Home shows. */
+    val daysOnGoal: Int = 0,
     val insight: String = "Log your water for a few days and your hydration pattern will show up here.",
 )
 

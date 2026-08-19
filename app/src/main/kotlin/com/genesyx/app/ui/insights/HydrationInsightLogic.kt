@@ -53,11 +53,22 @@ object HydrationInsightLogic {
 
         val deltaMlPerDay = windowAvg(7)?.let { avgMlPerDay - it }
 
+        // Delegated to StreakEngine so this card and Home's hydration ring can never disagree —
+        // the on-goal rule lives there and only there. The extra engine inputs (pH days, article
+        // reads, celebrations) don't touch daysOnGoal.
+        val daysOnGoal = StreakEngine.compute(
+            logsByDate = logsByDate,
+            phByDate = emptySet(),
+            today = today,
+            goalMl = goalMl,
+        ).daysOnGoal
+
         return HydrationInsights(
             hasData = true,
             bars = bars,
             avgMlPerDay = avgMlPerDay,
             deltaMlPerDay = deltaMlPerDay,
+            daysOnGoal = daysOnGoal,
             insight = insightFor(avgMlPerDay, deltaMlPerDay, unit),
         )
     }

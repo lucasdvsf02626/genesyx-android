@@ -1,6 +1,7 @@
 package com.genesyx.app.ui.insights
 
 import com.genesyx.app.domain.model.DailyLog
+import com.genesyx.app.domain.streaks.StreakEngine
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -111,5 +112,32 @@ class HydrationInsightLogicTest {
         val week = mapOf(monday to DailyLog(waterMl = 1500))
         assertEquals(50, HydrationInsightLogic.compute(week, today, goalMl = 3000).bars.first())
         assertEquals(75, HydrationInsightLogic.compute(week, today, goalMl = 2000).bars.first())
+    }
+
+    @Test
+    fun `days on goal counts only the week days that hit HER goal`() {
+        // Mon and Wed reach a 2000ml goal; Tue falls short. iOS parity: the card's first-class N.
+        val logs = mapOf(
+            monday to DailyLog(waterMl = 2000),
+            monday.plusDays(1) to DailyLog(waterMl = 1999),
+            monday.plusDays(2) to DailyLog(waterMl = 2400),
+        )
+        assertEquals(2, HydrationInsightLogic.compute(logs, today, goalMl = 2000).daysOnGoal)
+    }
+
+    @Test
+    fun `days on goal is StreakEngine's number, so Insights and Home always agree`() {
+        // Home renders StreakEngine.compute(...).daysOnGoal; this card must show the same N for the
+        // same week. Pinned by delegation, not by a second rule.
+        val logs = mapOf(
+            monday to DailyLog(waterMl = 2400),
+            monday.plusDays(3) to DailyLog(waterMl = 3000),
+            monday.plusDays(5) to DailyLog(waterMl = 800),
+        )
+        for (goal in listOf(1000, 2400, 3000)) {
+            val home = StreakEngine.compute(logsByDate = logs, phByDate = emptySet(), today = today, goalMl = goal).daysOnGoal
+            val card = HydrationInsightLogic.compute(logs, today, goalMl = goal).daysOnGoal
+            assertEquals(home, card)
+        }
     }
 }
