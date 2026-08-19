@@ -161,7 +161,7 @@ fun NutritionScreen(
                 }
 
                 Spacer(Modifier.height(12.dp))
-                SupplementPlanCard(onReview = { planOpen = true })
+                SupplementPlanCard(takenToday = state.planTakenToday, onReview = { planOpen = true })
             }
 
             // Recipes: phase-relevant plus always-shown general ones (empty → "coming soon"). Outside
@@ -428,7 +428,7 @@ private fun FocusFoodsCard(foods: List<PhaseFood>, expanded: String?, onToggle: 
 }
 
 @Composable
-private fun SupplementPlanCard(onReview: () -> Unit) {
+private fun SupplementPlanCard(takenToday: Int, onReview: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -457,6 +457,14 @@ private fun SupplementPlanCard(onReview: () -> Unit) {
                             Box(Modifier.offset(x = (i * -6).dp)) { SupplementAvatar(s.initial, i, bordered = true) }
                         }
                     }
+                    Spacer(Modifier.height(8.dp))
+                    // Live state from today's Log toggles — iOS's plan-card line, same strings.
+                    Text(
+                        SupplementPlanProgress.statusLine(takenToday),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (takenToday == 0) colors.onSurfaceVariant else ElectricLavender,
+                    )
                 }
             }
             Spacer(Modifier.height(12.dp))

@@ -53,6 +53,8 @@ data class NutritionUiState(
     val daysOnGoal: Int = 0,
     /** Today's food-group tokens. The chips own this set. */
     val foodGroups: Set<String> = emptySet(),
+    /** How many of the suggested plan's items today's log already covers — the card's live line. */
+    val planTakenToday: Int = 0,
 )
 
 @HiltViewModel
@@ -134,6 +136,7 @@ class NutritionViewModel @Inject constructor(
             // every other collector of logByDate shows at the same instant.
             val waterMl = logs[today]?.waterMl ?: 0
             val foodGroups = logs[today]?.foodGroups.orEmpty()
+            val planTakenToday = SupplementPlanProgress.takenToday(logs[today]?.supplements.orEmpty())
             val coaching = HydrationCoach.coach(waterMl, goalMl, LocalTime.now(), unit).message
             if (settings == null) {
                 NutritionUiState(
@@ -144,6 +147,7 @@ class NutritionViewModel @Inject constructor(
                     weeklyStreak = streaks.weeklyStreak,
                     daysOnGoal = streaks.daysOnGoal,
                     foodGroups = foodGroups,
+                    planTakenToday = planTakenToday,
                 )
             } else {
                 val phase = CycleEngine.getCyclePhase(settings, today).phase
@@ -160,6 +164,7 @@ class NutritionViewModel @Inject constructor(
                     weeklyStreak = streaks.weeklyStreak,
                     daysOnGoal = streaks.daysOnGoal,
                     foodGroups = foodGroups,
+                    planTakenToday = planTakenToday,
                 )
             }
         }.stateIn(
