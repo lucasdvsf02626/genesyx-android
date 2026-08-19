@@ -34,7 +34,11 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.genesyx.app.domain.model.PhMeasurement
@@ -233,6 +237,12 @@ private fun PhChart(readings: List<PhReading>, modifier: Modifier = Modifier) {
     val healthy = PhStatus.HEALTHY.color
     val elevated = PhStatus.ELEVATED.color
     val legacy = MaterialTheme.colorScheme.onSurfaceVariant
+    val textMeasurer = rememberTextMeasurer()
+    // Muted axis marks — present, not competing with the data.
+    val axisStyle = TextStyle(
+        fontSize = 10.sp,
+        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+    )
 
     Canvas(modifier = modifier) {
         val w = size.width
@@ -242,7 +252,14 @@ private fun PhChart(readings: List<PhReading>, modifier: Modifier = Modifier) {
         // whole instead of half-clipped by the Canvas bounds.
         val dotRadius = 4.dp.toPx()
         val inset = dotRadius + 1.dp.toPx()
-        val plotW = w - inset * 2
+        // Numeric axis marks at the band edges (iOS labels the same three). MIN doubles as the
+        // healthy floor, so the bottom mark explains both the axis and the lower hairline. The
+        // labels live in a left gutter and the plot starts after it, so dots never overlap them.
+        val axisValues = listOf(PhStatus.MIN, PhStatus.HEALTHY_MAX, PhStatus.MAX)
+        val axisLayouts = axisValues.map { textMeasurer.measure(AnnotatedString(it.toString()), axisStyle) }
+        val labelPad = 6.dp.toPx()
+        val gutter = axisLayouts.maxOf { it.size.width } + labelPad
+        val plotW = w - gutter - inset * 2
         val plotH = h - inset * 2
 
         // Off-scale legacy urine values (up to 9.0) are clamped to the vaginal axis so they stay visible.
@@ -258,7 +275,7 @@ private fun PhChart(readings: List<PhReading>, modifier: Modifier = Modifier) {
 
         val n = readings.size
         val points = readings.mapIndexed { i, r ->
-            val x = if (n == 1) w / 2 else inset + plotW * i / (n - 1)
+            val x = if (n == 1) gutter + inset + plotW / 2 else gutter + inset + plotW * i / (n - 1)
             val isVaginal = r.measurementType == PhMeasurement.VAGINAL
             Pair(Offset(x, yFor(r.phValue.toFloat())), isVaginal)
         }
@@ -282,6 +299,17 @@ private fun PhChart(readings: List<PhReading>, modifier: Modifier = Modifier) {
                 // Legacy urine reading: muted, hollow ring.
                 drawCircle(legacy, radius = dotRadius - 0.5.dp.toPx(), center = p, style = Stroke(width = 1.5.dp.toPx()))
             }
+        }
+        // Axis marks last, over the band fills: right-aligned in the gutter, vertically centred on
+        // their value and clamped so the top and bottom marks never clip at the Canvas edge.
+        axisValues.zip(axisLayouts).forEach { (v, layout) ->
+            drawText(
+                textLayoutResult = layout,
+                topLeft = Offset(
+                    x = gutter - labelPad - layout.size.width,
+                    y = (yFor(v.toFloat()) - layout.size.height / 2f).coerceIn(0f, h - layout.size.height),
+                ),
+            )
         }
     }
 }
