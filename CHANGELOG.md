@@ -30,6 +30,35 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
   `CycleSettingsDialogTest` flake passed this run). Not verified: a human look at the pH axis
   labels in light/dark on a physical device.
 
+### Status after 19 Aug 2026 — done, blocking, missing
+
+**Done.** The 17 Aug iOS parity build list is now **11/11 in source** (9 were already in, the last
+3 landed today). Source sits at 1.4.0 (versionCode 14), Room v9; the working tree is clean and
+everything is pushed (`edd8f2d..9555390`, five commits: dirty-tree snapshot `283ec5b`, plan-card
+live state `586dfb2`, Insights days-on-goal `5736e3f`, pH axis marks `7fc2970`, docs/Q&A
+`9555390`). Q11/Q13/Q14 are recorded in the parity Q&A table.
+
+**Blocking — the release gates, in order (none are code):**
+1. **Play catch-up first:** Internal testing still serves 1.3.0 (11) and Production 1.2.0 (9); the
+   verified 1.3.2 (13) artifact (`~/Documents/Genesyx Releases/1.3.2-code13/`) still awaits upload
+   and on-device smoke test.
+2. **Console review:** the corrected Health apps declaration and Data Safety form are saved as
+   drafts, not sent; the Play URL-validator 429 warning on the deletion/privacy routes is open.
+3. **Before any 1.4.0 (14) build:** apply + REST-verify the `user_supplements` /
+   `genesyx_products` Supabase migration (REST probe 29 Jul: tables don't exist, PGRST205).
+4. **Backend/legal:** Supabase DPA check; re-prove live end-to-end account deletion now that pH
+   syncs (the old S6 proof predates pH sync); `genesyx.co.uk` privacy wording (vaginal pH +
+   waitlist email).
+5. **Owner approval**, then promote to Production.
+
+**Missing / not yet verified:**
+- **Q10 TalkBack pass** — needs a physical device; the one human launch gate left in the parity doc.
+- Human light/dark look at the new pH axis labels on a real screen.
+- The 18 Aug on-device checks (cellular, airplane-mode, Profile row taps) remain unproven.
+- Known pre-existing gap: cycle settings have no offline retry queue (`data/CycleRepository.kt`).
+- iOS-side parity fixes (labels, two-band thresholds, `measurement_type`, copy, logged-days
+  hydration average, waitlist RPC) live in the iOS repo's queue, not this one.
+
 ### Added/Changed (13 Aug 2026) — Audit quick-win punch list (4 items)
 - **pH → fertility explanation** (1A): new "How this relates to fertility" section on the pH detail
   screen — cautious copy ("may", "background context, not a fertility test", GP/pharmacist
