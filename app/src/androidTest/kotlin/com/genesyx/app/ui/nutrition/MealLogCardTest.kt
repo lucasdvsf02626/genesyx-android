@@ -37,8 +37,9 @@ class MealLogCardTest {
                 MealLogCard(meals = emptyList(), onLog = {}, onDelete = {})
             }
         }
-        compose.onNodeWithText("Log what you eat to see how it lines up with your cycle. Kept on this device.")
-            .assertExists()
+        compose.onNodeWithText(
+            "Optional. The chips above are the record; add a description here if you want one. Kept on this device.",
+        ).assertExists()
         compose.onNodeWithText("Log a meal").assertIsEnabled()
     }
 

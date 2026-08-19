@@ -40,4 +40,22 @@ class LearnNavigationTest {
     fun `an unknown slug does not open`() {
         assertNull(LearnNavigation.publishedSlug("not-a-real-slug", LocalDate.of(2026, 8, 17)))
     }
+
+    @Test
+    fun `ios shettles alias is gated until 8 Nov and then returns the canonical slug`() {
+        assertNull(LearnNavigation.publishedSlug("shettles-method", LocalDate.of(2026, 11, 7)))
+        assertEquals(
+            "shettles-method-theory-vs-evidence",
+            LearnNavigation.publishedSlug("shettles-method", LocalDate.of(2026, 11, 8)),
+        )
+    }
+
+    @Test
+    fun `new-article deep link names today's released slug`() {
+        assertEquals("genesyx://learn", LearnNavigation.newArticleDeepLink(LocalDate.of(2026, 8, 17)))
+        assertEquals(
+            "genesyx://learn/article/fertile-window",
+            LearnNavigation.newArticleDeepLink(LocalDate.of(2026, 8, 23)),
+        )
+    }
 }

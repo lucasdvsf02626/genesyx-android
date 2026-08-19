@@ -84,10 +84,10 @@ fun NutritionScreen(
     var planOpen by remember { mutableStateOf(false) }
     var goalOpen by remember { mutableStateOf(false) }
 
+    com.genesyx.app.ui.components.GenesyxPage {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(colors.background)
             .verticalScroll(rememberScrollState()),
     ) {
         // ── Header (px-6)
@@ -189,6 +189,7 @@ fun NutritionScreen(
 
             Spacer(Modifier.height(24.dp))
         }
+    }
     }
 
     if (goalOpen) {
@@ -329,6 +330,15 @@ private fun HydrationCard(
             }
             Spacer(Modifier.height(8.dp))
             ExpandableInfo(label = HydrationCoach.WHY_TITLE, body = HydrationCoach.WHY_TEXT)
+            Spacer(Modifier.height(10.dp))
+            com.genesyx.app.ui.components.CitationList(
+                title = "Sources",
+                citations = listOf(
+                    com.genesyx.app.domain.content.MedicalSources.require("armstrong-2012"),
+                    com.genesyx.app.domain.content.MedicalSources.require("valtin-2002"),
+                    com.genesyx.app.domain.content.MedicalSources.require("nhs-water"),
+                ),
+            )
         }
     }
 }

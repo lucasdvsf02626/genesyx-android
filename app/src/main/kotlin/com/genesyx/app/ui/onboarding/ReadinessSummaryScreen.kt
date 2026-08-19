@@ -58,7 +58,7 @@ fun ReadinessSummaryScreen(onUnlockGuide: () -> Unit, onContinue: () -> Unit, on
     val nextSteps = listOf(
         "Start logging your cycle for 7 days",
         "Review your personalised nutrition focus",
-        "Save the free fertility nutrition guide",
+        "Read the 7-day nutrition starter guide",
     )
 
     Column(
@@ -150,7 +150,7 @@ fun ReadinessSummaryScreen(onUnlockGuide: () -> Unit, onContinue: () -> Unit, on
 
         Spacer(Modifier.height(24.dp))
         GxPrimaryButton(
-            text = "Unlock My Free Guide",
+            text = "Read the starter guide",
             onClick = onUnlockGuide,
             leadingIcon = Icons.AutoMirrored.Outlined.MenuBook,
         )

@@ -109,7 +109,7 @@ private fun WaitlistContent(
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                "We'll send your free fertility nutrition guide to $email shortly.",
+                "We'll email $email when there's news from Genesyx.",
                 style = MaterialTheme.typography.bodyLarge,
                 color = colors.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -161,7 +161,7 @@ private fun WaitlistContent(
         )
         Spacer(Modifier.height(8.dp))
         Text(
-            "Sent straight to your inbox when you join the Genesyx waiting list.",
+            "Join the list for product updates from Genesyx.",
             style = MaterialTheme.typography.bodyLarge,
             color = colors.onSurfaceVariant,
             textAlign = TextAlign.Center,

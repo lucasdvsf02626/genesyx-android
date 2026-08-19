@@ -8,6 +8,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -65,6 +66,27 @@ fun BrandLockup(modifier: Modifier = Modifier, height: Dp = 30.dp) {
         modifier = modifier.height(height),
         contentScale = ContentScale.Fit,
     )
+}
+
+/**
+ * Light-mode page chrome matching iOS `gxPageBackground` (art at 0.55 opacity). Dark mode is
+ * colour only — the same photo reads as a lit panel on a dark field.
+ */
+@Composable
+fun GenesyxPage(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    Box(modifier.fillMaxSize().background(colors.background)) {
+        if (colors.background.luminance() > 0.5f) {
+            Image(
+                painter = painterResource(R.drawable.page_background),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+                alpha = 0.55f,
+            )
+        }
+        content()
+    }
 }
 
 /** Back chevron button (48dp hit area — Android minimum touch target). */

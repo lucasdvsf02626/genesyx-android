@@ -78,7 +78,7 @@ fun GenesyxNavGraph(
         }
         composable(Screen.ReadinessSummary.route) {
             ReadinessSummaryScreen(
-                onUnlockGuide = { navController.navigate(Screen.Waitlist.route) },
+                onUnlockGuide = { navController.navigate(Screen.FreeGuide.route) },
                 // Dashboard is gated behind an account: send guests to register/login, not Home.
                 onContinue = { navController.navigate(Screen.Auth.route) },
                 onBack = { navController.popBackStack() },
@@ -195,15 +195,18 @@ fun GenesyxNavGraph(
         // ── Learn
         composable(
             Screen.Learn.route,
-            // The NEW_ARTICLE reminder lands here.
+            // Fallback when no dated article released today.
             deepLinks = listOf(navDeepLink { uriPattern = "genesyx://learn" }),
         ) { LearnScreen(navController) }
         composable(Screen.HowToUse.route) { HowToUseScreen(navController) }
         composable(Screen.TwelveWeekPlan.route) { TwelveWeekPlanScreen(navController) }
+        composable(Screen.FreeGuide.route) { com.genesyx.app.ui.learn.FreeGuideScreen(navController) }
+        composable(Screen.MedicalSources.route) { com.genesyx.app.ui.profile.MedicalSourcesScreen(navController) }
         composable(Screen.LearnSearch.route) { LearnSearchScreen(navController) }
         composable(
             route = Screen.ArticleDetail.route,
             arguments = listOf(navArgument(Screen.ArticleDetail.ARG_SLUG) { type = NavType.StringType }),
+            deepLinks = listOf(navDeepLink { uriPattern = "genesyx://learn/article/{slug}" }),
         ) { backStackEntry ->
             val slug = backStackEntry.arguments?.getString(Screen.ArticleDetail.ARG_SLUG).orEmpty()
             ArticleDetailScreen(slug = slug, navController = navController)

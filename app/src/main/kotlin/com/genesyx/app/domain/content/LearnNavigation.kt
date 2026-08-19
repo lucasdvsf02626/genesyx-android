@@ -10,8 +10,18 @@ import java.time.LocalDate
  * in the first place. Returns the slug when it is live; null otherwise.
  */
 object LearnNavigation {
+    /** Canonical published slug, or null. Aliases (e.g. iOS `shettles-method`) resolve first. */
     fun publishedSlug(slug: String, today: LocalDate = LocalDate.now()): String? {
         val article = articleBySlug(slug) ?: return null
-        return slug.takeIf { LearnDrip.isPublished(article, today) }
+        return article.slug.takeIf { LearnDrip.isPublished(article, today) }
+    }
+
+    /**
+     * Tap target for the weekly Learn reminder. Names today's released article when one exists;
+     * otherwise the Learn tab. A future-dated slug must never appear here.
+     */
+    fun newArticleDeepLink(today: LocalDate = LocalDate.now()): String {
+        val slug = LearnDrip.releasedOn(today).firstOrNull()?.slug ?: return "genesyx://learn"
+        return "genesyx://learn/article/$slug"
     }
 }

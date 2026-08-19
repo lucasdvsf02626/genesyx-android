@@ -77,7 +77,15 @@ const val MEDICAL_DISCLAIMER =
         "circumstances, and it isn't a substitute for talking to a doctor, nurse, or pharmacist. " +
         "If something feels wrong, or you're worried, please speak to a healthcare professional."
 
-fun articleBySlug(slug: String): Article? = learnArticles.firstOrNull { it.slug == slug }
+/** iOS published `shettles-method`; Android compiled the same piece under a longer slug. */
+private val SLUG_ALIASES = mapOf(
+    "shettles-method" to "shettles-method-theory-vs-evidence",
+)
+
+fun articleBySlug(slug: String): Article? {
+    val canonical = SLUG_ALIASES[slug] ?: slug
+    return learnArticles.firstOrNull { it.slug == canonical }
+}
 
 fun relatedArticles(article: Article): List<Article> =
     article.relatedArticleIds.mapNotNull { id -> learnArticles.firstOrNull { it.id == id } }
@@ -1775,60 +1783,80 @@ val learnArticles: List<Article> = listOf(
         id = "w12",
         slug = "shettles-method-theory-vs-evidence",
         heroImage = R.drawable.learn_hero_shettles,
-        title = "The Shettles Method: theory versus evidence",
-        excerpt = "A popular theory about timing and your baby's sex — and why careful study has not backed it up.",
+        title = "The Shettles method, and what the evidence shows",
+        excerpt = "A timing theory from the 1960s that did not survive being tested properly — and the quiet cost of following it anyway.",
         body = listOf(
+            ArticleBlock.Paragraph(
+                "If you have read anything at all about trying to conceive, you have probably met this " +
+                    "one. It is a timing theory published in the 1960s by an American doctor, Landrum " +
+                    "Shettles, and it has outlived almost everything else from that era of fertility " +
+                    "advice. It gets asked about constantly, so it is worth setting out what it claims " +
+                    "and what happened when people went and checked.",
+            ),
             ArticleBlock.Heading("What the theory claims"),
             ArticleBlock.Paragraph(
-                "The Shettles method is a decades-old theory about the timing of sex and the sex of " +
-                    "a baby. It proposes that having sex very close to ovulation, rather than a few " +
-                    "days before, changes which sex is more likely to be conceived. It reached a lot " +
-                    "of people through a best-selling book and has been repeated ever since.",
-            ),
-            ArticleBlock.Heading("What the evidence actually shows"),
-            ArticleBlock.Paragraph(
-                "When researchers test it against real conception data, the effect does not hold up. " +
-                    "Reviews of well-designed studies find no reliable link between when in the cycle " +
-                    "sex happens and the sex of the resulting baby. The best current understanding is " +
-                    "that the sex of each child is essentially a chance event, settled at the moment " +
-                    "of fertilisation, and not something the timing of sex meaningfully shifts.",
+                "It rests on a proposed difference between the two kinds of sperm. Shettles argued that " +
+                    "one kind swims faster but dies sooner, while the other is slower and hardier. From " +
+                    "that he built a set of rules about exactly when to have sex relative to ovulation.",
             ),
             ArticleBlock.Paragraph(
-                "This is not a small gap in the evidence. It is the difference between a story that " +
-                    "sounds mechanical and plausible and a claim that repeated study has failed to " +
-                    "support.",
+                "It is a persuasive theory because it comes with a mechanism you can picture. That is " +
+                    "not the same thing as it being true, and the proposed difference has never actually " +
+                    "been demonstrated.",
             ),
-            ArticleBlock.Heading("Why it persists anyway"),
+            ArticleBlock.Heading("What happened when it was tested"),
             ArticleBlock.Paragraph(
-                "Roughly half of the couples who try it will get the result they hoped for by chance " +
-                    "alone, and those are the stories that get told and retold. A theory that lands " +
-                    "correctly half the time by coincidence can feel convincing to the people it " +
-                    "happened to work for — which is exactly why anecdote is a poor guide here.",
+                "The most careful test followed 221 women trying to conceive, measuring hormones in " +
+                    "daily urine samples so that ovulation could be pinned down properly rather than " +
+                    "guessed from a calendar. It found a large, clear effect of timing on whether a " +
+                    "pregnancy started at all — and no effect whatsoever on the sex of the baby.",
             ),
-            ArticleBlock.Heading("What this means for you"),
+            ArticleBlock.Paragraph(
+                "That is the shape of the wider literature too. Where an association turns up in one " +
+                    "dataset it fails to reappear in the next, and the direction is not even consistent " +
+                    "between them. No controlled evidence supports timing intercourse to a particular " +
+                    "day in order to influence this.",
+            ),
+            ArticleBlock.Heading("The part that actually matters"),
+            ArticleBlock.Paragraph(
+                "Following the method is not cost-free. Its rules push you toward a narrow, " +
+                    "precisely-timed schedule. Narrow timing is the single worst strategy for " +
+                    "conceiving, because ovulation is the most movable part of the cycle and a " +
+                    "prediction two days out means the month is gone.",
+            ),
+            ArticleBlock.Paragraph(
+                "So the trade is a real, measurable chance of pregnancy given up for an effect that " +
+                    "has not been shown to exist. That is the honest arithmetic of it, and it is the " +
+                    "reason this is in the Learn library rather than left unsaid.",
+            ),
+            ArticleBlock.Heading("If you have been following it"),
             ArticleBlock.BulletList(
                 listOf(
-                    "There is no timing trick this app can offer to influence a baby's sex, because none has been shown to work.",
-                    "Timing sex tightly around one predicted day is generally worse for conceiving at all than regular sex across the fertile window.",
-                    "If you meet a method that promises a particular sex, treat the confidence of the promise with caution — it is not matched by the evidence.",
+                    "Nothing has gone wrong. It is a mainstream idea repeated in good faith by a great many people, and believing it says nothing about you.",
+                    "Sex every two to three days across the cycle gives you the best chance of conceiving and requires no calculation at all.",
+                    "The odds are close to even either way, and always were. Nothing you can schedule has been shown to move them.",
                 ),
             ),
-            ArticleBlock.Callout(
-                "Read about it out of interest by all means. Just don't reorganise your cycle, your " +
-                    "diet, or your relationship around a theory the evidence does not support.",
-            ),
-            ArticleBlock.Heading("The honest summary"),
             ArticleBlock.Paragraph(
-                "The Shettles method is a theory, not a finding. Genesyx includes it here so you can " +
-                    "recognise it for what it is — an unproven idea — rather than leaving you to meet " +
-                    "it somewhere that sells it as fact.",
+                "Genesyx does not offer anything of this kind, and nothing you log here is used to " +
+                    "attempt it. What the app can do is show you where your fertile window actually " +
+                    "falls, which is the question underneath all of this.",
+            ),
+            ArticleBlock.Callout(
+                "Any method that makes your timing narrower is working against the thing you came " +
+                    "here for. The advice with evidence behind it is duller and much easier to follow: " +
+                    "regular sex across the whole window, and no arithmetic.",
             ),
         ),
-        category = ArticleCategory.WELLNESS,
-        tags = listOf("shettles", "myths", "evidence", "conception"),
+        category = ArticleCategory.TRACKING,
+        tags = listOf("timing", "ovulation", "evidence", "cycle"),
         readingTime = "4 min read",
-        relatedArticleIds = listOf("w1", "w6", "w8"),
-        cta = ArticleCta(CtaType.OPEN_TRACK, "Open your cycle"),
+        relatedArticleIds = listOf("w6", "w1", "w4"),
+        cta = ArticleCta(
+            CtaType.OPEN_ARTICLE,
+            "Read: timing sex when trying to conceive",
+            targetSlug = "timing-sex-when-ttc",
+        ),
         disclaimerRequired = true,
         publishedAt = LocalDate.of(2026, 11, 8),
     ),

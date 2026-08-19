@@ -77,10 +77,9 @@ fun LearnScreen(
     val featured = if (selectedCategory == null) visible.firstOrNull { it.featured } else null
     val rest = visible.filter { it != featured }
 
+    com.genesyx.app.ui.components.GenesyxPage {
     LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(colors.background),
+        modifier = Modifier.fillMaxSize(),
     ) {
         item {
             Row(
@@ -130,6 +129,13 @@ fun LearnScreen(
                 onClick = { navController.navigate(Screen.TwelveWeekPlan.route) },
                 modifier = Modifier.padding(horizontal = 20.dp),
             )
+            Spacer(Modifier.height(8.dp))
+            HubCard(
+                title = "7-day nutrition starter guide",
+                subtitle = "A calm first week of food habits, inside the app",
+                onClick = { navController.navigate(Screen.FreeGuide.route) },
+                modifier = Modifier.padding(horizontal = 20.dp),
+            )
             Spacer(Modifier.height(16.dp))
         }
 
@@ -161,6 +167,7 @@ fun LearnScreen(
         }
 
         item { Spacer(Modifier.height(24.dp)) }
+    }
     }
 }
 

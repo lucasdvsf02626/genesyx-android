@@ -21,7 +21,14 @@ class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != Intent.ACTION_BOOT_COMPLETED) return
         val pending = goAsync()
-        val entry = EntryPointAccessors.fromApplication(context.applicationContext, BootEntryPoint::class.java)
+        val entry = try {
+            EntryPointAccessors.fromApplication(context.applicationContext, BootEntryPoint::class.java)
+        } catch (_: IllegalStateException) {
+            // HiltTestApplication (and any process that is not yet in a real @HiltAndroidApp)
+            // has no generated component. A crash here would abort the whole instrumentation run.
+            pending.finish()
+            return
+        }
         CoroutineScope(Dispatchers.Default).launch {
             try {
                 entry.scheduler().rescheduleAll(entry.settingsRepository().current())

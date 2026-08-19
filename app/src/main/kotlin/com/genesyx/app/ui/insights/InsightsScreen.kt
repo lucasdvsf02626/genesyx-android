@@ -87,10 +87,10 @@ fun InsightsScreen(
     val intimacy by viewModel.intimacyInsights.collectAsState()
     val ovulation by viewModel.ovulationInsights.collectAsState()
 
+    com.genesyx.app.ui.components.GenesyxPage {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(colors.background)
             .verticalScroll(rememberScrollState()),
     ) {
         ScreenHeader(
@@ -163,6 +163,7 @@ fun InsightsScreen(
 
             Spacer(Modifier.height(24.dp))
         }
+    }
     }
 }
 

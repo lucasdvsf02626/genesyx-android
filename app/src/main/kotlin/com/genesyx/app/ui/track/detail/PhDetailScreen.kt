@@ -152,17 +152,19 @@ private fun ShettlesAndScienceCard(onOpenArticle: (String) -> Unit) {
         Text(PhCopy.SHETTLES_TITLE, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
         Spacer(Modifier.height(8.dp))
         Text(PhCopy.SHETTLES_BODY, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        TextButton(
-            onClick = {
-                val slug = LearnNavigation.publishedSlug(AppLinks.SHETTLES_ARTICLE_SLUG, LocalDate.now())
-                if (slug != null) onOpenArticle(slug) else openUrl(AppLinks.SHETTLES_THEORY_URL)
-            },
-            contentPadding = ButtonDefaults.TextButtonContentPadding,
-            modifier = Modifier.padding(top = 4.dp),
-        ) { Text(PhCopy.SHETTLES_LINK) }
-        TextButton(
-            onClick = { openUrl(AppLinks.SCIENCE_URL) },
-            contentPadding = ButtonDefaults.TextButtonContentPadding,
-        ) { Text("Science and evidence on genesyx.co.uk") }
+        val shettlesSlug = LearnNavigation.publishedSlug(AppLinks.SHETTLES_ARTICLE_SLUG, LocalDate.now())
+        if (shettlesSlug != null) {
+            TextButton(
+                onClick = { onOpenArticle(shettlesSlug) },
+                contentPadding = ButtonDefaults.TextButtonContentPadding,
+                modifier = Modifier.padding(top = 4.dp),
+            ) { Text(PhCopy.SHETTLES_LINK) }
+        }
+        if (AppLinks.isConfiguredWebPage(AppLinks.SCIENCE_URL)) {
+            TextButton(
+                onClick = { openUrl(AppLinks.SCIENCE_URL) },
+                contentPadding = ButtonDefaults.TextButtonContentPadding,
+            ) { Text("Science and evidence on genesyx.co.uk") }
+        }
     }
 }

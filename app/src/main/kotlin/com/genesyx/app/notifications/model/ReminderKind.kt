@@ -33,7 +33,11 @@ enum class ReminderKind(
     /** A morning heads-up on the first day of the predicted fertile window. */
     FERTILE_WINDOW(Channels.TRACKING, "genesyx://track", 7),
 
-    /** Opt-in: fires on the day a weekly drip article is revealed. Silent while no drip content exists. */
+    /**
+     * Opt-in: fires on the day a weekly drip article is revealed. [deepLink] is the Learn-tab
+     * fallback; [com.genesyx.app.domain.content.LearnNavigation.newArticleDeepLink] replaces it
+     * with `genesyx://learn/article/{slug}` when a piece actually released today.
+     */
     NEW_ARTICLE(Channels.INSIGHTS, "genesyx://learn", 8),
     ;
 

@@ -44,6 +44,8 @@ sealed class Screen(val route: String) {
     data object LearnSearch : Screen("learn/search")
     data object HowToUse : Screen("learn/how-to-use")
     data object TwelveWeekPlan : Screen("learn/twelve-week-plan")
+    data object FreeGuide : Screen("learn/free-guide")
+    data object MedicalSources : Screen("learn/medical-sources")
     data object ArticleDetail : Screen("learn/article/{slug}") {
         fun create(slug: String) = "learn/article/$slug"
         const val ARG_SLUG = "slug"
@@ -93,6 +95,8 @@ sealed class Screen(val route: String) {
             LearnSearch.route,
             HowToUse.route,
             TwelveWeekPlan.route,
+            FreeGuide.route,
+            MedicalSources.route,
             )
         }
     }

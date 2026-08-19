@@ -64,8 +64,13 @@ fun TwelveWeekPlanScreen(
                 modifier = Modifier.padding(start = 4.dp),
             )
         }
+        val intro = if (LearnDrip.weeklySeries.none { LearnDrip.isPublished(it, today) }) {
+            "First article arrives 23 Aug. Until then the list names each week but none of them open."
+        } else {
+            "A short, honest article each Sunday. Open a week when it arrives, or come back and pick up where you left off."
+        }
         Text(
-            "A short, honest article each Sunday. Open a week when it arrives, or come back and pick up where you left off.",
+            intro,
             style = MaterialTheme.typography.bodyMedium,
             color = colors.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),

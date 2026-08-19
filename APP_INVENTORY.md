@@ -1,4 +1,4 @@
-# Genesyx Android — Repository and App Inventory
+grok# Genesyx Android — Repository and App Inventory
 
 **Purpose:** the code-backed map of the current Genesyx Android checkout: app surfaces, tracked
 data, derived logic, persistence and sync, notifications, backend gates, privacy and verification.

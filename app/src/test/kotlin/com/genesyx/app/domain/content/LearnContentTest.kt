@@ -39,6 +39,13 @@ class LearnContentTest {
     }
 
     @Test
+    fun `ios shettles slug aliases to the compiled article`() {
+        val canonical = articleBySlug("shettles-method-theory-vs-evidence")
+        assertEquals(canonical, articleBySlug("shettles-method"))
+        assertNotNull(canonical)
+    }
+
+    @Test
     fun `exactly one article is featured`() {
         assertEquals(1, learnArticles.count { it.featured })
     }

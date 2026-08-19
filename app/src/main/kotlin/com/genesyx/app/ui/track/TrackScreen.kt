@@ -142,10 +142,10 @@ fun TrackContent(
         settings?.let { monthAnchor = CycleEngine.clampMonth(monthAnchor, it, today) }
     }
 
+    com.genesyx.app.ui.components.GenesyxPage {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(colors.background)
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp),
     ) {
@@ -347,6 +347,7 @@ fun TrackContent(
         )
 
         Spacer(Modifier.height(24.dp))
+    }
     }
 
     // ── Dialogs

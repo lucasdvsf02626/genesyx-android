@@ -5,6 +5,7 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.time.LocalDate
 
 class AppGuideTest {
 
@@ -30,8 +31,12 @@ class AppGuideTest {
     @Test
     fun `the twelve-week list names every dated article in calendar order`() {
         val series = LearnDrip.weeklySeries
-        assertTrue("expected the weekly series, got ${series.size}", series.size >= 11)
+        assertEquals(12, series.size)
         assertEquals(series.map { it.publishedAt }, series.map { it.publishedAt }.sortedBy { it })
+        assertEquals("fertile-window", series.first().slug)
+        assertEquals(LocalDate.of(2026, 8, 23), series.first().publishedAt)
         assertEquals("nutrition-before-conception", series[2].slug)
+        assertEquals("shettles-method-theory-vs-evidence", series.last().slug)
+        assertEquals(LocalDate.of(2026, 11, 8), series.last().publishedAt)
     }
 }

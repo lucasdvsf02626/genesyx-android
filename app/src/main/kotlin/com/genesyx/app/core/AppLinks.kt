@@ -15,16 +15,20 @@ object AppLinks {
 
     /**
      * Marketing science / evidence landing. Dedicated `/pages/science` is not confirmed to exist,
-     * so this currently opens the site root — the in-app citations on the pH screen remain the
-     * actual sources. Point this at the science page once the site hosts it.
+     * so this currently equals [SITE_URL]. [isConfiguredWebPage] is false until it points at a
+     * real page — do not open the homepage and label it science.
      */
     const val SCIENCE_URL = SITE_URL
 
     /**
-     * Shettles is a theory, not a proven method. The in-app article
-     * [SHETTLES_ARTICLE_SLUG] is the canonical write-up (date-gated in Learn). This URL is the
-     * external fallback when that article is not yet published.
+     * External Shettles write-up. Equals [SITE_URL] until a real page exists. The in-app article
+     * ([SHETTLES_ARTICLE_SLUG], iOS alias [SHETTLES_IOS_SLUG]) is the canonical source.
      */
     const val SHETTLES_THEORY_URL = SITE_URL
     const val SHETTLES_ARTICLE_SLUG = "shettles-method-theory-vs-evidence"
+    /** iOS Learn slug — `articleBySlug` resolves it to [SHETTLES_ARTICLE_SLUG]. */
+    const val SHETTLES_IOS_SLUG = "shettles-method"
+
+    /** True only when [url] is a distinct page, not the site root used as a placeholder. */
+    fun isConfiguredWebPage(url: String): Boolean = url.isNotBlank() && url != SITE_URL
 }

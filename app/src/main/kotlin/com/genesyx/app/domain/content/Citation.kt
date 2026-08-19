@@ -10,11 +10,14 @@ package com.genesyx.app.domain.content
  * supports. [reviewed] is the publisher's own last-reviewed/updated date, not the date we read it.
  */
 data class Citation(
+    val id: String = "",
     val title: String,
     val publisher: String,
     val reviewed: String,
     val url: String,
 ) {
     /** Single-line attribution, e.g. "NHS · Vaginal discharge · reviewed 15 February 2024". */
-    val line: String get() = "$publisher · $title · reviewed $reviewed"
+    val line: String
+        get() = if (reviewed.isBlank()) "$publisher · $title"
+        else "$publisher · $title · reviewed $reviewed"
 }

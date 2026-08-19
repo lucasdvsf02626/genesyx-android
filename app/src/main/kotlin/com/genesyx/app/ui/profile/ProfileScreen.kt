@@ -113,10 +113,10 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel = hi
     val name = displayName ?: "Guest"
     val goSignIn = { navController.navigate(Screen.Auth.route) }
 
+    com.genesyx.app.ui.components.GenesyxPage {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(colors.background)
             .verticalScroll(rememberScrollState()),
     ) {
         ScreenHeader(title = "Profile")
@@ -249,6 +249,12 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel = hi
             Spacer(Modifier.height(16.dp))
             GroupLabel("About")
             CardGroup {
+                RowItem("How to use Genesyx", onClick = { navController.navigate(Screen.HowToUse.route) })
+                Divider()
+                RowItem("7-day nutrition starter guide", onClick = { navController.navigate(Screen.FreeGuide.route) })
+                Divider()
+                RowItem("Medical Sources & Disclaimer", onClick = { navController.navigate(Screen.MedicalSources.route) })
+                Divider()
                 RowItem("Privacy & Data", onClick = {
                     runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(AppLinks.PRIVACY_POLICY_URL))) }
                 })
@@ -285,6 +291,7 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel = hi
 
             Spacer(Modifier.height(24.dp))
         }
+    }
     }
 
     if (nameOpen) {

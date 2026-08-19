@@ -117,6 +117,13 @@ fun ArticleDetailScreen(
                 Spacer(Modifier.height(16.dp))
             }
 
+            val sources = com.genesyx.app.domain.content.LearnSourceMap.citationsFor(article.slug)
+            if (sources.isNotEmpty()) {
+                Spacer(Modifier.height(8.dp))
+                com.genesyx.app.ui.components.CitationList(title = "Sources", citations = sources)
+                Spacer(Modifier.height(16.dp))
+            }
+
             article.cta?.let { cta ->
                 Spacer(Modifier.height(8.dp))
                 CtaCard(cta) {

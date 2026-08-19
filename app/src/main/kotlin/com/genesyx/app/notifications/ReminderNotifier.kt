@@ -18,6 +18,7 @@ import com.genesyx.app.data.PreferencesRepository
 import com.genesyx.app.data.SessionRepository
 import com.genesyx.app.data.local.dao.DailyLogDao
 import com.genesyx.app.domain.content.LearnDrip
+import com.genesyx.app.domain.content.LearnNavigation
 import com.genesyx.app.domain.cycle.CycleEngine
 import com.genesyx.app.notifications.model.ReminderKind
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -95,7 +96,12 @@ class ReminderNotifier @Inject constructor(
         }
 
         val copy = ReminderContent.of(kind)
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(kind.deepLink), context, MainActivity::class.java)
+        val uri = if (kind == ReminderKind.NEW_ARTICLE) {
+            LearnNavigation.newArticleDeepLink()
+        } else {
+            kind.deepLink
+        }
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(uri), context, MainActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
         val pending = PendingIntent.getActivity(
             context,
