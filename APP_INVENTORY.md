@@ -185,7 +185,8 @@ pinned by `NutritionContentTest`'s content-safety guards.
 - Repository rounds, validates, writes Room first and queues Supabase retries.
 - Current insight can show status, direction, rolling 7/30-day averages and descriptive copy.
 - Two vaginal readings in seven days are required for the written pH insight; charts need at least
-  two readings in the selected range.
+  two readings in the selected range. The chart labels its axis at 3.8 / 4.5 / 7.0 (from
+  `PhStatus`), in a left gutter the plot is inset past (19 Aug).
 - Medical copy and source links are centralised; no diagnosis, dietary treatment or condition claim.
 
 ### Hydration
@@ -225,6 +226,9 @@ pinned by `NutritionContentTest`'s content-safety guards.
   orphan rows (`SupplementLogRows`). Robust *scoring* of custom supplements by stable ID remains a
   BLOCKED cross-platform contract change: the fixed plan (4 built-ins) is still the adherence
   denominator, and custom entries are recorded, not scored.
+- The suggested-plan card carries a live adherence line — “None logged yet today” / “N of M taken
+  today” — scored against the 4-item plan from today's Log toggles, matched trimmed and
+  case-insensitively (`SupplementPlanProgress`, 19 Aug).
 - `SupplementTime` is Morning/Afternoon/Evening/Anytime—not an exact reminder time.
 - The `genesyx_products` catalogue renders a coming-soon state when the backend has no products.
 
@@ -238,7 +242,7 @@ sample charts in production paths.
 | Weekly summary | Current Mon–Sun week; unlocks with one meaningful day; comparisons need one relevant point in each week |
 | Consistency | Shared streak engine; four meaningful days make a qualifying week |
 | pH | Vaginal-only; status/latest-two direction and rolling averages |
-| Hydration | Rolling seven days; can appear after one positive water entry |
+| Hydration | Rolling seven days; can appear after one positive water entry. Leads with “N of 7 days on goal” — StreakEngine's number, so it always matches Home (19 Aug) |
 | Supplements (plan) | Current week; adherence vs the fixed 4-item starter plan; one built-in scored entry can unlock |
 | Your supplements this week | Current week; each of her own "Your supplements" (Nutrition) with an N/7-days count + Mon–Sun dot row, matched by name against `daily_logs.supplements`; hidden when she has none. Separate from the plan card, which is unchanged (13 Aug) |
 | Sleep | Current Mon–Sun week; one positive night can unlock |

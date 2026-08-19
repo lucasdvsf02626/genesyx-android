@@ -8,6 +8,28 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ## [Unreleased] — Single-source-of-truth bug batch (28 Jul device walkthrough)
 
+### Added (19 Aug 2026) — Last three iOS parity gaps closed (per the 19 Aug audit)
+- **Committed the dirty tree first** (`283ec5b`): the ~59 uncommitted files sitting on `edd8f2d`
+  (medical sources, free guide, Learn source map, debug source set, contract tests, docs, iOS
+  images) went in as one snapshot before any new work, with the suite green at 467.
+- **Nutrition plan card live state** (audit gap 1): "None logged yet today" / "N of M taken today",
+  live from today's Log toggles — iOS's `NutritionView` strings verbatim. `SupplementPlanProgress`
+  scores today's names against the suggested plan, trimmed and case-insensitive; Iron and her own
+  supplements are recorded, not scored. The "Why is this important?" expander stays.
+- **Insights hydration: days on goal** (audit gap 2): the card now leads with "N of 7 days on
+  goal" — delegated to `StreakEngine.daysOnGoal`, the same number Home renders, with a test pinning
+  the two surfaces agree across goals. The ml/day delta and weekly bars stay.
+- **pH chart numeric axis marks** (audit gap 3): muted labels at 3.8 / 4.5 / 7.0 (values from
+  `PhStatus`, no new literals), right-aligned in a left gutter the plot is inset past so dots never
+  overlap. Classification, bands and legacy-urine rendering untouched.
+- **Q&A table recorded**: Q11 = A (Profile row exists), Q13 = A (display clamp, keep stored value,
+  never reclassify), Q14 = A (guest paths stay dead; cleanup post-launch). Q10 (TalkBack) left
+  OPEN — BLOCKED-ON-DEVICE, a human launch gate.
+- Verified: **475 unit tests, 0 failures** (467 baseline + 8 new); `:app:assembleRelease` green
+  (R8 clean); **33/33 instrumented tests** on the `test_Pixel8.1` emulator (the known
+  `CycleSettingsDialogTest` flake passed this run). Not verified: a human look at the pH axis
+  labels in light/dark on a physical device.
+
 ### Added/Changed (13 Aug 2026) — Audit quick-win punch list (4 items)
 - **pH → fertility explanation** (1A): new "How this relates to fertility" section on the pH detail
   screen — cautious copy ("may", "background context, not a fertility test", GP/pharmacist

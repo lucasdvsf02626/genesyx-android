@@ -303,11 +303,11 @@ Answer in this file (or in the PR) before the matching item ships. Recommended a
 | Q7 | A — keep waitlist / free-guide (email capture still present) | 17 Aug 2026 | owner |
 | Q8 | A — drop the dismissible Learn intro; How-to card replaces it | 17 Aug 2026 | owner |
 | Q9 | A — keep vertical recipe cards | 17 Aug 2026 | owner |
-| Q10 | | | |
-| Q11 | | | |
+| Q10 | OPEN — BLOCKED-ON-DEVICE: TalkBack pass needs a physical device; human launch gate | | |
+| Q11 | A — Profile row exists (`ProfileScreen.kt:252`) | 19 Aug 2026 | code |
 | Q12 | chips count toward the streak (already in both engines) | 17 Aug 2026 | code |
-| Q13 | | | |
-| Q14 | | | |
+| Q13 | A — clamp on display, keep stored value, never reclassify (already the chart's behaviour) | 19 Aug 2026 | code |
+| Q14 | A — leave guest paths dead; cleanup post-launch | 19 Aug 2026 | code |
 | Q15 | port iOS-signed strings verbatim | 17 Aug 2026 | code |
 
 ---
