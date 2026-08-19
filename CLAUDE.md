@@ -48,9 +48,10 @@ REST-verified (trim/lowercase, duplicate no-op, table unreadable/unwritable to c
 2. **Send the corrected Play console drafts for review** — the Health apps declaration and Data
    Safety form (pH sync + waitlist email declared) are saved as drafts only. Resolve the Play
    URL-validator 429 warning on the deletion/privacy routes.
-3. **Backend gates:** Supabase DPA check; live end-to-end deletion of an account containing a pH
-   reading (the old S6 proof predates pH sync); `genesyx.co.uk` privacy-policy wording (vaginal
-   pH + waitlist email).
+3. **Backend gates — mostly CLOSED 19 Aug 2026:** the live deletion re-proof is done (S6 gate
+   closed, service-role counts all zero) and Supabase's DPA is incorporated into its ToS (no
+   signature flow exists). Remaining: `genesyx.co.uk` privacy-policy wording (vaginal pH +
+   waitlist email).
 4. **Owner approval, then promote to Production.**
 5. Before any code-14 build: apply + REST-verify the `user_supplements`/`genesyx_products`
    migration. Schedule the iOS parity fix (labels, two-band thresholds, `measurement_type`, copy,
@@ -140,9 +141,10 @@ goal is **user-set** (`GOAL_RANGE_ML = 1000..5000`, default 2400, step 200); `da
   `docs/GENESYX_RELEASE_VERIFICATION_RUNBOOK.md`.
 
 ## Notes
-- `delete_current_user` RPC is deployed and REST-verified; the post-pH-sync re-verification is in
-  Next actions. A `TODO(post-launch)` remains: pin `set search_path = public, auth, pg_temp` on the
-  SECURITY DEFINER function.
+- `delete_current_user` RPC: **re-verified end-to-end 19 Aug 2026** post pH + supplements sync
+  (throwaway account, RPC 204, JWT `user_not_found`, service-role counts all zero — S6 gate
+  closed; see `docs/PROMPT_SUPABASE_VERIFY_2026-08-19.md`). The old "pin search_path" TODO is
+  obsolete: production has pinned `search_path=''` since the 13 Aug hardening.
 - In-app "Privacy & Data" row opens `AppLinks.PRIVACY_POLICY_URL` via `ACTION_VIEW`.
 - **KNOWN FLAKE (pre-existing):** `CycleSettingsDialogTest.an_untouched_dialog_cannot_save` —
   Compose UI timing flake in instrumented runs; passes in isolation.

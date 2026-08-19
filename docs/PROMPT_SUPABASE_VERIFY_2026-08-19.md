@@ -1,5 +1,23 @@
 # Supabase prompt — verify the supplements backend + close the deletion gates
 
+> **✅ RESOLVED 19 Aug 2026 — all checks run, gate closed.**
+> - **A:** all pass. One expectation in A2 was wrong, not production: the applied migration
+>   deliberately created **one `FOR ALL` owner policy** (`user_supplements_owner`, USING +
+>   WITH CHECK on `auth.uid() = user_id`) matching the project convention, not the obsolete
+>   draft's four-policy split. Same effect; REST behaviour tests confirm it.
+> - **B:** full deletion re-proof done — client-side steps 1–4 by agent (RPC 204, JWT
+>   `user_not_found`), service-role counts by owner in the dashboard: **six zeros**.
+>   Recorded in the locally-excluded `DATA_SAFETY_AND_PRIVACY_v1.1.md`.
+> - **C:** recovery unnecessary — the premise was stale. The 13 Aug migration IS versioned:
+>   `supabase/migrations/20260813_user_supplements_delete_backstop_and_push_default_false.sql`
+>   in the iOS repo, whose local `main` is **ahead of origin** — the remaining H1 action is
+>   simply `git push` there. Production matches it (spliced backstop line present once,
+>   `search_path=''`, push_enabled default false).
+> - **DPA:** Supabase's DPA is now incorporated into their Terms of Service — no signature
+>   flow exists; the gate is satisfied by default. Owner to download the DPA + TIA PDFs.
+> - Bonus: production `delete_current_user()` already pins `SET search_path TO ''` (since the
+>   13 Aug hardening) — the old "pin search_path" TODO is obsolete.
+
 **⛔ Do NOT run `docs/migrations/2026-07-29_user_supplements.sql`.** It is superseded; its own
 banner says so. The real migration (`20260813_android_supplements_backend.sql`) was applied to the
 live project `epltxklawpcxxbaleswg` on 13 Aug 2026. Re-applying the old draft would try to recreate

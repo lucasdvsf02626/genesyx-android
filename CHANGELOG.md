@@ -44,14 +44,17 @@ live state `586dfb2`, Insights days-on-goal `5736e3f`, pH axis marks `7fc2970`, 
    and on-device smoke test.
 2. **Console review:** the corrected Health apps declaration and Data Safety form are saved as
    drafts, not sent; the Play URL-validator 429 warning on the deletion/privacy routes is open.
-3. **Before any 1.4.0 (14) build:** REST-verify the `user_supplements` / `genesyx_products`
-   backend. The `20260813_android_supplements_backend.sql` migration was applied to production
-   on 13 Aug (superseding the 29 Jul "tables don't exist" probe); what remains is the
-   verification pass in `docs/PROMPT_SUPABASE_VERIFY_2026-08-19.md` (schema state, post-pH+
-   supplements deletion re-proof, backstop SQL recovery).
-4. **Backend/legal:** Supabase DPA check; re-prove live end-to-end account deletion now that pH
-   syncs (the old S6 proof predates pH sync); `genesyx.co.uk` privacy wording (vaginal pH +
-   waitlist email).
+3. ~~Supabase verification~~ **CLOSED 19 Aug (evening):** the full verify pass ran against
+   production — schema checks all pass (the "4 policies" expectation was the obsolete draft's;
+   the applied migration uses one `FOR ALL` owner policy by design), the **S6 deletion re-proof
+   is complete** (throwaway seeded pH + log + supplement rows, RPC 204, JWT `user_not_found`,
+   service-role counts all zero), the backstop SQL turned out to be versioned in the iOS repo
+   already, and Supabase's DPA is incorporated into its ToS (no signature needed). Bonus:
+   production `delete_current_user()` has pinned `search_path=''` since 13 Aug — the old TODO
+   is obsolete. Details: `docs/PROMPT_SUPABASE_VERIFY_2026-08-19.md`.
+4. **Backend/legal remainder:** `genesyx.co.uk` privacy wording (vaginal pH + waitlist email);
+   `git push` the iOS repo's local `main` (ahead of origin — it holds the only versioned copy
+   of the 13 Aug backstop migration besides production).
 5. **Owner approval**, then promote to Production.
 
 **Missing / not yet verified:**
