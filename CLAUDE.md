@@ -2,11 +2,11 @@
 
 Project Name: Genesyx Android
 
-**`main` is at v1.3.2 (versionCode 13), but Play does NOT serve it yet:** a live Play Console
-audit (2026-07-28) found Internal testing on **1.3.0 (11)** and Production on **1.2.0 (9)** —
-codes 12 and 13 were never uploaded. The verified 1.3.2 artifact awaits upload at
-`~/Documents/Genesyx Releases/1.3.2-code13/`.
-Read this first. Honest state, verified against the tree on **2026-07-30**.
+**`main` is at v1.4.0 (versionCode 14), and Play serves nothing newer than 1.3.0:** a live Play
+Console audit (2026-07-28) found Internal testing on **1.3.0 (11)** and Production on **1.2.0 (9)**
+— codes 12, 13 and 14 were never uploaded. Codes 12 and 13 are superseded; **14 is the identity to
+upload.** Freshly built and signature-verified 2026-08-19 (see "Where the code actually is").
+Read this first. Honest state, verified against the tree on **2026-08-19**.
 
 > **⚠️ If you read an older copy of this file, four things it told you are now FALSE:**
 > 1. **pH is NOT local-only.** pH readings sync to Supabase. Never restore "stored on this device"
@@ -23,30 +23,32 @@ Read this first. Honest state, verified against the tree on **2026-07-30**.
 >    `daily_logs.sexual_activity` was REST-verified live 19 Aug. **Never run
 >    `docs/migrations/2026-07-29_user_supplements.sql`** — it is superseded and harmful, per
 >    `docs/PROMPT_SUPABASE_VERIFY_2026-08-19.md`.
-> 4. **Play does NOT serve 1.3.2.** Internal testing = **1.3.0 (11)** (rolled out 27 Jul, Health
->    apps declaration re-submitted same day); Production = **1.2.0 (9)**. The code-13 upload was
->    started 28 Jul but never completed; the corrected Health apps + Data Safety console drafts
->    are saved but **not sent for review**.
+> 4. **Play does NOT serve 1.3.2 or 1.4.0.** Internal testing = **1.3.0 (11)** (rolled out 27 Jul,
+>    Health apps declaration re-submitted same day); Production = **1.2.0 (9)**. The code-13 upload
+>    was started 28 Jul but never completed and code 13 is now superseded by 14; the corrected
+>    Health apps + Data Safety console drafts are saved but **not sent for review**.
 
-## 🔖 STOPPED HERE — resume from this (2026-07-30)
+## 🔖 STOPPED HERE — resume from this (2026-08-19)
 
-**The 1.3.2 (versionCode 13) release artifact is built, verified and archived
-(`~/Documents/Genesyx Releases/1.3.2-code13/`) but NOT yet on Play** — Internal testing still
-serves 1.3.0 (11). Since the 27 Jul release day: the client approved the vaginal-pH ranges
-(28 Jul); the cross-screen consistency bug batch, ml/cups toggle, pH citations, cycle-phase
-timeline card and calendar clipping fixes landed; and manual supplement entry + the Genesyx range
-(Room v6) shipped **in source only** — it targets versionCode 14 and is blocked on its Supabase
-migration. The `join_waitlist` SECURITY DEFINER RPC is deployed to production Supabase and
-REST-verified (trim/lowercase, duplicate no-op, table unreadable/unwritable to clients).
+**The 1.4.0 (versionCode 14) release artifact is built and signature-verified, but NOT yet on
+Play** — Internal testing still serves 1.3.0 (11). The code-14 Supabase gate is **CLOSED**:
+`user_supplements` and `genesyx_products` went live 13 Aug and `daily_logs.sexual_activity` was
+REST-verified live 19 Aug, so nothing backend-side blocks the upload. Landed since 1.3.0: the
+vaginal-pH range approval (28 Jul), the cross-screen consistency batch, ml/cups toggle, pH
+citations, cycle-phase timeline card, calendar clipping fixes, manual supplement entry + the
+Genesyx range, private intimacy logging, meal logging (Room v9), and the opt-in intimacy reminder.
+The `join_waitlist` SECURITY DEFINER RPC is deployed to production Supabase and REST-verified
+(trim/lowercase, duplicate no-op, table unreadable/unwritable to clients).
 
 **Session-by-session history lives in `CHANGELOG.md`.** Read it before anything else.
 **Product state lives in `APP_INVENTORY.md`** (repo root).
 
 **Next actions, in order:**
-1. **Finish the code-13 upload to Internal testing**, then smoke-test the Play-installed build
-   on-device: change password (incl. wrong current password), waitlist join (incl. duplicate),
-   guest pH reading → sign-in → reading appears; plus the 1.3.0 checks — vaginal pH two-band
-   display, "urine (legacy)" markers, Home deep links, a reminder firing.
+1. **Upload code 14 to Internal testing**, then smoke-test the Play-installed build on-device:
+   Google Sign-In (needs the release SHA-1 registered), change password (incl. wrong current
+   password), waitlist join (incl. duplicate), guest pH reading → sign-in → reading appears; plus
+   the 1.3.0 checks — vaginal pH two-band display, "urine (legacy)" markers, Home deep links, a
+   reminder firing — and the new opt-in intimacy reminder.
 2. **Send the corrected Play console drafts for review** — the Health apps declaration and Data
    Safety form (pH sync + waitlist email declared) are saved as drafts only. Resolve the Play
    URL-validator 429 warning on the deletion/privacy routes.
@@ -55,19 +57,18 @@ REST-verified (trim/lowercase, duplicate no-op, table unreadable/unwritable to c
    signature flow exists). Remaining: `genesyx.co.uk` privacy-policy wording (vaginal pH +
    waitlist email).
 4. **Owner approval, then promote to Production.**
-5. Before any code-14 build: apply + REST-verify the `user_supplements`/`genesyx_products`
-   migration. Schedule the iOS parity fix (labels, two-band thresholds, `measurement_type`, copy,
+5. Schedule the iOS parity fix (labels, two-band thresholds, `measurement_type`, copy,
    logged-days hydration average — and the waitlist RPC if iOS gains the screen).
 
 ## Where the code actually is
 
 | | |
 |---|---|
-| `main` | versionCode **13**, versionName **"1.3.2"**, compile/targetSdk **36**, Room **v6** |
+| `main` | versionCode **14**, versionName **"1.4.0"**, compile/targetSdk **36**, Room **v9** |
 | Working branch | none |
-| Unit tests | **304 passing, 0 failures** (`./gradlew :app:testDebugUnitTest`, 29 Jul) |
-| Release build | `:app:bundleRelease` + `:app:assembleRelease` GREEN (2026-07-29), R8/minify clean |
-| Play status | Internal testing **1.3.0 (11)**, Production **1.2.0 (9)** (Console audit 28 Jul); code-13 upload pending |
+| Unit tests | **483 passing, 0 failures** (`./gradlew :app:testDebugUnitTest`, 19 Aug) |
+| Release build | `:app:bundleRelease` + `:app:assembleRelease` GREEN (2026-08-19), R8/minify clean; AAB + APK signed with upload key SHA-1 `8D:EB…CC:73` (aapt2 reports `14 / 1.4.0 / SDK 36`) |
+| Play status | Internal testing **1.3.0 (11)**, Production **1.2.0 (9)** (Console audit 28 Jul); code-14 upload pending |
 
 `FeatureFlags` on `main`: `PH_TRACKING = true`, `PUSH_NOTIFICATIONS = true` (local reminders),
 `ADMIN_CLIENTS = false`, `PARTNER_INVITES = false`.
@@ -82,7 +83,7 @@ REST-verified (trim/lowercase, duplicate no-op, table unreadable/unwritable to c
   (`measurement_type`, legacy rows stamped `urine`), Supabase production migration applied 22 Jul,
   neutral `PhCopy` insight copy with banned-phrase guards.
 
-## The offline queue (daily logs) — Room schema v6
+## The offline queue (daily logs) — Room schema v9
 
 Offline log saves QUEUE instead of being refused: `daily_logs.syncStatus` (`LogSyncStatus`) — an
 offline write lands as `PENDING_UPSERT`; `DailyLogSyncWorker` drains it with WorkManager backoff.

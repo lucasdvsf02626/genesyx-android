@@ -279,7 +279,7 @@ PendingIntent.getActivity(
 )
 ```
 
-`FLAG_IMMUTABLE` is **mandatory** on API 31+ (targetSdk 35 — the app will crash without it). Use a distinct `requestCode` per `ReminderKind`, or `FLAG_UPDATE_CURRENT` will mutate the wrong pending intent.
+`FLAG_IMMUTABLE` is **mandatory** on API 31+ (targetSdk 36 — the app will crash without it). Use a distinct `requestCode` per `ReminderKind`, or `FLAG_UPDATE_CURRENT` will mutate the wrong pending intent.
 
 ### 2.7 Quiet hours, suppression, and not being annoying
 

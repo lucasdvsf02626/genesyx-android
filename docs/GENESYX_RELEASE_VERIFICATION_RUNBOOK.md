@@ -1,6 +1,8 @@
 # Genesyx — Release Verification Runbook
 
-_Generated 2 Jul 2026. Package `com.genesyx.app`, versionCode 1 / versionName 1.0.0, compileSdk 35, minSdk 26._
+_Generated 2 Jul 2026 against versionCode 1 / versionName 1.0.0, compileSdk 35. **The procedure still
+applies; that identity line does not.** `main` is now `com.genesyx.app` versionCode **14** /
+versionName **1.4.0**, compile/targetSdk **36**, minSdk 26._
 
 This runbook reflects what the **actual codebase** does, not the original checklist assumptions. Read the "Corrections to the original plan" box first — two of your five steps were based on premises that don't hold in this repo.
 
@@ -103,7 +105,7 @@ The repo's source of truth is `docs/schema.sql`. Verify the live project matches
   - Release/upload + Play App Signing: get from `./gradlew signingReport`, and from Play Console → Setup → **App signing** (Google-managed signing key SHA-1 must also be registered or Google login breaks in production).
 - [ ] Wire the button: replace the stub onClick with a real Credential Manager Google flow → pass the returned idToken to Supabase Auth. (I can implement this incrementally — say the word.)
 
-> Your `keystore.properties` exists locally (release signing configured), so `signingReport` will show a real release SHA-1. When keystore.properties is absent, the release build falls back to debug signing (`app/build.gradle.kts:66–70`).
+> Your `keystore.properties` exists locally (release signing configured), so `signingReport` will show a real release SHA-1. When keystore.properties is absent, `assembleRelease`/`bundleRelease` now **fail with an explicit error** instead of falling back to debug signing (task-graph guard at the bottom of `app/build.gradle.kts`).
 
 ---
 

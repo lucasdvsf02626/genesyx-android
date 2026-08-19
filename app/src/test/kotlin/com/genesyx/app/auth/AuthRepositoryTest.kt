@@ -67,6 +67,18 @@ class AuthRepositoryTest {
     }
 
     @Test
+    fun `deleteAccount clears supplement reminders too`() = runTest {
+        // They live in DataStore on their own scheduler, so clearAllTables and reminderScheduler
+        // both miss them. Left behind, they keep firing notifications naming her supplements long
+        // after the account is gone.
+        coEvery { authService.deleteAccount() } returns DataResult.Success(Unit)
+
+        repo(backgroundScope).deleteAccount()
+
+        verify { supplementReminderRepo.clearAll() }
+    }
+
+    @Test
     fun `deleteAccount does NOT wipe local DB when server delete fails`() = runTest {
         coEvery { authService.deleteAccount() } returns DataResult.Error(RuntimeException("boom"))
 

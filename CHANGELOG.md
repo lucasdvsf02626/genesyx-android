@@ -8,6 +8,31 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ## [Unreleased] — Single-source-of-truth bug batch (28 Jul device walkthrough)
 
+### Release prep for code 14 (19 Aug 2026) — signing hardened, deletion leak closed, docs de-drifted
+
+- **A release build can no longer be signed with the debug key.** `app/build.gradle.kts` previously
+  fell back to `signingConfigs.getByName("debug")` whenever `keystore.properties` was absent, so a
+  machine without the keystore produced a green `assembleRelease` and an installable APK that looked
+  like a release. Play rejects a debug-signed AAB, but the APK installs and runs — so the artifact
+  could be smoke-tested and mistaken for the real thing. `signingConfig` is now `null` without a
+  keystore, and the existing `gradle.taskGraph.whenReady` guard (which already failed release builds
+  missing Supabase creds) now also fails them when `keystore.properties` or the `.jks` it points at
+  is missing. Debug builds are untouched. Verified both ways: with the keystore moved aside the
+  build fails with an explicit message; restored, it signs with upload key SHA-1 `8D:EB…CC:73`.
+- **`deleteAccount()` left supplement reminders on the device.** It called `reminderScheduler
+  .cancelAll()`, `database.clearAllTables()` and `quizAnswersRepository.clearLocal()`, but not
+  `supplementReminderRepository.clearAll()` — which `signOut()` does call. Those reminders live in
+  DataStore on a separate scheduler, so neither of the other wipes reaches them, and they kept
+  firing notifications naming her supplements after the account was gone. One-line fix mirroring
+  `signOut`, pinned by a new regression test in `AuthRepositoryTest`.
+- **Artifacts rebuilt and identity-verified:** aapt2 reports `com.genesyx.app 14 / 1.4.0 / SDK 36`,
+  APK and AAB both signed with the upload key. Unit tests **484 passing, 0 failures**. versionCode
+  stays 14 — it has never been uploaded, so burning it for a no-op would repeat the code-9 collision.
+- **Doc drift corrected** in the files most likely to mislead the next session: `CLAUDE.md` (header,
+  STOPPED-HERE block, identity table, Room v6→v9), `APP_INVENTORY.md` (claimed 1.3.2/13 was the
+  Gradle identity), `ARCHITECTURE.md` + `README.md` (claimed targetSdk 35), the release runbook's
+  stale identity line and its now-wrong debug-signing note, and `docs/V1_1_NOTIFICATIONS_AND_LEARN.md`.
+
 ### Verified (19 Aug 2026) — `daily_logs.sexual_activity` is LIVE; code-14 backend gate CLOSED
 - **Proven over REST with the anon key, not inferred from the catalogue.** A single probe was
   inconclusive — anon has no SELECT grant on `daily_logs`, so `select=sexual_activity` returns

@@ -7,7 +7,7 @@ this is the from-scratch native client. See the specs in [`../docs`](../docs) an
 ## Stack
 Jetpack Compose + Material 3 · single-Activity · MVVM / Clean Architecture · Hilt ·
 Room (offline cache) · DataStore · supabase-kt (auth + Postgrest) · Navigation Compose.
-`compile/targetSdk 35`, `minSdk 26`, JDK 17, package `com.genesyx.app`.
+`compile/targetSdk 36`, `minSdk 26`, JDK 17, package `com.genesyx.app`.
 
 ## First-time setup
 The Gradle wrapper JAR isn't committed. Generate it once (or just open the project in

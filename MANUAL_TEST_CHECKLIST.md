@@ -5,6 +5,34 @@ you can validate the whole app even if the Google config has an issue. Google sc
 
 ---
 
+## ⏭️ Open manual checks — 1.4.0 (14), to run tomorrow on the Play-installed build
+
+Recorded 19 Aug 2026. None of these were verifiable in this session (no device attached). The
+sections below (A–L) remain valid and still apply.
+
+- [ ] **Google Sign-In on the Play-installed build.** Must be installed from the Play link, not
+      `adb` — a sideloaded APK carries the upload key, whereas Play re-signs with `E0:CE`. This is
+      the only real test of whether that SHA-1 is registered. `DEVELOPER_ERROR` = not registered.
+- [ ] **TalkBack: water stepper and calendar cells.** Selection and value state is announced
+      nowhere in the app (`Role`/`selectable`/`stateDescription` are unused), so confirm what a
+      screen-reader user actually hears on the hydration stepper and on Track's day cells.
+- [ ] **Cellular sync.** Confirm logs and pH sync on mobile data with Wi-Fi off. Code 14 contains no
+      connectivity detection at all, so the historical false-offline indicator cannot render — this
+      check is to prove the sync workers themselves run under `NetworkType.CONNECTED` on cellular.
+- [ ] **Reminder timing while the device is locked and idle.** Confirm a reminder fires close to its
+      scheduled minute after the phone has been locked a while (Doze deferral is expected and
+      acceptable; a missed reminder is not).
+- [ ] **Can the weekday selector be cleared?** The intimacy reminder refuses to drop its last day
+      (`ReminderSettingsViewModel.setIntimacyDays`), but `setDailyDays` has no such guard. Try to
+      deselect every weekday on the daily-log reminder and see what the UI does. An empty set is
+      handled safely in policy (it falls back to every day) — the question is whether the UI lets her
+      reach a state that reads as "off" while still notifying.
+- [ ] **Play Console declarations and privacy wording.** Health apps + Data Safety drafts sent for
+      review; URL-validator 429 resolved; `genesyx.co.uk` privacy policy covers vaginal pH sync and
+      the waitlist email.
+
+---
+
 ## ✅ Automated coverage (autonomous run, 2026-07-05, emulator-5554, QA user genesyx.qa.step1)
 
 Proven end-to-end without human taps (evidence in `AUTONOMOUS_RUN_LOG.md`):

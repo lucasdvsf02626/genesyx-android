@@ -10,8 +10,8 @@
 - **UI toolkit:** Jetpack Compose + Material 3
 - **Architecture:** Single-Activity + Compose Navigation + **MVVM** over **Clean Architecture** (`data` / `domain` / `ui`)
 - **DI:** Hilt · **Local:** Room + DataStore · **Remote:** Supabase (see [Backend](#backend--data-layer))
-- **SDK:** `compileSdk = 35`, `targetSdk = 35`, `minSdk = 26`, Java 17
-- **Versioning:** `versionCode = 1`, `versionName = "1.0.0"`
+- **SDK:** `compileSdk = 36`, `targetSdk = 36`, `minSdk = 26`, Java 17
+- **Versioning:** `versionCode = 14`, `versionName = "1.4.0"`
 - **No ads.** AdMob is intentionally excluded.
 
 **App:** *Genesyx — Fertility Prep, Gently Guided.* A premium, mobile-first fertility-prep

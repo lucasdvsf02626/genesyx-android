@@ -9,14 +9,14 @@ source, not a promise that every source feature is deployed to Supabase or publi
 | Repository snapshot | Current value |
 |---|---|
 | Branch / HEAD | `main` / `43b371c` |
-| Gradle source identity | **1.3.2 (versionCode 13)** |
-| Next-release warning | Current source contains post-code-13 work; do not reuse code 13 for a new Play upload |
+| Gradle source identity | **1.4.0 (versionCode 14)** |
+| Next-release warning | Codes 12 and 13 are superseded; never reuse them. 14 is unused on Play and is the identity to upload |
 | Play state | Not live-verified by this inventory; historical repository notes are not current proof |
 | Application ID | `com.genesyx.app` |
 | SDK | compile/target 36, min 26 |
 | Main stack | Kotlin, Jetpack Compose, Material 3, Hilt, Room, DataStore, WorkManager, Supabase Kotlin |
 | Main navigation | Seven bottom tabs: Home, Track, pH, Nutrition, Insights, Learn, Profile |
-| Local database | Room schema v7, eight entity types |
+| Local database | Room schema v9 |
 | Preferences/session | Preferences DataStore (`genesyx_prefs`) |
 | Cloud | Supabase Auth + PostgREST + RPCs where configured |
 | Notifications | Local WorkManager reminders; no FCM/device token |
@@ -24,19 +24,18 @@ source, not a promise that every source feature is deployed to Supabase or publi
 
 ## 1. Release identity and critical boundary
 
-`app/build.gradle.kts` still declares `versionName = "1.3.2"` and `versionCode = 13`. The checkout
-also contains later work—Room v7, private intimacy logging, user supplements, seven tabs, backdated
-logs, sync-status UI and Learn/reminder additions—that repository history assigns to a following
-release.
+`app/build.gradle.kts` declares `versionName = "1.4.0"` and `versionCode = 14`, which matches the
+work in the checkout—Room v9, private intimacy logging, meal logging, user supplements, seven tabs,
+backdated logs, sync-status UI, the opt-in intimacy reminder and Learn additions. Code 14 has never
+been uploaded to Play, so it remains a valid release identity.
 
 Therefore:
 
-- **1.3.2 (13) is the current Gradle identity, not a safe new release identity.**
-- Before shipping the present tree, choose the next unused `versionCode` (repository planning points
-  to code 14), set the intended `versionName`, apply required backend migrations, build a fresh signed
-  AAB/APK and verify their baked-in identity.
-- A local `assembleRelease` can fall back to debug signing if `keystore.properties` is absent. A
-  green local release build is not proof of a Play-signable artifact.
+- **1.4.0 (14) is both the current Gradle identity and a safe release identity.**
+- Before shipping the present tree, build a fresh signed AAB/APK and verify their baked-in identity.
+  The backend migrations this tree needed are applied and REST-verified (19 Aug 2026).
+- `assembleRelease`/`bundleRelease` now **fail** when `keystore.properties` is absent rather than
+  silently falling back to the debug key, so a green release build is signed with the upload key.
 - Release tasks intentionally fail when Supabase credentials are missing, preventing the
   password-free local auth fallback from shipping.
 - Upload validation, Internal publication, Play installation and Production availability are four
@@ -583,6 +582,6 @@ a customer-facing pattern.
 
 ---
 
-_Last audited from the Android repository on 12 August 2026: `main` / `43b371c`. Current Gradle
-identity: **1.3.2 (13)**; current source includes post-code-13 work and is not release-ready under
-that reused version code._
+_Last audited from the Android repository on 12 August 2026: `main` / `43b371c`; release identity
+refreshed 19 August 2026. Current Gradle identity: **1.4.0 (14)**, which is unused on Play and is
+the identity to upload._

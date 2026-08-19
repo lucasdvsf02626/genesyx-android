@@ -124,6 +124,10 @@ class AuthRepository @Inject constructor(
                 reminderScheduler.cancelAll()
                 withContext(dispatchers.io) { database.clearAllTables() }
                 quizAnswersRepository.clearLocal()
+                // Supplement reminders live in DataStore on their own scheduler, so neither
+                // clearAllTables nor reminderScheduler reaches them. Left behind, they keep firing
+                // notifications naming her supplements after the account is gone.
+                supplementReminderRepository.clearAll()
                 session.signOut()
                 DataResult.Success(Unit)
             }

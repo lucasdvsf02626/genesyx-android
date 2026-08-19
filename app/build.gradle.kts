@@ -10,8 +10,8 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
-// Release signing is loaded from keystore.properties (kept out of git). When the file is absent
-// (most local/CI debug builds), the release build falls back to debug signing so it still builds.
+// Release signing is loaded from keystore.properties (kept out of git). When the file is absent,
+// debug builds are unaffected but release builds fail (see the task-graph guard at the bottom).
 val keystorePropertiesFile = rootProject.file("keystore.properties")
 val keystoreProperties = Properties().apply {
     if (keystorePropertiesFile.exists()) {
@@ -78,14 +78,10 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             buildConfigField("String", "GENESYX_ENV", "\"PROD\"")
-            // Falls back to debug signing when keystore.properties is absent, so the release build
-            // is still producible locally for testing. Bump versionCode/versionName (defaultConfig)
-            // for every Play Store upload.
-            signingConfig = if (hasReleaseKeystore) {
-                signingConfigs.getByName("release")
-            } else {
-                signingConfigs.getByName("debug")
-            }
+            // Bump versionCode/versionName (defaultConfig) for every Play Store upload.
+            // Without a keystore this stays null and the task-graph guard below stops the build,
+            // rather than silently emitting a debug-signed artifact that looks like a release.
+            signingConfig = if (hasReleaseKeystore) signingConfigs.getByName("release") else null
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
@@ -217,5 +213,20 @@ gradle.taskGraph.whenReady {
                 "(local.properties or gradle properties). Without them the app falls back to " +
                 "LocalAuthService, which accepts any password.",
         )
+    }
+    // A debug-signed AAB is rejected by Play, but a debug-signed APK installs and runs, so an
+    // unsigned-for-release build can be smoke-tested and mistaken for the real thing. Fail loudly.
+    if (buildingRelease) {
+        val storePath = keystoreProperties.getProperty("storeFile")
+        if (!hasReleaseKeystore || storePath.isNullOrBlank()) {
+            throw GradleException(
+                "Release build requires keystore.properties (git-ignored) with storeFile, " +
+                    "storePassword, keyAlias and keyPassword. Refusing to fall back to the debug " +
+                    "signing key.",
+            )
+        }
+        if (!file(storePath).exists()) {
+            throw GradleException("Release keystore not found at $storePath (from keystore.properties).")
+        }
     }
 }
