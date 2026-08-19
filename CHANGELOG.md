@@ -44,8 +44,11 @@ live state `586dfb2`, Insights days-on-goal `5736e3f`, pH axis marks `7fc2970`, 
    and on-device smoke test.
 2. **Console review:** the corrected Health apps declaration and Data Safety form are saved as
    drafts, not sent; the Play URL-validator 429 warning on the deletion/privacy routes is open.
-3. **Before any 1.4.0 (14) build:** apply + REST-verify the `user_supplements` /
-   `genesyx_products` Supabase migration (REST probe 29 Jul: tables don't exist, PGRST205).
+3. **Before any 1.4.0 (14) build:** REST-verify the `user_supplements` / `genesyx_products`
+   backend. The `20260813_android_supplements_backend.sql` migration was applied to production
+   on 13 Aug (superseding the 29 Jul "tables don't exist" probe); what remains is the
+   verification pass in `docs/PROMPT_SUPABASE_VERIFY_2026-08-19.md` (schema state, post-pH+
+   supplements deletion re-proof, backstop SQL recovery).
 4. **Backend/legal:** Supabase DPA check; re-prove live end-to-end account deletion now that pH
    syncs (the old S6 proof predates pH sync); `genesyx.co.uk` privacy wording (vaginal pH +
    waitlist email).
