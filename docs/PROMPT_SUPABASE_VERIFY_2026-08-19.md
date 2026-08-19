@@ -83,6 +83,21 @@ Then the live deletion re-proof (this is the S6 re-check the release is gated on
 5. As service_role, count rows for that user_id in `user_supplements`, `ph_readings`,
    `daily_logs`, `cycle_settings`, `profiles`, and `auth.users`: **all must be 0**, and
    `genesyx_products` must still have all its rows.
+
+   > Steps 1–4 were run live on **19 Aug 2026** (throwaway user
+   > `1605cedb-314a-4479-9730-e4b82a22b52a`; RPC returned 204, JWT now `user_not_found`) —
+   > see `DATA_SAFETY_AND_PRIVACY_v1.1.md`. Only this service-role count remains; paste into
+   > the dashboard SQL editor:
+   >
+   > ```sql
+   > SELECT 'user_supplements' t, count(*) FROM public.user_supplements WHERE user_id = '1605cedb-314a-4479-9730-e4b82a22b52a'
+   > UNION ALL SELECT 'ph_readings', count(*) FROM public.ph_readings WHERE user_id = '1605cedb-314a-4479-9730-e4b82a22b52a'
+   > UNION ALL SELECT 'daily_logs', count(*) FROM public.daily_logs WHERE user_id = '1605cedb-314a-4479-9730-e4b82a22b52a'
+   > UNION ALL SELECT 'cycle_settings', count(*) FROM public.cycle_settings WHERE user_id = '1605cedb-314a-4479-9730-e4b82a22b52a'
+   > UNION ALL SELECT 'profiles', count(*) FROM public.profiles WHERE id = '1605cedb-314a-4479-9730-e4b82a22b52a'
+   > UNION ALL SELECT 'auth.users', count(*) FROM auth.users WHERE id = '1605cedb-314a-4479-9730-e4b82a22b52a';
+   > -- Expect: six rows, all 0.
+   > ```
 6. Record the result with date + counts in `docs/DATA_SAFETY_AND_PRIVACY_v1.1.md` (or the runbook)
    — this proof is what the Play Data Safety form relies on.
 
