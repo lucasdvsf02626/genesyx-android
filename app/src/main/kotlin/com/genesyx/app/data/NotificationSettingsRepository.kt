@@ -37,6 +37,8 @@ class NotificationSettingsRepository @Inject constructor(
         val WEEKLY_TIME = intPreferencesKey("notif_weekly_time_min")
         val WEEKLY_DAY = stringPreferencesKey("notif_weekly_day")
         val HYDRATION_TIME = intPreferencesKey("notif_hydration_time_min")
+        val INTIMACY_TIME = intPreferencesKey("notif_intimacy_time_min")
+        val INTIMACY_DAYS = stringSetPreferencesKey("notif_intimacy_days")
         val QUIET_ENABLED = booleanPreferencesKey("notif_quiet_enabled")
         val QUIET_START = intPreferencesKey("notif_quiet_start_min")
         val QUIET_END = intPreferencesKey("notif_quiet_end_min")
@@ -60,6 +62,8 @@ class NotificationSettingsRepository @Inject constructor(
             weeklyInsightsTime = p[Keys.WEEKLY_TIME]?.let(::time) ?: defaults.weeklyInsightsTime,
             weeklyInsightsDay = p[Keys.WEEKLY_DAY]?.let(::dayOrNull) ?: defaults.weeklyInsightsDay,
             hydrationTime = p[Keys.HYDRATION_TIME]?.let(::time) ?: defaults.hydrationTime,
+            intimacyTime = p[Keys.INTIMACY_TIME]?.let(::time) ?: defaults.intimacyTime,
+            intimacyDays = p[Keys.INTIMACY_DAYS]?.mapNotNull(::dayOrNull)?.toSet() ?: defaults.intimacyDays,
             quietHoursEnabled = p[Keys.QUIET_ENABLED] ?: defaults.quietHoursEnabled,
             quietHoursStart = p[Keys.QUIET_START]?.let(::time) ?: defaults.quietHoursStart,
             quietHoursEnd = p[Keys.QUIET_END]?.let(::time) ?: defaults.quietHoursEnd,
@@ -90,6 +94,8 @@ class NotificationSettingsRepository @Inject constructor(
     suspend fun setWeeklyTime(time: LocalTime) = dataStore.edit { it[Keys.WEEKLY_TIME] = minutes(time) }.let {}
     suspend fun setWeeklyDay(day: DayOfWeek) = dataStore.edit { it[Keys.WEEKLY_DAY] = day.name }.let {}
     suspend fun setHydrationTime(time: LocalTime) = dataStore.edit { it[Keys.HYDRATION_TIME] = minutes(time) }.let {}
+    suspend fun setIntimacyTime(time: LocalTime) = dataStore.edit { it[Keys.INTIMACY_TIME] = minutes(time) }.let {}
+    suspend fun setIntimacyDays(days: Set<DayOfWeek>) = dataStore.edit { it[Keys.INTIMACY_DAYS] = days.map { d -> d.name }.toSet() }.let {}
 
     suspend fun setQuietHours(enabled: Boolean, start: LocalTime, end: LocalTime) = dataStore.edit {
         it[Keys.QUIET_ENABLED] = enabled

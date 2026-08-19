@@ -45,5 +45,11 @@ object ReminderContent {
             title = "New this week",
             body = "A new short read is ready in Learn, whenever suits.",
         )
+        // Names nothing. This is the one reminder that can surface on a lock screen in front of
+        // someone else, so the words stay true but empty — she knows what she set; no one else does.
+        ReminderKind.INTIMACY -> Copy(
+            title = "A private reminder",
+            body = "The reminder you set. Open when it suits you.",
+        )
     }
 }

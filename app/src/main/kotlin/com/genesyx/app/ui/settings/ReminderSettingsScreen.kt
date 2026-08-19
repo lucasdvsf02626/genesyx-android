@@ -211,6 +211,39 @@ fun ReminderSettingsScreen(
                 )
             }
 
+            SectionHeader("Private")
+            SettingsCard {
+                ReminderRow(
+                    "Intimacy reminder",
+                    "A private nudge, on the days and time you choose",
+                    checked = settings.isEnabled(ReminderKind.INTIMACY),
+                    onCheckedChange = { onToggle(ReminderKind.INTIMACY, it) },
+                )
+                AnimatedVisibility(settings.isEnabled(ReminderKind.INTIMACY)) {
+                    Column {
+                        DetailDivider()
+                        TimeRow("Reminder time", settings.intimacyTime) {
+                            timePickerFor = TimeTarget.INTIMACY
+                        }
+                        DetailDivider()
+                        DayChips(settings.intimacyDays) { day ->
+                            val next = settings.intimacyDays.toMutableSet().apply {
+                                if (day in this) remove(day) else add(day)
+                            }
+                            viewModel.setIntimacyDays(next)
+                        }
+                        DetailDivider()
+                        Text(
+                            "The notification doesn't say what it's for, and its contents stay off " +
+                                "your lock screen.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = colors.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                        )
+                    }
+                }
+            }
+
             SectionHeader("Nutrition & wellness")
             SettingsCard {
                 ReminderRow(
@@ -311,6 +344,7 @@ fun ReminderSettingsScreen(
     timePickerFor?.let { target ->
         val initial = when (target) {
             TimeTarget.DAILY -> settings.dailyLogTime
+            TimeTarget.INTIMACY -> settings.intimacyTime
             TimeTarget.HYDRATION -> settings.hydrationTime
             TimeTarget.WEEKLY -> settings.weeklyInsightsTime
             TimeTarget.QUIET_START -> settings.quietHoursStart
@@ -321,6 +355,7 @@ fun ReminderSettingsScreen(
             onConfirm = { picked ->
                 when (target) {
                     TimeTarget.DAILY -> viewModel.setDailyTime(picked)
+                    TimeTarget.INTIMACY -> viewModel.setIntimacyTime(picked)
                     TimeTarget.HYDRATION -> viewModel.setHydrationTime(picked)
                     TimeTarget.WEEKLY -> viewModel.setWeeklyTime(picked)
                     TimeTarget.QUIET_START -> viewModel.setQuietHours(true, picked, settings.quietHoursEnd)
@@ -333,7 +368,7 @@ fun ReminderSettingsScreen(
     }
 }
 
-private enum class TimeTarget { DAILY, HYDRATION, WEEKLY, QUIET_START, QUIET_END }
+private enum class TimeTarget { DAILY, INTIMACY, HYDRATION, WEEKLY, QUIET_START, QUIET_END }
 
 @Composable
 private fun SectionHeader(text: String) {

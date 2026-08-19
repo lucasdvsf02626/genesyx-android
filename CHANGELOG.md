@@ -8,6 +8,64 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ## [Unreleased] — Single-source-of-truth bug batch (28 Jul device walkthrough)
 
+### Added (19 Aug 2026) — Intimacy reminder (opt-in, schedule-driven, zero backend)
+- **New `ReminderKind.INTIMACY`**, riding the existing WorkManager reminder chain — no new
+  framework, no new channel, no backend. She picks day(s) and a time (default 20:00, every day);
+  it is **deliberately absent from `DEFAULT_ENABLED`**, so nobody is ever reminded about their sex
+  life without asking. Files: `ReminderKind.kt`, `ReminderContent.kt`, `ReminderPolicy.kt`
+  (nextOccurrence + inScheduledWindow + kindGate), `ReminderScheduler.kt` (`SCHEDULABLE`),
+  `NotificationSettings.kt`, `NotificationSettingsRepository.kt` (two new DataStore keys),
+  `ReminderSettingsViewModel.kt`, `ReminderSettingsScreen.kt` (new "Private" section).
+- **Schedule-driven on purpose, not cycle-driven.** `FERTILE_WINDOW` already speaks for the
+  predicted window; a second cycle-derived nudge would double up on it and drag the copy toward a
+  fertility claim. `kindGate` for INTIMACY reads nothing from the cycle or the log — pinned by
+  `intimacy reads nothing from the cycle or the log`.
+- **Privacy is enforced in three places, not just the copy.** The words name nothing ("A private
+  reminder" / "The reminder you set. Open when it suits you."); the notification posts
+  `VISIBILITY_PRIVATE` so its contents stay off the lock screen; and it reuses the generic
+  **Tracking** channel, so Android's own notification settings never display a channel named after
+  it. New `ReminderContentTest` fails the build if the copy ever leaks "sex", "intima", "fertile",
+  "ovulat", "conceiv", "partner", "period" or "cycle".
+- **Fixed a pre-existing ANR hazard while adding the second user-controlled day set.**
+  `ReminderPolicy.nextAt` looped forever on an empty `allowedDays`, on the caller's thread — now
+  falls back to every day (`allowedDays.ifEmpty { ALL_DAYS }`), and `setIntimacyDays` refuses to
+  clear the last day at the ViewModel. **Still open:** `setDailyDays` has no such guard, so
+  deselecting all seven daily-log chips silently means "every day" rather than "off". Left alone
+  deliberately (out of scope); worth a follow-up.
+- Suite **483 passing, 0 failures**; `:app:compileReleaseKotlin` green.
+
+### Verified (19 Aug 2026) — Intimacy in Track and Insights was already shipped
+- The parity brief assumed both were missing. Neither is. Track already renders intimacy as the
+  purple `DayMarker.ACTIVITY` dot (`DayMarkers.kt:32` → `TrackScreen.kt:500`, `MarkerIntimacy`),
+  day detail already shows "Intimacy — Logged" (`LogDaySummary.kt:49`), and Insights already
+  renders `IntimacyCard` gated on `hasData` (`InsightsScreen.kt:150`). No code was needed.
+- **The brief's "blocked by the missing Supabase field" premise is also wrong.**
+  `DailyLogDto.sexualActivity` is nullable and the shared serializer runs `encodeDefaults = false`,
+  so a null intimacy field never reaches the wire — logs without intimacy sync cleanly against a
+  server that predates the column. Only a row that actually carries one needs the migration, and
+  that row queues and retries like any other failed push. `DailyLogDtoTest` pins all three cases.
+  Nothing fakes cross-device persistence.
+- **Two facts still unresolved:** whether `daily_logs.sexual_activity` is live in production (REST
+  probe outstanding), and that the iOS migration declares it `not null default false` while this
+  repo's `docs/schema.sql` documents it nullable. One of the two is wrong; they must agree before
+  the code-14 migration batch is applied.
+
+### Verified (19 Aug 2026) — Symptom patterns walkthrough, iOS doc fix pushed
+- **Insights "Symptom patterns" traced end to end and confirmed working.** Entry is the Log's eight
+  preset chips plus free text (`LogScreen.kt`); `SymptomPatternLogic.compute` is pure over
+  `logsByDate`; `InsightsViewModel.symptomInsights` is a `StateFlow` off `dailyLogRepository.logByDate`,
+  so the card is live. Behaviour worth restating: the 28-day grid runs oldest→newest with today in
+  the bottom-right; the top symptom is counted in **days**, grouped case-insensitively and shown
+  under its alphabetically-first spelling; and below `MIN_DAYS_FOR_PATTERN = 7` symptom days
+  **inside the window** the card names no pattern. Qualification and display use the same 28 days
+  on purpose. `SymptomPatternLogicTest`: **10 tests, 0 failures**.
+- **iOS repo (`genesyx_apple`) pushed and one doc bug fixed** (`0381449`): `docs/FEATURES.md` said
+  the vaginal pH scale ran 3.5–7.0; `PhStatus.swift` pins `min = 3.8` and records it as
+  client-signed-off. The document was wrong, not the code — this now matches Android's floor.
+- **Noted for the code-14 migration work:** the authoritative table definitions live in this repo's
+  `docs/schema.sql`. The iOS repo carries ALTER migrations only, so it is a backstop for deltas,
+  not for base schema.
+
 ### Added (19 Aug 2026) — Last three iOS parity gaps closed (per the 19 Aug audit)
 - **Committed the dirty tree first** (`283ec5b`): the ~59 uncommitted files sitting on `edd8f2d`
   (medical sources, free guide, Learn source map, debug source set, contract tests, docs, iOS

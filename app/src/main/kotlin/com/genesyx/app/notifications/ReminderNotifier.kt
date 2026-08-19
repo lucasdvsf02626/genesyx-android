@@ -117,6 +117,15 @@ class ReminderNotifier @Inject constructor(
             .setStyle(NotificationCompat.BigTextStyle().bigText(copy.body))
             .setContentIntent(pending)
             .setAutoCancel(true)
+            // The intimacy nudge is the one that can appear on a lock screen someone else is
+            // looking at. Its words already name nothing; this keeps them off the lock screen too.
+            .setVisibility(
+                if (kind == ReminderKind.INTIMACY) {
+                    NotificationCompat.VISIBILITY_PRIVATE
+                } else {
+                    NotificationCompat.VISIBILITY_PUBLIC
+                },
+            )
             .build()
 
         NotificationManagerCompat.from(context).notify(kind.requestCode, notification)

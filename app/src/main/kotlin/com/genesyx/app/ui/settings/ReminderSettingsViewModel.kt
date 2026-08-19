@@ -44,6 +44,12 @@ class ReminderSettingsViewModel @Inject constructor(
     fun setWeeklyTime(time: LocalTime) = edit { repository.setWeeklyTime(time) }
     fun setWeeklyDay(day: DayOfWeek) = edit { repository.setWeeklyDay(day) }
     fun setHydrationTime(time: LocalTime) = edit { repository.setHydrationTime(time) }
+    fun setIntimacyTime(time: LocalTime) = edit { repository.setIntimacyTime(time) }
+
+    /** Ignores a request to clear the last day — a reminder with no days can never fire. */
+    fun setIntimacyDays(days: Set<DayOfWeek>) = edit {
+        if (days.isNotEmpty()) repository.setIntimacyDays(days)
+    }
     fun setQuietHours(enabled: Boolean, start: LocalTime, end: LocalTime) =
         edit { repository.setQuietHours(enabled, start, end) }
 

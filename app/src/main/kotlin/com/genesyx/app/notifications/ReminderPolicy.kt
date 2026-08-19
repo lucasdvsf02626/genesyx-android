@@ -65,6 +65,8 @@ object ReminderPolicy {
         // Same daily-check shape as FERTILE_WINDOW: the reveal day depends on the user's first
         // open, so the gate decides, not the schedule.
         ReminderKind.NEW_ARTICLE -> nextAt(now, NEW_ARTICLE_TIME, ALL_DAYS)
+        // Her own schedule — same shape as DAILY_LOG, and pointedly not derived from the cycle.
+        ReminderKind.INTIMACY -> nextAt(now, settings.intimacyTime, settings.intimacyDays)
         // Phase-transition scheduling is reserved for a later version; never schedule it here.
         ReminderKind.NUTRITION -> nextAt(now, settings.hydrationTime, ALL_DAYS)
     }
@@ -119,6 +121,7 @@ object ReminderPolicy {
         when (kind) {
             ReminderKind.DAILY_LOG -> now.dayOfWeek in settings.dailyLogDays
             ReminderKind.WEEKLY_INSIGHTS -> now.dayOfWeek == settings.weeklyInsightsDay
+            ReminderKind.INTIMACY -> now.dayOfWeek in settings.intimacyDays
             else -> true
         }
 
@@ -154,6 +157,10 @@ object ReminderPolicy {
 
         ReminderKind.HYDRATION -> true
 
+        // No extra condition on purpose. She asked for it on these days at this time; the app does
+        // not second-guess that by reading her cycle, her logs, or anything else.
+        ReminderKind.INTIMACY -> true
+
         // Fires at most once per cycle by construction: the daily check only passes on the
         // window's first day. Wording stays "predicted" end to end — this is arithmetic, not fact.
         ReminderKind.FERTILE_WINDOW -> ctx.hasCycleSettings && ctx.fertileWindowStartsToday
@@ -164,9 +171,13 @@ object ReminderPolicy {
     }
 
     private fun nextAt(now: ZonedDateTime, time: LocalTime, allowedDays: Set<java.time.DayOfWeek>): ZonedDateTime {
+        // An empty set would spin this loop forever — and it runs on the caller's thread, so that is
+        // an ANR, not a missed reminder. The day-chip UIs each refuse to clear the last day, so this
+        // is unreachable from the app; it guards a corrupt or hand-edited DataStore set.
+        val days = allowedDays.ifEmpty { ALL_DAYS }
         var candidate = now.toLocalDate().atTime(time).atZone(now.zone)
         if (!candidate.isAfter(now)) candidate = candidate.plusDays(1)
-        while (candidate.dayOfWeek !in allowedDays) candidate = candidate.plusDays(1)
+        while (candidate.dayOfWeek !in days) candidate = candidate.plusDays(1)
         return candidate
     }
 

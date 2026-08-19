@@ -255,4 +255,63 @@ class ReminderPolicyTest {
         val next = ReminderPolicy.nextOccurrence(ReminderKind.NEW_ARTICLE, settings, now)
         assertEquals(at(2026, 6, 16, 10, 0), next)
     }
+
+    // ── Intimacy ──────────────────────────────────────────────────────────────
+
+    private val intimate = settings.copy(enabledKinds = settings.enabledKinds + ReminderKind.INTIMACY)
+
+    @Test
+    fun `intimacy is off unless she turns it on`() {
+        // The one reminder nobody should ever receive without asking for it.
+        val now = at(2026, 6, 15, 20, 0)
+        assertFalse(ReminderPolicy.shouldPost(ReminderKind.INTIMACY, now, settings, ctx()))
+    }
+
+    @Test
+    fun `intimacy fires at her chosen time on her chosen days`() {
+        // Mon 15 Jun 2026, 19:00. Set for Wed/Sat at 22:15 → next is Wed the 17th.
+        val chosen = intimate.copy(
+            intimacyTime = LocalTime.of(22, 15),
+            intimacyDays = setOf(DayOfWeek.WEDNESDAY, DayOfWeek.SATURDAY),
+        )
+        val next = ReminderPolicy.nextOccurrence(ReminderKind.INTIMACY, chosen, at(2026, 6, 15, 19, 0))
+        assertEquals(at(2026, 6, 17, 22, 15), next)
+    }
+
+    @Test
+    fun `intimacy does not post on a day she did not pick`() {
+        // Monday, at the right time, but she only asked for Wednesdays.
+        val wednesdays = intimate.copy(intimacyDays = setOf(DayOfWeek.WEDNESDAY))
+        val monday = at(2026, 6, 15, 20, 0)
+        assertFalse(ReminderPolicy.shouldPost(ReminderKind.INTIMACY, monday, wednesdays, ctx()))
+        assertTrue(ReminderPolicy.shouldPost(ReminderKind.INTIMACY, at(2026, 6, 17, 20, 0), wednesdays, ctx()))
+    }
+
+    @Test
+    fun `intimacy reads nothing from the cycle or the log`() {
+        // No cycle settings, no logs, nothing logged today — it still posts, because she asked.
+        val now = at(2026, 6, 15, 20, 0)
+        val blank = ctx(cycle = false, logs7 = 0, loggedToday = true, activeUser = false)
+        assertTrue(ReminderPolicy.shouldPost(ReminderKind.INTIMACY, now, intimate, blank))
+    }
+
+    @Test
+    fun `intimacy obeys quiet hours`() {
+        val late = intimate.copy(
+            intimacyTime = LocalTime.of(23, 30),
+            quietHoursEnabled = true,
+            quietHoursStart = LocalTime.of(22, 0),
+            quietHoursEnd = LocalTime.of(7, 0),
+        )
+        assertFalse(ReminderPolicy.shouldPost(ReminderKind.INTIMACY, at(2026, 6, 15, 23, 30), late, ctx()))
+    }
+
+    @Test
+    fun `an empty day set falls back to every day instead of looping forever`() {
+        // Unreachable from the UI (both day pickers refuse to clear the last day); this guards a
+        // corrupt DataStore set, where the old code span the scheduler thread into an ANR.
+        val corrupt = intimate.copy(intimacyDays = emptySet())
+        val next = ReminderPolicy.nextOccurrence(ReminderKind.INTIMACY, corrupt, at(2026, 6, 15, 19, 0))
+        assertEquals(at(2026, 6, 15, 20, 0), next)
+    }
 }

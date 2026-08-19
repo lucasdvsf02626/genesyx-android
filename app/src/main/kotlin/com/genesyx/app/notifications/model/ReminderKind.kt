@@ -39,6 +39,16 @@ enum class ReminderKind(
      * with `genesyx://learn/article/{slug}` when a piece actually released today.
      */
     NEW_ARTICLE(Channels.INSIGHTS, "genesyx://learn", 8),
+
+    /**
+     * Opt-in: a private nudge on the days and at the time she picks. Deliberately schedule-driven
+     * rather than cycle-driven — [FERTILE_WINDOW] already speaks for the predicted window, so a
+     * second cycle-derived nudge would double up on it and push the copy toward a claim.
+     *
+     * Its notification is posted `VISIBILITY_PRIVATE` (see `ReminderNotifier.post`) and its words
+     * name nothing, because this one lands on a lock screen other people can see.
+     */
+    INTIMACY(Channels.TRACKING, "genesyx://log", 9),
     ;
 
     /** Unique WorkManager work name, so each kind's self-rescheduling chain is independent. */

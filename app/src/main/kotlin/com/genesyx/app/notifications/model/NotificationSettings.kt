@@ -24,6 +24,10 @@ data class NotificationSettings(
 
     val hydrationTime: LocalTime = LocalTime.of(11, 0),
 
+    /** Her schedule, not the cycle's. Evening default; every day until she narrows it. */
+    val intimacyTime: LocalTime = LocalTime.of(20, 0),
+    val intimacyDays: Set<DayOfWeek> = DayOfWeek.entries.toSet(),
+
     val quietHoursEnabled: Boolean = true,
     val quietHoursStart: LocalTime = LocalTime.of(22, 0),
     val quietHoursEnd: LocalTime = LocalTime.of(7, 0),
@@ -47,7 +51,8 @@ data class NotificationSettings(
     companion object {
         /** Reminders on by default the first time she grants permission. Wellness nudges stay opt-in.
          *  FERTILE_WINDOW is default-on for fresh grants — it is the core tracking signal — but a
-         *  user with a saved kind set keeps it off until she opts in from the settings screen. */
+         *  user with a saved kind set keeps it off until she opts in from the settings screen.
+         *  INTIMACY is deliberately absent: nobody gets a reminder about their sex life by default. */
         val DEFAULT_ENABLED: Set<ReminderKind> = setOf(
             ReminderKind.DAILY_LOG,
             ReminderKind.MISSED_LOG,

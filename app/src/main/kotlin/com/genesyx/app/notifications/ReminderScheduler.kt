@@ -72,6 +72,7 @@ class WorkManagerReminderScheduler @Inject constructor(
             ReminderKind.REENGAGEMENT,
             ReminderKind.FERTILE_WINDOW,
             ReminderKind.NEW_ARTICLE,
+            ReminderKind.INTIMACY,
         )
     }
 }
