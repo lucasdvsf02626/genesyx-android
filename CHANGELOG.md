@@ -8,6 +8,27 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ## [Unreleased] — Single-source-of-truth bug batch (28 Jul device walkthrough)
 
+### Verified (19 Aug 2026) — `daily_logs.sexual_activity` is LIVE; code-14 backend gate CLOSED
+- **Proven over REST with the anon key, not inferred from the catalogue.** A single probe was
+  inconclusive — anon has no SELECT grant on `daily_logs`, so `select=sexual_activity` returns
+  `42501 permission denied for table` (401) regardless of whether the column exists. A **differential
+  probe** settles it: a deliberately bogus column returns `42703 column ... does not exist` (400),
+  because PostgREST resolves the column name *before* Postgres applies the table grant. Since
+  `sexual_activity` reached the grant check instead of failing name resolution, the column exists
+  **and is in PostgREST's schema cache** — which is the exact skew a catalogue check cannot rule out.
+- **Corrected two stale landmines that nearly caused harm.** CLAUDE.md still claimed the
+  `user_supplements`/`genesyx_products` tables did not exist (PGRST205, 29 Jul) and that code-14
+  must not ship without them — both superseded on 13/19 Aug. Acting on it, this session recommended
+  running `docs/migrations/2026-07-29_user_supplements.sql`, which the 19 Aug verify doc marks
+  **"⛔ Do NOT run — superseded"** and harmful. It was never executed. CLAUDE.md now says so loudly.
+- **`docs/schema.sql:85` fixed.** It documented `sexual_activity` as nullable and "NOT YET IN
+  PRODUCTION". Production is `NOT NULL DEFAULT false`, deliberately: the log sheet is a single
+  toggle, so "she said no" and "she was never asked" have nowhere to diverge — the client omits the
+  field when unset (`encodeDefaults = false`) and the server fills `false`. Not a schema conflict
+  with iOS, just a wrong comment that made two people derive the same false alarm.
+- **A2 stays closed.** One `FOR ALL` owner policy on `user_supplements` is the project convention;
+  the four-policy expectation is the obsolete 29 Jul draft.
+
 ### Added (19 Aug 2026) — Intimacy reminder (opt-in, schedule-driven, zero backend)
 - **New `ReminderKind.INTIMACY`**, riding the existing WorkManager reminder chain — no new
   framework, no new channel, no backend. She picks day(s) and a time (default 20:00, every day);

@@ -82,7 +82,7 @@ CREATE TABLE public.daily_logs (
   water_ml       integer     NOT NULL DEFAULT 0,
   supplements    text[]      NOT NULL DEFAULT '{}',
   notes          text,
-  sexual_activity boolean,                          -- NOT YET IN PRODUCTION: apply with the pending pre-code-14 batch (user_supplements/genesyx_products) BEFORE any client that writes it ships. Null = not recorded. Private per-user field (RLS below); never exposed to partner features.
+  sexual_activity boolean     NOT NULL DEFAULT false, -- LIVE in production (REST-probed 19 Aug 2026). NOT NULL on purpose: the log sheet is a single toggle, so "she said no" and "she was never asked" have nowhere to diverge — the client omits the field when unset and the server fills false. See the iOS repo's 20260810_daily_logs_sexual_activity.sql for the full rationale. Private per-user field (RLS below); never exposed to partner features — any policy referencing partner_id on this table is a privacy defect.
   created_at     timestamptz NOT NULL DEFAULT now(),
   updated_at     timestamptz NOT NULL DEFAULT now(),
   UNIQUE (user_id, date)

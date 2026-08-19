@@ -14,13 +14,15 @@ Read this first. Honest state, verified against the tree on **2026-07-30**.
 > 2. **pH is VAGINAL pH now, not urine pH.** Two-band model (Healthy 3.8–4.5 / Elevated > 4.5),
 >    pre-migration readings shown as "urine (legacy)". Ranges are **client-approved (28 Jul
 >    2026)**: input 3.8–7.0, step 0.1, default 4.2 — no longer provisional.
-> 3. **`main` is at versionCode 13, versionName "1.3.2"**, targeting Android 16 (SDK 36), Room
->    **v6** — and it is AHEAD of the archived code-13 binaries: manual supplement entry + the
->    Genesyx range (`aecac1a`, Room v5→v6) is source-only, targets the NEXT versionCode (14), and
->    **must not ship** before the `user_supplements`/`genesyx_products` Supabase migration is
->    applied (REST-probed 29 Jul: tables don't exist yet, PGRST205). The archived `1.2.1-code10`,
+> 3. **`main` is at versionCode 14, versionName "1.4.0"**, targeting Android 16 (SDK 36), Room
+>    **v9** (migrations 6→7→8→9 each have an instrumented test). The archived `1.2.1-code10`,
 >    `1.3.0-code11` and `1.3.1-code12` builds are all **superseded — never upload them** (code12's
 >    waitlist flow is broken — see CHANGELOG 1.3.2).
+>    **The old "code-14 is blocked on a Supabase migration" warning is DEAD — do not act on it.**
+>    `user_supplements` and `genesyx_products` went live 13 Aug and were REST-verified 19 Aug;
+>    `daily_logs.sexual_activity` was REST-verified live 19 Aug. **Never run
+>    `docs/migrations/2026-07-29_user_supplements.sql`** — it is superseded and harmful, per
+>    `docs/PROMPT_SUPABASE_VERIFY_2026-08-19.md`.
 > 4. **Play does NOT serve 1.3.2.** Internal testing = **1.3.0 (11)** (rolled out 27 Jul, Health
 >    apps declaration re-submitted same day); Production = **1.2.0 (9)**. The code-13 upload was
 >    started 28 Jul but never completed; the corrected Health apps + Data Safety console drafts
