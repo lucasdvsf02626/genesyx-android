@@ -29,6 +29,21 @@ class SessionRepository @Inject constructor(
     companion object {
         /** Row-scoping id used before a real account exists, so guest data stays isolated & migratable. */
         const val LOCAL_USER_ID = "local-user"
+
+        /**
+         * The part of an address before the @, made presentable. The Home greeting is the first
+         * line on the screen, so a raw localpart there does not read as a placeholder — it reads
+         * as her name spelled wrong: "lucas.valenca" where she expects "Lucas Valença".
+         *
+         * Only the first character of each word is touched, so accented and non-Latin spellings
+         * come through unchanged.
+         */
+        fun nameFromAddress(email: String): String {
+            val localpart = email.substringBefore("@")
+            val words = localpart.split('.', '-', '_', '+').filter { it.isNotEmpty() }
+            return if (words.isEmpty()) localpart
+            else words.joinToString(" ") { it.replaceFirstChar(Char::uppercaseChar) }
+        }
     }
 
     val isSignedIn: StateFlow<Boolean> =
@@ -54,7 +69,13 @@ class SessionRepository @Inject constructor(
             val id = userId?.takeIf { it.isNotBlank() }
                 ?: this@SessionRepository.userId.value
                 ?: UUID.randomUUID().toString()
-            val display = name?.takeIf { it.isNotBlank() } ?: email.substringBefore("@")
+            // A name that is just the localpart is not a name she gave us — both auth services
+            // manufacture one when the provider withheld it — so it goes through the same
+            // presentable transform as an absent name rather than reaching Home raw.
+            val localpart = email.substringBefore("@")
+            val display = name
+                ?.takeIf { it.isNotBlank() && !it.equals(localpart, ignoreCase = true) }
+                ?: nameFromAddress(email)
             store.setSession(userId = id, email = email, displayName = display)
         }
     }

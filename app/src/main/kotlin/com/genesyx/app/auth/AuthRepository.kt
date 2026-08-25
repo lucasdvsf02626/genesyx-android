@@ -50,9 +50,15 @@ class AuthRepository @Inject constructor(
     suspend fun signInWithPassword(email: String, password: String): DataResult<Unit> =
         persist(authService.signInWithPassword(email, password), "sign-in")
 
-    /** Account creation through the remote provider; persists the session on success. */
+    /**
+     * Account creation through the remote provider; persists the session on success.
+     *
+     * [name] is carried past the provider rather than read back off the returned session:
+     * SupabaseAuthService builds its `AuthUser` from the address alone, so the name she typed on
+     * the sign-up form was being dropped somewhere between this call and the greeting on Home.
+     */
     suspend fun signUp(email: String, password: String, name: String?): DataResult<Unit> =
-        persist(authService.signUp(email, password, name), "sign-up")
+        persist(authService.signUp(email, password, name), "sign-up", typedName = name)
 
     /** Google sign-in via a Google ID token; persists the session on success. */
     suspend fun signInWithGoogle(idToken: String): DataResult<Unit> =
@@ -138,11 +144,16 @@ class AuthRepository @Inject constructor(
             DataResult.Loading -> DataResult.Loading
         }
 
-    private suspend fun persist(result: DataResult<AuthSession>, op: String): DataResult<Unit> =
+    private suspend fun persist(
+        result: DataResult<AuthSession>,
+        op: String,
+        typedName: String? = null,
+    ): DataResult<Unit> =
         when (result) {
             is DataResult.Success -> {
                 val user = result.data.user
-                session.signIn(user.email ?: "", user.displayName, userId = user.id)
+                val name = typedName?.takeIf { it.isNotBlank() } ?: user.displayName
+                session.signIn(user.email ?: "", name, userId = user.id)
                 // Sync in the background so sign-in returns immediately and isn't blocked (or broken)
                 // by a slow or failing per-table refresh. Room drives the UI reactively as each lands.
                 appScope.launch {

@@ -133,6 +133,27 @@ class AuthRepositoryTest {
     }
 
     @Test
+    fun `signUp persists the name she typed, not the one the provider invented`() = runTest {
+        // SupabaseAuthService builds its AuthUser from the address alone, so the displayName it
+        // returns is the localpart. Trusting it filed her as "lucianne.valenca" and Home greeted
+        // her by that — her own name, spelled wrong, on the first line of the app.
+        val user = AuthUser(
+            id = "u1",
+            email = "lucianne.valenca@example.com",
+            displayName = "lucianne.valenca",
+            emailVerified = true,
+        )
+        coEvery { authService.signUp(any(), any(), any()) } returns
+            DataResult.Success(AuthSession(user, accessToken = "tok"))
+        val appScope = CoroutineScope(UnconfinedTestDispatcher(testScheduler))
+
+        repo(appScope).signUp("lucianne.valenca@example.com", "pw", "Lucianne Valença")
+
+        verify { session.signIn("lucianne.valenca@example.com", "Lucianne Valença", userId = "u1") }
+        appScope.cancel()
+    }
+
+    @Test
     fun `signInWithGoogle persists the session on success`() = runTest {
         val user = AuthUser(id = "g-uid", email = "g@b.co", displayName = "g", emailVerified = true)
         coEvery { authService.signInWithIdToken("tok-123") } returns
