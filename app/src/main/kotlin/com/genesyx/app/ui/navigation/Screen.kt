@@ -14,7 +14,12 @@ sealed class Screen(val route: String) {
     // Main tabs
     data object Home : Screen("home")
     data object Track : Screen("track")
-    data object Nutrition : Screen("nutrition")
+    data object Nutrition : Screen("nutrition?plan={plan}") {
+        /** Route for the Nutrition tab; pass [openPlan] to arrive with the supplement plan open. */
+        fun create(openPlan: Boolean = false) =
+            if (openPlan) "nutrition?plan=1" else "nutrition"
+        const val ARG_PLAN = "plan"
+    }
     data object Insights : Screen("insights")
     data object Profile : Screen("profile")
 

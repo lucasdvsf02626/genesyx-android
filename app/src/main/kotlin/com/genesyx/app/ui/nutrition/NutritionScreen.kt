@@ -38,6 +38,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -71,6 +72,8 @@ import com.genesyx.app.ui.theme.ElectricPink
 @Composable
 fun NutritionScreen(
     navController: NavController,
+    /** Arrive with the supplement plan already open (pH's "See your supplement plan" card). */
+    openPlan: Boolean = false,
     viewModel: NutritionViewModel = hiltViewModel(),
 ) {
     val colors = MaterialTheme.colorScheme
@@ -81,7 +84,8 @@ fun NutritionScreen(
     val glassMl by viewModel.glassMl.collectAsState()
     var expandedFood by remember { mutableStateOf<String?>(null) }
     var expandedRecipe by remember { mutableStateOf<String?>(null) }
-    var planOpen by remember { mutableStateOf(false) }
+    // Saveable so a rotation after she dismisses it doesn't re-open the plan from `openPlan`.
+    var planOpen by rememberSaveable { mutableStateOf(openPlan) }
     var goalOpen by remember { mutableStateOf(false) }
 
     com.genesyx.app.ui.components.GenesyxPage {

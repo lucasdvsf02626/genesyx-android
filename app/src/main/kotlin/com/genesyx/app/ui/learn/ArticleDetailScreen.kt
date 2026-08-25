@@ -130,7 +130,8 @@ fun ArticleDetailScreen(
                     val route = cta.route()
                     navController.navigate(route) {
                         // A CTA into a tab must reuse that tab, not stack a second copy behind us.
-                        if (Screen.bottomTabs.any { it.route == route }) {
+                        // Match on the path: a tab route may carry optional arguments (Nutrition).
+                        if (Screen.bottomTabs.any { it.route.substringBefore("?") == route.substringBefore("?") }) {
                             popUpTo(Screen.Home.route) { saveState = true }
                             restoreState = true
                         }
@@ -186,7 +187,7 @@ private fun ArticleCta.route(): String = when (type) {
     CtaType.OPEN_LOG -> Screen.Log.create()
     CtaType.OPEN_TRACK -> Screen.Track.route
     CtaType.OPEN_PH -> Screen.PhDetail.route
-    CtaType.OPEN_NUTRITION -> Screen.Nutrition.route
+    CtaType.OPEN_NUTRITION -> Screen.Nutrition.create()
     CtaType.OPEN_INSIGHTS -> Screen.Insights.route
     // Non-null by construction — ArticleCta's init block rejects OPEN_ARTICLE without a targetSlug.
     CtaType.OPEN_ARTICLE -> Screen.ArticleDetail.create(checkNotNull(targetSlug))

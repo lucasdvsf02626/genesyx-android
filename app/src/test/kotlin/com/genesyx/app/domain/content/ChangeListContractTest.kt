@@ -33,6 +33,19 @@ class ChangeListContractTest {
         assertFalse(Screen.Nutrition.route.contains("ph"))
     }
 
+    /**
+     * pH's "See your supplement plan" card. It used to land on `tracker/nutrition`, which is the
+     * nutrition *tracker*, not the plan — so the plan she asked for never appeared.
+     */
+    @Test
+    fun `pH's supplement plan card carries the plan flag into Nutrition`() {
+        assertEquals("nutrition?plan=1", Screen.Nutrition.create(openPlan = true))
+        assertEquals("nutrition", Screen.Nutrition.create())
+        // The bare tab route must stay a prefix of the pattern: the bottom bar highlights
+        // Nutrition by comparing the current destination against `Screen.Nutrition.route`.
+        assertEquals("nutrition", Screen.Nutrition.route.substringBefore("?"))
+    }
+
     @Test
     fun `1A science and shettles websites stay hidden until they are real pages`() {
         assertFalse(AppLinks.isConfiguredWebPage(AppLinks.SCIENCE_URL))

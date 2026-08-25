@@ -25,13 +25,19 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import com.genesyx.app.ui.navigation.Screen
 import com.genesyx.app.ui.theme.ElectricLavender
 
-private data class BottomNavItem(val screen: Screen, val label: String, val icon: ImageVector)
+private data class BottomNavItem(
+    val screen: Screen,
+    val label: String,
+    val icon: ImageVector,
+    /** Where the tap goes. Differs from [screen].route where the route takes arguments. */
+    val navRoute: String = screen.route,
+)
 
 private val items = listOf(
     BottomNavItem(Screen.Home, "Home", Icons.Outlined.Home),
     BottomNavItem(Screen.Track, "Track", Icons.Outlined.CalendarMonth),
     BottomNavItem(Screen.PhDetail, "pH", Icons.Outlined.Science),
-    BottomNavItem(Screen.Nutrition, "Nutrition", Icons.Outlined.Eco),
+    BottomNavItem(Screen.Nutrition, "Nutrition", Icons.Outlined.Eco, navRoute = Screen.Nutrition.create()),
     BottomNavItem(Screen.Insights, "Insights", Icons.Outlined.BarChart),
     BottomNavItem(Screen.Learn, "Learn", Icons.AutoMirrored.Outlined.MenuBook),
     BottomNavItem(Screen.Profile, "Profile", Icons.Outlined.Person),
@@ -52,7 +58,7 @@ fun GenesyxBottomNav(navController: NavController) {
                 selected = selected,
                 onClick = {
                     if (!selected) {
-                        navController.navigate(item.screen.route) {
+                        navController.navigate(item.navRoute) {
                             popUpTo(Screen.Home.route) { saveState = true }
                             launchSingleTop = true
                             restoreState = true

@@ -103,8 +103,21 @@ fun GenesyxNavGraph(
         ) { TrackScreen(navController) }
         composable(
             Screen.Nutrition.route,
+            // Optional: present when we were sent here to show the supplement plan (pH's card).
+            arguments = listOf(
+                navArgument(Screen.Nutrition.ARG_PLAN) {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                },
+            ),
             deepLinks = listOf(navDeepLink { uriPattern = "genesyx://nutrition" }),
-        ) { NutritionScreen(navController) }
+        ) { entry ->
+            NutritionScreen(
+                navController,
+                openPlan = entry.arguments?.getString(Screen.Nutrition.ARG_PLAN) != null,
+            )
+        }
         composable(
             Screen.Insights.route,
             deepLinks = listOf(navDeepLink { uriPattern = "genesyx://insights" }),
@@ -153,7 +166,15 @@ fun GenesyxNavGraph(
             deepLinks = listOf(navDeepLink { uriPattern = "genesyx://tracker/ph" }),
         ) {
             PhDetailScreen(
-                onOpenPlan = { navController.navigate(Screen.NutritionDetail.route) },
+                // "See your supplement plan" means the plan, not the Nutrition tab it lives on.
+                // No `restoreState`: restoring a saved Nutrition entry would drop the `plan`
+                // argument and land her on the tab with nothing open — the reported bug.
+                onOpenPlan = {
+                    navController.navigate(Screen.Nutrition.create(openPlan = true)) {
+                        popUpTo(Screen.Home.route) { saveState = true }
+                        launchSingleTop = true
+                    }
+                },
                 onOpenArticle = { slug -> navController.navigate(Screen.ArticleDetail.create(slug)) },
             )
         }
