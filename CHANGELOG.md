@@ -72,8 +72,7 @@ carry the same persisted owed-push flag as the display name, and push before pul
 
 ### Changed — the legacy pH marker no longer names the sample type
 
-`PhCopy.LEGACY_MARKER` is now **`"legacy reading"`**, was `"urine (legacy)"`; the one-time migration
-notice is reworded to match. Owner request, 25 Aug.
+`PhCopy.LEGACY_MARKER` is now **`"legacy reading"`**, was `"urine (legacy)"`. Owner request, 25 Aug.
 
 **Only the wording changed — the mechanism it labels is untouched, and deliberately so.** Pre-migration
 readings sit on a different scale (urine pH runs roughly 5.0–8.0; vaginal Elevated is anything above
@@ -87,6 +86,25 @@ and the Room and Supabase defaults depend on it.
 `ChangeListContractTest` was tightened from "no *urine pH* in customer copy" to **no `"urine"` at
 all**, so the wording cannot be reintroduced silently. **iOS must make the matching change** —
 `QaParityTest` pins this string as part of the cross-platform contract.
+
+### Removed — the one-time "Vaginal pH tracking" notice dialog
+
+The migration notice that interrupted the pH tab on first open is gone. Owner request, 25 Aug: it
+shipped with 1.3.0 to announce the urine → vaginal switch, and by now it lands on people who never
+logged a urine reading and have nothing to reconcile.
+
+Removed as a whole chain rather than just hidden — the `AlertDialog` and its `PhTrackerViewModel`
+members, `PhCopy.NOTICE_TITLE` / `NOTICE_BODY` / `NOTICE_DISMISS` (and their entry in
+`PhCopy.all()`, so the banned-phrase guard no longer scans copy that cannot render), the
+`ph_vaginal_notice_seen` DataStore key and its `PreferencesRepository` accessors. `PhTrackerViewModel`
+no longer takes `PreferencesRepository` at all. Three tests covering the notice went with it: 534 → 531.
+
+The dismissal flag surviving on existing devices is harmless — DataStore ignores keys nothing reads.
+
+**Note for the pH copy review:** the notice was the only screen that explained what `"legacy reading"`
+means. The marker still renders, still suppresses classification, and readings are still kept — but a
+user with pre-migration rows now has no in-app definition of the term. Worth a line in the pH detail
+screen if any of those rows are still out there.
 
 ### Not changed — products read + empty state (parity item 6)
 

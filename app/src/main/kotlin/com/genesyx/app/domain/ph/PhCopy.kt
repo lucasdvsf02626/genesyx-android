@@ -22,13 +22,6 @@ object PhCopy {
     // load-bearing, because these values are not on the vaginal scale and must never be classified.
     const val LEGACY_MARKER = "legacy reading"
 
-    // One-time notice shown after the update that switched the tracker to vaginal pH.
-    const val NOTICE_TITLE = "Vaginal pH tracking"
-    const val NOTICE_BODY =
-        "This tracker now records vaginal pH. Any readings you logged before this update are kept " +
-            "and marked 'legacy reading'. New readings are saved as vaginal pH, on a different scale."
-    const val NOTICE_DISMISS = "Got it"
-
     // Insight copy (two states). Default until there are enough recent readings.
     const val INSIGHT_DEFAULT = "Log a few more readings and we'll share gentle observations."
     const val INSIGHT_HEALTHY = "Your recent readings sit within the typical healthy range."
@@ -155,7 +148,7 @@ object PhCopy {
 
     /** Every health-framed string Genesyx authors, for the banned-phrase guard. */
     fun all(): List<String> = listOf(
-        DISCLAIMER, LEGACY_MARKER, NOTICE_TITLE, NOTICE_BODY, NOTICE_DISMISS,
+        DISCLAIMER, LEGACY_MARKER,
         INSIGHT_DEFAULT, INSIGHT_HEALTHY, INSIGHT_ELEVATED, RECOMMENDATION_ELEVATED,
         WHY_TITLE, WHY_BODY,
         FERTILITY_TITLE, FERTILITY_BODY,

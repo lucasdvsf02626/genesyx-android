@@ -9,10 +9,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -27,9 +25,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.genesyx.app.data.PhRepository
-import com.genesyx.app.data.PreferencesRepository
 import com.genesyx.app.domain.model.PhReading
-import com.genesyx.app.domain.ph.PhCopy
 import com.genesyx.app.ui.components.Eyebrow
 import com.genesyx.app.ui.components.PhLogDialog
 import com.genesyx.app.ui.components.PhReadingRow
@@ -47,11 +43,8 @@ import javax.inject.Inject
 @HiltViewModel
 class PhTrackerViewModel @Inject constructor(
     private val phRepository: PhRepository,
-    private val preferences: PreferencesRepository,
 ) : ViewModel() {
     val readings: StateFlow<List<PhReading>> = phRepository.readings
-    /** One-time "the tracker now records vaginal pH" notice — shown until dismissed once. */
-    val vaginalNoticeSeen: StateFlow<Boolean> = preferences.phVaginalNoticeSeen
 
     private val _saveState = MutableStateFlow(SaveState())
     val saveState: StateFlow<SaveState> = _saveState.asStateFlow()
@@ -68,14 +61,11 @@ class PhTrackerViewModel @Inject constructor(
     fun resetSave() { _saveState.value = SaveState() }
 
     fun delete(id: String) = phRepository.delete(id)
-    fun dismissVaginalNotice() = preferences.setPhVaginalNoticeSeen(true)
 }
 
 /**
- * Self-contained vaginal-pH card + log dialog, plus the one-time notice announcing the switch from
- * urine to vaginal pH (shown once, gated by a DataStore flag). Rendered by the pH tab, which passes
- * [showHistory] so every previous reading is listed and editable, not just the latest one on the
- * card.
+ * Self-contained vaginal-pH card + log dialog. Rendered by the pH tab, which passes [showHistory]
+ * so every previous reading is listed and editable, not just the latest one on the card.
  */
 @Composable
 fun PhTrackerSection(
@@ -84,7 +74,6 @@ fun PhTrackerSection(
     viewModel: PhTrackerViewModel = hiltViewModel(),
 ) {
     val readings by viewModel.readings.collectAsState()
-    val noticeSeen by viewModel.vaginalNoticeSeen.collectAsState()
     val save by viewModel.saveState.collectAsState()
     var showDialog by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf<PhReading?>(null) }
@@ -95,17 +84,6 @@ fun PhTrackerSection(
         viewModel.resetSave()
         editing = reading
         showDialog = true
-    }
-
-    if (!noticeSeen) {
-        AlertDialog(
-            onDismissRequest = { viewModel.dismissVaginalNotice() },
-            title = { Text(PhCopy.NOTICE_TITLE, style = MaterialTheme.typography.titleLarge) },
-            text = { Text(PhCopy.NOTICE_BODY, style = MaterialTheme.typography.bodyMedium) },
-            confirmButton = {
-                TextButton(onClick = { viewModel.dismissVaginalNotice() }) { Text(PhCopy.NOTICE_DISMISS) }
-            },
-        )
     }
 
     PhTrackerCard(

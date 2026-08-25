@@ -55,18 +55,6 @@ class GenesyxPreferencesDataStoreTest {
     }
 
     @Test
-    fun `ph vaginal notice defaults to unseen so it fires once`() = runTest {
-        assertEquals(false, newStore().phVaginalNoticeSeen.first())
-    }
-
-    @Test
-    fun `dismissing the ph vaginal notice persists so it does not re-fire`() = runTest {
-        val store = newStore()
-        store.setPhVaginalNoticeSeen(true)
-        assertEquals(true, store.phVaginalNoticeSeen.first())
-    }
-
-    @Test
     fun `quiz answers round-trip and clear`() = runTest {
         val store = newStore()
         assertEquals(emptyMap<String, String>(), store.quizAnswers.first())

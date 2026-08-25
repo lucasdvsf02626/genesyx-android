@@ -41,7 +41,6 @@ class GenesyxPreferencesDataStore @Inject constructor(
         val FOCUS = stringPreferencesKey("focus_mode")
         val ONBOARDING_COMPLETE = booleanPreferencesKey("onboarding_complete")
         val LEARN_INTRO_SEEN = booleanPreferencesKey("learn_intro_seen")
-        val PH_VAGINAL_NOTICE_SEEN = booleanPreferencesKey("ph_vaginal_notice_seen")
         val BEST_DAILY_STREAK = intPreferencesKey("best_daily_streak")
         val CELEBRATED_MILESTONES = stringSetPreferencesKey("celebrated_milestones")
         val HYDRATION_GOAL_ML = intPreferencesKey("hydration_goal_ml")
@@ -76,7 +75,6 @@ class GenesyxPreferencesDataStore @Inject constructor(
     val learnIntroSeen: Flow<Boolean> = dataStore.data.map { it[Keys.LEARN_INTRO_SEEN] ?: false }
 
     /** Whether the one-time "tracker now records vaginal pH" notice has been dismissed. */
-    val phVaginalNoticeSeen: Flow<Boolean> = dataStore.data.map { it[Keys.PH_VAGINAL_NOTICE_SEEN] ?: false }
 
     /** All-time best daily hydration streak, and the milestone ids already celebrated. */
     val bestDailyStreak: Flow<Int> = dataStore.data.map { it[Keys.BEST_DAILY_STREAK] ?: 0 }
@@ -138,7 +136,6 @@ class GenesyxPreferencesDataStore @Inject constructor(
     suspend fun setFocus(mode: FocusMode) = dataStore.edit { it[Keys.FOCUS] = mode.name }.let {}
     suspend fun setOnboardingComplete(v: Boolean) = dataStore.edit { it[Keys.ONBOARDING_COMPLETE] = v }.let {}
     suspend fun setLearnIntroSeen(v: Boolean) = dataStore.edit { it[Keys.LEARN_INTRO_SEEN] = v }.let {}
-    suspend fun setPhVaginalNoticeSeen(v: Boolean) = dataStore.edit { it[Keys.PH_VAGINAL_NOTICE_SEEN] = v }.let {}
     suspend fun setBestDailyStreak(days: Int) = dataStore.edit { it[Keys.BEST_DAILY_STREAK] = days }.let {}
     suspend fun setCelebratedMilestones(ids: Set<String>) = dataStore.edit { it[Keys.CELEBRATED_MILESTONES] = ids }.let {}
     suspend fun setHydrationGoalMl(ml: Int) = dataStore.edit { it[Keys.HYDRATION_GOAL_ML] = ml }.let {}
