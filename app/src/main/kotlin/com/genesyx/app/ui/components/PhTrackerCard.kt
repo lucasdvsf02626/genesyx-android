@@ -143,7 +143,7 @@ fun PhTrackerCard(
 private fun LatestReadingPanel(latest: PhReading) {
     val colors = MaterialTheme.colorScheme
     // Legacy urine readings are on a different scale, so we don't classify them as Healthy/Elevated —
-    // they show the neutral canonical "urine (legacy)" marker instead (lowercase, not uppercased).
+    // they show the neutral canonical "legacy reading" marker instead (lowercase, not uppercased).
     val isLegacy = latest.measurementType == PhMeasurement.URINE
     val accent = if (isLegacy) colors.onSurfaceVariant else PhStatus.classify(latest.phValue).color
     val pillLabel = if (isLegacy) PhCopy.LEGACY_MARKER else PhStatus.classify(latest.phValue).label.uppercase()

@@ -16,15 +16,17 @@ object PhCopy {
         "This tracker is for your own record and isn't medical advice. If a reading worries you, " +
             "or a pattern persists, please speak to a GP, nurse, or pharmacist."
 
-    // The one canonical marker for a pre-migration urine reading. Rendered verbatim (lowercase) on
+    // The one canonical marker for a pre-migration reading. Rendered verbatim (lowercase) on
     // every surface — card pill, log-day row, Track summary, Home nudge — so casing never diverges.
-    const val LEGACY_MARKER = "urine (legacy)"
+    // Names the reading as off-scale without naming the sample type; the distinction it carries is
+    // load-bearing, because these values are not on the vaginal scale and must never be classified.
+    const val LEGACY_MARKER = "legacy reading"
 
     // One-time notice shown after the update that switched the tracker to vaginal pH.
     const val NOTICE_TITLE = "Vaginal pH tracking"
     const val NOTICE_BODY =
         "This tracker now records vaginal pH. Any readings you logged before this update are kept " +
-            "and marked 'urine (legacy)'. New readings are saved as vaginal pH, on a different scale."
+            "and marked 'legacy reading'. New readings are saved as vaginal pH, on a different scale."
     const val NOTICE_DISMISS = "Got it"
 
     // Insight copy (two states). Default until there are enough recent readings.

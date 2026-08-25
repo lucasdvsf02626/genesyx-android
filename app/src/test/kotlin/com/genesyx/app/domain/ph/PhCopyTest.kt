@@ -49,13 +49,13 @@ class PhCopyTest {
     fun `one-time notice copy is verbatim`() {
         assertEquals(
             "This tracker now records vaginal pH. Any readings you logged before this update are kept " +
-                "and marked 'urine (legacy)'. New readings are saved as vaginal pH, on a different scale.",
+                "and marked 'legacy reading'. New readings are saved as vaginal pH, on a different scale.",
             PhCopy.NOTICE_BODY,
         )
     }
 
     @Test
     fun `legacy marker is the one canonical lowercase string`() {
-        assertEquals("urine (legacy)", PhCopy.LEGACY_MARKER)
+        assertEquals("legacy reading", PhCopy.LEGACY_MARKER)
     }
 }

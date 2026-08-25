@@ -225,7 +225,7 @@ class QaParityTest {
             assertFalse("pH copy contains banned phrase '$phrase'", all.contains(phrase))
         }
         assertTrue(PhCopy.DISCLAIMER.contains("isn't medical advice"))
-        assertEquals("urine (legacy)", PhCopy.LEGACY_MARKER)
+        assertEquals("legacy reading", PhCopy.LEGACY_MARKER)
     }
 
     @Test

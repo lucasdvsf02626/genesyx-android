@@ -70,6 +70,24 @@ What did need porting is the discipline underneath it: `record()` was fire-and-f
 edit was lost and then overwritten by `refresh()` pulling the stale server copy. Quiz answers now
 carry the same persisted owed-push flag as the display name, and push before pulling.
 
+### Changed — the legacy pH marker no longer names the sample type
+
+`PhCopy.LEGACY_MARKER` is now **`"legacy reading"`**, was `"urine (legacy)"`; the one-time migration
+notice is reworded to match. Owner request, 25 Aug.
+
+**Only the wording changed — the mechanism it labels is untouched, and deliberately so.** Pre-migration
+readings sit on a different scale (urine pH runs roughly 5.0–8.0; vaginal Elevated is anything above
+4.5), so they remain excluded from insights, drawn muted and off the trend line, and shown with a
+neutral marker *instead of* a Healthy/Elevated status. Dropping the distinction rather than renaming
+it would render a stored 6.5 as "Elevated" — a false health signal on Article 9 data.
+
+The stored wire value `PhMeasurement.URINE = "urine"` is unchanged: it is data, it is never rendered,
+and the Room and Supabase defaults depend on it.
+
+`ChangeListContractTest` was tightened from "no *urine pH* in customer copy" to **no `"urine"` at
+all**, so the wording cannot be reintroduced silently. **iOS must make the matching change** —
+`QaParityTest` pins this string as part of the cross-platform contract.
+
 ### Not changed — products read + empty state (parity item 6)
 
 Already correct on Android. Also confirmed: the **`genesyx_products` seed migration is cancelled, not

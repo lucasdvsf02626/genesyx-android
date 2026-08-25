@@ -21,9 +21,11 @@ class ChangeListContractTest {
     @Test
     fun `1A customer pH copy is vaginal never urine pH`() {
         val all = PhCopy.all().joinToString("\n").lowercase()
-        assertFalse(all.contains("urine ph"))
+        // Not just "urine pH": the sample type is named nowhere in customer-facing copy. The stored
+        // PhMeasurement.URINE wire value is unaffected — it is data, and never rendered.
+        assertFalse(all.contains("urine"))
         assertTrue(all.contains("vaginal ph"))
-        assertEquals("urine (legacy)", PhCopy.LEGACY_MARKER)
+        assertEquals("legacy reading", PhCopy.LEGACY_MARKER)
     }
 
     @Test

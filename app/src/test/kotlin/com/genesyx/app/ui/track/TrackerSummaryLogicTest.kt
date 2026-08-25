@@ -79,7 +79,7 @@ class TrackerSummaryLogicTest {
         )
         val s = TrackerSummaryLogic.compute(emptyMap(), readings, null, goal, today = today)
         assertTrue(s.ph.hasData)
-        assertEquals("Last reading 6.5 · urine (legacy)", s.ph.value)
+        assertEquals("Last reading 6.5 · legacy reading", s.ph.value)
     }
 
     @Test

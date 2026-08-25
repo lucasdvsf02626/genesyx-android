@@ -70,7 +70,7 @@ fun PhReadingRow(reading: PhReading) {
         )
         Spacer(Modifier.size(8.dp))
         // weight(1f) on the label, not a weighted spacer: when the row runs out of width
-        // (large font scale, "urine (legacy)") the label wraps instead of the trailing
+        // (large font scale, "legacy reading") the label wraps instead of the trailing
         // time being clipped at the dialog edge.
         Text(statusLabel, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, color = accent)
         Spacer(Modifier.size(8.dp))
