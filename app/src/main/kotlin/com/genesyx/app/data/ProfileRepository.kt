@@ -51,7 +51,7 @@ class ProfileRepository @Inject constructor(
     /** Write-through: update the display name locally and remotely. */
     suspend fun setDisplayName(name: String): DataResult<Unit> {
         val userId = session.currentUserId()
-        val current = dao.get(userId) ?: ProfileEntity(userId, null, null, null, "dark")
+        val current = dao.get(userId) ?: ProfileEntity(userId, null, null, null, "light")
         dao.upsert(current.copy(displayName = name))
         return remote.updateDisplayName(userId, name)
     }
@@ -59,7 +59,7 @@ class ProfileRepository @Inject constructor(
     /** Write-through: update the theme locally and remotely. */
     suspend fun setTheme(theme: String): DataResult<Unit> {
         val userId = session.currentUserId()
-        val current = dao.get(userId) ?: ProfileEntity(userId, null, null, null, "dark")
+        val current = dao.get(userId) ?: ProfileEntity(userId, null, null, null, "light")
         dao.upsert(current.copy(theme = theme))
         return remote.updateTheme(userId, theme)
     }
@@ -69,7 +69,10 @@ class ProfileRepository @Inject constructor(
             displayName = session.displayName.value,
             avatarUrl = null,
             partnerId = null,
-            theme = "dark",
+            // Light, to match the column default set on 13 Aug 2026. This is an explicit INSERT, so
+            // the default never applies — spelling "dark" here wrote a preference she never chose,
+            // and iOS reads that column back on sign-in and honours it.
+            theme = "light",
         )
         remote.upsertProfile(userId, fallback)
         return fallback.toEntity(userId)
