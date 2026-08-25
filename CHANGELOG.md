@@ -8,6 +8,78 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ## [Unreleased] — Single-source-of-truth bug batch (28 Jul device walkthrough)
 
+### Fixed (25 Aug 2026) — the five bugs the client reported on iOS build 22 — `1.4.0 (14)`
+
+Android identity for this batch: **`versionName 1.4.0`, `versionCode 14`, `applicationId
+com.genesyx.app`, targetSdk 36.** Code 14 is deliberately *not* bumped: it has never been uploaded
+to Play, so burning it for this batch would repeat the code-9 collision. The next Play upload is the
+first use of 14.
+
+The client reported five bugs against **iOS build 22**. Each was investigated against the Android
+source independently rather than ported on the assumption of symmetry — two were real here, three
+were not, and the reasons differ per bug.
+
+- **1. pH "See your supplement plan" opened the Nutrition tracker, not the plan.** Real on Android,
+  and a different mechanism from iOS. `onOpenPlan` navigated to `Screen.NutritionDetail.route`. The
+  Nutrition route is now parameterised (`nutrition?plan={plan}`) with a `Screen.Nutrition.create()`
+  builder, and `NutritionScreen` seeds its plan dialog from the argument. Two traps handled: the
+  navigation deliberately omits `restoreState`, because restoring a saved Nutrition back-stack entry
+  discards the new argument and reproduces the exact reported bug; and `ArticleDetailScreen`'s
+  tab-reuse check now compares on `substringBefore("?")`, which would otherwise have silently
+  stopped matching the moment the route took an argument. `GenesyxBottomNav` navigates via a
+  separate `navRoute` so the tab bar cannot navigate to a literal `{plan}`. (`5fb6872`)
+- **2. Nutrition "See this phase's foods" did nothing.** *Not* a defect on Android. The iOS cause was
+  a CTA firing from inside the tab it targets, which is a no-op there because Nutrition pushes
+  `ArticleDetailView` onto its own stack. On Android `ArticleDetail` is a separate nav destination,
+  so the CTA's `popUpTo`/`restoreState` genuinely lands on Nutrition. Verified by reading the graph,
+  not inferred. No change.
+- **3. Home greeted her by a misspelt name.** Real on Android, and deeper than on iOS.
+  `SupabaseAuthService.signUp` discards its `displayName` parameter outright, and `toAuthSession`
+  manufactures a `displayName` from the email localpart — so the name she typed was lost between the
+  form and the greeting, and Home rendered `lucianne.valenca`. `AuthRepository.persist` now carries
+  the typed name past the provider (`typedName`), and `SessionRepository` treats a name equal to the
+  localpart as no name at all, sending it through the same presentable transform as an absent one.
+  `SessionRepository.nameFromAddress` splits on `. - _ +` and title-cases, touching **only the first
+  character of each word so accents survive**. Fixed entirely in files outside the in-flight auth
+  work, which sits on `wip/auth-2026-08-25`. (`bc8541c`) A follow-up gave the sign-up Name field
+  `KeyboardCapitalization.Words`; it had inherited `None` from the `Field` composable it shares with
+  the email and password fields, where `None` is correct. (`bea1f99`)
+- **4. Learn "How to use Genesyx" showed a missing image.** *Not* a defect on Android. That entry is
+  a `HubCard` — title, subtitle, chevron — with no image slot at all, so there is no frame to render
+  blank. `ArticleHero` already falls back to a category-keyed brand gradient when `heroImage` is
+  null, which is the placeholder behaviour the fix asked for. No change.
+- **5. Profile sub-tabs were read-only.** *Not* reproducible on Android, and the iOS root cause
+  cannot occur here. On iOS the fields were never disabled either: `recordQuizAnswers` returned
+  `Void` behind the Article 9 consent guard while Save dismissed unconditionally, so a refused write
+  closed exactly like a successful one. **Android has no consent gate anywhere in the source** —
+  grepped for it rather than assumed — so no write can be refused. All four dialogs write through:
+  `updateName` → `SessionRepository.updateDisplayName` + `ProfileRepository.setDisplayName`;
+  Tracking Preferences → `QuizAnswersRepository.record`; cycle settings → `CycleRepository.upsert`;
+  Change Password → `AuthRepository.changePassword` with real loading and error state.
+  `record()` writes to DataStore **before** any network call, so the edit persists regardless of
+  connectivity and the dialog's dismissal is honest. No change.
+
+**One latent issue found while verifying bug 5, deliberately not fixed in this batch.**
+`QuizAnswersRepository.record` discards the `DataResult` from `remote.upsert`, and there is no retry
+queue — by design, documented at the class header: a queued write could fire under the wrong JWT
+after a sign-out. The consequence is that a save made while offline is correct on the device but
+never reaches the server, and the next sign-in's `refresh()` takes the "server wins when it has
+answers" branch and overwrites her local answers with the stale server copy. It needs a sign-out and
+sign-in to surface, so it is **not** what the client saw, and fixing it means designing an owed-push
+mechanism like iOS's `pendingPush` — out of scope for a bug-fix batch two days before a demo.
+
+**CI, red on `main` since 19 Aug, is green again.** The cause was neither the code nor the runner:
+every push failed at `:app:compileDebugKotlin` with `CommonUi.kt:81 Unresolved reference
+'page_background'`, because the drawable was listed in `.git/info/exclude` — a local, unshared file
+— and had therefore never entered the repo. It compiled on the machine it was added from and could
+not compile anywhere else. Committed the asset (`fd3454a`). Verified by cloning `main` into a fresh
+directory and running the exact two CI steps against the clone rather than a warm working tree:
+`testDebugUnitTest` + `assembleDebug` **BUILD SUCCESSFUL**, **488 tests, 0 failures, 0 errors**.
+Every other `R.drawable.*` reference in the source was checked against the git tree; none is missing.
+
+**The in-flight sign-up/confirm-email work was moved off `main` to `wip/auth-2026-08-25`** so this
+batch stays separable from it. `main` was returned to clean without stashing.
+
 ### Release prep for code 14 (19 Aug 2026) — signing hardened, deletion leak closed, docs de-drifted
 
 - **A release build can no longer be signed with the debug key.** `app/build.gradle.kts` previously
