@@ -8,12 +8,17 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ## [Unreleased] — Single-source-of-truth bug batch (28 Jul device walkthrough)
 
-### Fixed (25 Aug 2026) — the five bugs the client reported on iOS build 22 — `1.4.0 (14)`
+### Fixed (25 Aug 2026) — the five bugs the client reported on iOS build 22 — `1.4.1 (15)`
 
-Android identity for this batch: **`versionName 1.4.0`, `versionCode 14`, `applicationId
-com.genesyx.app`, targetSdk 36.** Code 14 is deliberately *not* bumped: it has never been uploaded
-to Play, so burning it for this batch would repeat the code-9 collision. The next Play upload is the
-first use of 14.
+Android identity for this batch: **`versionName 1.4.1`, `versionCode 15`, `applicationId
+com.genesyx.app`, targetSdk 36.**
+
+This entry originally claimed code 14 could be reused because it "has never been uploaded to Play".
+That was read off the repo, and it was wrong: the Play Console shows **14 (1.4.0) on the internal
+testing track since 19 Aug 2026**, full rollout, live to internal testers. Play rejects a duplicate
+version code, so reusing 14 would have failed at upload — and worse, it would have meant two
+different binaries sharing one code, which is the code-9 collision this note was trying to avoid.
+Hence 15. Play state is not derivable from this repo; check the console before choosing a code.
 
 The client reported five bugs against **iOS build 22**. Each was investigated against the Android
 source independently rather than ported on the assumption of symmetry — two were real here, three
