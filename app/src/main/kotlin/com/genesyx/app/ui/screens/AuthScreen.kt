@@ -32,6 +32,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
@@ -327,7 +328,7 @@ fun AuthContent(
 
                 Spacer(Modifier.height(28.dp))
                 if (signupMode) {
-                    Field("Name", name, { if (it.length <= 80) name = it; clearErrors() }, placeholder = "Your name")
+                    Field("Name", name, { if (it.length <= 80) name = it; clearErrors() }, placeholder = "Your name", capitalization = KeyboardCapitalization.Words)
                     Spacer(Modifier.height(16.dp))
                 }
                 Field("Email", email, { email = it; clearErrors() }, keyboardType = KeyboardType.Email)
@@ -434,6 +435,10 @@ private fun Field(
     placeholder: String? = null,
     keyboardType: KeyboardType = KeyboardType.Text,
     isPassword: Boolean = false,
+    // Off by default because two of the three fields are an address and a password. Her name is
+    // the exception, and a keyboard that refuses to capitalise filed her as "lucianne" — which is
+    // then what Home greets her by.
+    capitalization: KeyboardCapitalization = KeyboardCapitalization.None,
 ) {
     Column(Modifier.fillMaxWidth()) {
         Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
@@ -446,7 +451,7 @@ private fun Field(
             singleLine = true,
             shape = RoundedCornerShape(12.dp),
             visualTransformation = if (isPassword) PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None,
-            keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+            keyboardOptions = KeyboardOptions(keyboardType = keyboardType, capitalization = capitalization),
         )
     }
 }
