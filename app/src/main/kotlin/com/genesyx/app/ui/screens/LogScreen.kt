@@ -62,6 +62,7 @@ import com.genesyx.app.domain.model.EnergyLevel
 import com.genesyx.app.domain.model.Mood
 import com.genesyx.app.domain.model.Supplement
 import com.genesyx.app.domain.model.SupplementLogRows
+import com.genesyx.app.ui.components.ConsentWithdrawnBanner
 import com.genesyx.app.ui.components.Eyebrow
 import com.genesyx.app.ui.components.GxPrimaryButton
 import com.genesyx.app.ui.components.ScreenHeader
@@ -145,6 +146,7 @@ private fun LogForm(
     val customSupplements by viewModel.customSupplementNames.collectAsState()
     val foodGroups by viewModel.foodGroups.collectAsState()
     val meals by viewModel.meals.collectAsState()
+    val consentActive by viewModel.consentActive.collectAsState()
     var showAdd by remember { mutableStateOf(false) }
     var custom by remember { mutableStateOf("") }
 
@@ -186,6 +188,11 @@ private fun LogForm(
         ScreenHeader(title = logTitle(viewModel), subtitle = logSubtitle(viewModel), onBack = ::attemptClose)
 
         Column(Modifier.padding(horizontal = 20.dp)) {
+            if (!consentActive) {
+                Spacer(Modifier.height(16.dp))
+                ConsentWithdrawnBanner()
+            }
+
             // Mood
             Section("Mood")
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {

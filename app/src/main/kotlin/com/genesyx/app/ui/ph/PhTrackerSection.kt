@@ -22,8 +22,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.LaunchedEffect
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.genesyx.app.data.PhRepository
 import com.genesyx.app.data.PreferencesRepository
 import com.genesyx.app.domain.model.PhReading
@@ -32,8 +34,13 @@ import com.genesyx.app.ui.components.Eyebrow
 import com.genesyx.app.ui.components.PhLogDialog
 import com.genesyx.app.ui.components.PhReadingRow
 import com.genesyx.app.ui.components.PhTrackerCard
+import com.genesyx.app.ui.profile.SaveState
+import com.genesyx.app.ui.profile.toSaveState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
@@ -45,8 +52,21 @@ class PhTrackerViewModel @Inject constructor(
     val readings: StateFlow<List<PhReading>> = phRepository.readings
     /** One-time "the tracker now records vaginal pH" notice — shown until dismissed once. */
     val vaginalNoticeSeen: StateFlow<Boolean> = preferences.phVaginalNoticeSeen
-    fun save(reading: PhReading) = phRepository.create(reading)
-    fun update(reading: PhReading) = phRepository.update(reading)
+
+    private val _saveState = MutableStateFlow(SaveState())
+    val saveState: StateFlow<SaveState> = _saveState.asStateFlow()
+
+    fun save(reading: PhReading, isNew: Boolean) {
+        if (_saveState.value.saving) return
+        _saveState.value = SaveState(saving = true)
+        viewModelScope.launch {
+            val result = if (isNew) phRepository.create(reading) else phRepository.update(reading)
+            _saveState.value = result.toSaveState()
+        }
+    }
+
+    fun resetSave() { _saveState.value = SaveState() }
+
     fun delete(id: String) = phRepository.delete(id)
     fun dismissVaginalNotice() = preferences.setPhVaginalNoticeSeen(true)
 }
@@ -65,8 +85,17 @@ fun PhTrackerSection(
 ) {
     val readings by viewModel.readings.collectAsState()
     val noticeSeen by viewModel.vaginalNoticeSeen.collectAsState()
+    val save by viewModel.saveState.collectAsState()
     var showDialog by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf<PhReading?>(null) }
+
+    // Reset here rather than in the dialog's own LaunchedEffect: reopening before recomposition
+    // settles would otherwise show the previous attempt's error, or close on its stale success.
+    fun open(reading: PhReading?) {
+        viewModel.resetSave()
+        editing = reading
+        showDialog = true
+    }
 
     if (!noticeSeen) {
         AlertDialog(
@@ -81,26 +110,29 @@ fun PhTrackerSection(
 
     PhTrackerCard(
         readings = readings,
-        onLogClick = { editing = null; showDialog = true },
+        onLogClick = { open(null) },
         modifier = modifier,
     )
 
     if (showHistory && readings.isNotEmpty()) {
         Spacer(Modifier.height(16.dp))
-        PhHistoryCard(readings = readings, onEdit = { editing = it; showDialog = true })
+        PhHistoryCard(readings = readings, onEdit = { open(it) })
     }
 
     if (showDialog) {
+        // Close on the save landing, not on the button being pressed — a reading the consent gate
+        // refused persists nothing, and closing on press reported it as saved.
+        LaunchedEffect(save.saved) { if (save.saved) { showDialog = false; viewModel.resetSave() } }
         PhLogDialog(
             existing = editing,
-            onDismiss = { showDialog = false },
-            onSave = { reading ->
-                if (editing == null) viewModel.save(reading) else viewModel.update(reading)
-                showDialog = false
-            },
+            error = save.error,
+            saving = save.saving,
+            onDismiss = { showDialog = false; viewModel.resetSave() },
+            onSave = { reading -> viewModel.save(reading, isNew = editing == null) },
             onDelete = { id ->
                 viewModel.delete(id)
                 showDialog = false
+                viewModel.resetSave()
             },
         )
     }

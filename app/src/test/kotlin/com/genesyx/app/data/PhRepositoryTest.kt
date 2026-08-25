@@ -45,6 +45,7 @@ class PhRepositoryTest {
     fun `online create writes PENDING then marks SYNCED, no retry queued`() = runTest {
         every { session.userId } returns MutableStateFlow<String?>("user-a")
         every { session.currentUserId() } returns "user-a"
+        coEvery { session.awaitUserId() } returns "user-a"
         every { dao.observeAll(any()) } returns flowOf(emptyList())
         coEvery { remote.upsert(any()) } returns DataResult.Success(Unit)
         val scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler))
@@ -61,6 +62,7 @@ class PhRepositoryTest {
     fun `guest write stays local-only (no remote push, no WorkManager enqueue)`() = runTest {
         every { session.userId } returns MutableStateFlow<String?>(null) // not signed in
         every { session.currentUserId() } returns SessionRepository.LOCAL_USER_ID
+        coEvery { session.awaitUserId() } returns SessionRepository.LOCAL_USER_ID
         every { dao.observeAll(any()) } returns flowOf(emptyList())
         val scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler))
 
@@ -81,6 +83,7 @@ class PhRepositoryTest {
     fun `offline create stays PENDING and enqueues a retry (never blocks)`() = runTest {
         every { session.userId } returns MutableStateFlow<String?>("user-a")
         every { session.currentUserId() } returns "user-a"
+        coEvery { session.awaitUserId() } returns "user-a"
         every { dao.observeAll(any()) } returns flowOf(emptyList())
         coEvery { remote.upsert(any()) } returns DataResult.Error(RuntimeException("offline"))
         val scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler))
@@ -98,6 +101,7 @@ class PhRepositoryTest {
     fun `delete soft-deletes (tombstone) and pushes it`() = runTest {
         every { session.userId } returns MutableStateFlow<String?>("user-a")
         every { session.currentUserId() } returns "user-a" // signed in -> push path
+        coEvery { session.awaitUserId() } returns "user-a" // signed in -> push path
         every { dao.observeAll(any()) } returns flowOf(emptyList())
         coEvery { dao.getById("r1") } returns
             entity("r1", "user-a", 6.5).copy(syncStatus = PhSyncStatus.PENDING_DELETE)

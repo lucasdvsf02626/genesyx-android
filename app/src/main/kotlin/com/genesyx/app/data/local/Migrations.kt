@@ -106,6 +106,28 @@ val MIGRATION_8_9 = object : Migration(8, 9) {
     }
 }
 
+/** v9 -> v10: the health-data consent trail. Append-only, so there is no state column to update and
+ *  no uniqueness constraint on the user — a row per grant and per withdrawal is the point.
+ *  `recordedAt` is a TEXT timestamp (see [Converters]), matching `meal_entries.loggedAt`. Existing
+ *  installs get an empty table, which reads as "no answer" and leaves the gate permissive: an
+ *  upgrade must not silently stop tracking for someone who never had a consent screen to answer. */
+val MIGRATION_9_10 = object : Migration(9, 10) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `consent_events` (" +
+                "`id` TEXT NOT NULL, " +
+                "`userId` TEXT NOT NULL, " +
+                "`action` TEXT NOT NULL, " +
+                "`recordedAt` TEXT NOT NULL, " +
+                "PRIMARY KEY(`id`))",
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_consent_events_userId_recordedAt` " +
+                "ON `consent_events` (`userId`, `recordedAt`)",
+        )
+    }
+}
+
 val GENESYX_MIGRATIONS: Array<Migration> = arrayOf(
     MIGRATION_2_3,
     MIGRATION_3_4,
@@ -114,4 +136,5 @@ val GENESYX_MIGRATIONS: Array<Migration> = arrayOf(
     MIGRATION_6_7,
     MIGRATION_7_8,
     MIGRATION_8_9,
+    MIGRATION_9_10,
 )

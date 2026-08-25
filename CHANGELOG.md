@@ -6,6 +6,101 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ---
 
+## [Unreleased] — iOS parity hand-off — `1.4.2 (16)` (25 Aug 2026)
+
+Worked from `ANDROID_PARITY.md` at the root of the iOS repo (`2cd61d7`): six sections, each with the
+iOS symptom, the Android files where the same defect lives, and the design intent to preserve. Each
+was checked against the Android source rather than ported on the assumption of symmetry.
+
+Version identity: **`versionName 1.4.2`, `versionCode 16`**, targetSdk 36, Room **v10**. Code 15 was
+consumed by the previous batch; Play rejects a duplicate code, so this is 16.
+
+### Added — Article 9 health-data consent gate (parity item 3)
+
+The largest piece, and it gated items 2 and 4, so it went first. Android had **no consent gate
+anywhere** — grepped for it rather than assumed. Now:
+
+- **`consent_events`, an append-only trail (Room v9 → v10, `MIGRATION_9_10`).** Grants and
+  withdrawals are appended, never updated in place, so the decision history is auditable rather than
+  a single mutable boolean. The DAO reads back on **`rowid DESC`**, not `recordedAt`: `recordedAt` is
+  ISO text and `LocalDateTime.toString()` omits zero seconds, so two events in the same minute sort
+  wrong as strings. `rowid` is true insertion order.
+- **`ConsentRepository` + `HealthDataCollectionGate`**, a **suspend** `fun interface` on purpose —
+  the gate reads Room, and making callers suspend is what stops a synchronous default sneaking in.
+- **An empty trail reads as permitted.** Deliberate, and matched to iOS: every install upgrading
+  into this build was never asked, and fail-closed would silently stop their tracking mid-cycle with
+  no explanation. Consent is captured going forward, not retroactively assumed absent.
+- **Writes *and* reads are gated** in the four health repositories (cycle, daily log, pH, quiz
+  answers). Gating writes alone would leave withdrawn users still seeing their data pulled from the
+  server.
+- **Guest decisions are adopted on sign-in** (`ConsentRepository.adoptGuestDecision`, called from
+  `AuthRepository` *before* the refreshes), so a decision made before registering isn't discarded by
+  the first authenticated pull.
+
+### Added — refusal is now visible, never silent (parity items 4 and 2)
+
+The iOS bug was a refused write dismissing its dialog exactly like a successful one. The same shape
+existed here once the gate landed, so the reporting went in with it.
+
+- **`SaveOutcome`** (Saved / Refused / Failed) and **`PhWriteResult`** (Accepted / Refused /
+  OutOfRange) replace `Unit` returns on the health writes. Dialogs no longer dismiss on a refusal —
+  they stay open and say why.
+- **`ConsentWithdrawnBanner` now renders on every health write surface**, not just the two settings
+  dialogs it started in. A withdrawn user tapping water quick-add, saving a daily log or adding
+  hydration would otherwise get a control that does nothing with no explanation, which is the first
+  thing an internal tester will hit given the toggle is new in this build. Wired into
+  `LogScreen`, `HydrationDetailScreen` and `NutritionScreen`.
+- Banner and dialog copy reviewed against the `PhCopyBannedPhraseTest` term list — clean: no
+  condition named, no treatment or diagnosis implied.
+
+### Fixed — Home greeting reads `profiles.display_name` (parity item 1)
+
+The greeting sourced the name locally, so a name corrected on one device never reached the other.
+Home now reads through `profiles.display_name`, and the name push is **owed and persisted**: the
+push is attempted before any pull, and if it fails the flag survives process death and retries. The
+flag is cleared on sign-out and, belt-and-braces, on sign-in.
+
+### Fixed — quiz answers push before they pull (parity item 5, deliberately *not* a literal port)
+
+The iOS fix is built around `QuizAnswersRow.init?` refusing an empty set — an iOS-only guard. Android
+already does an unconditional empty-map upsert, so **the iOS bug does not exist here**; copying the
+tombstone across would have fixed nothing and introduced a defect Android didn't have.
+
+What did need porting is the discipline underneath it: `record()` was fire-and-forget, so an offline
+edit was lost and then overwritten by `refresh()` pulling the stale server copy. Quiz answers now
+carry the same persisted owed-push flag as the display name, and push before pulling.
+
+### Not changed — products read + empty state (parity item 6)
+
+Already correct on Android. Also confirmed: the **`genesyx_products` seed migration is cancelled, not
+deferred** — the four bundled supplements are nutrition-pathway content, not SKUs, and the production
+table should not be seeded.
+
+### Verification
+
+- Unit tests **534 passing, 0 failures, 0 errors, 0 skipped**.
+- Lint **0 errors** (53 warnings, all pre-existing).
+- `:app:bundleRelease` + `:app:assembleRelease` **GREEN** under R8/minify. AAB 17,071,622 bytes, APK
+  12,332,045 bytes. `aapt2` reports `16 / 1.4.2 / SDK 36 / minSdk 26`; `apksigner` reports SHA-1
+  `8D:EB…CC:73`, SHA-256 `C3:D5:1F:4B…A4:46:C1:7D` — the recorded upload key.
+- **Migration proven twice.** `ConsentMigrationTest > migrate9To10_addsConsentEvents_andPreservesExistingLogs`
+  passes via `MigrationTestHelper` against the versioned schema JSONs, alongside all six older
+  migration tests; and a real APK-over-APK upgrade from the live Play build **1.4.0 (14)** to
+  **1.4.2 (16)** installed clean, retained data, launched and rendered, with logcat clear of
+  `AndroidRuntime`, `FATAL`, `SQLiteException` and any Room migration error.
+- pH band boundary re-confirmed against the approved spec: `4.5` exactly classifies **Healthy**;
+  `> 4.5` is **Elevated** (`PhStatus.classify`).
+
+### Known, tracked, not fixed in this build
+
+- `DailyLogRepositoryTest` flakes on a **rotating** test name (~25–50% per class run, passes in
+  isolation, and HEAD flakes identically) — pre-existing, not a product defect, but it does mask
+  regressions in the offline-safety suite.
+- Cycle settings still have no offline retry queue: a failed remote push is only logged, and a later
+  refresh can overwrite a never-pushed offline edit (`data/CycleRepository.kt`).
+
+---
+
 ## [Unreleased] — Single-source-of-truth bug batch (28 Jul device walkthrough)
 
 ### Fixed (25 Aug 2026) — the five bugs the client reported on iOS build 22 — `1.4.1 (15)`

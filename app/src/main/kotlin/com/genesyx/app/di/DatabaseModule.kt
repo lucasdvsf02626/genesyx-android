@@ -5,6 +5,7 @@ import androidx.room.Room
 import com.genesyx.app.data.local.GENESYX_MIGRATIONS
 import com.genesyx.app.data.local.GenesyxDatabase
 import com.genesyx.app.data.local.dao.ClientDao
+import com.genesyx.app.data.local.dao.ConsentEventDao
 import com.genesyx.app.data.local.dao.CycleSettingsDao
 import com.genesyx.app.data.local.dao.DailyLogDao
 import com.genesyx.app.data.local.dao.MealEntryDao
@@ -45,4 +46,5 @@ object DatabaseModule {
     @Provides fun providePartnerDao(db: GenesyxDatabase): PartnerDao = db.partnerDao()
     @Provides fun provideUserSupplementDao(db: GenesyxDatabase): UserSupplementDao = db.userSupplementDao()
     @Provides fun provideMealEntryDao(db: GenesyxDatabase): MealEntryDao = db.mealEntryDao()
+    @Provides fun provideConsentEventDao(db: GenesyxDatabase): ConsentEventDao = db.consentEventDao()
 }

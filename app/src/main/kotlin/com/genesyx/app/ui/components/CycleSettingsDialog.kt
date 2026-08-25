@@ -63,6 +63,11 @@ private fun Long.utcMillisToLocalDate(): LocalDate =
 @Composable
 fun CycleSettingsDialog(
     current: CycleSettings?,
+    consentActive: Boolean = true,
+    // Defaulted so the Home / Track / Cycle-detail copies of this dialog, which don't surface save
+    // state yet, keep working unchanged.
+    saving: Boolean = false,
+    error: String? = null,
     onDismiss: () -> Unit,
     onSave: (CycleSettings) -> Unit,
 ) {
@@ -90,6 +95,10 @@ fun CycleSettingsDialog(
         title = { Text("Your cycle", style = MaterialTheme.typography.titleLarge, color = colors.onSurface) },
         text = {
             Column {
+                if (!consentActive) {
+                    ConsentWithdrawnBanner()
+                    Spacer(Modifier.height(12.dp))
+                }
                 Text(
                     "We use this to predict your phases and fertile window.",
                     style = MaterialTheme.typography.bodyMedium,
@@ -134,18 +143,23 @@ fun CycleSettingsDialog(
                     onDecrement = { if (periodLength > CycleEngine.PERIOD_LENGTH_RANGE.first) periodLength-- },
                     onIncrement = { if (periodLength < CycleEngine.PERIOD_LENGTH_RANGE.last) periodLength++ },
                 )
+
+                SaveErrorText(error)
             }
         },
         confirmButton = {
-            // No date, no save — there is nothing to derive a cycle from.
+            // No date, no save — there is nothing to derive a cycle from. Withdrawn consent blocks
+            // it too: the repository would refuse the write anyway, and a Save that silently did
+            // nothing is worse than one that visibly can't.
             val chosen = lastPeriod
+            val canSave = chosen != null && consentActive && !saving
             TextButton(
-                enabled = chosen != null,
-                onClick = { if (chosen != null) onSave(CycleSettings(chosen, cycleLength, periodLength)) },
+                enabled = canSave,
+                onClick = { if (canSave) onSave(CycleSettings(chosen!!, cycleLength, periodLength)) },
             ) {
                 Text(
-                    "Save",
-                    color = if (chosen != null) ElectricLavender else colors.onSurfaceVariant.copy(alpha = 0.5f),
+                    if (saving) "Saving…" else "Save",
+                    color = if (canSave) ElectricLavender else colors.onSurfaceVariant.copy(alpha = 0.5f),
                     fontWeight = FontWeight.SemiBold,
                 )
             }

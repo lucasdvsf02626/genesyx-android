@@ -4,6 +4,7 @@ import com.genesyx.app.core.cloud.CloudApi
 import com.genesyx.app.core.cloud.DefaultCloudApi
 import com.genesyx.app.core.log.Analytics
 import com.genesyx.app.core.log.NoopAnalytics
+import com.genesyx.app.data.ConsentRepository
 import com.genesyx.app.data.remote.ClientRemoteDataSource
 import com.genesyx.app.data.remote.StubClientRemoteDataSource
 import com.genesyx.app.data.sync.DailyLogSyncScheduler
@@ -12,6 +13,7 @@ import com.genesyx.app.data.sync.UserSupplementSyncScheduler
 import com.genesyx.app.data.sync.WorkManagerDailyLogSyncScheduler
 import com.genesyx.app.data.sync.WorkManagerPhSyncScheduler
 import com.genesyx.app.data.sync.WorkManagerUserSupplementSyncScheduler
+import com.genesyx.app.domain.consent.HealthDataCollectionGate
 import com.genesyx.app.notifications.ReminderScheduler
 import com.genesyx.app.notifications.WorkManagerReminderScheduler
 import dagger.Binds
@@ -50,4 +52,9 @@ abstract class BindingsModule {
 
     @Binds @Singleton
     abstract fun bindReminderScheduler(impl: WorkManagerReminderScheduler): ReminderScheduler
+
+    /** The health-data repositories depend on the gate, never on [ConsentRepository] itself, so a
+     *  test can hand them a lambda instead of standing up Room. */
+    @Binds @Singleton
+    abstract fun bindHealthDataCollectionGate(impl: ConsentRepository): HealthDataCollectionGate
 }

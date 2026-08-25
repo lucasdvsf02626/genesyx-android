@@ -33,6 +33,7 @@ class AuthRepositoryTest {
     private val dailyLogRepo = mockk<DailyLogRepository>(relaxed = true)
     private val phRepo = mockk<PhRepository>(relaxed = true)
     private val userSupplementRepo = mockk<com.genesyx.app.data.UserSupplementRepository>(relaxed = true)
+    private val consentRepo = mockk<com.genesyx.app.data.ConsentRepository>(relaxed = true)
     private val quizAnswersRepo = mockk<com.genesyx.app.data.QuizAnswersRepository>(relaxed = true)
     private val supplementReminderRepo = mockk<com.genesyx.app.data.SupplementReminderRepository>(relaxed = true)
     private val database = mockk<GenesyxDatabase>(relaxed = true)
@@ -47,7 +48,7 @@ class AuthRepositoryTest {
             override val default = d
         }
         return AuthRepository(
-            authService, session, profileRepo, cycleRepo, dailyLogRepo, phRepo, userSupplementRepo,
+            authService, session, consentRepo, profileRepo, cycleRepo, dailyLogRepo, phRepo, userSupplementRepo,
             quizAnswersRepo, supplementReminderRepo, database, reminderScheduler, dispatchers, scope, logger,
         )
     }
@@ -99,7 +100,7 @@ class AuthRepositoryTest {
 
         assertTrue(result is DataResult.Success)
         coVerify { authService.changeEmail("pw", "new@b.co") }
-        verify(exactly = 0) { session.signIn(any(), any(), any()) }
+        coVerify(exactly = 0) { session.signInNow(any(), any(), any()) }
     }
 
     @Test
@@ -113,7 +114,7 @@ class AuthRepositoryTest {
         val result = repo(appScope).signInWithPassword("a@b.co", "pw")
 
         assertTrue(result is DataResult.Success)
-        verify { session.signIn("a@b.co", "a", userId = "uid-123") }
+        coVerify { session.signInNow("a@b.co", "a", userId = "uid-123") }
         coVerify { profileRepo.refresh("uid-123") }         // background read-through fired
         appScope.cancel()
     }
@@ -129,7 +130,7 @@ class AuthRepositoryTest {
         val result = repo(backgroundScope).signInWithPassword("nope@b.co", "wrong")
 
         assertTrue(result is DataResult.Error)
-        verify(exactly = 0) { session.signIn(any(), any(), any()) }
+        coVerify(exactly = 0) { session.signInNow(any(), any(), any()) }
     }
 
     @Test
@@ -149,7 +150,7 @@ class AuthRepositoryTest {
 
         repo(appScope).signUp("lucianne.valenca@example.com", "pw", "Lucianne Valença")
 
-        verify { session.signIn("lucianne.valenca@example.com", "Lucianne Valença", userId = "u1") }
+        coVerify { session.signInNow("lucianne.valenca@example.com", "Lucianne Valença", userId = "u1") }
         appScope.cancel()
     }
 
@@ -163,7 +164,7 @@ class AuthRepositoryTest {
         val result = repo(appScope).signInWithGoogle("tok-123")
 
         assertTrue(result is DataResult.Success)
-        verify { session.signIn("g@b.co", "g", userId = "g-uid") }
+        coVerify { session.signInNow("g@b.co", "g", userId = "g-uid") }
         appScope.cancel()
     }
 
@@ -175,7 +176,7 @@ class AuthRepositoryTest {
         val result = repo(backgroundScope).signInWithGoogle("bad")
 
         assertTrue(result is DataResult.Error)
-        verify(exactly = 0) { session.signIn(any(), any(), any()) }
+        coVerify(exactly = 0) { session.signInNow(any(), any(), any()) }
     }
 
     @Test
@@ -205,7 +206,7 @@ class AuthRepositoryTest {
 
         assertTrue(result is DataResult.Success)
         coVerify { authService.resetPassword("ada@example.com") }
-        verify(exactly = 0) { session.signIn(any(), any(), any()) }
+        coVerify(exactly = 0) { session.signInNow(any(), any(), any()) }
     }
 
     @Test
@@ -218,7 +219,7 @@ class AuthRepositoryTest {
         val result = repo(backgroundScope).sendPasswordReset("ada@example.com")
 
         assertTrue(result is DataResult.Error)
-        verify(exactly = 0) { session.signIn(any(), any(), any()) }
+        coVerify(exactly = 0) { session.signInNow(any(), any(), any()) }
     }
 
     @Test

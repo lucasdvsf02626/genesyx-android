@@ -54,11 +54,13 @@ class GenesyxPreferencesDataStore @Inject constructor(
         val LAST_SEEN_PHASE = stringPreferencesKey("last_seen_phase")
         val LAST_SEEN_PHASE_EPOCH_DAY = longPreferencesKey("last_seen_phase_epoch_day")
         val QUIZ_ANSWERS = stringPreferencesKey("quiz_answers")
+        val QUIZ_ANSWERS_OWED = booleanPreferencesKey("quiz_answers_owed")
         val SUPPLEMENT_REMINDERS = stringPreferencesKey("supplement_reminders")
         val SIGNED_IN = booleanPreferencesKey("signed_in")
         val USER_ID = stringPreferencesKey("user_id")
         val EMAIL = stringPreferencesKey("email")
         val DISPLAY_NAME = stringPreferencesKey("display_name")
+        val PENDING_NAME_PUSH = booleanPreferencesKey("pending_name_push")
     }
 
     // Default LIGHT: a fresh install (or an upgrade with no stored choice) opens in light, so the
@@ -110,6 +112,10 @@ class GenesyxPreferencesDataStore @Inject constructor(
         } ?: emptyMap()
     }
 
+    /** Whether the stored answers are an edit the server has not confirmed taking. Persisted,
+     *  because an edit made offline is still owed after a relaunch. */
+    val quizAnswersOwed: Flow<Boolean> = dataStore.data.map { it[Keys.QUIZ_ANSWERS_OWED] ?: false }
+
     /** Per-supplement daily reminder times (supplement id → minutes-of-day), device-local. Not
      *  synced — a reminder schedule is a phone setting, not shared health data. */
     val supplementReminders: Flow<Map<String, Int>> = dataStore.data.map { p ->
@@ -122,6 +128,10 @@ class GenesyxPreferencesDataStore @Inject constructor(
     val userId: Flow<String?> = dataStore.data.map { it[Keys.USER_ID] }
     val email: Flow<String?> = dataStore.data.map { it[Keys.EMAIL] }
     val displayName: Flow<String?> = dataStore.data.map { it[Keys.DISPLAY_NAME] }
+
+    /** Whether the stored display name is a name she gave us that the server has not confirmed
+     *  holding. Persisted, because a rename made offline is still owed after a relaunch. */
+    val pendingNamePush: Flow<Boolean> = dataStore.data.map { it[Keys.PENDING_NAME_PUSH] ?: false }
 
     suspend fun setTheme(mode: ThemeMode) = dataStore.edit { it[Keys.THEME] = mode.name }.let {}
     suspend fun setPush(enabled: Boolean) = dataStore.edit { it[Keys.PUSH] = enabled }.let {}
@@ -159,8 +169,16 @@ class GenesyxPreferencesDataStore @Inject constructor(
         it[Keys.QUIZ_ANSWERS] = json.encodeToString(mapSerializer, answers)
     }.let {}
 
+    suspend fun setQuizAnswersOwed(owed: Boolean) =
+        dataStore.edit { it[Keys.QUIZ_ANSWERS_OWED] = owed }.let {}
+
     /** Sign-out clears the local copy only — the server `quiz_answers` row is the owner's and stays. */
-    suspend fun clearQuizAnswers() = dataStore.edit { it.remove(Keys.QUIZ_ANSWERS) }.let {}
+    suspend fun clearQuizAnswers() = dataStore.edit {
+        it.remove(Keys.QUIZ_ANSWERS)
+        // An owed push must not outlive the session: it would fire the previous owner's answers
+        // against whoever signs in next.
+        it.remove(Keys.QUIZ_ANSWERS_OWED)
+    }.let {}
 
     private fun MutablePreferences.readReminders(): Map<String, Int> =
         this[Keys.SUPPLEMENT_REMINDERS]?.let {
@@ -177,16 +195,27 @@ class GenesyxPreferencesDataStore @Inject constructor(
 
     suspend fun clearSupplementReminders() = dataStore.edit { it.remove(Keys.SUPPLEMENT_REMINDERS) }.let {}
 
-    suspend fun setSession(userId: String, email: String?, displayName: String?) {
+    suspend fun setSession(userId: String, email: String?, displayName: String?, nameOwed: Boolean) {
         dataStore.edit {
             it[Keys.SIGNED_IN] = true
             it[Keys.USER_ID] = userId
             if (email != null) it[Keys.EMAIL] = email else it.remove(Keys.EMAIL)
             if (displayName != null) it[Keys.DISPLAY_NAME] = displayName else it.remove(Keys.DISPLAY_NAME)
+            it[Keys.PENDING_NAME_PUSH] = nameOwed
+            // Belt and braces with clearQuizAnswers(): its only other clear runs on a fire-and-forget
+            // launch during sign-out, and if that never lands the flag survives into the next
+            // session — where the drain would push account A's tracking answers into account B's row.
+            it[Keys.QUIZ_ANSWERS_OWED] = false
         }
     }
 
-    suspend fun setDisplayName(name: String) = dataStore.edit { it[Keys.DISPLAY_NAME] = name }.let {}
+    suspend fun setDisplayName(name: String, owed: Boolean) = dataStore.edit {
+        it[Keys.DISPLAY_NAME] = name
+        it[Keys.PENDING_NAME_PUSH] = owed
+    }.let {}
+
+    suspend fun setPendingNamePush(owed: Boolean) =
+        dataStore.edit { it[Keys.PENDING_NAME_PUSH] = owed }.let {}
 
     suspend fun clearSession() {
         dataStore.edit {
@@ -194,6 +223,8 @@ class GenesyxPreferencesDataStore @Inject constructor(
             it.remove(Keys.USER_ID)
             it.remove(Keys.EMAIL)
             it.remove(Keys.DISPLAY_NAME)
+            // An owed push must not outlive the session, or it fires against whoever signs in next.
+            it.remove(Keys.PENDING_NAME_PUSH)
         }
     }
 }

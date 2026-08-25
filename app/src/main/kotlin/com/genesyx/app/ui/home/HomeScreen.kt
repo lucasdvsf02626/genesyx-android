@@ -97,6 +97,7 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
+    val consentActive by viewModel.consentActive.collectAsState()
     // "Select Track, then open the detail": the tab switch makes Track the surface underneath, so
     // Back from the detail lands on Track rather than Home.
     fun openTrackerDetail(route: String) {
@@ -109,6 +110,7 @@ fun HomeScreen(
     }
     HomeContent(
         state = state,
+        consentActive = consentActive,
         onNavigate = { navController.navigate(it) },
         onOpenHydration = { openTrackerDetail(Screen.HydrationDetail.route) },
         onOpenPh = { openTrackerDetail(Screen.PhDetail.route) },
@@ -125,6 +127,7 @@ fun HomeScreen(
 @Composable
 fun HomeContent(
     state: HomeUiState,
+    consentActive: Boolean = true,
     onNavigate: (String) -> Unit,
     onOpenHydration: () -> Unit = {},
     onOpenPh: () -> Unit = {},
@@ -306,6 +309,7 @@ fun HomeContent(
         // snapshot that a later Room emission has already superseded.
         CycleSettingsDialog(
             current = cycleSeed ?: state.settings,
+            consentActive = consentActive,
             onDismiss = { cycleSeed = null; showCycleDialog = false },
             onSave = { onSaveCycle(it); cycleSeed = null; showCycleDialog = false },
         )

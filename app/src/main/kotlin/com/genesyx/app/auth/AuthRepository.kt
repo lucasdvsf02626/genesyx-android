@@ -4,6 +4,7 @@ import com.genesyx.app.core.DispatcherProvider
 import com.genesyx.app.core.di.ApplicationScope
 import com.genesyx.app.core.log.Logger
 import com.genesyx.app.core.result.DataResult
+import com.genesyx.app.data.ConsentRepository
 import com.genesyx.app.data.CycleRepository
 import com.genesyx.app.data.DailyLogRepository
 import com.genesyx.app.data.PhRepository
@@ -31,6 +32,7 @@ import javax.inject.Singleton
 class AuthRepository @Inject constructor(
     private val authService: AuthService,
     private val session: SessionRepository,
+    private val consentRepository: ConsentRepository,
     private val profileRepository: ProfileRepository,
     private val cycleRepository: CycleRepository,
     private val dailyLogRepository: DailyLogRepository,
@@ -153,7 +155,13 @@ class AuthRepository @Inject constructor(
             is DataResult.Success -> {
                 val user = result.data.user
                 val name = typedName?.takeIf { it.isNotBlank() } ?: user.displayName
-                session.signIn(user.email ?: "", name, userId = user.id)
+                // Awaited, not launched: the refreshes below adopt the server's display name, and a
+                // signIn still in flight would overwrite it with the address-derived guess.
+                session.signInNow(user.email ?: "", name, userId = user.id)
+                // Before any of it: if she withdrew consent as a guest, that answer is keyed to the
+                // guest bucket and this account's trail is empty — which reads as permitted. Carry
+                // it across first, or the pulls below run under a consent she revoked.
+                consentRepository.adoptGuestDecision(user.id)
                 // Sync in the background so sign-in returns immediately and isn't blocked (or broken)
                 // by a slow or failing per-table refresh. Room drives the UI reactively as each lands.
                 appScope.launch {

@@ -33,11 +33,22 @@ class ProfileRepository @Inject constructor(
      * Pull the remote profile row into the local cache. If the row is missing (e.g. a user created
      * before the signup trigger existed), create it. Returns the cached entity.
      */
-    suspend fun refresh(userId: String = session.currentUserId()): DataResult<ProfileEntity?> =
-        when (val result = remote.getProfile(userId)) {
+    suspend fun refresh(userId: String = session.currentUserId()): DataResult<ProfileEntity?> {
+        // Read before draining clears it: it is the only record of whether the name on this device
+        // is one she gave us or one we derived from her address, and createMissing needs to know.
+        val nameWasGiven = session.isNamePushOwed()
+        // Push before pull. A rename made offline is owed to the server, and pulling first would
+        // hand back the stale copy and quietly undo it.
+        drainPendingName(userId)
+        return when (val result = remote.getProfile(userId)) {
             is DataResult.Success -> {
-                val entity = result.data?.toEntity(userId) ?: createMissing(userId)
+                val entity = result.data?.toEntity(userId) ?: createMissing(userId, nameWasGiven)
                 dao.upsert(entity)
+                // The greeting reads the session mirror, which is seeded from the auth session — an
+                // address-derived guess. This is the only thing that lets the real name in.
+                // A blank column means the row has no answer, not that her name should be blanked.
+                entity.displayName?.takeIf { it.isNotBlank() }
+                    ?.let { session.adoptRemoteDisplayName(it) }
                 logger.i("Profile", "cached profile for $userId (theme=${entity.theme})")
                 DataResult.Success(entity)
             }
@@ -47,13 +58,40 @@ class ProfileRepository @Inject constructor(
             }
             DataResult.Loading -> DataResult.Loading
         }
+    }
 
-    /** Write-through: update the display name locally and remotely. */
+    /**
+     * Send a name she gave us that the server has not confirmed holding, and stop owing it only
+     * once the push succeeds — a failed push stays owed rather than being dropped on the floor.
+     *
+     * The name is re-read before the flag is cleared: a rename made while this push was in flight
+     * is a different name, and clearing on it would strand the newer one.
+     */
+    private suspend fun drainPendingName(userId: String) {
+        if (!session.isNamePushOwed()) return
+        val name = session.displayName.value?.takeIf { it.isNotBlank() } ?: return
+        if (remote.updateDisplayName(userId, name) is DataResult.Error) {
+            logger.w("Profile", "display-name push deferred — still owed")
+            return
+        }
+        if (session.displayName.value == name) session.clearNamePushOwed()
+    }
+
+    /**
+     * Write-through: update the display name locally and remotely.
+     *
+     * On failure the name stays owed, so the next [refresh] pushes it rather than pulling the
+     * stale server copy over the top of it.
+     */
     suspend fun setDisplayName(name: String): DataResult<Unit> {
         val userId = session.currentUserId()
         val current = dao.get(userId) ?: ProfileEntity(userId, null, null, null, "light")
         dao.upsert(current.copy(displayName = name))
-        return remote.updateDisplayName(userId, name)
+        val result = remote.updateDisplayName(userId, name)
+        if (result !is DataResult.Error && session.displayName.value == name) {
+            session.clearNamePushOwed()
+        }
+        return result
     }
 
     /** Write-through: update the theme locally and remotely. */
@@ -64,9 +102,11 @@ class ProfileRepository @Inject constructor(
         return remote.updateTheme(userId, theme)
     }
 
-    private suspend fun createMissing(userId: String): ProfileEntity {
+    private suspend fun createMissing(userId: String, nameWasGiven: Boolean): ProfileEntity {
         val fallback = RemoteProfile(
-            displayName = session.displayName.value,
+            // Only a name she actually gave us. Seeding the row with the address-derived guess
+            // would make that guess the account's real name on every other device she signs in on.
+            displayName = session.displayName.value.takeIf { nameWasGiven },
             avatarUrl = null,
             partnerId = null,
             // Light, to match the column default set on 13 Aug 2026. This is an explicit INSERT, so

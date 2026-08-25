@@ -2,6 +2,7 @@ package com.genesyx.app.ui.track.detail
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.genesyx.app.data.ConsentRepository
 import com.genesyx.app.data.DailyLogRepository
 import com.genesyx.app.data.PreferencesRepository
 import com.genesyx.app.data.StreakRepository
@@ -47,7 +48,14 @@ class HydrationDetailViewModel @Inject constructor(
     private val dailyLogRepository: DailyLogRepository,
     private val preferencesRepository: PreferencesRepository,
     streakRepository: StreakRepository,
+    consentRepository: ConsentRepository,
 ) : ViewModel() {
+
+    /**
+     * Whether health-data collection is permitted. A quick-add is gated on it and returns nothing
+     * when refused, so the buttons would simply stop working with no explanation.
+     */
+    val consentActive: StateFlow<Boolean> = consentRepository.isActive
 
     val uiState: StateFlow<HydrationDetailState> = combine(
         dailyLogRepository.logByDate,

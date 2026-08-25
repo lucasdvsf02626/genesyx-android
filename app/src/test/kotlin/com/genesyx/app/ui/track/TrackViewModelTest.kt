@@ -36,6 +36,7 @@ class TrackViewModelTest {
     private val logRepo = mockk<DailyLogRepository>()
     private val phRepo = mockk<PhRepository>()
     private val prefsRepo = mockk<com.genesyx.app.data.PreferencesRepository>()
+    private val consentRepo = mockk<com.genesyx.app.data.ConsentRepository>()
 
     private fun vm(
         logs: Map<LocalDate, DailyLog> = emptyMap(),
@@ -46,7 +47,8 @@ class TrackViewModelTest {
         every { phRepo.readings } returns MutableStateFlow(readings)
         every { prefsRepo.hydrationGoalMl } returns MutableStateFlow(2400)
         every { prefsRepo.hydrationUnit } returns MutableStateFlow(com.genesyx.app.domain.hydration.HydrationUnit.ML)
-        return TrackViewModel(cycleRepo, logRepo, phRepo, prefsRepo)
+        every { consentRepo.isActive } returns MutableStateFlow(true)
+        return TrackViewModel(cycleRepo, logRepo, phRepo, prefsRepo, consentRepo)
     }
 
     @Test

@@ -20,7 +20,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.genesyx.app.domain.content.quizQuestions
+import com.genesyx.app.ui.components.ConsentWithdrawnBanner
 import com.genesyx.app.ui.components.GxOptionPill
+import com.genesyx.app.ui.components.SaveErrorText
 import com.genesyx.app.ui.theme.ElectricLavender
 
 /**
@@ -32,6 +34,9 @@ import com.genesyx.app.ui.theme.ElectricLavender
 @Composable
 fun TrackingPreferencesDialog(
     current: Map<String, String>,
+    consentActive: Boolean = true,
+    saving: Boolean = false,
+    error: String? = null,
     onDismiss: () -> Unit,
     onSave: (Map<String, String>) -> Unit,
 ) {
@@ -45,6 +50,10 @@ fun TrackingPreferencesDialog(
         title = { Text("Tracking Preferences") },
         text = {
             Column(Modifier.heightIn(max = 460.dp).verticalScroll(rememberScrollState())) {
+                if (!consentActive) {
+                    ConsentWithdrawnBanner()
+                    Spacer(Modifier.height(16.dp))
+                }
                 quizQuestions.forEachIndexed { index, question ->
                     if (index > 0) Spacer(Modifier.height(16.dp))
                     Text(
@@ -70,11 +79,20 @@ fun TrackingPreferencesDialog(
                         )
                     }
                 }
+
+                SaveErrorText(error)
             }
         },
         confirmButton = {
-            TextButton(onClick = { onSave(answers.toMap()) }) {
-                Text("Save", color = ElectricLavender, fontWeight = FontWeight.SemiBold)
+            // The repository refuses the write while consent is withdrawn, so offering Save would
+            // just dismiss the dialog and lose the edit silently.
+            val canSave = consentActive && !saving
+            TextButton(enabled = canSave, onClick = { onSave(answers.toMap()) }) {
+                Text(
+                    if (saving) "Saving…" else "Save",
+                    color = if (canSave) ElectricLavender else colors.onSurfaceVariant.copy(alpha = 0.5f),
+                    fontWeight = FontWeight.SemiBold,
+                )
             }
         },
         dismissButton = {

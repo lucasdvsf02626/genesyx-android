@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.genesyx.app.domain.hydration.HydrationFormat
+import com.genesyx.app.ui.components.ConsentWithdrawnBanner
 import com.genesyx.app.ui.components.Eyebrow
 import com.genesyx.app.ui.components.HydrationGoalDialog
 import com.genesyx.app.ui.components.HydrationStatusPill
@@ -59,12 +60,18 @@ fun HydrationDetailScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val glassMl by viewModel.glassMl.collectAsState()
+    val consentActive by viewModel.consentActive.collectAsState()
     val colors = MaterialTheme.colorScheme
     var manual by remember { mutableStateOf("") }
     var editGoal by remember { mutableStateOf(false) }
 
     TrackerDetailScaffold(title = "Hydration", onBack = onBack) {
         Spacer(Modifier.height(8.dp))
+
+        if (!consentActive) {
+            ConsentWithdrawnBanner()
+            Spacer(Modifier.height(12.dp))
+        }
 
         // ── Current amount, progress, status, coaching
         DetailCard {

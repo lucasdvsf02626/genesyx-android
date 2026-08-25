@@ -46,6 +46,7 @@ class UserSupplementRepositoryTest {
     private fun TestScopeSetup(userId: String?) {
         every { session.userId } returns MutableStateFlow(userId)
         every { session.currentUserId() } returns (userId ?: SessionRepository.LOCAL_USER_ID)
+        coEvery { session.awaitUserId() } returns (userId ?: SessionRepository.LOCAL_USER_ID)
         every { dao.observeAll(any()) } returns flowOf(emptyList())
     }
 

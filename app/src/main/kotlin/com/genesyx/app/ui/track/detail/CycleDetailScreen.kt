@@ -24,10 +24,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.genesyx.app.data.CycleRepository
 import com.genesyx.app.domain.content.phaseLabel
 import com.genesyx.app.domain.cycle.CycleEngine
 import com.genesyx.app.domain.model.CycleSettings
+import com.genesyx.app.data.ConsentRepository
 import com.genesyx.app.ui.components.CycleSettingsDialog
 import com.genesyx.app.ui.components.Eyebrow
 import com.genesyx.app.ui.components.GxPrimaryButton
@@ -35,6 +37,7 @@ import com.genesyx.app.ui.insights.OvulationLogic
 import com.genesyx.app.ui.theme.ElectricLavender
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -43,9 +46,11 @@ import javax.inject.Inject
 @HiltViewModel
 class CycleDetailViewModel @Inject constructor(
     private val cycleRepository: CycleRepository,
+    consentRepository: ConsentRepository,
 ) : ViewModel() {
     val settings: StateFlow<CycleSettings?> = cycleRepository.settings
-    fun save(settings: CycleSettings) = cycleRepository.upsert(settings)
+    val consentActive: StateFlow<Boolean> = consentRepository.isActive
+    fun save(settings: CycleSettings) = viewModelScope.launch { cycleRepository.upsert(settings) }
 }
 
 private val dayMonth: DateTimeFormatter = DateTimeFormatter.ofPattern("d MMM", Locale.UK)
@@ -56,6 +61,7 @@ fun CycleDetailScreen(
     viewModel: CycleDetailViewModel = hiltViewModel(),
 ) {
     val settings by viewModel.settings.collectAsState()
+    val consentActive by viewModel.consentActive.collectAsState()
     val colors = MaterialTheme.colorScheme
     var editing by remember { mutableStateOf(false) }
 
@@ -129,6 +135,7 @@ fun CycleDetailScreen(
     if (editing) {
         CycleSettingsDialog(
             current = settings,
+            consentActive = consentActive,
             onDismiss = { editing = false },
             onSave = { viewModel.save(it); editing = false },
         )

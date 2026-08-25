@@ -6,6 +6,7 @@ import com.genesyx.app.data.local.dao.ProfileDao
 import com.genesyx.app.data.local.entity.ProfileEntity
 import com.genesyx.app.data.remote.ProfileRemoteDataSource
 import com.genesyx.app.data.remote.RemoteProfile
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.Flow
@@ -42,6 +43,7 @@ class ProfileRepositoryThemeTest {
         val session = mockk<SessionRepository>(relaxed = true)
         every { session.userId } returns MutableStateFlow<String?>("u1")
         every { session.currentUserId() } returns "u1"
+        coEvery { session.awaitUserId() } returns "u1"
         every { session.displayName } returns MutableStateFlow<String?>("Lucianne")
         return ProfileRepository(dao, remote, session, mockk<Logger>(relaxed = true))
     }

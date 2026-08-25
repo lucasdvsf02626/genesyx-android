@@ -2,6 +2,7 @@ package com.genesyx.app.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.genesyx.app.data.ConsentRepository
 import com.genesyx.app.data.CycleRepository
 import com.genesyx.app.data.DailyLogRepository
 import com.genesyx.app.data.PhRepository
@@ -34,6 +35,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalTime
 import javax.inject.Inject
@@ -102,7 +104,11 @@ class HomeViewModel @Inject constructor(
     private val preferencesRepository: PreferencesRepository,
     private val phRepository: PhRepository,
     private val streakRepository: StreakRepository,
+    consentRepository: ConsentRepository,
 ) : ViewModel() {
+
+    /** Gates the cycle editor's Save — the repository refuses the write while consent is withdrawn. */
+    val consentActive: StateFlow<Boolean> = consentRepository.isActive
 
     /** The non-streak, non-log inputs, paired up because combine is only typed to five flows. */
     private data class SessionAndLearn(
@@ -162,7 +168,7 @@ class HomeViewModel @Inject constructor(
             ),
         )
 
-    fun saveCycleSettings(settings: CycleSettings) = cycleRepository.upsert(settings)
+    fun saveCycleSettings(settings: CycleSettings) = viewModelScope.launch { cycleRepository.upsert(settings) }
 
     /**
      * Marks every currently-earned milestone celebrated (per [StreakRepository.markCelebrated]'s

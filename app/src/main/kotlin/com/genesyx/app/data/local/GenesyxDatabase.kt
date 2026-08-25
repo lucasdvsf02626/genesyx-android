@@ -4,6 +4,7 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.genesyx.app.data.local.dao.ClientDao
+import com.genesyx.app.data.local.dao.ConsentEventDao
 import com.genesyx.app.data.local.dao.CycleSettingsDao
 import com.genesyx.app.data.local.dao.DailyLogDao
 import com.genesyx.app.data.local.dao.MealEntryDao
@@ -12,6 +13,7 @@ import com.genesyx.app.data.local.dao.PhReadingDao
 import com.genesyx.app.data.local.dao.ProfileDao
 import com.genesyx.app.data.local.dao.UserSupplementDao
 import com.genesyx.app.data.local.entity.ClientEntity
+import com.genesyx.app.data.local.entity.ConsentEventEntity
 import com.genesyx.app.data.local.entity.CycleSettingsEntity
 import com.genesyx.app.data.local.entity.DailyLogEntity
 import com.genesyx.app.data.local.entity.MealEntryEntity
@@ -36,8 +38,9 @@ import com.genesyx.app.data.local.entity.UserSupplementEntity
         PartnerLinkEntity::class,
         UserSupplementEntity::class,
         MealEntryEntity::class,
+        ConsentEventEntity::class,
     ],
-    version = 9,
+    version = 10,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -50,4 +53,5 @@ abstract class GenesyxDatabase : RoomDatabase() {
     abstract fun partnerDao(): PartnerDao
     abstract fun userSupplementDao(): UserSupplementDao
     abstract fun mealEntryDao(): MealEntryDao
+    abstract fun consentEventDao(): ConsentEventDao
 }

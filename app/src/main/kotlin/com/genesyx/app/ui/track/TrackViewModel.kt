@@ -2,6 +2,7 @@ package com.genesyx.app.ui.track
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.genesyx.app.data.ConsentRepository
 import com.genesyx.app.data.CycleRepository
 import com.genesyx.app.data.DailyLogRepository
 import com.genesyx.app.data.PhRepository
@@ -14,6 +15,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 import javax.inject.Inject
 
@@ -23,9 +25,11 @@ class TrackViewModel @Inject constructor(
     dailyLogRepository: DailyLogRepository,
     phRepository: PhRepository,
     preferencesRepository: PreferencesRepository,
+    consentRepository: ConsentRepository,
 ) : ViewModel() {
 
     val settings: StateFlow<CycleSettings?> = cycleRepository.settings
+    val consentActive: StateFlow<Boolean> = consentRepository.isActive
 
     /** Real-data summaries for the "Your Trackers" rows — same repositories every other screen reads. */
     val trackerSummaries: StateFlow<TrackerSummaries> = combine(
@@ -63,5 +67,5 @@ class TrackViewModel @Inject constructor(
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
-    fun saveCycleSettings(settings: CycleSettings) = cycleRepository.upsert(settings)
+    fun saveCycleSettings(settings: CycleSettings) = viewModelScope.launch { cycleRepository.upsert(settings) }
 }

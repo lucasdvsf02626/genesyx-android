@@ -32,6 +32,7 @@ class PhRepositoryRangeTest {
     private val session = mockk<SessionRepository>().apply {
         every { userId } returns MutableStateFlow<String?>("user-a")
         every { currentUserId() } returns "user-a"
+        coEvery { awaitUserId() } returns "user-a"
     }
 
     private fun reading(ph: Double) =

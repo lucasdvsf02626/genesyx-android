@@ -67,6 +67,8 @@ fun PhLogDialog(
     onDismiss: () -> Unit,
     onSave: (PhReading) -> Unit,
     onDelete: ((String) -> Unit)? = null,
+    error: String? = null,
+    saving: Boolean = false,
 ) {
     val colors = MaterialTheme.colorScheme
 
@@ -193,10 +195,12 @@ fun PhLogDialog(
                 Spacer(Modifier.height(8.dp))
                 // Same disclaimer, one tap away — the dialog is an entry form, not a leaflet.
                 ExpandableInfo(label = "About this tracker", body = PhCopy.DISCLAIMER)
+
+                SaveErrorText(error)
             }
         },
         confirmButton = {
-            TextButton(onClick = {
+            TextButton(enabled = !saving, onClick = {
                 onSave(
                     (existing ?: PhReading(phValue = value, recordedAt = recordedAt)).copy(
                         phValue = value,

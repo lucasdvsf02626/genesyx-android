@@ -108,11 +108,13 @@ fun TrackScreen(
     val logDays by viewModel.logDays.collectAsState()
     val summaries by viewModel.trackerSummaries.collectAsState()
     val hydrationUnit by viewModel.hydrationUnit.collectAsState()
+    val consentActive by viewModel.consentActive.collectAsState()
     TrackContent(
         settings = settings,
         logDays = logDays,
         summaries = summaries,
         hydrationUnit = hydrationUnit,
+        consentActive = consentActive,
         onNavigate = { navController.navigate(it) },
         onSaveCycle = { viewModel.saveCycleSettings(it) },
     )
@@ -124,6 +126,7 @@ fun TrackContent(
     logDays: Map<LocalDate, LogDay> = emptyMap(),
     hydrationUnit: HydrationUnit = HydrationUnit.ML,
     summaries: TrackerSummaries = emptyTrackerSummaries(),
+    consentActive: Boolean = true,
     onNavigate: (String) -> Unit,
     onSaveCycle: (CycleSettings) -> Unit,
 ) {
@@ -354,6 +357,7 @@ fun TrackContent(
     if (showCycleDialog) {
         CycleSettingsDialog(
             current = settings,
+            consentActive = consentActive,
             onDismiss = { showCycleDialog = false },
             onSave = {
                 onSaveCycle(it)

@@ -62,6 +62,7 @@ import com.genesyx.app.domain.model.ThemeMode
 import com.genesyx.app.ui.components.CycleSettingsDialog
 import com.genesyx.app.ui.components.Eyebrow
 import com.genesyx.app.ui.components.HydrationGoalDialog
+import com.genesyx.app.ui.components.SaveErrorText
 import com.genesyx.app.ui.components.ScreenHeader
 import com.genesyx.app.ui.components.isValidEmail
 import com.genesyx.app.ui.navigation.Screen
@@ -84,6 +85,7 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel = hi
     val deleteError by viewModel.deleteError.collectAsState()
     val accountDeleted by viewModel.deleted.collectAsState()
     val hasSignedOut by viewModel.signedOut.collectAsState()
+    val consentActive by viewModel.consentActive.collectAsState()
     val context = LocalContext.current
 
     // Account deleted → clear the back stack and return to the start (splash/auth).
@@ -109,6 +111,7 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel = hi
     var prefsOpen by remember { mutableStateOf(false) }
     var detail by remember { mutableStateOf<String?>(null) }
     var delOpen by remember { mutableStateOf(false) }
+    var consentOpen by remember { mutableStateOf(false) }
 
     val name = displayName ?: "Guest"
     val goSignIn = { navController.navigate(Screen.Auth.route) }
@@ -195,7 +198,10 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel = hi
             Spacer(Modifier.height(16.dp))
             GroupLabel("Account")
             CardGroup {
-                RowItem("Edit name", onClick = { if (signedIn) nameOpen = true else goSignIn() })
+                // Clear the last save's outcome before opening, not from inside the dialog: the
+                // dialog closes itself on `saved`, so a stale `saved` still set at first
+                // composition would shut it again the instant she reopened it.
+                RowItem("Edit name", onClick = { viewModel.resetNameSave(); if (signedIn) nameOpen = true else goSignIn() })
                 Divider()
                 RowItem("Change email", onClick = { if (signedIn) emailOpen = true else goSignIn() })
                 Divider()
@@ -214,15 +220,24 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel = hi
             Spacer(Modifier.height(16.dp))
             GroupLabel("Tracking")
             CardGroup {
+                // First in the group because it governs everything under it: with collection
+                // withdrawn, the editors below refuse to save.
+                RowItem(
+                    "Health data consent",
+                    onClick = { consentOpen = true },
+                    value = if (consentActive) "On" else "Off",
+                    valueColor = if (consentActive) colors.onSurfaceVariant else colors.error,
+                )
+                Divider()
                 RowItem("Personal Details", onClick = { detail = "Personal Details" })
                 Divider()
                 // These two used to open static copy — dead ends. They now open the same editors
                 // the rest of the app uses, so "previous entries can actually be updated".
-                RowItem("Health Profile", onClick = { healthOpen = true })
+                RowItem("Health Profile", onClick = { viewModel.resetCycleSave(); healthOpen = true })
                 Divider()
                 // Tracking Preferences edits the onboarding answers (matches iOS); hydration settings
                 // get their own row so nothing that was here is lost.
-                RowItem("Tracking Preferences", onClick = { prefsOpen = true })
+                RowItem("Tracking Preferences", onClick = { viewModel.resetPrefsSave(); prefsOpen = true })
                 Divider()
                 RowItem("Hydration", onClick = { trackingOpen = true })
             }
@@ -295,7 +310,17 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel = hi
     }
 
     if (nameOpen) {
-        EditNameDialog(initial = name, onDismiss = { nameOpen = false }, onSave = { viewModel.updateName(it); nameOpen = false })
+        // The dialog closes when the save reports success, not when the button is pressed. Closing
+        // on press is what made a failed write indistinguishable from a good one.
+        val nameSave by viewModel.nameSave.collectAsState()
+        LaunchedEffect(nameSave.saved) { if (nameSave.saved) nameOpen = false }
+        EditNameDialog(
+            initial = name,
+            saving = nameSave.saving,
+            error = nameSave.error,
+            onDismiss = { if (!nameSave.saving) nameOpen = false },
+            onSave = { viewModel.updateName(it) },
+        )
     }
     if (pwOpen) {
         val pwChanging by viewModel.pwChanging.collectAsState()
@@ -324,15 +349,25 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel = hi
             onDismiss = { if (!emailChanging) emailOpen = false },
         )
     }
+    if (consentOpen) {
+        HealthDataConsentDialog(
+            active = consentActive,
+            onDismiss = { consentOpen = false },
+            onGrant = { viewModel.grantHealthDataConsent() },
+            onWithdraw = { viewModel.withdrawHealthDataConsent() },
+        )
+    }
     if (healthOpen) {
         val cycleSettings by viewModel.cycleSettings.collectAsState()
+        val cycleSave by viewModel.cycleSave.collectAsState()
+        LaunchedEffect(cycleSave.saved) { if (cycleSave.saved) healthOpen = false }
         CycleSettingsDialog(
             current = cycleSettings,
-            onDismiss = { healthOpen = false },
-            onSave = {
-                viewModel.saveCycleSettings(it)
-                healthOpen = false
-            },
+            consentActive = consentActive,
+            saving = cycleSave.saving,
+            error = cycleSave.error,
+            onDismiss = { if (!cycleSave.saving) healthOpen = false },
+            onSave = { viewModel.saveCycleSettings(it) },
         )
     }
     if (trackingOpen) {
@@ -354,10 +389,15 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel = hi
     }
     if (prefsOpen) {
         val quizAnswers by viewModel.quizAnswers.collectAsState()
+        val prefsSave by viewModel.prefsSave.collectAsState()
+        LaunchedEffect(prefsSave.saved) { if (prefsSave.saved) prefsOpen = false }
         TrackingPreferencesDialog(
             current = quizAnswers,
-            onDismiss = { prefsOpen = false },
-            onSave = { viewModel.saveQuizAnswers(it); prefsOpen = false },
+            consentActive = consentActive,
+            saving = prefsSave.saving,
+            error = prefsSave.error,
+            onDismiss = { if (!prefsSave.saving) prefsOpen = false },
+            onSave = { viewModel.saveQuizAnswers(it) },
         )
     }
     detail?.let { d ->
@@ -375,7 +415,7 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel = hi
                         // All three amend actions in one obvious place (client: "make edit controls
                         // obvious"). These are the only editable personal fields the profile holds.
                         Column {
-                            TextButton(onClick = { detail = null; if (signedIn) nameOpen = true else goSignIn() }) {
+                            TextButton(onClick = { detail = null; viewModel.resetNameSave(); if (signedIn) nameOpen = true else goSignIn() }) {
                                 Text("Edit name", color = ElectricLavender, fontWeight = FontWeight.SemiBold)
                             }
                             TextButton(onClick = { detail = null; if (signedIn) emailOpen = true else goSignIn() }) {
@@ -473,7 +513,7 @@ private fun CardGroup(content: @Composable androidx.compose.foundation.layout.Co
 }
 
 @Composable
-private fun RowItem(label: String, onClick: () -> Unit) {
+private fun RowItem(label: String, onClick: () -> Unit, value: String? = null, valueColor: Color? = null) {
     val colors = MaterialTheme.colorScheme
     Row(
         modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 12.dp),
@@ -481,7 +521,13 @@ private fun RowItem(label: String, onClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(label, fontSize = 14.5.sp, color = colors.onSurface)
-        Icon(Icons.Filled.ChevronRight, null, tint = colors.onSurfaceVariant, modifier = Modifier.size(16.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (value != null) {
+                Text(value, fontSize = 13.sp, color = valueColor ?: colors.onSurfaceVariant)
+                Spacer(Modifier.size(6.dp))
+            }
+            Icon(Icons.Filled.ChevronRight, null, tint = colors.onSurfaceVariant, modifier = Modifier.size(16.dp))
+        }
     }
 }
 
@@ -575,9 +621,18 @@ private fun PartnerSection(
 }
 
 @Composable
-private fun EditNameDialog(initial: String, onDismiss: () -> Unit, onSave: (String) -> Unit) {
+private fun EditNameDialog(
+    initial: String,
+    saving: Boolean,
+    error: String?,
+    onDismiss: () -> Unit,
+    onSave: (String) -> Unit,
+) {
     val colors = MaterialTheme.colorScheme
     var name by remember { mutableStateOf(initial) }
+    // No consent gate: a display name is not Article 9 health data, so there is nothing to refuse
+    // here — only a server that might not answer.
+    val canSave = name.isNotBlank() && !saving
     AlertDialog(
         onDismissRequest = onDismiss,
         shape = RoundedCornerShape(20.dp),
@@ -588,9 +643,18 @@ private fun EditNameDialog(initial: String, onDismiss: () -> Unit, onSave: (Stri
                 Text("This is how you'll appear across the app.", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
                 Spacer(Modifier.height(12.dp))
                 OutlinedTextField(name, { if (it.length <= 80) name = it }, label = { Text("Display name") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                SaveErrorText(error)
             }
         },
-        confirmButton = { TextButton(onClick = { if (name.isNotBlank()) onSave(name.trim()) }) { Text("Save", color = ElectricLavender, fontWeight = FontWeight.SemiBold) } },
+        confirmButton = {
+            TextButton(enabled = canSave, onClick = { onSave(name.trim()) }) {
+                Text(
+                    if (saving) "Saving…" else "Save",
+                    color = if (canSave) ElectricLavender else colors.onSurfaceVariant.copy(alpha = 0.5f),
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+        },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel", color = colors.onSurfaceVariant) } },
     )
 }

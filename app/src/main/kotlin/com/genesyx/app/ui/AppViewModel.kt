@@ -2,8 +2,11 @@ package com.genesyx.app.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.genesyx.app.core.di.ApplicationScope
 import com.genesyx.app.data.PreferencesRepository
+import com.genesyx.app.data.ProfileRepository
 import com.genesyx.app.data.SessionRepository
+import kotlinx.coroutines.CoroutineScope
 import com.genesyx.app.domain.model.ThemeMode
 import com.genesyx.app.ui.navigation.Screen
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -19,6 +22,8 @@ import javax.inject.Inject
 class AppViewModel @Inject constructor(
     preferencesRepository: PreferencesRepository,
     session: SessionRepository,
+    private val profileRepository: ProfileRepository,
+    @ApplicationScope private val appScope: CoroutineScope,
 ) : ViewModel() {
     val themeMode: StateFlow<ThemeMode> = preferencesRepository.themeMode
 
@@ -28,8 +33,13 @@ class AppViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            _startRoute.value =
-                if (session.awaitSignedIn()) Screen.Home.route else Screen.Splash.route
+            val signedIn = session.awaitSignedIn()
+            _startRoute.value = if (signedIn) Screen.Home.route else Screen.Splash.route
+            // Sign-in was the only thing that ever pulled the profile row, so an account that was
+            // already signed in kept greeting her by the guess made from her address. This also
+            // gives an offline rename its retry — refresh pushes what's owed before it pulls.
+            // Off the ViewModel's scope: it must not be cancelled by the splash going away.
+            if (signedIn) appScope.launch { profileRepository.refresh(session.currentUserId()) }
         }
     }
 }

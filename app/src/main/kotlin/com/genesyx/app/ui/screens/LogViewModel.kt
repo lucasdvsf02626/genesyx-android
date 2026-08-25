@@ -3,6 +3,7 @@ package com.genesyx.app.ui.screens
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.genesyx.app.data.ConsentRepository
 import com.genesyx.app.data.DailyLogRepository
 import com.genesyx.app.data.MealLogRepository
 import com.genesyx.app.data.PreferencesRepository
@@ -27,7 +28,15 @@ class LogViewModel @Inject constructor(
     private val mealLogRepository: MealLogRepository,
     preferencesRepository: PreferencesRepository,
     userSupplementRepository: UserSupplementRepository,
+    consentRepository: ConsentRepository,
 ) : ViewModel() {
+
+    /**
+     * Whether health-data collection is permitted. Every write on this screen is gated on it, and a
+     * refused write returns nothing to show — the form would simply appear to do nothing. So the
+     * screen says so up front rather than letting her fill it in and wonder why it never saved.
+     */
+    val consentActive: StateFlow<Boolean> = consentRepository.isActive
 
     /**
      * The day this editor reads and writes. Today unless the route carried a valid, non-future

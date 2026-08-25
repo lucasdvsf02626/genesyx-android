@@ -12,10 +12,12 @@ import com.genesyx.app.data.remote.PhRemoteDataSource
 import com.genesyx.app.data.remote.dto.toDto
 import com.genesyx.app.data.remote.dto.toEntity
 import com.genesyx.app.data.sync.PhSyncScheduler
+import com.genesyx.app.domain.consent.HealthDataCollectionGate
 import com.genesyx.app.domain.model.PhReading
 import com.genesyx.app.domain.ph.PhStatus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flatMapLatest
@@ -46,6 +48,9 @@ class PhRepository @Inject constructor(
     private val scheduler: PhSyncScheduler,
     private val logger: Logger,
     @ApplicationScope private val scope: CoroutineScope,
+    // Hilt always supplies the real gate (BindingsModule binds ConsentRepository). The permissive
+    // default exists so a test can construct this without standing up Room, mirroring iOS.
+    private val consent: HealthDataCollectionGate = HealthDataCollectionGate { true },
 ) {
     val readings: StateFlow<List<PhReading>> =
         session.userId
@@ -55,34 +60,47 @@ class PhRepository @Inject constructor(
 
     private fun Double.round1(): Double = (this * 10).roundToInt() / 10.0
 
-    fun create(reading: PhReading): PhWriteResult = write(reading)
+    suspend fun create(reading: PhReading): PhWriteResult = write(reading)
 
-    fun update(reading: PhReading): PhWriteResult = write(reading)
+    suspend fun update(reading: PhReading): PhWriteResult = write(reading)
 
-    private fun write(reading: PhReading): PhWriteResult {
+    /**
+     * Suspends until the write is settled locally, so the returned result is the truth about
+     * whether anything was recorded. It used to launch and report [PhWriteResult.Accepted]
+     * immediately, which meant a reading the consent gate refused still closed the dialog on a
+     * success it never had.
+     *
+     * Runs on [scope] and is merely awaited by the caller, so leaving the pH tab mid-save cannot
+     * cancel the Room write and lose the reading before there is anything for the queue to retry.
+     */
+    private suspend fun write(reading: PhReading): PhWriteResult = scope.async {
         // Enforce the trackable vaginal-pH range in the data layer (defense-in-depth beyond the UI
         // slider). Out-of-range values are rejected, never persisted. Boundaries are inclusive.
         val value = reading.phValue.round1()
         if (value < PhStatus.MIN || value > PhStatus.MAX) {
             logger.w("Ph", "rejected out-of-range pH $value (allowed ${PhStatus.MIN}..${PhStatus.MAX})")
-            return PhWriteResult.OutOfRange(value)
+            return@async PhWriteResult.OutOfRange(value)
         }
-        scope.launch {
-            val userId = session.currentUserId()
-            val signedIn = userId != SessionRepository.LOCAL_USER_ID
-            val entity = reading.copy(phValue = value).toEntity(
-                userId = userId,
-                // Guests have no server target (RLS scopes to auth.uid()). Mark SYNCED (no pending
-                // sync) and never push/queue — otherwise the write would enqueue doomed retries.
-                syncStatus = if (signedIn) PhSyncStatus.PENDING_UPSERT else PhSyncStatus.SYNCED,
-                updatedAt = LocalDateTime.now(),
-            )
-            dao.upsert(entity)
-            logger.i("Ph", "saved pH reading ${entity.id} locally for $userId")
-            if (signedIn) pushOrQueue(entity)
+        if (!consent.isCollectionPermitted()) {
+            logger.w("Ph", "write refused — health-data consent withdrawn")
+            return@async PhWriteResult.Refused
         }
-        return PhWriteResult.Accepted
-    }
+        val userId = session.awaitUserId()
+        val signedIn = userId != SessionRepository.LOCAL_USER_ID
+        val entity = reading.copy(phValue = value).toEntity(
+            userId = userId,
+            // Guests have no server target (RLS scopes to auth.uid()). Mark SYNCED (no pending
+            // sync) and never push/queue — otherwise the write would enqueue doomed retries.
+            syncStatus = if (signedIn) PhSyncStatus.PENDING_UPSERT else PhSyncStatus.SYNCED,
+            updatedAt = LocalDateTime.now(),
+        )
+        dao.upsert(entity)
+        logger.i("Ph", "saved pH reading ${entity.id} locally for $userId")
+        // The push stays on the app scope: the row is already safe in Room, and the dialog closing
+        // must not cancel the upload mid-flight and strand it without a queued retry.
+        if (signedIn) scope.launch { pushOrQueue(entity) }
+        PhWriteResult.Accepted
+    }.await()
 
     fun delete(id: String) {
         scope.launch {
@@ -110,6 +128,12 @@ class PhRepository @Inject constructor(
 
     /** Drains all PENDING rows (called by [com.genesyx.app.data.sync.PhSyncWorker]). */
     suspend fun syncPending(): Boolean {
+        // A queue drained after a withdrawal uploads the very readings she just stopped us
+        // collecting. Report success so WorkManager stops asking rather than retrying forever.
+        if (!consent.isCollectionPermitted()) {
+            logger.w("Ph", "sync refused — health-data consent withdrawn")
+            return true
+        }
         var allSynced = true
         for (entity in dao.pending()) {
             if (remote.upsert(entity.toDto()) is DataResult.Success) {
@@ -129,6 +153,12 @@ class PhRepository @Inject constructor(
      */
     suspend fun adoptGuestReadings(userId: String): Int {
         if (userId == SessionRepository.LOCAL_USER_ID) return 0
+        // Adoption marks rows PENDING_UPSERT, so it is an upload in slow motion. Her readings stay
+        // on the device either way — withdrawal stops collection, it does not erase.
+        if (!consent.isCollectionPermitted()) {
+            logger.w("Ph", "guest adoption refused — health-data consent withdrawn")
+            return 0
+        }
         val adopted = dao.adoptGuestRows(SessionRepository.LOCAL_USER_ID, userId, LocalDateTime.now())
         if (adopted > 0) {
             logger.i("Ph", "adopted $adopted guest pH reading(s) into account")
@@ -143,6 +173,10 @@ class PhRepository @Inject constructor(
      */
     suspend fun refresh(userId: String = session.currentUserId()) {
         if (userId == SessionRepository.LOCAL_USER_ID) return // guest: nothing to pull/push
+        if (!consent.isCollectionPermitted()) {
+            logger.w("Ph", "refresh refused — health-data consent withdrawn")
+            return
+        }
         when (val result = remote.list(userId)) {
             is DataResult.Success -> {
                 for (dto in result.data) {
@@ -165,9 +199,16 @@ class PhRepository @Inject constructor(
     }
 }
 
-/** Outcome of a pH write. Callers may surface [OutOfRange] to the user; the value is not persisted. */
+/**
+ * Outcome of a pH write. Nothing is persisted for either refusal, and both are the caller's to
+ * surface — a dialog that closes on one of these has told her a reading was saved that wasn't.
+ */
 sealed interface PhWriteResult {
     data object Accepted : PhWriteResult
+
+    /** The health-data consent gate refused. The remedy is the consent row in Profile. */
+    data object Refused : PhWriteResult
+
     data class OutOfRange(
         val value: Double,
         val min: Double = PhStatus.MIN,

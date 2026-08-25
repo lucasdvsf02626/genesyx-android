@@ -9,6 +9,7 @@ import com.genesyx.app.data.local.entity.toDomain
 import com.genesyx.app.data.local.entity.toEntity
 import com.genesyx.app.data.remote.DailyLogRemoteDataSource
 import com.genesyx.app.data.sync.DailyLogSyncScheduler
+import com.genesyx.app.domain.consent.HealthDataCollectionGate
 import com.genesyx.app.domain.model.DailyLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -44,6 +45,9 @@ class DailyLogRepository @Inject constructor(
     private val scheduler: DailyLogSyncScheduler,
     private val logger: Logger,
     @ApplicationScope private val scope: CoroutineScope,
+    // Hilt always supplies the real gate (BindingsModule binds ConsentRepository). The permissive
+    // default exists so a test can construct this without standing up Room, mirroring iOS.
+    private val consent: HealthDataCollectionGate = HealthDataCollectionGate { true },
 ) {
     private val logsOrNull: StateFlow<Map<LocalDate, DailyLog>?> =
         session.userId
@@ -77,6 +81,10 @@ class DailyLogRepository @Inject constructor(
      */
     fun upsert(date: LocalDate, log: DailyLog) {
         scope.launch {
+            if (!consent.isCollectionPermitted()) {
+                logger.w("DailyLog", "upsert refused — health-data consent withdrawn")
+                return@launch
+            }
             val userId = session.currentUserId()
             val signedIn = userId != SessionRepository.LOCAL_USER_ID
             // Guests have no server target (RLS scopes to auth.uid()), so a queued push would retry
@@ -165,6 +173,10 @@ class DailyLogRepository @Inject constructor(
      */
     private fun mutateRow(date: LocalDate, transform: (DailyLog) -> DailyLog) {
         scope.launch {
+            if (!consent.isCollectionPermitted()) {
+                logger.w("DailyLog", "edit refused — health-data consent withdrawn")
+                return@launch
+            }
             val userId = session.currentUserId()
             val signedIn = userId != SessionRepository.LOCAL_USER_ID
             val status = if (signedIn) LogSyncStatus.PENDING_UPSERT else LogSyncStatus.SYNCED
@@ -185,6 +197,10 @@ class DailyLogRepository @Inject constructor(
      * Anything still pending is then pushed, so local wins and the server catches up.
      */
     suspend fun refresh(userId: String = session.currentUserId()) {
+        if (!consent.isCollectionPermitted()) {
+            logger.w("DailyLog", "refresh refused — health-data consent withdrawn")
+            return
+        }
         when (val result = remote.listLogs(userId)) {
             is DataResult.Success -> {
                 var kept = 0

@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.genesyx.app.auth.AuthRepository
 import com.genesyx.app.core.result.DataResult
+import com.genesyx.app.core.result.SaveOutcome
+import com.genesyx.app.data.ConsentRepository
 import com.genesyx.app.data.CycleRepository
 import com.genesyx.app.data.PartnerRepository
 import com.genesyx.app.data.PreferencesRepository
@@ -34,6 +36,7 @@ class ProfileViewModel @Inject constructor(
     private val syncStatusRepository: SyncStatusRepository,
     private val cycleRepository: CycleRepository,
     private val quizAnswersRepository: QuizAnswersRepository,
+    private val consentRepository: ConsentRepository,
 ) : ViewModel() {
 
     val isSignedIn: StateFlow<Boolean> = sessionRepository.isSignedIn
@@ -52,9 +55,33 @@ class ProfileViewModel @Inject constructor(
 
     fun syncNow() = syncStatusRepository.syncNow()
 
+    /**
+     * Whether health-data collection is currently permitted. Drives the consent row's subtitle and
+     * the withdrawn banner in the editors whose saves the gate refuses.
+     */
+    val consentActive: StateFlow<Boolean> = consentRepository.isActive
+
+    fun grantHealthDataConsent() = viewModelScope.launch { consentRepository.grant() }
+    fun withdrawHealthDataConsent() = viewModelScope.launch { consentRepository.withdraw() }
+
     // Health Profile row → the same cycle settings the Track screen edits.
     val cycleSettings: StateFlow<CycleSettings?> = cycleRepository.settings
-    fun saveCycleSettings(settings: CycleSettings) = cycleRepository.upsert(settings)
+
+    private val _cycleSave = MutableStateFlow(SaveState())
+    val cycleSave: StateFlow<SaveState> = _cycleSave.asStateFlow()
+
+    /**
+     * Saves and reports. This used to hand off to the repository's application scope and return
+     * immediately, so the dialog closed on a refused or failed write exactly as it did on a good
+     * one — the "saves, then reverts" symptom.
+     */
+    fun saveCycleSettings(settings: CycleSettings) {
+        if (_cycleSave.value.saving) return
+        _cycleSave.value = SaveState(saving = true)
+        viewModelScope.launch { _cycleSave.value = cycleRepository.upsert(settings).toSaveState() }
+    }
+
+    fun resetCycleSave() { _cycleSave.value = SaveState() }
 
     // Hydration row → the shared hydration goal + display unit + glass size.
     val hydrationGoalMl: StateFlow<Int> = preferencesRepository.hydrationGoalMl
@@ -63,7 +90,18 @@ class ProfileViewModel @Inject constructor(
 
     // Tracking Preferences row → the onboarding quiz answers, editable and synced to quiz_answers.
     val quizAnswers: StateFlow<Map<String, String>> = quizAnswersRepository.answers
-    fun saveQuizAnswers(answers: Map<String, String>) = quizAnswersRepository.record(answers)
+
+    private val _prefsSave = MutableStateFlow(SaveState())
+    val prefsSave: StateFlow<SaveState> = _prefsSave.asStateFlow()
+
+    fun saveQuizAnswers(answers: Map<String, String>) {
+        if (_prefsSave.value.saving) return
+        _prefsSave.value = SaveState(saving = true)
+        viewModelScope.launch { _prefsSave.value = quizAnswersRepository.record(answers).toSaveState() }
+    }
+
+    fun resetPrefsSave() { _prefsSave.value = SaveState() }
+
     fun setHydrationGoalMl(ml: Int) = preferencesRepository.setHydrationGoalMl(ml)
     fun setHydrationUnit(unit: HydrationUnit) = preferencesRepository.setHydrationUnit(unit)
     fun setHydrationGlassMl(ml: Int) = preferencesRepository.setHydrationGlassMl(ml)
@@ -86,10 +124,28 @@ class ProfileViewModel @Inject constructor(
     fun setPush(enabled: Boolean) = preferencesRepository.setPush(enabled)
     fun setFocus(mode: FocusMode) = preferencesRepository.setFocus(mode)
 
+    private val _nameSave = MutableStateFlow(SaveState())
+    val nameSave: StateFlow<SaveState> = _nameSave.asStateFlow()
+
+    /**
+     * A display name is not Article 9 data, so there is no consent gate here and nothing to refuse
+     * — only a server that might not answer. Deliberately not gated: adding a check would be a
+     * correctness regression, not parity.
+     */
     fun updateName(name: String) {
+        if (_nameSave.value.saving) return
+        _nameSave.value = SaveState(saving = true)
         sessionRepository.updateDisplayName(name)
-        viewModelScope.launch { profileRepository.setDisplayName(name) }
+        viewModelScope.launch {
+            val result = profileRepository.setDisplayName(name)
+            _nameSave.value = when (result) {
+                is DataResult.Error -> SaveOutcome.Failed(result.message).toSaveState()
+                else -> SaveState(saved = true)
+            }
+        }
     }
+
+    fun resetNameSave() { _nameSave.value = SaveState() }
     /**
      * Signs out remotely + locally, then signals the screen to leave. The navigation is part of the
      * fix, not polish: staying on Profile after sign-out leaves the user inside the authenticated

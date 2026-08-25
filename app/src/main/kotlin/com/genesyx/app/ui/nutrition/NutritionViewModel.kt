@@ -2,6 +2,7 @@ package com.genesyx.app.ui.nutrition
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.genesyx.app.data.ConsentRepository
 import com.genesyx.app.data.CycleRepository
 import com.genesyx.app.data.DailyLogRepository
 import com.genesyx.app.data.GenesyxProductRepository
@@ -67,7 +68,14 @@ class NutritionViewModel @Inject constructor(
     private val mealLogRepository: MealLogRepository,
     genesyxProductRepository: GenesyxProductRepository,
     streakRepository: StreakRepository,
+    consentRepository: ConsentRepository,
 ) : ViewModel() {
+
+    /**
+     * Whether health-data collection is permitted. The water quick-add is gated on it and returns
+     * nothing when refused, so the buttons would simply stop working with no explanation.
+     */
+    val consentActive: StateFlow<Boolean> = consentRepository.isActive
 
     /** Today's logged meals — local-only, live from Room. */
     val todaysMeals: StateFlow<List<MealEntry>> =

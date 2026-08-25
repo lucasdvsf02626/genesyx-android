@@ -60,6 +60,7 @@ import com.genesyx.app.domain.content.LearnDrip
 import com.genesyx.app.domain.content.recipesFor
 import com.genesyx.app.ui.components.ExpandableInfo
 import com.genesyx.app.domain.content.supplementPlan
+import com.genesyx.app.ui.components.ConsentWithdrawnBanner
 import com.genesyx.app.ui.components.Eyebrow
 import com.genesyx.app.ui.components.GxPrimaryButton
 import com.genesyx.app.ui.components.HydrationGoalDialog
@@ -82,6 +83,7 @@ fun NutritionScreen(
     val todaysMeals by viewModel.todaysMeals.collectAsState()
     val catalogue by viewModel.catalogue.collectAsState()
     val glassMl by viewModel.glassMl.collectAsState()
+    val consentActive by viewModel.consentActive.collectAsState()
     var expandedFood by remember { mutableStateOf<String?>(null) }
     var expandedRecipe by remember { mutableStateOf<String?>(null) }
     // Saveable so a rotation after she dismisses it doesn't re-open the plan from `openPlan`.
@@ -109,6 +111,11 @@ fun NutritionScreen(
         }
 
         Column(Modifier.padding(horizontal = 20.dp)) {
+            if (!consentActive) {
+                ConsentWithdrawnBanner()
+                Spacer(Modifier.height(12.dp))
+            }
+
             // ── Hydration card
             HydrationCard(
                 waterMl = state.waterMl,
