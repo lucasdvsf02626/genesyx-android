@@ -2,25 +2,33 @@ package com.genesyx.app.data
 
 import app.cash.turbine.test
 import com.genesyx.app.core.log.Logger
+import com.genesyx.app.core.result.DataResult
 import com.genesyx.app.data.local.dao.CycleSettingsDao
 import com.genesyx.app.data.local.dao.DailyLogDao
 import com.genesyx.app.data.local.dao.PhReadingDao
+import com.genesyx.app.data.local.dao.UserSupplementDao
 import com.genesyx.app.data.local.datastore.GenesyxPreferencesDataStore
 import com.genesyx.app.data.local.entity.PhReadingEntity
+import com.genesyx.app.data.local.entity.SupplementSyncStatus
+import com.genesyx.app.data.local.entity.UserSupplementEntity
 import com.genesyx.app.data.remote.CycleRemoteDataSource
 import com.genesyx.app.data.remote.DailyLogRemoteDataSource
 import com.genesyx.app.data.remote.PhRemoteDataSource
 import com.genesyx.app.data.remote.QuizAnswersRemoteDataSource
+import com.genesyx.app.data.remote.UserSupplementRemoteDataSource
 import com.genesyx.app.data.sync.DailyLogSyncScheduler
 import com.genesyx.app.data.sync.PhSyncScheduler
+import com.genesyx.app.data.sync.UserSupplementSyncScheduler
 import com.genesyx.app.domain.consent.HealthDataCollectionGate
 import com.genesyx.app.domain.model.CycleSettings
 import com.genesyx.app.domain.model.DailyLog
 import com.genesyx.app.domain.model.PhReading
+import com.genesyx.app.domain.model.UserSupplement
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
@@ -34,7 +42,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 
 /**
- * Article 9 gating across the four health stores.
+ * Article 9 gating across the five health stores.
  *
  * Reads are asserted as hard as writes. Gating only the writes is what voided the equivalent iOS
  * build: after a withdrawal there is no lawful basis to pull her health data back down, and a pull
@@ -228,6 +236,107 @@ class ConsentGateTest {
         coVerify(exactly = 0) { store.setQuizAnswers(any()) }
         coVerify(exactly = 0) { remote.get(any()) }
         coVerify(exactly = 0) { remote.upsert(any(), any()) }
+        scope.cancel()
+    }
+
+    // ── Her own supplements ───────────────────────────────────────────────────────────────────
+    //
+    // What she takes is health data and it syncs to Supabase, but this repository shipped without
+    // the gate the other four had — it was cloned from PhRepository before the gate existed.
+
+    private fun supplementRepo(
+        dao: UserSupplementDao,
+        remote: UserSupplementRemoteDataSource,
+        scheduler: UserSupplementSyncScheduler,
+        scope: CoroutineScope,
+    ): UserSupplementRepository {
+        every { dao.observeAll(any()) } returns flowOf(emptyList())
+        return UserSupplementRepository(dao, remote, signedInSession(), scheduler, logger, scope, withdrawn)
+    }
+
+    @Test
+    fun `a supplement is not written while consent is withdrawn, and says so`() = runTest {
+        val dao = mockk<UserSupplementDao>(relaxed = true)
+        val remote = mockk<UserSupplementRemoteDataSource>(relaxed = true)
+        val scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler))
+
+        val result = supplementRepo(dao, remote, mockk(relaxed = true), scope)
+            .create(UserSupplement(id = "s1", name = "Magnesium"))
+
+        assertEquals(SupplementWriteResult.Refused, result)
+        coVerify(exactly = 0) { dao.upsert(any()) }
+        coVerify(exactly = 0) { remote.upsert(any()) }
+        scope.cancel()
+    }
+
+    @Test
+    fun `supplements are not pulled back down while consent is withdrawn`() = runTest {
+        val dao = mockk<UserSupplementDao>(relaxed = true)
+        val remote = mockk<UserSupplementRemoteDataSource>(relaxed = true)
+        val scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler))
+
+        supplementRepo(dao, remote, mockk(relaxed = true), scope).refresh("user-a")
+
+        coVerify(exactly = 0) { remote.list(any()) }
+        coVerify(exactly = 0) { dao.upsert(any()) }
+        scope.cancel()
+    }
+
+    /**
+     * The queue is the leak the write gate alone does not close: rows already marked PENDING_UPSERT
+     * when she withdrew would otherwise be uploaded by the next worker run. Draining reports success
+     * so WorkManager retires the job instead of retrying a refusal until backoff gives up.
+     */
+    @Test
+    fun `a queued supplement is not uploaded after a withdrawal`() = runTest {
+        val dao = mockk<UserSupplementDao>(relaxed = true)
+        val remote = mockk<UserSupplementRemoteDataSource>(relaxed = true)
+        val scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler))
+
+        val drained = supplementRepo(dao, remote, mockk(relaxed = true), scope).syncPending()
+
+        assertEquals(true, drained)
+        coVerify(exactly = 0) { dao.pending() }
+        coVerify(exactly = 0) { remote.upsert(any()) }
+        scope.cancel()
+    }
+
+    @Test
+    fun `guest supplements are not adopted into an account while consent is withdrawn`() = runTest {
+        val dao = mockk<UserSupplementDao>(relaxed = true)
+        val scheduler = mockk<UserSupplementSyncScheduler>(relaxed = true)
+        val scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler))
+
+        val adopted = supplementRepo(dao, mockk(relaxed = true), scheduler, scope)
+            .adoptGuestEntries("user-a")
+
+        assertEquals(0, adopted)
+        coVerify(exactly = 0) { dao.adoptGuestRows(any(), any(), any()) }
+        verify(exactly = 0) { scheduler.schedule() }
+        scope.cancel()
+    }
+
+    /**
+     * Deletion is deliberately outside the gate, here and in [PhRepository]. Withdrawal stops
+     * collection; refusing to propagate a removal would strand her row on the server — the opposite
+     * of what she asked for.
+     */
+    @Test
+    fun `deleting a supplement still reaches the server while consent is withdrawn`() = runTest {
+        val dao = mockk<UserSupplementDao>(relaxed = true)
+        val remote = mockk<UserSupplementRemoteDataSource>(relaxed = true)
+        coEvery { dao.getById("s1") } returns UserSupplementEntity(
+            id = "s1", userId = "user-a", name = "Magnesium", dose = null, timeOfDay = null,
+            productId = null, createdAt = LocalDateTime.of(2026, 1, 1, 9, 0),
+            syncStatus = SupplementSyncStatus.PENDING_DELETE,
+        )
+        coEvery { remote.upsert(any()) } returns DataResult.Success(Unit)
+        val scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler))
+
+        supplementRepo(dao, remote, mockk(relaxed = true), scope).delete("s1")
+
+        coVerify { dao.markDeleted(eq("s1"), any()) }
+        coVerify(exactly = 1) { remote.upsert(any()) }
         scope.cancel()
     }
 }

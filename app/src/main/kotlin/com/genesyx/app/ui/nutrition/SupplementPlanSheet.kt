@@ -32,6 +32,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,6 +52,7 @@ import com.genesyx.app.ui.components.GxPrimaryButton
 import com.genesyx.app.ui.theme.ElectricBlue
 import com.genesyx.app.ui.theme.ElectricLavender
 import com.genesyx.app.ui.theme.ElectricPink
+import kotlinx.coroutines.launch
 
 /** The colour a plan chip carries — by position, so the four essentials keep their identities. */
 internal fun planTint(index: Int): Color = when (index % 4) {
@@ -89,7 +91,7 @@ fun SupplementPlanSheet(
     customReminders: Map<String, Int>,
     onSetPlanReminder: (Supplement, Int?) -> Unit,
     onSetCustomReminder: (UserSupplement, Int?) -> Unit,
-    onAddSupplement: (UserSupplement) -> SupplementWriteResult,
+    onAddSupplement: suspend (UserSupplement) -> SupplementWriteResult,
     onDismiss: () -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
@@ -212,8 +214,9 @@ private fun ReminderBell(name: String, minutes: Int?, onTurnOn: () -> Unit, onTu
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun AddSupplementForm(onAdd: (UserSupplement) -> SupplementWriteResult) {
+private fun AddSupplementForm(onAdd: suspend (UserSupplement) -> SupplementWriteResult) {
     val colors = MaterialTheme.colorScheme
+    val scope = rememberCoroutineScope()
     var name by remember { mutableStateOf("") }
     var dose by remember { mutableStateOf("") }
     var time by remember { mutableStateOf(SupplementTime.ANYTIME) }
@@ -265,9 +268,15 @@ private fun AddSupplementForm(onAdd: (UserSupplement) -> SupplementWriteResult) 
         enabled = canAdd,
         onClick = {
             val entry = UserSupplement(name = name.trim(), dose = dose.trim().ifEmpty { null }, timeOfDay = time)
-            when (onAdd(entry)) {
-                SupplementWriteResult.Accepted -> { name = ""; dose = ""; time = SupplementTime.ANYTIME; error = null }
-                SupplementWriteResult.InvalidName -> error = "Give it a name (up to ${UserSupplement.NAME_MAX_LENGTH} characters)."
+            scope.launch {
+                when (onAdd(entry)) {
+                    SupplementWriteResult.Accepted -> { name = ""; dose = ""; time = SupplementTime.ANYTIME; error = null }
+                    SupplementWriteResult.InvalidName -> error = "Give it a name (up to ${UserSupplement.NAME_MAX_LENGTH} characters)."
+                    // Nothing was written, so the fields stay filled — she can turn consent back
+                    // on and tap Add again without retyping.
+                    SupplementWriteResult.Refused ->
+                        error = "Not saved — health data collection is off. Turn it on under Profile → Health data consent."
+                }
             }
         },
     )

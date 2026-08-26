@@ -1,2 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
-<full-backup-content />
+<!--
+  Android 11 and lower (android:fullBackupContent).
+
+  Everything not listed here is still backed up. What is listed is her Article 9 health data, kept
+  out of cloud backup so the promise the app makes — that a guest's tracking stays on her device —
+  is enforced here rather than left to convention. A signed-in user loses nothing: Room is rebuilt
+  from Supabase on the next sign-in.
+
+  genesyx.db is the Room store (cycle, daily logs incl. sexual_activity, pH readings, supplements,
+  meals). SQLite keeps the write-ahead log and shared-memory file beside it, so they are excluded by
+  name too — a backup that took the -wal could carry rows the .db file alone does not yet show.
+
+  datastore/genesyx_prefs.preferences_pb holds the quiz answers (health data) and our own session.
+
+  com.genesyx.app_preferences.xml is not ours, which is why it is easy to miss: supabase-kt's
+  default SettingsSessionManager persists the auth session there under the key "session"
+  (multiplatform-settings' no-arg Settings() resolves to "${packageName}_preferences"). It belongs
+  with the two above and must not be split from them — restoring a session without the local data,
+  or the data without the session, leaves the app in a state that contradicts itself.
+
+  All three leave together, so a cloud restore is a clean install: signed out, and a sign-in pulls
+  her data back from Supabase.
+-->
+<full-backup-content>
+    <exclude domain="database" path="genesyx.db" />
+    <exclude domain="database" path="genesyx.db-wal" />
+    <exclude domain="database" path="genesyx.db-shm" />
+    <exclude domain="file" path="datastore/genesyx_prefs.preferences_pb" />
+    <exclude domain="sharedpref" path="com.genesyx.app_preferences.xml" />
+</full-backup-content>

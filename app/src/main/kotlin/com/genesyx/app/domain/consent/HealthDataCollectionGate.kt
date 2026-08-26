@@ -2,7 +2,7 @@ package com.genesyx.app.domain.consent
 
 /**
  * The lawful-basis check that guards every Article 9 health-data path — cycle settings, daily logs,
- * pH readings and tracking-preference answers.
+ * pH readings, her own supplement list, and tracking-preference answers.
  *
  * It is **suspending on purpose**. A synchronous gate would have to read a cached flag, and on a
  * cold start that cache is seeded before Room has emitted — so a write fired in the first moments

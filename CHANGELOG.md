@@ -6,6 +6,98 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ---
 
+## [Unreleased] — consent gate covers supplements; Auto Backup scoped explicitly (26 Aug 2026, later)
+
+Play-submission prep: making the code say plainly what the Data Safety and Health apps declarations
+will have to claim, so the two can't drift apart.
+
+**Version identity deliberately unchanged, and this work is not in the code-16 bundle** — that was
+rebuilt in place at 11:54 today (see the entry below) and this landed after. Play will not take a
+second upload at the same versionCode, so **the next Production build is code 17** and the
+declarations must describe that build. Once 16 is actually on Play the rebuild-in-place option is
+gone for good — from then on every change is a version bump.
+
+### Changed — `user_supplements` writes now go through the Article 9 consent gate
+
+`UserSupplementRepository` was the last of the five health stores still outside
+`HealthDataCollectionGate`; its KDoc said it was "cloned from `PhRepository`'s proven shape", which
+was true of the sync machinery but predated the gate. It now matches `PhRepository` on all four
+collection paths: `write` refuses, `syncPending()` no-ops, `adoptGuestEntries()` adopts nothing, and
+`refresh()` returns before pulling. PR #20 had just widened this surface with the sheet's "Add your
+own supplement" form, so it was worth closing now rather than after the upload.
+
+- **The refusal is visible, per `ba9380a`'s rule that nothing is ever fake-saved.** `create`/`update`
+  return a new `SupplementWriteResult.Refused` alongside `Accepted` / `InvalidName`; the sheet shows
+  "Not saved — health data collection is off. Turn it on under Profile → Health data consent." and
+  **leaves the form fields filled**, so she can flip consent back on and tap Add without retyping.
+- `write` became a suspend `scope.async { … }.await()` — the same application-scope write as before,
+  but awaited, because a result the caller renders has to be the real one.
+- `syncPending()` returns **`true`** when refused, not `false`: a queued row must not upload after a
+  withdrawal, and reporting failure would just make WorkManager retry the same refusal forever.
+- **`delete` stays ungated, on purpose.** Deleting is her exercising control; requiring consent to
+  remove data would be backwards. `PhRepository` makes the same exception.
+- Callers threaded through: `NutritionViewModel.saveSupplement` is suspend, `addFromCatalogue` wraps
+  in `viewModelScope`, `SupplementPlanSheet` takes a suspend lambda and launches from
+  `rememberCoroutineScope()`, `NutritionScreen` supplies the scope.
+
+### Changed — Auto Backup rules are now written out instead of left to the defaults
+
+`backup_rules.xml` (API ≤ 11) and `data_extraction_rules.xml` (API 12+) were both empty files. They
+now state the intended scope explicitly, so "a guest's tracking stays on her device" is enforced by
+the manifest rather than by convention.
+
+- **Cloud backup** excludes the local health stores: `genesyx.db` — plus `-wal` and `-shm` **by
+  name**, since SQLite keeps the write-ahead log beside the database and a copy of the `.db` alone
+  would be an inconsistent snapshot — the DataStore prefs file, and the shared-prefs file that
+  supabase-kt's default `SettingsSessionManager` owns. That last one is not ours and is easy to miss:
+  multiplatform-settings' no-arg `Settings()` resolves to `"${packageName}_preferences"`. Confirmed
+  by reading the library source out of the Gradle cache rather than assuming.
+- **All three are listed together, and that is the point.** Scoping the data files without the
+  session file would restore an app that believes it is signed in with nothing behind it. As written,
+  a cloud restore is a clean install: signed out, and signing in pulls the account's data back from
+  Supabase.
+- **`<device-transfer/>` is deliberately left intact.** It is a direct handset-to-handset migration,
+  nothing goes to a server, and restricting it would silently wipe a guest's whole history when she
+  upgrades her phone with no way to get it back. `[OWNER]` — the two lists differing is a judgement
+  call worth confirming.
+
+Both files carry comments explaining why the lists differ, because otherwise it reads as an oversight
+and someone will "tidy it up" into agreement.
+
+### Tests
+
+Unit: **565 passing, 0 failures, 0 skipped** (was 560; +5 in `ConsentGateTest`, whose doc now reads
+"five health stores"). The new cases: a refused write says so, a refused refresh pulls nothing, a
+queued row is not uploaded after withdrawal (asserts `syncPending()` returns `true` **and** that the
+DAO's `pending()` is never called), guest adoption refuses, and — the deliberate exception — a
+`delete` still reaches the server.
+
+`assembleDebug`, then `aapt2 dump xmltree` on the debug APK for both XML files, to confirm all five
+exclusions actually compiled in. A green build alone does not prove a raw XML resource is well-formed
+for its schema; the tree dump does.
+
+### Verification record — which `code16` bundle is the real one
+
+`bundleRelease` was **not** run; code 16 must not be regenerated. The archived bundle was
+re-inspected instead, and that turned up a bookkeeping trap worth writing down: **two different files
+have held the name `genesyx-1.4.2-code16.aab` today.** The 00:03 build (`6fe8a6d8…`, from `2615ab2`)
+is now `genesyx-1.4.2-code16.pre-pr20.aab`; the plain name belongs to the 11:54 rebuild
+(`117370ae…`, from `1aae2d4`, PR #20 included). Anything written against the earlier file needs
+re-pointing at the later one before it is used — which was done.
+
+| What | How | Result |
+|---|---|---|
+| Which bundle is which | `shasum -a 256` against both `SHA256SUMS*.txt`, plus `BUILD_NOTE.txt` | Plain name = 11:54 `1aae2d4` rebuild — **that is the upload**; `*.pre-pr20.*` must not be |
+| PR #20 is in it | `strings` on `classes.dex` | `SupplementToggleSet` present |
+| pH copy is the current wording | same | `"Vaginal pH tracking"` absent, `"legacy reading"` present |
+| Identity | `aapt2 dump badging` | `com.genesyx.app / 16 / 1.4.2 / target 36` |
+
+Note for next time: in a release APK the `res/xml/*` names are obfuscated, so `aapt2 dump xmltree
+--file res/xml/backup_rules.xml` finds nothing and looks like the file is missing. Resolve the id
+first (`aapt2 dump resources` → `@0x7f0f0000` → `res/Qq.xml`), then dump that.
+
+---
+
 ## [Unreleased] — Nutrition tab fix + inline supplement logging (SFM-27 / SFM-28) — still `1.4.2 (16)` (26 Aug 2026)
 
 Version identity deliberately **not** bumped: code 16 is built and signature-verified but not yet on

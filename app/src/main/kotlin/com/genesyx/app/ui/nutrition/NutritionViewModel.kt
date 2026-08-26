@@ -171,7 +171,7 @@ class NutritionViewModel @Inject constructor(
         viewModelScope.launch { _catalogue.value = genesyxProductRepository.fetchCatalogue() }
     }
 
-    fun saveSupplement(entry: UserSupplement): SupplementWriteResult =
+    suspend fun saveSupplement(entry: UserSupplement): SupplementWriteResult =
         if (entry.id in userSupplements.value.map { it.id }) {
             userSupplementRepository.update(entry)
         } else {
@@ -181,9 +181,11 @@ class NutritionViewModel @Inject constructor(
     fun deleteSupplement(id: String) = userSupplementRepository.delete(id)
 
     fun addFromCatalogue(product: GenesyxProduct) {
-        userSupplementRepository.create(
-            UserSupplement(name = product.name, dose = product.dose, productId = product.id),
-        )
+        viewModelScope.launch {
+            userSupplementRepository.create(
+                UserSupplement(name = product.name, dose = product.dose, productId = product.id),
+            )
+        }
     }
 
     val uiState: StateFlow<NutritionUiState> =

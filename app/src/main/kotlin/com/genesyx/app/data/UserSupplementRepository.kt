@@ -12,9 +12,11 @@ import com.genesyx.app.data.remote.UserSupplementRemoteDataSource
 import com.genesyx.app.data.remote.dto.toDto
 import com.genesyx.app.data.remote.dto.toEntity
 import com.genesyx.app.data.sync.UserSupplementSyncScheduler
+import com.genesyx.app.domain.consent.HealthDataCollectionGate
 import com.genesyx.app.domain.model.UserSupplement
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flatMapLatest
@@ -34,6 +36,10 @@ import javax.inject.Singleton
  * Deletes are soft (deletedAt tombstone) so they sync safely. [refresh] pulls on sign-in, merging
  * by id with last-write-wins on updatedAt, never clobbering locally-pending edits. Names are
  * trimmed and length-checked here (server contract: 1..60 chars) — defense-in-depth beyond the UI.
+ *
+ * What she takes is health data, so every collection path is behind the same Article 9
+ * [HealthDataCollectionGate] the other health repositories use. [delete] is deliberately not gated:
+ * propagating a removal is privacy-positive, and refusing it would strand a tombstone on the server.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @Singleton
@@ -44,6 +50,9 @@ class UserSupplementRepository @Inject constructor(
     private val scheduler: UserSupplementSyncScheduler,
     private val logger: Logger,
     @ApplicationScope private val scope: CoroutineScope,
+    // Hilt always supplies the real gate (BindingsModule binds ConsentRepository). The permissive
+    // default exists so a test can construct this without standing up Room, mirroring iOS.
+    private val consent: HealthDataCollectionGate = HealthDataCollectionGate { true },
 ) {
     val supplements: StateFlow<List<UserSupplement>> =
         session.userId
@@ -51,37 +60,50 @@ class UserSupplementRepository @Inject constructor(
             .map { list -> list.map { it.toDomain() } }
             .stateIn(scope, SharingStarted.Eagerly, emptyList())
 
-    fun create(entry: UserSupplement): SupplementWriteResult = write(entry, isNew = true)
+    suspend fun create(entry: UserSupplement): SupplementWriteResult = write(entry, isNew = true)
 
-    fun update(entry: UserSupplement): SupplementWriteResult = write(entry, isNew = false)
+    suspend fun update(entry: UserSupplement): SupplementWriteResult = write(entry, isNew = false)
 
-    private fun write(entry: UserSupplement, isNew: Boolean): SupplementWriteResult {
+    /**
+     * Suspends until the write is settled locally, so the returned result is the truth about
+     * whether anything was recorded. The caller clears her form on [SupplementWriteResult.Accepted],
+     * so reporting before the gate and the DAO have both had their say would throw an entry away on
+     * a success that never happened.
+     *
+     * Runs on [scope] and is merely awaited by the caller, so dismissing the plan sheet mid-save
+     * cannot cancel the Room write and lose the entry before there is anything to retry.
+     */
+    private suspend fun write(entry: UserSupplement, isNew: Boolean): SupplementWriteResult = scope.async {
         val name = entry.name.trim()
         if (name.isEmpty() || name.length > UserSupplement.NAME_MAX_LENGTH) {
             logger.w("UserSupp", "rejected supplement name of length ${name.length}")
-            return SupplementWriteResult.InvalidName
+            return@async SupplementWriteResult.InvalidName
+        }
+        if (!consent.isCollectionPermitted()) {
+            logger.w("UserSupp", "write refused — health-data consent withdrawn")
+            return@async SupplementWriteResult.Refused
         }
         val dose = entry.dose?.trim()?.takeIf { it.isNotEmpty() }
-        scope.launch {
-            val userId = session.currentUserId()
-            val signedIn = userId != SessionRepository.LOCAL_USER_ID
-            val now = LocalDateTime.now()
-            // Edits keep the original creation time so the list order is stable.
-            val createdAt = if (isNew) now else dao.getById(entry.id)?.createdAt ?: now
-            val entity = entry.copy(name = name, dose = dose).toEntity(
-                userId = userId,
-                createdAt = createdAt,
-                // Guests have no server target (RLS scopes to auth.uid()). Mark SYNCED (no pending
-                // sync) and never push/queue — otherwise the write would enqueue doomed retries.
-                syncStatus = if (signedIn) SupplementSyncStatus.PENDING_UPSERT else SupplementSyncStatus.SYNCED,
-                updatedAt = now,
-            )
-            dao.upsert(entity)
-            logger.i("UserSupp", "saved supplement ${entity.id} locally for $userId")
-            if (signedIn) pushOrQueue(entity)
-        }
-        return SupplementWriteResult.Accepted
-    }
+        val userId = session.currentUserId()
+        val signedIn = userId != SessionRepository.LOCAL_USER_ID
+        val now = LocalDateTime.now()
+        // Edits keep the original creation time so the list order is stable.
+        val createdAt = if (isNew) now else dao.getById(entry.id)?.createdAt ?: now
+        val entity = entry.copy(name = name, dose = dose).toEntity(
+            userId = userId,
+            createdAt = createdAt,
+            // Guests have no server target (RLS scopes to auth.uid()). Mark SYNCED (no pending
+            // sync) and never push/queue — otherwise the write would enqueue doomed retries.
+            syncStatus = if (signedIn) SupplementSyncStatus.PENDING_UPSERT else SupplementSyncStatus.SYNCED,
+            updatedAt = now,
+        )
+        dao.upsert(entity)
+        logger.i("UserSupp", "saved supplement ${entity.id} locally for $userId")
+        // The push stays on the app scope: the row is already safe in Room, and the sheet closing
+        // must not cancel the upload mid-flight and strand it without a queued retry.
+        if (signedIn) scope.launch { pushOrQueue(entity) }
+        SupplementWriteResult.Accepted
+    }.await()
 
     fun delete(id: String) {
         scope.launch {
@@ -109,6 +131,12 @@ class UserSupplementRepository @Inject constructor(
 
     /** Drains all PENDING rows (called by [com.genesyx.app.data.sync.UserSupplementSyncWorker]). */
     suspend fun syncPending(): Boolean {
+        // A queue drained after a withdrawal uploads the very entries she just stopped us
+        // collecting. Report success so WorkManager stops asking rather than retrying forever.
+        if (!consent.isCollectionPermitted()) {
+            logger.w("UserSupp", "sync refused — health-data consent withdrawn")
+            return true
+        }
         var allSynced = true
         for (entity in dao.pending()) {
             if (remote.upsert(entity.toDto()) is DataResult.Success) {
@@ -127,6 +155,12 @@ class UserSupplementRepository @Inject constructor(
      */
     suspend fun adoptGuestEntries(userId: String): Int {
         if (userId == SessionRepository.LOCAL_USER_ID) return 0
+        // Adoption marks rows PENDING_UPSERT, so it is an upload in slow motion. Her entries stay
+        // on the device either way — withdrawal stops collection, it does not erase.
+        if (!consent.isCollectionPermitted()) {
+            logger.w("UserSupp", "guest adoption refused — health-data consent withdrawn")
+            return 0
+        }
         val adopted = dao.adoptGuestRows(SessionRepository.LOCAL_USER_ID, userId, LocalDateTime.now())
         if (adopted > 0) {
             logger.i("UserSupp", "adopted $adopted guest supplement(s) into account")
@@ -141,6 +175,10 @@ class UserSupplementRepository @Inject constructor(
      */
     suspend fun refresh(userId: String = session.currentUserId()) {
         if (userId == SessionRepository.LOCAL_USER_ID) return // guest: nothing to pull/push
+        if (!consent.isCollectionPermitted()) {
+            logger.w("UserSupp", "refresh refused — health-data consent withdrawn")
+            return
+        }
         when (val result = remote.list(userId)) {
             is DataResult.Success -> {
                 for (dto in result.data) {
@@ -163,8 +201,13 @@ class UserSupplementRepository @Inject constructor(
     }
 }
 
-/** Outcome of a supplement write. [InvalidName] means blank or over the 60-char server contract. */
+/**
+ * Outcome of a supplement write. [InvalidName] means blank or over the 60-char server contract.
+ * [Refused] persisted nothing at all — the Article 9 gate is closed — so copy for it must not say
+ * the entry was saved anywhere.
+ */
 sealed interface SupplementWriteResult {
     data object Accepted : SupplementWriteResult
     data object InvalidName : SupplementWriteResult
+    data object Refused : SupplementWriteResult
 }

@@ -46,6 +46,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -84,6 +85,7 @@ import com.genesyx.app.ui.navigation.navigateToTab
 import com.genesyx.app.ui.theme.ElectricLavender
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 
 @Composable
 fun NutritionScreen(
@@ -111,6 +113,7 @@ fun NutritionScreen(
     var goalOpen by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
     val snackbar = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
     // Re-tapping the selected tab scrolls to the top rather than pushing a second Nutrition.
     val reselect by reselects.collectAsState()
@@ -200,7 +203,7 @@ fun NutritionScreen(
             UserSupplementsCard(
                 supplements = userSupplements,
                 reminders = supplementReminders,
-                onSave = { viewModel.saveSupplement(it) },
+                onSave = { supplement -> scope.launch { viewModel.saveSupplement(supplement) } },
                 onDelete = { viewModel.deleteSupplement(it.id) },
                 onSetReminder = { id, name, minutes -> viewModel.setSupplementReminder(id, name, minutes) },
             )

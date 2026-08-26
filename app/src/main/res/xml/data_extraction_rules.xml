@@ -1,5 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 12 and higher (android:dataExtractionRules).
+
+  cloud-backup and device-transfer are deliberately NOT the same list.
+
+  cloud-backup sends a copy to Google Drive, off her device. Her health data is excluded from it —
+  see backup_rules.xml for what each file holds and why the three must be excluded together. This is
+  what makes "your tracking stays on this device" hold for a guest with Android backup switched on.
+
+  device-transfer is a direct handset-to-handset migration when she upgrades her phone; nothing goes
+  to a server, so it keeps everything. Excluding it would silently wipe a guest's whole history on a
+  new phone with no way to get it back.
+-->
 <data-extraction-rules>
-    <cloud-backup />
+    <cloud-backup>
+        <exclude domain="database" path="genesyx.db" />
+        <exclude domain="database" path="genesyx.db-wal" />
+        <exclude domain="database" path="genesyx.db-shm" />
+        <exclude domain="file" path="datastore/genesyx_prefs.preferences_pb" />
+        <exclude domain="sharedpref" path="com.genesyx.app_preferences.xml" />
+    </cloud-backup>
     <device-transfer />
 </data-extraction-rules>
