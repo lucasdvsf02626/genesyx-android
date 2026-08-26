@@ -204,6 +204,8 @@ via `SignInLocally` and seeded with `SeedTestData`.
 | Add your own | Name "Magnesium", Dose "300 mg", Time Evening → Add → Got it | Listed "300 mg · Evening"; five chips; "3 of 5" → tap M → "4 of 5" |
 | Track tracker | Track → "Nutrition. 3 of 4 supplements today" row | Today's names "Vitamin D · Omega-3 · Zinc", week dots M:1 W:3, food groups empty state |
 | Insights | Insights → Nutrition consistency | "Today · 3 of 4 logged" → "of 5 a day" / "Today · 4 of 5 logged" after Magnesium |
+| Track row "N of M" | Track → "Your trackers" Nutrition row vs Nutrition card with two custom entries | Was "1 of 4" vs "1 of 6" — `TrackerSummaryLogic` scored the plan only; now scores the shared toggle set (fixed same day, `TrackerSummaryLogicTest`) |
+| Tracker after logging | Chip (Folate) + Log screen (Iron, Fruit) → Track → Nutrition row | "Folate · Iron", "Fruit", Wednesday 2 supplements / 1 food group, footer gone |
 | Custom reminder bell | Plan sheet → bell on a "Your supplements" row → OK → bell again | "Reminder at 9:00 AM" under the entry, then cleared |
 | Unit suite | `./gradlew :app:testDebugUnitTest` | 560 tests, 0 failures, 0 skipped |
 | Instrumented | `NutritionTabNavigationTest` via `connectedDebugAndroidTest` | 1/1 green (3.1 s) |

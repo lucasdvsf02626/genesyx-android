@@ -8,7 +8,10 @@ import com.genesyx.app.data.DailyLogRepository
 import com.genesyx.app.data.PhRepository
 import com.genesyx.app.data.PreferencesRepository
 import com.genesyx.app.domain.hydration.HydrationUnit
+import com.genesyx.app.data.UserSupplementRepository
 import com.genesyx.app.domain.model.CycleSettings
+import com.genesyx.app.domain.model.DailyLog
+import com.genesyx.app.domain.model.PhReading
 import com.genesyx.app.domain.model.LogDay
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -26,6 +29,7 @@ class TrackViewModel @Inject constructor(
     phRepository: PhRepository,
     preferencesRepository: PreferencesRepository,
     consentRepository: ConsentRepository,
+    userSupplementRepository: UserSupplementRepository,
 ) : ViewModel() {
 
     val settings: StateFlow<CycleSettings?> = cycleRepository.settings
@@ -39,8 +43,22 @@ class TrackViewModel @Inject constructor(
         preferencesRepository.hydrationGoalMl,
         preferencesRepository.hydrationUnit,
     ) { logs, readings, settings, goalMl, unit ->
-        TrackerSummaryLogic.compute(logs, readings, settings, goalMl, unit = unit)
+        SummaryInputs(logs, readings, settings, goalMl, unit)
+    }.combine(userSupplementRepository.supplements) { inputs, custom ->
+        // Her own supplements join the Nutrition row's denominator — the same "N of M" the
+        // Nutrition card and the Insights card show.
+        TrackerSummaryLogic.compute(
+            inputs.logs, inputs.readings, inputs.settings, inputs.goalMl, unit = inputs.unit, custom = custom,
+        )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyTrackerSummaries())
+
+    private data class SummaryInputs(
+        val logs: Map<LocalDate, DailyLog>,
+        val readings: List<PhReading>,
+        val settings: CycleSettings?,
+        val goalMl: Int,
+        val unit: HydrationUnit,
+    )
 
     /** Display unit for water amounts — the calendar day dialog renders logs with it. */
     val hydrationUnit: StateFlow<HydrationUnit> = preferencesRepository.hydrationUnit

@@ -91,6 +91,16 @@ class TrackerSummaryLogicTest {
     }
 
     @Test
+    fun `her own supplement joins the nutrition row's denominator, matching the Nutrition card`() {
+        // The row must read the same "N of M" as the Nutrition card and Insights: a custom entry
+        // makes it "of 5", and logging that entry counts.
+        val custom = listOf(com.genesyx.app.domain.model.UserSupplement(name = "Magnesium"))
+        val logs = mapOf(today to DailyLog(supplements = setOf(Supplement.FOLATE.wireName, "magnesium")))
+        val s = TrackerSummaryLogic.compute(logs, emptyList(), null, 2400, today = today, custom = custom)
+        assertEquals("2 of 5 supplements today", s.nutrition.value)
+    }
+
+    @Test
     fun `nutrition summary counts plan supplements taken today`() {
         val logs = mapOf(today to DailyLog(supplements = setOf(Supplement.FOLATE.wireName, Supplement.ZINC.wireName)))
         val s = TrackerSummaryLogic.compute(logs, emptyList(), null, goal, today = today)

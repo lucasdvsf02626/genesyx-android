@@ -9,6 +9,9 @@ import com.genesyx.app.domain.model.DailyLog
 import com.genesyx.app.domain.model.PhMeasurement
 import com.genesyx.app.domain.model.PhReading
 import com.genesyx.app.domain.model.Supplement
+import com.genesyx.app.domain.model.SupplementPlanEntry
+import com.genesyx.app.domain.model.SupplementToggleSet
+import com.genesyx.app.domain.model.UserSupplement
 import com.genesyx.app.domain.ph.PhCopy
 import com.genesyx.app.domain.ph.PhStatus
 import com.genesyx.app.ui.insights.SleepInsightLogic
@@ -52,6 +55,8 @@ object TrackerSummaryLogic {
         plan: List<Supplement> = Supplement.defaultPlan,
         today: LocalDate = LocalDate.now(),
         unit: HydrationUnit = HydrationUnit.ML,
+        /** Her own `user_supplements` — they join the plan's denominator, as on the Nutrition card. */
+        custom: List<UserSupplement> = emptyList(),
     ): TrackerSummaries {
         val week = (6L downTo 0L).map { today.minusDays(it) } // oldest → newest, incl. today
         fun log(d: LocalDate) = logsByDate[d]
@@ -62,7 +67,7 @@ object TrackerSummaryLogic {
             ph = ph(readings, week),
             sleep = sleep(logsByDate, week),
             symptoms = symptoms(logsByDate, week),
-            nutrition = nutrition(logsByDate, week, plan, today),
+            nutrition = nutrition(logsByDate, week, SupplementToggleSet.build(custom, plan), today),
         )
     }
 
@@ -125,20 +130,20 @@ object TrackerSummaryLogic {
         }
     }
 
+    // Scored through the same toggle set as the Nutrition card and the Insights card, so the row's
+    // "N of M" is their "N of M" — adding her own supplement makes all three read "of 5".
     private fun nutrition(
         logs: Map<LocalDate, DailyLog>,
         week: List<LocalDate>,
-        plan: List<Supplement>,
+        entries: List<SupplementPlanEntry>,
         today: LocalDate,
     ): TrackerSummary {
-        fun takenOn(d: LocalDate): Int {
-            val logged = logs[d]?.supplements.orEmpty().mapNotNull(Supplement::fromWire)
-            return plan.count { it in logged }
-        }
+        fun takenOn(d: LocalDate): Int =
+            SupplementToggleSet.takenCount(entries, logs[d]?.supplements.orEmpty())
         val spark = week.map { takenOn(it) > 0 }
         val todayTaken = takenOn(today)
         return if (todayTaken > 0) {
-            TrackerSummary("$todayTaken of ${plan.size} supplements today", spark, hasData = true)
+            TrackerSummary("$todayTaken of ${entries.size} supplements today", spark, hasData = true)
         } else {
             TrackerSummary("No supplements logged today", spark, hasData = false)
         }
