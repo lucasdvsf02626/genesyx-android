@@ -6,16 +6,20 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ---
 
-## [Unreleased] — consent gate covers supplements; Auto Backup scoped explicitly (26 Aug 2026, later)
+## [Unreleased] — consent gate covers supplements; Auto Backup scoped explicitly — `1.4.2 (16)` rebuilt (26 Aug 2026, later)
 
 Play-submission prep: making the code say plainly what the Data Safety and Health apps declarations
 will have to claim, so the two can't drift apart.
 
-**Version identity deliberately unchanged, and this work is not in the code-16 bundle** — that was
-rebuilt in place at 11:54 today (see the entry below) and this landed after. Play will not take a
-second upload at the same versionCode, so **the next Production build is code 17** and the
-declarations must describe that build. Once 16 is actually on Play the rebuild-in-place option is
-gone for good — from then on every change is a version bump.
+**Version identity unchanged; the code-16 bundle was rebuilt a second time to carry this** (owner's
+call). The alternative was holding these back for a code-17 Production build, which would have meant
+Internal testing and Production running different apps while the declarations described only one of
+them. Rebuilding in place is legitimate **only because code 16 has never been uploaded** — the moment
+it lands on Play, every further change needs a version bump.
+
+> **Three bundles have now held the filename `genesyx-1.4.2-code16.aab` in a single day.** Only the
+> 12:12 one (`3ba7d6e1…`, from `67b224d`) is the upload; the earlier two are parked under
+> `superseded/`. Check `SHA256SUMS.txt`, not the filename. Do not rebuild into `1.4.2-code16/` again.
 
 ### Changed — `user_supplements` writes now go through the Article 9 consent gate
 
@@ -72,29 +76,33 @@ queued row is not uploaded after withdrawal (asserts `syncPending()` returns `tr
 DAO's `pending()` is never called), guest adoption refuses, and — the deliberate exception — a
 `delete` still reaches the server.
 
-`assembleDebug`, then `aapt2 dump xmltree` on the debug APK for both XML files, to confirm all five
-exclusions actually compiled in. A green build alone does not prove a raw XML resource is well-formed
-for its schema; the tree dump does.
+A green build alone does not prove a raw XML resource is well-formed for its schema, so both rule
+files were read back out of the compiled artifact rather than trusted from source.
 
-### Verification record — which `code16` bundle is the real one
+### Release build (26 Aug, 12:12) — code 16, third and final
 
-`bundleRelease` was **not** run; code 16 must not be regenerated. The archived bundle was
-re-inspected instead, and that turned up a bookkeeping trap worth writing down: **two different files
-have held the name `genesyx-1.4.2-code16.aab` today.** The 00:03 build (`6fe8a6d8…`, from `2615ab2`)
-is now `genesyx-1.4.2-code16.pre-pr20.aab`; the plain name belongs to the 11:54 rebuild
-(`117370ae…`, from `1aae2d4`, PR #20 included). Anything written against the earlier file needs
-re-pointing at the later one before it is used — which was done.
+`:app:testDebugUnitTest` then `:app:bundleRelease :app:assembleRelease` from a clean tree at
+`67b224d`. Everything below was checked against the built artifact, not the source:
 
 | What | How | Result |
 |---|---|---|
-| Which bundle is which | `shasum -a 256` against both `SHA256SUMS*.txt`, plus `BUILD_NOTE.txt` | Plain name = 11:54 `1aae2d4` rebuild — **that is the upload**; `*.pre-pr20.*` must not be |
-| PR #20 is in it | `strings` on `classes.dex` | `SupplementToggleSet` present |
-| pH copy is the current wording | same | `"Vaginal pH tracking"` absent, `"legacy reading"` present |
-| Identity | `aapt2 dump badging` | `com.genesyx.app / 16 / 1.4.2 / target 36` |
+| Identity | `aapt2 dump badging` | `com.genesyx.app / 16 / 1.4.2 / targetSdk 36` |
+| Signing | `apksigner verify --print-certs`; `keytool -printcert -jarfile` on the AAB | SHA-1 `8D:EB…CC:73`, SHA-256 `C3:D5:1F:4B…A4:46:C1:7D` — the registered upload key, on both files |
+| Backup rules present | `aapt2 dump xmltree` on the obfuscated resources | Five `<exclude>` in `full-backup-content`, five in `cloud-backup`, `device-transfer` empty |
+| Consent refusal present | `strings` on `classes.dex` | The refusal copy is there. One hit, not two — R8 folds the identical constant used by the sheet and by `SupplementSaveEvent` |
+| PR #20 present | same | `SupplementToggleSet` |
+| pH copy current | same | `"Vaginal pH tracking"` absent, `"legacy reading"` present |
+| Archive | `shasum -a 256 -c` | AAB `3ba7d6e1…9a480` (17,158,664 bytes), APK `776ab211…5880d` |
 
-Note for next time: in a release APK the `res/xml/*` names are obfuscated, so `aapt2 dump xmltree
---file res/xml/backup_rules.xml` finds nothing and looks like the file is missing. Resolve the id
-first (`aapt2 dump resources` → `@0x7f0f0000` → `res/Qq.xml`), then dump that.
+Two traps worth writing down, both of which cost time today:
+
+- **A release build obfuscates resource filenames.** `aapt2 dump xmltree <apk> --file
+  res/xml/backup_rules.xml` returns *nothing* and reads as "the file isn't in there". Resolve the id
+  first — `aapt2 dump resources <apk> | grep -A2 xml/backup_rules` → `res/Qq.xml` — then dump that.
+- **`SHA256SUMS.txt` is the identity, the filename is not.** Rebuilding in place at code 16 twice
+  left three distinct bundles that have all been called `genesyx-1.4.2-code16.aab`. The two dead ones
+  are now under `superseded/` with descriptive suffixes so the Play Console file picker can't offer
+  them, and `BUILD_NOTE.txt` names which is which.
 
 ---
 
