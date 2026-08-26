@@ -90,15 +90,28 @@ class DataContractTest {
         assertTrue(PhStatus.MAX > PhStatus.HEALTHY_MAX)
     }
 
+    /**
+     * Two different rules share this payload, and the difference is whether the user can *clear*
+     * the field.
+     *
+     * `food_groups` and `sexual_activity` stay off the wire while unset, so the client can ship
+     * against a server that predates either column.
+     *
+     * A clearable field is the opposite case: PostgREST builds `columns=` from the body, so omitting
+     * it means the column is never written and the stale server value returns on the next pull.
+     * `water_ml` used to be asserted absent at zero here — that was the silent-clear bug written
+     * down as a requirement, and removing her last glass never synced because of it. It now carries
+     * `@EncodeDefault`, like `supplements`, `symptoms` and `notes`. See `DailyLogDtoTest`.
+     */
     @Test
-    fun `daily log wire names are snake_case and omit empty optional columns`() {
+    fun `daily log wire names are snake_case, omitting only the columns that may not exist`() {
         val json = Json { ignoreUnknownKeys = true }
         val empty = DailyLogDto(userId = "u", date = "2026-08-17")
         val encoded = json.encodeToString(empty)
         assertFalse(encoded.contains("food_groups"))
         assertFalse(encoded.contains("sexual_activity"))
-        // encodeDefaults is off: a zero pour is omitted, same as an empty meal list.
-        assertFalse(encoded.contains("water_ml"))
+        // A zero pour is a real value — "she removed her last glass" — and must reach the column.
+        assertTrue(encoded.contains("\"water_ml\":0"))
         assertTrue(encoded.contains("user_id"))
         val withWater = json.encodeToString(DailyLogDto(userId = "u", date = "2026-08-17", waterMl = 250))
         assertTrue(withWater.contains("\"water_ml\":250"))

@@ -59,6 +59,30 @@ object SupplementToggleSet {
         return planEntries + customEntries
     }
 
+    /**
+     * Whether [name] already names something in the set — a plan essential (by either its wire or
+     * its display name) or one of [custom]. [excludingId] lets an edit keep its own name.
+     *
+     * A colliding name is not merely untidy. [build] drops it, so the row would be written to Room,
+     * pushed to the server, and then never rendered anywhere: an invisible entry she cannot see,
+     * toggle or remove. Callers on a write path must reject on this rather than save it.
+     *
+     * The comparison is [norm] — trimmed, case-insensitive — the same rule [build], [isLogged] and
+     * `Supplement.fromWire` use, so "the same supplement" means one thing across the app.
+     */
+    fun namesSomethingIn(
+        name: String,
+        custom: List<UserSupplement>,
+        excludingId: String? = null,
+        plan: List<Supplement> = Supplement.defaultPlan,
+    ): Boolean {
+        val candidate = norm(name)
+        if (candidate.isEmpty()) return false
+        val planNames = plan.flatMap { listOf(norm(it.wireName), norm(it.displayName)) }
+        if (candidate in planNames) return true
+        return custom.any { it.id != excludingId && norm(it.name) == candidate }
+    }
+
     /** Whether [entry] appears in a day's stored supplement names. */
     fun isLogged(entry: SupplementPlanEntry, logged: Collection<String>): Boolean =
         logged.any { norm(it) == norm(entry.stored) }

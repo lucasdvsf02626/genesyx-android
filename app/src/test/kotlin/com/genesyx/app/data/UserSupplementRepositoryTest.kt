@@ -135,6 +135,73 @@ class UserSupplementRepositoryTest {
         scope.cancel()
     }
 
+    /**
+     * "coq10" on top of "CoQ10" used to save a second row — which `SupplementToggleSet.build` then
+     * deduped away, so she got an entry she could not see, toggle or remove, quietly syncing to the
+     * server. The guard has to run against the committed rows, hence [UserSupplementDao.liveFor].
+     */
+    @Test
+    fun `a name that differs only in case or spacing is refused, never saved twice`() = runTest {
+        TestScopeSetup("user-a")
+        coEvery { dao.liveFor("user-a") } returns listOf(entity("s0", "user-a", "CoQ10"))
+        val scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler))
+        val repo = UserSupplementRepository(dao, remote, session, scheduler, logger, scope)
+
+        assertEquals(SupplementWriteResult.Duplicate, repo.create(entry(name = "  coq10 ")))
+
+        coVerify(exactly = 0) { dao.upsert(any()) }
+        coVerify(exactly = 0) { remote.upsert(any()) }
+        scope.cancel()
+    }
+
+    /** A bundled essential is already a chip; adding it by hand would render nowhere. */
+    @Test
+    fun `a name that duplicates a bundled essential is refused`() = runTest {
+        TestScopeSetup("user-a")
+        coEvery { dao.liveFor("user-a") } returns emptyList()
+        val scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler))
+        val repo = UserSupplementRepository(dao, remote, session, scheduler, logger, scope)
+
+        assertEquals(SupplementWriteResult.Duplicate, repo.create(entry(name = "folate")))
+        assertEquals(SupplementWriteResult.Duplicate, repo.create(entry(name = "Folic acid")))
+
+        coVerify(exactly = 0) { dao.upsert(any()) }
+        scope.cancel()
+    }
+
+    /** Iron is loggable but outside the plan, so it is hers to add. */
+    @Test
+    fun `a name outside the set still saves`() = runTest {
+        TestScopeSetup("user-a")
+        coEvery { dao.liveFor("user-a") } returns listOf(entity("s0", "user-a", "CoQ10"))
+        coEvery { remote.upsert(any()) } returns DataResult.Success(Unit)
+        val scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler))
+
+        val result = UserSupplementRepository(dao, remote, session, scheduler, logger, scope)
+            .create(entry(name = "Iron"))
+
+        assertEquals(SupplementWriteResult.Accepted, result)
+        coVerify { dao.upsert(match { it.name == "Iron" }) }
+        scope.cancel()
+    }
+
+    /** Editing must not trip over the row being edited — otherwise no entry could ever be saved twice. */
+    @Test
+    fun `an edit that keeps the name is not a duplicate of itself`() = runTest {
+        TestScopeSetup("user-a")
+        coEvery { dao.liveFor("user-a") } returns listOf(entity("s1", "user-a", "Magnesium"))
+        coEvery { dao.getById("s1") } returns entity("s1", "user-a", "Magnesium")
+        coEvery { remote.upsert(any()) } returns DataResult.Success(Unit)
+        val scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler))
+
+        val result = UserSupplementRepository(dao, remote, session, scheduler, logger, scope)
+            .update(entry(name = "Magnesium")) // entry() carries id "s1"
+
+        assertEquals(SupplementWriteResult.Accepted, result)
+        coVerify { dao.upsert(match { it.id == "s1" && it.dose == "200 mg" }) }
+        scope.cancel()
+    }
+
     @Test
     fun `delete soft-deletes (tombstone) and pushes it`() = runTest {
         TestScopeSetup("user-a")

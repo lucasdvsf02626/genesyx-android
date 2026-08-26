@@ -91,4 +91,46 @@ class SupplementToggleSetTest {
         assertFalse(set.last().display == "Zinc")
         assertEquals("Iron", set.last().stored)
     }
+
+    // ── namesSomethingIn: the write-path guard that stops [build] having to drop rows ────────────
+
+    /**
+     * The two must agree, or a row is written and then never rendered. Every name that [build]
+     * silently drops has to be a name the guard would have refused up front.
+     */
+    @Test
+    fun `every name build would drop is a name the guard refuses`() {
+        val existing = listOf(UserSupplement(id = "a", name = "Magnesium"))
+        listOf("Folic acid", "folate", "VITAMIN D", " zinc ", "magnesium", "  Magnesium").forEach {
+            assertTrue("guard let \"$it\" through", SupplementToggleSet.namesSomethingIn(it, existing))
+        }
+        // …and the survivors are exactly the names the guard allows.
+        listOf("Iron", "CoQ10", "Ashwagandha").forEach {
+            assertFalse("guard refused \"$it\"", SupplementToggleSet.namesSomethingIn(it, existing))
+        }
+    }
+
+    @Test
+    fun `case and spacing do not make a second entry`() {
+        val existing = listOf(UserSupplement(id = "a", name = "CoQ10"))
+        assertTrue(SupplementToggleSet.namesSomethingIn("coq10", existing))
+        assertTrue(SupplementToggleSet.namesSomethingIn("  CoQ10  ", existing))
+        assertFalse(SupplementToggleSet.namesSomethingIn("CoQ 10", existing)) // a different string
+    }
+
+    /** Renaming nothing is not a collision with yourself — an edit must be able to save. */
+    @Test
+    fun `an entry does not duplicate itself when edited`() {
+        val existing = listOf(UserSupplement(id = "a", name = "Magnesium"))
+        assertFalse(SupplementToggleSet.namesSomethingIn("Magnesium", existing, excludingId = "a"))
+        assertFalse(SupplementToggleSet.namesSomethingIn("magnesium", existing, excludingId = "a"))
+        // But it must not be renamed onto a sibling.
+        val two = existing + UserSupplement(id = "b", name = "Iron")
+        assertTrue(SupplementToggleSet.namesSomethingIn("iron", two, excludingId = "a"))
+    }
+
+    @Test
+    fun `a blank candidate is not a duplicate — that is the name validator's refusal to make`() {
+        assertFalse(SupplementToggleSet.namesSomethingIn("   ", listOf(UserSupplement(name = "Iron"))))
+    }
 }

@@ -13,6 +13,7 @@ import com.genesyx.app.data.remote.dto.toDto
 import com.genesyx.app.data.remote.dto.toEntity
 import com.genesyx.app.data.sync.UserSupplementSyncScheduler
 import com.genesyx.app.domain.consent.HealthDataCollectionGate
+import com.genesyx.app.domain.model.SupplementToggleSet
 import com.genesyx.app.domain.model.UserSupplement
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -85,6 +86,14 @@ class UserSupplementRepository @Inject constructor(
         }
         val dose = entry.dose?.trim()?.takeIf { it.isNotEmpty() }
         val userId = session.currentUserId()
+        // Read the committed rows, not a collected flow: two taps of Add in quick succession must
+        // both see the first one. An entry whose name is already in the toggle set would be saved
+        // and then never rendered (SupplementToggleSet.build dedupes it away), so refuse instead.
+        val existing = dao.liveFor(userId).map { it.toDomain() }
+        if (SupplementToggleSet.namesSomethingIn(name, existing, excludingId = entry.id)) {
+            logger.w("UserSupp", "rejected supplement name already in the set")
+            return@async SupplementWriteResult.Duplicate
+        }
         val signedIn = userId != SessionRepository.LOCAL_USER_ID
         val now = LocalDateTime.now()
         // Edits keep the original creation time so the list order is stable.
@@ -204,10 +213,13 @@ class UserSupplementRepository @Inject constructor(
 /**
  * Outcome of a supplement write. [InvalidName] means blank or over the 60-char server contract.
  * [Refused] persisted nothing at all — the Article 9 gate is closed — so copy for it must not say
- * the entry was saved anywhere.
+ * the entry was saved anywhere. [Duplicate] likewise persisted nothing: the name is already in the
+ * toggle set (case- and whitespace-insensitively), and saving it would create a row that
+ * `SupplementToggleSet.build` never renders.
  */
 sealed interface SupplementWriteResult {
     data object Accepted : SupplementWriteResult
     data object InvalidName : SupplementWriteResult
     data object Refused : SupplementWriteResult
+    data object Duplicate : SupplementWriteResult
 }

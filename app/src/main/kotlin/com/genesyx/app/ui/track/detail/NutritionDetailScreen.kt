@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -312,6 +313,9 @@ private fun SupplementCheckRow(entry: SupplementPlanEntry, logged: Boolean, onTo
             onCheckedChange = null, // the whole row is the toggle
             colors = CheckboxDefaults.colors(checkedColor = ElectricLavender),
         )
+        // Checkbox's touch target already extends past the drawn box, so without this the tick and
+        // the name read as one glued word.
+        Spacer(Modifier.width(4.dp))
         Column(Modifier.weight(1f)) {
             Text(entry.display, style = MaterialTheme.typography.bodyLarge, color = colors.onSurface)
             entry.dose?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant) }

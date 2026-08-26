@@ -14,6 +14,13 @@ interface UserSupplementDao {
     @Query("SELECT * FROM user_supplements WHERE userId = :userId AND deletedAt IS NULL ORDER BY createdAt ASC")
     fun observeAll(userId: String): Flow<List<UserSupplementEntity>>
 
+    /**
+     * The same visible rows as [observeAll], read once. The duplicate check on write needs the
+     * committed state at that moment, not whatever a UI flow last collected.
+     */
+    @Query("SELECT * FROM user_supplements WHERE userId = :userId AND deletedAt IS NULL")
+    suspend fun liveFor(userId: String): List<UserSupplementEntity>
+
     @Upsert
     suspend fun upsert(entity: UserSupplementEntity)
 

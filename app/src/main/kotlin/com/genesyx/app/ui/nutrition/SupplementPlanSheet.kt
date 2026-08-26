@@ -276,6 +276,10 @@ private fun AddSupplementForm(onAdd: suspend (UserSupplement) -> SupplementWrite
                     // on and tap Add again without retyping.
                     SupplementWriteResult.Refused ->
                         error = "Not saved — health data collection is off. Turn it on under Profile → Health data consent."
+                    // Nothing was written, and the name stays in the field so she can see what
+                    // clashed and edit it rather than retype from scratch.
+                    SupplementWriteResult.Duplicate ->
+                        error = "\"${name.trim()}\" is already in your list."
                 }
             }
         },

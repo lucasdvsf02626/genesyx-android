@@ -6,6 +6,82 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ---
 
+## [Unreleased] — the clear has to reach the column — `1.4.2 (20)` (26 Aug 2026, late evening)
+
+**Code 19 is superseded — never upload it.** A read-only QA pass on the code-19 build found a
+silent data-loss defect on the wire, so 19 never went to Play. This entry is the fix.
+
+### Fixed — un-logging the last supplement never reached the server
+
+The serializer runs with `encodeDefaults` off (supabase-kt's config), so a property equal to its
+declared default is dropped from the JSON body — and PostgREST builds its `columns=` list from that
+body. A dropped property is a column the upsert **never writes**. `DailyLogDto.supplements`
+defaulted to `emptyList()`, so un-ticking her last supplement produced:
+
+```
+tick Zinc                          columns=user_id,date,supplements
+untick Zinc, one still logged      columns=user_id,date,supplements
+untick the last one                columns=user_id,date          ← supplements gone
+```
+
+The row was still marked `SYNCED`, so `refresh`'s "skip rows with unsynced local changes" guard did
+not protect it, and the next pull brought the stale server list back: **supplements she un-logged
+reappeared on her own device.** `symptoms`, `water_ml` and `notes` had the same defect.
+
+The fix is per-property `@EncodeDefault(EncodeDefault.Mode.ALWAYS)` on those four — deliberately
+**not** a global `encodeDefaults = true`, which would have changed all seven DTOs at once (the
+Supabase client installs no custom serializer). The field-by-field reasoning now lives in
+`DailyLogDto`'s KDoc, because the rule is not "force everything":
+
+| field | forced? | why |
+|---|---|---|
+| `symptoms`, `water_ml`, `supplements`, `notes` | yes | each has a real clear-to-default path in the UI, and each is in `docs/schema.sql` — naming it can never fail |
+| `mood`, `energy`, `sleep_minutes` | no | the form only ever *sets* these; with no deselect they cannot reach their `null` default |
+| `food_groups` | **no — same defect, left unfixed on purpose** | it is not in `docs/schema.sql`'s `CREATE TABLE`; the only evidence it is live is a worklog note. Naming a column that does not exist makes PostgREST reject the upsert and would break **every** daily-log push. Probe production, then force it |
+| `sexual_activity` | **never** | the column is `boolean NOT NULL DEFAULT false`; forcing the `null` default would send `"sexual_activity":null` and fail the whole row. Its clear is `false`, which already encodes on its own |
+
+**Why no test caught it:** `DailyLogRepositoryToggleTest` asserts the empty list reaches a *fake*
+remote, and it always did. The repository was right; the bug lived one layer below, in
+serialization. `DailyLogDtoTest` now pins the actual JSON — including a `wireKeys()` assertion on
+the exact column set a fully cleared row names — and `DataContractTest` had one assertion
+**inverted**: it read `assertFalse(encoded.contains("water_ml"))`, which had written the bug down
+as a requirement.
+
+Verified on the wire, not just in tests: on-device, un-ticking the final supplement now sends
+`columns=user_id,date,symptoms,water_ml,supplements,notes`, and the clear survives a force-stop.
+
+### Fixed — "coq10" on top of "CoQ10" made a row she could never see
+
+`SupplementToggleSet.build()` dedupes custom entries against the plan and each other, so a
+duplicate name was saved to Room, pushed to the server, and then **rendered nowhere** — no chip, no
+checklist row, no way to remove it. Writes now refuse a name already in the set via the same
+canonical identity rule (`SupplementToggleSet.namesSomethingIn`, trimmed + case-insensitive), with
+a new `SupplementWriteResult.Duplicate` and the sheet's existing error line: *"coq10" is already in
+your list.* Typing a bundled essential's name ("folate") is refused for the same reason; "Iron",
+which is outside the plan, still saves. The check reads the committed rows
+(`UserSupplementDao.liveFor`), not a collected flow, so two fast taps of Add cannot race past it.
+
+**Still open, deliberately not invented here:** custom entries have no edit or delete affordance in
+the UI. `UserSupplementRepository.delete(id)` already exists and soft-deletes correctly, so this is
+a UI-only gap — but destructive UI is a product decision, not a bug fix.
+
+### Fixed — checkbox and label were glued together
+
+The Track → Nutrition "LOG SUPPLEMENTS" rows had no horizontal gap between the tick box and the
+supplement name.
+
+### Tests
+
+587 unit (was 579; +9 wire-format, +4 identity/guard, +4 duplicate), 41 instrumented, release build
+green. Each new guard was mutation-tested — the annotation, the identity rule and the duplicate
+check were each broken in turn to confirm the tests fail, then restored.
+
+Noted for a separate fix: on a cold emulator `DailyLogRepositoryTest` hangs exactly one test per
+run at its 20-second flow-poll helper, a different test each time. It uses a fake in-memory remote
+that never serializes a DTO, so it is a test-harness race, not a product defect.
+
+---
+
 ## [Unreleased] — Track → Nutrition logs supplements again — `1.4.2 (19)` (26 Aug 2026, evening)
 
 ### Fixed — the Track → Nutrition tracker was a dead-end summary
