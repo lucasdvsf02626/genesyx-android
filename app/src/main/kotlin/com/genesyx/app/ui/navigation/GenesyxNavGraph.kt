@@ -116,6 +116,7 @@ fun GenesyxNavGraph(
             NutritionScreen(
                 navController,
                 openPlan = entry.arguments?.getString(Screen.Nutrition.ARG_PLAN) != null,
+                reselects = entry.savedStateHandle.getStateFlow(TabNavigation.RESELECT_KEY, 0),
             )
         }
         composable(
@@ -198,10 +199,7 @@ fun GenesyxNavGraph(
             Screen.NutritionDetail.route,
             deepLinks = listOf(navDeepLink { uriPattern = "genesyx://tracker/nutrition" }),
         ) {
-            NutritionDetailScreen(
-                onBack = { navController.popBackStack() },
-                onLog = { navController.navigate(Screen.Log.create()) },
-            )
+            NutritionDetailScreen(onBack = { navController.popBackStack() })
         }
         composable(Screen.LogHistory.route) {
             LogHistoryScreen(onBack = { navController.popBackStack() })

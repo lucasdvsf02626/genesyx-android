@@ -35,6 +35,14 @@ class SupplementTest {
     }
 
     @Test
+    fun `matching is trimmed and case-insensitive, so every reader agrees`() {
+        // The Nutrition card and the Insights card once used two different matchers; a row
+        // written as "folic acid " counted on one and not the other.
+        assertEquals(Supplement.FOLATE, Supplement.fromWire(" folic ACID "))
+        assertEquals(Supplement.VITAMIN_D, Supplement.fromWire("vitamin d"))
+    }
+
+    @Test
     fun `an unknown string is not guessed at`() {
         // An older build, or another client. It must not be coerced into a neighbour.
         assertNull(Supplement.fromWire("Folate"))

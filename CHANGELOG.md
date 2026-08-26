@@ -6,6 +6,122 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ---
 
+## [Unreleased] — Nutrition tab fix + inline supplement logging (SFM-27 / SFM-28) — still `1.4.2 (16)` (26 Aug 2026)
+
+Version identity deliberately **not** bumped: code 16 is built and signature-verified but not yet on
+Play (Internal serves 1.3.0 (11)). Whether this lands as a rebuilt 16 or as 17 depends on whether 16
+is uploaded first — the owner's call, checked against the Play Console, not guessed here.
+
+### Fixed — the Nutrition bottom tab looked dead (SFM-27)
+
+- **Root cause, reproduced on the emulator before touching code.** Not a missing or mismatched
+  route: a fresh process → Home → Nutrition worked. Nutrition's *"See all articles"* did a plain
+  `navigate(Screen.Learn.route)`, pushing the **Learn tab root on top of Nutrition**
+  (`[home, nutrition, learn]`). The next tab switch popped that chain with `saveState`, keyed under
+  Nutrition's destination, and every later Nutrition tap `restoreState`d it **with Learn on top** —
+  "nothing happens" from Learn, a jump to Learn from anywhere else, and it stuck for the life of the
+  process. Back from that state revealed Nutrition underneath, then Home.
+- **`ui/navigation/TabNavigation.kt`** — one `NavController.navigateToTab(tab)` (popUpTo Home +
+  saveState, launchSingleTop, restoreState) used by the bottom bar **and** by any in-screen link that
+  targets another tab; `routeFor()` strips a tab's optional-argument pattern to the bare path;
+  `isTabRoot()` selects from the registered pattern. "See all articles" now switches tabs properly.
+- **Re-tapping the selected tab scrolls to the top** instead of being a no-op: the bar bumps a
+  counter in the tab entry's `SavedStateHandle` (`TabNavigation.RESELECT_KEY`); Nutrition collects it
+  and `animateScrollTo(0)`. Never stacks a duplicate.
+- Pinned by `TabNavigationTest` (JVM) and `NutritionTabNavigationTest` (instrumented, walks the exact
+  path above against the real NavHost + bar; asserts the route, no Back, one Nutrition entry).
+
+### Added — inline supplement logging on the Nutrition tab (SFM-28a)
+
+- **"Your supplement plan" card is now first** under the header and no longer gated on a cycle being
+  set up. Four tappable chips F O D Z (44dp, `toggleable` with Checkbox semantics: "Folate, logged
+  today"); a tap logs/un-logs that supplement for **today** and the chip fills from the row Room
+  emits. Status line is iOS's: "None logged yet today" / "N of M logged today".
+- **`DailyLogRepository.toggleSupplement()`** — the first *reporting* daily-log write. Returns
+  `LogWriteResult`: `Saved` (server confirmed / guest local), `Queued` (Room written, push failed →
+  WorkManager retry), `Refused` (consent withdrawn, nothing written), `Failed` (local write threw).
+  Runs in the application scope so a screen leaving mid-toggle can't strand a PENDING row. Un-logging
+  the last item writes and pushes an **empty list** — an explicit clear, the iOS §5 lesson.
+- **Snackbar on anything but a clean save** (`SupplementSaveEvent`): refused → consent copy; queued →
+  "saved on this device — it'll sync when you're back online"; failed → "Couldn't save X. Nothing was
+  changed." with **Retry**. Nothing is ever fake-saved.
+- **Supplement Plan sheet** (`SupplementPlanSheet.kt`, replaces the AlertDialog): GENESYX ESSENTIALS
+  (name + dose range, benefit line, a **bell** that sets a daily local reminder — stored under
+  `plan:<id>` in `SupplementReminderRepository`, which `reconcile()` now keeps) and YOUR SUPPLEMENTS
+  (list + Name / Dose / Time form, "+ Add your own supplement" disabled until Name is non-empty,
+  saves to `user_supplements`). Added entries **join the chips and the denominator**: "N of 5", and
+  each of her own rows carries **the same reminder bell** as the essentials (owner request, later
+  the same day) — keyed by the entry's id in `SupplementReminderRepository`, so it is the one
+  reminder the tab's "Your supplements" card already shows for that entry.
+- **`SupplementToggleSet`** (`domain/model`) — the one definition of "the set and its counts" for
+  the plan card, the Track summary and Insights; custom entries dedupe against plan wire/display
+  names. Replaces `SupplementPlanProgress`. `Supplement.fromWire` is now trimmed + case-insensitive
+  so every reader of `daily_logs.supplements` matches the same rows; `Supplement.chipInitial` keeps
+  "D" for Vitamin D.
+- Hydration card gains **"Track ›"** (opens the Hydration detail); the **7-day hydration challenge**
+  card (extracted to `ui/components/HydrationChallengeCard.kt`, shared with Home) sits under it.
+
+### Changed — Track → Nutrition tracker is iOS's read-only summary (SFM-28 §2)
+
+`NutritionDetailScreen` now shows TODAY / Supplements from today's log (names), TODAY / Food groups
+from today's log, SUPPLEMENTS THIS WEEK and FOOD GROUPS THIS WEEK (Mon–Sun dots with counts), and
+the "No supplements logged yet this week…" footer **only** when the week is genuinely empty. The
+"Log supplements" button is gone — logging lives on the tab. Kept as a pushed screen with Back
+(Android's sheet), per `ANDROID_PARITY.md`'s don't-port-literally rule. Logic in
+`NutritionTrackerLogic` (pure, tested).
+
+### Changed — Insights "Nutrition consistency" reflects the Nutrition tab (SFM-28b)
+
+`InsightsViewModel.supplementInsights` combines `DailyLogRepository.logByDate` with
+`UserSupplementRepository.supplements` through the same `SupplementToggleSet`; the card shows
+"Today · N of M logged" and a ticked-name row above the week bars. Empty copy only when the whole
+week is empty. `NutritionInsightsSharedRepositoryTest` drives NutritionViewModel, InsightsViewModel
+and NutritionDetailViewModel over **one** real repository and a fake table.
+
+### Tests
+
+Unit: **560 passing, 0 failures, 0 skipped** (was 531; +29 across `TabNavigationTest`,
+`SupplementToggleSetTest`, `DailyLogRepositoryToggleTest`, `NutritionTrackerLogicTest`,
+`NutritionInsightsSharedRepositoryTest`, `SupplementReminderPlanIdTest`, extensions to
+`SupplementTest` / `SupplementInsightLogicTest`; `SupplementPlanProgressTest` retired with its
+object). Instrumented: `NutritionTabNavigationTest` green on the Pixel 8 API 36 emulator.
+`SignInLocally` (a `@SeedOnly` manual utility) puts the installed app into a local signed-in state
+for on-device QA. Manual checklist: `QA_CHECKLIST_ANDROID.md`.
+
+### Verification record — what was actually checked on 26 Aug 2026
+
+Branch `lucasvsf026/sfm-27-28-nutrition-tab-inline-supplement-logging`, commit `c948ec5`
+(+ this changelog note). Debug build installed on the Pixel 8 / API 36 emulator, signed in locally
+via `SignInLocally` and seeded with `SeedTestData`.
+
+| What | How | Result |
+|---|---|---|
+| SFM-27 root cause | Emulator: from Learn, tap Nutrition → no change; BACK → Nutrition underneath, BACK → Home. Fresh process → Home → Nutrition → works | Cross-tab push + `restoreState`, not a route mismatch |
+| SFM-27 fix | Nutrition → "See all articles" → Learn → Track → Nutrition, ×3 | Lands on "Your nutrition focus", 0 "Back" nodes, tab highlighted |
+| Re-tap scroll-to-top | Scroll Nutrition down, tap Nutrition tab | Header back at top; back stack holds one Nutrition entry |
+| Chip logging | Tap Zinc → "4 of 4 logged today"; tap Folate → "3 of 4" | Live, no dialog, chips fill/unfill from the stored row |
+| Plan sheet | Review Plan | Essentials (name + dose, benefit, bell) and Your supplements form; Add disabled until Name set |
+| Add your own | Name "Magnesium", Dose "300 mg", Time Evening → Add → Got it | Listed "300 mg · Evening"; five chips; "3 of 5" → tap M → "4 of 5" |
+| Track tracker | Track → "Nutrition. 3 of 4 supplements today" row | Today's names "Vitamin D · Omega-3 · Zinc", week dots M:1 W:3, food groups empty state |
+| Insights | Insights → Nutrition consistency | "Today · 3 of 4 logged" → "of 5 a day" / "Today · 4 of 5 logged" after Magnesium |
+| Custom reminder bell | Plan sheet → bell on a "Your supplements" row → OK → bell again | "Reminder at 9:00 AM" under the entry, then cleared |
+| Unit suite | `./gradlew :app:testDebugUnitTest` | 560 tests, 0 failures, 0 skipped |
+| Instrumented | `NutritionTabNavigationTest` via `connectedDebugAndroidTest` | 1/1 green (3.1 s) |
+
+Not verified today (needs a real account / network): the Supabase rows behind 5.9 and 10.x in
+`QA_CHECKLIST_ANDROID.md` (offline queue drain, consent-withdrawn snackbar, reminder firing).
+
+### Not touched, on purpose
+
+- Track rows are pushed screens, not modal bottom sheets (all six already open something).
+- Food-group chips still use the fire-and-forget `toggleFoodGroup` (refusal shown by the banner,
+  not a snackbar); `HomeScreen` / `InsightsScreen` keep their inline tab-navigation blocks (correct
+  as written, just not yet on the shared helper).
+- The Nutrition tab's own "Your supplements" card (with per-entry reminders) stays alongside the
+  sheet's list — both read the same repository.
+
+---
+
 ## [Unreleased] — iOS parity hand-off — `1.4.2 (16)` (25 Aug 2026)
 
 Worked from `ANDROID_PARITY.md` at the root of the iOS repo (`2cd61d7`): six sections, each with the

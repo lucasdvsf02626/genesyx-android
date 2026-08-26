@@ -2,6 +2,7 @@ package com.genesyx.app.data
 
 import com.genesyx.app.core.di.ApplicationScope
 import com.genesyx.app.data.local.datastore.GenesyxPreferencesDataStore
+import com.genesyx.app.domain.model.Supplement
 import com.genesyx.app.domain.model.UserSupplement
 import com.genesyx.app.notifications.SupplementReminderScheduler
 import kotlinx.coroutines.CoroutineScope
@@ -51,15 +52,30 @@ class SupplementReminderRepository @Inject constructor(
         scope.launch {
             val byId = current.associateBy { it.id }
             store.supplementReminders.first().forEach { (id, minutes) ->
-                val supplement = byId[id]
-                if (supplement == null) {
+                val name = byId[id]?.name ?: planReminderName(id)
+                if (name == null) {
                     store.removeSupplementReminder(id)
                     scheduler.cancel(id)
                 } else {
-                    scheduler.schedule(id, supplement.name, minutes)
+                    scheduler.schedule(id, name, minutes)
                 }
             }
         }
+    }
+
+    companion object {
+        /**
+         * Reminder ids for the four bundled essentials (the plan sheet's bell). They are not
+         * `user_supplements` rows, so [reconcile] must not drop them as "deleted".
+         */
+        private const val PLAN_PREFIX = "plan:"
+
+        fun planReminderId(supplement: Supplement): String = PLAN_PREFIX + supplement.id
+
+        /** The display name behind a plan reminder id, or null if [id] is not one. */
+        fun planReminderName(id: String): String? =
+            id.removePrefix(PLAN_PREFIX).takeIf { it != id }
+                ?.let { sid -> Supplement.entries.firstOrNull { it.id == sid }?.displayName }
     }
 
     /** Sign-out / account deletion: cancel and forget every reminder. */

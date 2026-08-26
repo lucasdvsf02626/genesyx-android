@@ -16,12 +16,14 @@ enum class Supplement(
     val displayName: String,
     val wireName: String,
     val dosageNote: String?,
+    /** The letter on its chip — "D" for Vitamin D, as the plan has always drawn it. */
+    val chipInitial: String,
 ) {
-    FOLATE("folate", "Folate", "Folic acid", "400–800 mcg"),
-    OMEGA_3("omega3", "Omega-3", "Omega-3", "DHA/EPA"),
-    VITAMIN_D("vitamin_d", "Vitamin D", "Vitamin D", "600–1000 IU"),
-    ZINC("zinc", "Zinc", "Zinc", "8–11 mg"),
-    IRON("iron", "Iron", "Iron", null),
+    FOLATE("folate", "Folate", "Folic acid", "400–800 mcg", "F"),
+    OMEGA_3("omega3", "Omega-3", "Omega-3", "DHA/EPA", "O"),
+    VITAMIN_D("vitamin_d", "Vitamin D", "Vitamin D", "600–1000 IU", "D"),
+    ZINC("zinc", "Zinc", "Zinc", "8–11 mg", "Z"),
+    IRON("iron", "Iron", "Iron", null, "I"),
     ;
 
     companion object {
@@ -36,15 +38,24 @@ enum class Supplement(
         /** Everything she can tick in the Log. */
         val loggable: List<Supplement> = entries
 
-        private val byWire: Map<String, Supplement> = entries.associateBy { it.wireName }
+        private val byWire: Map<String, Supplement> = entries.associateBy { normalise(it.wireName) }
 
         /**
          * Maps a stored string back to the vocabulary.
+         *
+         * Matching is trimmed and case-insensitive — one rule for every reader, so the Nutrition
+         * card and the Insights card can never disagree about the same row (a value written less
+         * tidily by an older build or the other platform still counts on both).
          *
          * Unknown strings — an older build, or a value another client wrote — return null rather
          * than being coerced or dropped. Callers keep the raw string they read, so nothing she
          * logged is ever silently lost; it simply does not score.
          */
-        fun fromWire(value: String): Supplement? = byWire[value]
+        fun fromWire(value: String): Supplement? = byWire[normalise(value)]
+
+        /** True when [stored] is this supplement's wire name, under [fromWire]'s matching rule. */
+        fun Supplement.matchesStored(stored: String): Boolean = normalise(stored) == normalise(wireName)
+
+        private fun normalise(value: String): String = value.trim().lowercase()
     }
 }

@@ -119,7 +119,7 @@ those answers. Waitlist storage uses the `join_waitlist` RPC where Supabase is c
 | Home | `home` | Cycle context, hydration, pH nudge, daily action, streak/new-article state |
 | Track | `track` | Calendar, day markers, tracker summaries and date navigation |
 | pH | `tracker/ph` | Canonical vaginal-pH entry, chart and history; also a bottom tab |
-| Nutrition | `nutrition` | Phase-aware foods, hydration, custom supplements and Genesyx-range empty state |
+| Nutrition | `nutrition?plan={plan}` | Tappable plan chips (F O D Z + her own) logging straight to `daily_logs.supplements`, plan sheet with add-your-own form, hydration + 7-day challenge, food groups, meals, recipes, Genesyx-range empty state |
 | Insights | `insights` | Real repository-derived cards and empty states |
 | Learn | `learn` | Bundled articles, categories and search |
 | Profile | `profile` | Account, profile/settings, reminders, sync state and legal/support |
@@ -129,7 +129,7 @@ those answers. Waitlist storage uses the `join_waitlist` RPC where Supabase is c
 | Hydration detail | `tracker/hydration` | Daily editor, goal, history and seven-day view |
 | Sleep detail | `tracker/sleep` | Weekly duration summary and editor |
 | Symptoms detail | `tracker/symptoms` | Four-week heatmap and dated history |
-| Nutrition detail | `tracker/nutrition` | Supplement summary/log route |
+| Nutrition detail | `tracker/nutrition` | Read-only summary: today's supplements + food groups by name, Mon–Sun dot strips for both, footer only when the week is empty |
 | Learn search | `learn/search` | Search available articles |
 | Article | `learn/article/{slug}` | Article content, sources, related links and CTAs |
 | Reminder settings | `reminder_settings` | Master, kind, schedule and quiet-hours controls |

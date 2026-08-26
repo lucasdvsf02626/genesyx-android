@@ -6,15 +6,18 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -25,17 +28,22 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Medication
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.outlined.WaterDrop
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -45,7 +53,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -59,27 +71,35 @@ import com.genesyx.app.domain.content.ArticleCategory
 import com.genesyx.app.domain.content.LearnDrip
 import com.genesyx.app.domain.content.recipesFor
 import com.genesyx.app.ui.components.ExpandableInfo
-import com.genesyx.app.domain.content.supplementPlan
+import com.genesyx.app.domain.model.SupplementPlanEntry
+import com.genesyx.app.domain.model.SupplementToggleSet
 import com.genesyx.app.ui.components.ConsentWithdrawnBanner
 import com.genesyx.app.ui.components.Eyebrow
 import com.genesyx.app.ui.components.GxPrimaryButton
+import com.genesyx.app.ui.components.HydrationChallengeCard
 import com.genesyx.app.ui.components.HydrationGoalDialog
 import com.genesyx.app.ui.learn.HowThisWorksLink
 import com.genesyx.app.ui.navigation.Screen
-import com.genesyx.app.ui.theme.ElectricBlue
+import com.genesyx.app.ui.navigation.navigateToTab
 import com.genesyx.app.ui.theme.ElectricLavender
-import com.genesyx.app.ui.theme.ElectricPink
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 
 @Composable
 fun NutritionScreen(
     navController: NavController,
     /** Arrive with the supplement plan already open (pH's "See your supplement plan" card). */
     openPlan: Boolean = false,
+    /** Bumped when the Nutrition tab is tapped while already selected — scroll back to the top. */
+    reselects: StateFlow<Int> = MutableStateFlow(0),
     viewModel: NutritionViewModel = hiltViewModel(),
 ) {
     val colors = MaterialTheme.colorScheme
     val state by viewModel.uiState.collectAsState()
     val userSupplements by viewModel.userSupplements.collectAsState()
+    val planEntries by viewModel.planEntries.collectAsState()
+    val planReminders by viewModel.planReminders.collectAsState()
+    val supplementReminders by viewModel.supplementReminders.collectAsState()
     val todaysMeals by viewModel.todaysMeals.collectAsState()
     val catalogue by viewModel.catalogue.collectAsState()
     val glassMl by viewModel.glassMl.collectAsState()
@@ -89,12 +109,38 @@ fun NutritionScreen(
     // Saveable so a rotation after she dismisses it doesn't re-open the plan from `openPlan`.
     var planOpen by rememberSaveable { mutableStateOf(openPlan) }
     var goalOpen by remember { mutableStateOf(false) }
+    val scrollState = rememberScrollState()
+    val snackbar = remember { SnackbarHostState() }
+
+    // Re-tapping the selected tab scrolls to the top rather than pushing a second Nutrition.
+    val reselect by reselects.collectAsState()
+    var seenReselect by rememberSaveable { mutableIntStateOf(reselect) }
+    LaunchedEffect(reselect) {
+        if (reselect != seenReselect) {
+            seenReselect = reselect
+            scrollState.animateScrollTo(0)
+        }
+    }
+
+    // A chip tap that did not simply save says so — refused, queued offline, or failed (Retry).
+    LaunchedEffect(Unit) {
+        viewModel.supplementEvents.collect { event ->
+            val result = snackbar.showSnackbar(
+                message = event.text,
+                actionLabel = if (event is SupplementSaveEvent.Failed) "Retry" else null,
+                withDismissAction = true,
+                duration = if (event is SupplementSaveEvent.Queued) SnackbarDuration.Short else SnackbarDuration.Long,
+            )
+            if (result == SnackbarResult.ActionPerformed) viewModel.toggleSupplement(event.entry)
+        }
+    }
 
     com.genesyx.app.ui.components.GenesyxPage {
+    Box(Modifier.fillMaxSize()) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState()),
+            .verticalScroll(scrollState),
     ) {
         // ── Header (px-6)
         Column(Modifier.padding(horizontal = 24.dp).padding(top = 20.dp, bottom = 12.dp)) {
@@ -116,7 +162,17 @@ fun NutritionScreen(
                 Spacer(Modifier.height(12.dp))
             }
 
+            // ── The plan, first: tap a chip to log it for today (iOS order). Not gated on the
+            // cycle being set up — taking a supplement has nothing to do with the calendar.
+            SupplementPlanCard(
+                entries = planEntries,
+                loggedToday = state.loggedToday,
+                onToggle = { viewModel.toggleSupplement(it) },
+                onReview = { planOpen = true },
+            )
+
             // ── Hydration card
+            Spacer(Modifier.height(12.dp))
             HydrationCard(
                 waterMl = state.waterMl,
                 goalMl = state.waterGoalMl,
@@ -128,13 +184,19 @@ fun NutritionScreen(
                 onAdd = { viewModel.adjustWater(glassMl) },
                 onRemove = { viewModel.adjustWater(-glassMl) },
                 onEditGoal = { goalOpen = true },
+                onTrack = { navController.navigate(Screen.HydrationDetail.route) },
+            )
+
+            Spacer(Modifier.height(12.dp))
+            HydrationChallengeCard(
+                days = state.hydrationChallengeDays,
+                onOpen = { navController.navigate(Screen.HydrationDetail.route) },
             )
 
             // Action-first ordering: the things she DOES (log water, keep her supplement list)
-            // come before the things she READS (focus foods, suggested plan, articles).
+            // come before the things she READS (focus foods, articles).
             // pH moved out to its own bottom tab (client request, 12 Aug 2026).
             Spacer(Modifier.height(12.dp))
-            val supplementReminders by viewModel.supplementReminders.collectAsState()
             UserSupplementsCard(
                 supplements = userSupplements,
                 reminders = supplementReminders,
@@ -170,9 +232,6 @@ fun NutritionScreen(
                 FocusFoodsCard(state.foods, expandedFood) { name ->
                     expandedFood = if (expandedFood == name) null else name
                 }
-
-                Spacer(Modifier.height(12.dp))
-                SupplementPlanCard(takenToday = state.planTakenToday, onReview = { planOpen = true })
             }
 
             // Recipes: phase-relevant plus always-shown general ones (empty → "coming soon"). Outside
@@ -186,10 +245,12 @@ fun NutritionScreen(
             )
 
             // Outside the cycle gate: Learn is most useful to someone who hasn't set up a cycle yet.
+            // "See all articles" targets another TAB, so it must switch tabs the way the bottom
+            // bar does — a plain push put Learn on top of Nutrition and killed the tab (SFM-27).
             Spacer(Modifier.height(16.dp))
             ArticlesSection(
                 onOpen = { navController.navigate(Screen.ArticleDetail.create(it)) },
-                onSeeAll = { navController.navigate(Screen.Learn.route) },
+                onSeeAll = { navController.navigateToTab(Screen.Learn) },
             )
 
             HowThisWorksLink(
@@ -200,6 +261,8 @@ fun NutritionScreen(
 
             Spacer(Modifier.height(24.dp))
         }
+    }
+    SnackbarHost(hostState = snackbar, modifier = Modifier.align(Alignment.BottomCenter))
     }
     }
 
@@ -217,32 +280,14 @@ fun NutritionScreen(
     }
 
     if (planOpen) {
-        AlertDialog(
-            onDismissRequest = { planOpen = false },
-            shape = RoundedCornerShape(20.dp),
-            containerColor = colors.surface,
-            title = { Text("Your supplement plan", style = MaterialTheme.typography.titleLarge, color = colors.onSurface) },
-            text = {
-                Column {
-                    Text(
-                        "Gentle, evidence-informed essentials for fertility prep.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = colors.onSurfaceVariant,
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    supplementPlan.forEachIndexed { i, s ->
-                        Row(Modifier.padding(vertical = 6.dp)) {
-                            SupplementAvatar(s.initial, i)
-                            Spacer(Modifier.size(12.dp))
-                            Column {
-                                Text(s.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, color = colors.onSurface)
-                                Text(s.rationale, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = { TextButton(onClick = { planOpen = false }) { Text("Got it", color = ElectricLavender) } },
+        SupplementPlanSheet(
+            customSupplements = userSupplements,
+            planReminders = planReminders,
+            customReminders = supplementReminders,
+            onSetPlanReminder = { supplement, minutes -> viewModel.setPlanReminder(supplement, minutes) },
+            onSetCustomReminder = { entry, minutes -> viewModel.setSupplementReminder(entry.id, entry.name, minutes) },
+            onAddSupplement = { viewModel.saveSupplement(it) },
+            onDismiss = { planOpen = false },
         )
     }
 }
@@ -259,6 +304,7 @@ private fun HydrationCard(
     onAdd: () -> Unit,
     onRemove: () -> Unit,
     onEditGoal: () -> Unit,
+    onTrack: () -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
     val remaining = (goalMl - waterMl).coerceAtLeast(0)
@@ -314,9 +360,14 @@ private fun HydrationCard(
                         color = colors.onSurfaceVariant,
                     )
                 }
-                // A TextButton, not a tappable label: it carries Material's 48dp touch target.
-                TextButton(onClick = onEditGoal) {
-                    Text("Edit goal", style = MaterialTheme.typography.bodyMedium, color = ElectricLavender)
+                // TextButtons, not tappable labels: they carry Material's 48dp touch target.
+                Row {
+                    TextButton(onClick = onEditGoal) {
+                        Text("Edit goal", style = MaterialTheme.typography.bodyMedium, color = ElectricLavender)
+                    }
+                    TextButton(onClick = onTrack) {
+                        Text("Track ›", style = MaterialTheme.typography.bodyMedium, color = ElectricLavender)
+                    }
                 }
             }
             // Intraday pacing — framed by the time of day, a nudge rather than a verdict.
@@ -438,9 +489,21 @@ private fun FocusFoodsCard(foods: List<PhaseFood>, expanded: String?, onToggle: 
     }
 }
 
+/**
+ * "Your supplement plan" — the four bundled essentials plus her own entries as tappable chips.
+ * A tap logs or un-logs that supplement for today through the daily-log repository; the chip
+ * fills from the row Room emits, so it reflects what is actually stored, never a guess.
+ */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun SupplementPlanCard(takenToday: Int, onReview: () -> Unit) {
+private fun SupplementPlanCard(
+    entries: List<SupplementPlanEntry>,
+    loggedToday: Set<String>,
+    onToggle: (SupplementPlanEntry) -> Unit,
+    onReview: () -> Unit,
+) {
     val colors = MaterialTheme.colorScheme
+    val taken = SupplementToggleSet.takenCount(entries, loggedToday)
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(28.dp),
@@ -455,29 +518,37 @@ private fun SupplementPlanCard(takenToday: Int, onReview: () -> Unit) {
                 ) { Icon(Icons.Filled.Medication, null, tint = ElectricLavender) }
                 Spacer(Modifier.size(16.dp))
                 Column(Modifier.weight(1f)) {
-                    Text("Suggested supplements", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+                    Text("Your supplement plan", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        "Folate, Omega-3, Vitamin D, and Zinc — best taken with breakfast.",
+                        "Folate, Omega-3, Vitamin D, and Zinc — taken with breakfast.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = colors.onSurfaceVariant,
                     )
-                    Spacer(Modifier.height(12.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        supplementPlan.forEachIndexed { i, s ->
-                            Box(Modifier.offset(x = (i * -6).dp)) { SupplementAvatar(s.initial, i, bordered = true) }
-                        }
-                    }
-                    Spacer(Modifier.height(8.dp))
-                    // Live state from today's Log toggles — iOS's plan-card line, same strings.
-                    Text(
-                        SupplementPlanProgress.statusLine(takenToday),
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = if (takenToday == 0) colors.onSurfaceVariant else ElectricLavender,
+                }
+            }
+            Spacer(Modifier.height(14.dp))
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                entries.forEachIndexed { i, entry ->
+                    PlanChip(
+                        entry = entry,
+                        index = i,
+                        logged = SupplementToggleSet.isLogged(entry, loggedToday),
+                        onToggle = { onToggle(entry) },
                     )
                 }
             }
+            Spacer(Modifier.height(10.dp))
+            // Live from today's row — iOS's plan-card line, same strings.
+            Text(
+                SupplementToggleSet.statusLine(taken, entries.size),
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = if (taken == 0) colors.onSurfaceVariant else ElectricLavender,
+            )
             Spacer(Modifier.height(12.dp))
             // Secondary rationale tucked behind a tap — keeps the card action-focused (client's
             // "Why is this important? / Learn more" dropdown).
@@ -495,22 +566,41 @@ private fun SupplementPlanCard(takenToday: Int, onReview: () -> Unit) {
     }
 }
 
+/** One tappable chip: the initial in a ring, filled solid once logged. 44dp — a real touch target. */
 @Composable
-private fun SupplementAvatar(initial: String, index: Int, bordered: Boolean = false) {
+private fun PlanChip(entry: SupplementPlanEntry, index: Int, logged: Boolean, onToggle: () -> Unit) {
     val colors = MaterialTheme.colorScheme
-    val tint = when (index) {
-        1 -> ElectricBlue
-        3 -> ElectricPink
-        else -> ElectricLavender
-    }
-    Box(
+    val tint = planTint(index)
+    val label = "${entry.display}, ${if (logged) "logged" else "not logged"} today"
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
-            .size(28.dp)
-            .clip(CircleShape)
-            .background(tint.copy(alpha = 0.12f)),
-        contentAlignment = Alignment.Center,
+            .width(64.dp)
+            .toggleable(value = logged, role = Role.Checkbox, onValueChange = { onToggle() })
+            .semantics { contentDescription = label },
     ) {
-        Text(initial, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = tint)
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .clip(CircleShape)
+                .background(if (logged) tint else tint.copy(alpha = 0.12f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                entry.initial,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = if (logged) Color.White else tint,
+            )
+        }
+        Spacer(Modifier.height(4.dp))
+        Text(
+            entry.display,
+            style = MaterialTheme.typography.labelSmall,
+            color = if (logged) colors.onSurface else colors.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 
