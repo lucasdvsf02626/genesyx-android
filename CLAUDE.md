@@ -43,7 +43,23 @@ Read this first. Honest state, verified against the tree on **2026-08-26**.
 
 ## 🔖 STOPPED HERE — resume from this (2026-08-26)
 
-**Latest, 26 Aug 17:02 — the release candidate is `1.4.2 (19)`.** An owner review before the code-18
+**Latest, 26 Aug 19:09 — the release candidate is `1.4.2 (20)`, commit `0288fda`.** A read-only QA
+pass on code 19 found a silent data-loss defect on the wire: un-ticking the **last** supplement sent
+`columns=user_id,date` — the column was never written, the row was still marked `SYNCED` (so
+`refresh`'s unsynced-changes guard did not protect it), and the next pull resurrected the
+supplements she had just removed. Cause: supabase-kt serializes with `encodeDefaults = false`, so a
+property sitting at its declared default is dropped from the body, and PostgREST derives `columns=`
+from that body. Fixed with per-property `@EncodeDefault(Mode.ALWAYS)` on `symptoms`, `water_ml`,
+`supplements`, `notes` — **never** on `sexual_activity` (`NOT NULL DEFAULT false`; an explicit null
+fails the whole upsert), and deliberately **not yet** on `food_groups` (same defect, but it is
+absent from `docs/schema.sql` and naming a column that does not exist breaks every daily-log push —
+probe production first). Also: duplicate custom supplements are refused via
+`SupplementToggleSet.namesSomethingIn`, and the Track → Nutrition checkbox/label spacing is fixed.
+**Code 19 is superseded — never upload it.** Upload
+`1.4.2-code20/genesyx-1.4.2-code20.aab` (SHA-256 `86c5c161…3c049`). Everything below this paragraph
+about 19 is history.
+
+**Previously, 26 Aug 17:02 — the release candidate was `1.4.2 (19)`.** An owner review before the code-18
 upload found Track → Nutrition had become a read-only dead end for supplements (PR #20 took the
 brief's "§2 read-only summary" literally; the old screen had a "Log supplements" button). The
 tracker now carries a **LOG SUPPLEMENTS** checklist by name + dose (essentials, then her own) on the
@@ -114,12 +130,15 @@ the manual script is `QA_CHECKLIST_ANDROID.md`.
    offline queue, consent snackbar) against a real account on the Play-installed build — those rows
    were not verifiable on the emulator. Add two: adding a supplement with health-data consent OFF
    must show the refusal and keep the form filled; and a cloud restore must come back signed out.
-1. **Upload the code-18 AAB to Internal testing** (`1.4.2-code18/genesyx-1.4.2-code18.aab`, SHA-256 `222fb746…9c5ae0`) — verify the hash first, then smoke-test the
+1. **Upload the code-20 AAB to Internal testing** (`1.4.2-code20/genesyx-1.4.2-code20.aab`, SHA-256 `86c5c161…3c049`) — verify the hash first, then smoke-test the
    Play-installed build on-device:
    Google Sign-In (needs the release SHA-1 registered), change password (incl. wrong current
    password), waitlist join (incl. duplicate), guest pH reading → sign-in → reading appears; plus
    the 1.3.0 checks — vaginal pH two-band display, "urine (legacy)" markers, Home deep links, a
-   reminder firing — and the new opt-in intimacy reminder. **Add the navigation walk: Track →
+   reminder firing — and the new opt-in intimacy reminder. **Add the code-19 round-trip, which the
+   emulator could NOT prove (the QA session's non-UUID user id 400s every push by design): on a real
+   account, log a supplement, un-tick the last one, force-stop, relaunch, and pull — it must stay
+   un-logged.** That is the half of DEFECT-1 no unit test can close. **Add the navigation walk: Track →
    Vaginal pH → Track tab must return to Track** (the code-17 defect; pinned in code by
    `PhTabNavigationTest`, but walk it once on the Play-installed build).
 2. **Send the corrected Play console drafts for review** — the Health apps declaration and Data
@@ -137,12 +156,12 @@ the manual script is `QA_CHECKLIST_ANDROID.md`.
 
 | | |
 |---|---|
-| `main` | versionCode **19**, versionName **"1.4.2"**, compile/targetSdk **36**, minSdk **26**, Room **v10** |
-| Working branch | none. The fix commit is `9af9501`; the code-18 artifact was built from exactly that tree (a docs-only commit sits on top) |
-| Unit tests | **570 passing, 0 failures, 0 skipped** (`./gradlew :app:testDebugUnitTest`, 26 Aug 17:00); instrumented `NutritionTabNavigationTest`, `PhTabNavigationTest`, `TrackNutritionLoggingTest` green on the Pixel 8 / API 36 emulator |
-| Release build | GREEN (2026-08-26 17:02), R8/minify clean; AAB + APK signed with upload key SHA-1 `8D:EB…CC:73` (aapt2 reports `com.genesyx.app / 19 / 1.4.2 / target 36`). Contains everything in 18 plus the Track → Nutrition supplement checklist + plan-sheet entry |
-| Artifact | **`~/Documents/Genesyx Releases/1.4.2-code19/genesyx-1.4.2-code19.aab`** — SHA-256 `a23886b5…baa18`, 17,186,919 bytes; `SHA256SUMS.txt` verifies; `BUILD_NOTE.txt` beside it. `1.4.2-code18/` (read-only tracker) and `1.4.2-code17/` (Track → pH bug; reached Play) are superseded — never upload from them |
-| Play status | Internal testing **1.3.0 (11)**, Production **1.2.0 (9) — targets API 35, the build Play flags**; code-19 upload pending (17 reached the Play release flow with the Track → pH defect — see `9af9501`) |
+| `main` | versionCode **20**, versionName **"1.4.2"**, compile/targetSdk **36**, minSdk **26**, Room **v10** |
+| Working branch | none. The fix commit is `0288fda`; the code-20 artifacts were built from exactly that tree, clean |
+| Unit tests | **588 passing, 0 failures, 0 errors, 0 skipped** across 76 classes (`./gradlew :app:testDebugUnitTest --rerun-tasks`, exit 0, 26 Aug 19:05); instrumented **41/41, exit 0** on the Pixel 8 / API 36 emulator |
+| Release build | GREEN (2026-08-26 19:09) after `:app:clean`, R8/minify clean; AAB + APK signed with upload key SHA-1 `8D:EB…CC:73` (aapt2 reports `com.genesyx.app / 20 / 1.4.2 / target 36`) |
+| Artifact | **`~/Documents/Genesyx Releases/1.4.2-code20/genesyx-1.4.2-code20.aab`** — SHA-256 `86c5c161…3c049`, 17,188,803 bytes; `SHA256SUMS.txt` verifies; `BUILD_NOTE.txt` beside it. `1.4.2-code19/` (empty-list sync defect), `1.4.2-code18/` (read-only tracker) and `1.4.2-code17/` (Track → pH bug; reached Play) are superseded — never upload from them |
+| Play status | Internal testing **1.3.0 (11)**, Production **1.2.0 (9) — targets API 35, the build Play flags**; code-20 upload pending (17 reached the Play release flow with the Track → pH defect — see `9af9501`) |
 
 `FeatureFlags` on `main`: `PH_TRACKING = true`, `PUSH_NOTIFICATIONS = true` (local reminders),
 `ADMIN_CLIENTS = false`, `PARTNER_INVITES = false`.

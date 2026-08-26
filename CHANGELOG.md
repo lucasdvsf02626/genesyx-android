@@ -72,9 +72,16 @@ supplement name.
 
 ### Tests
 
-587 unit (was 579; +9 wire-format, +4 identity/guard, +4 duplicate), 41 instrumented, release build
+588 unit (was 579; +10 wire-format, +4 identity/guard, +4 duplicate), 41 instrumented, release build
 green. Each new guard was mutation-tested — the annotation, the identity rule and the duplicate
 check were each broken in turn to confirm the tests fail, then restored.
+
+The tenth wire-format test asserts the **whole body verbatim**, not a `contains` that could pass on
+a substring. A fully cleared row serializes through `DailyLogDto.serializer()` to exactly:
+
+```json
+{"user_id":"user-a","date":"2026-08-10","symptoms":[],"water_ml":0,"supplements":[],"notes":null}
+```
 
 Noted for a separate fix: on a cold emulator `DailyLogRepositoryTest` hangs exactly one test per
 run at its 20-second flow-poll helper, a different test each time. It uses a fake in-memory remote
