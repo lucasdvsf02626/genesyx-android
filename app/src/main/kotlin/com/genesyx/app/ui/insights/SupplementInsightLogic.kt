@@ -2,18 +2,22 @@ package com.genesyx.app.ui.insights
 
 import com.genesyx.app.domain.model.DailyLog
 import com.genesyx.app.domain.model.Supplement
+import com.genesyx.app.domain.model.SupplementToggleSet
+import com.genesyx.app.domain.model.UserSupplement
 import com.genesyx.app.domain.time.WeekBuckets
 import java.time.LocalDate
 
 /**
  * Pure supplement-adherence computation for the current Mon–Sun week.
  *
- * The denominator is her plan, not the number of things she could tick. Iron is loggable but sits
- * outside the default plan, so taking it neither pushes a bar past 100 nor counts towards adherence
- * — it is recorded, not scored, and skipping it is not a miss.
+ * The denominator is her toggle set — the bundled plan plus her own entries, exactly the chips
+ * the Nutrition tab shows ([SupplementToggleSet]) — so the card's "N of M" is the Nutrition
+ * card's "N of M". Iron is loggable but outside the plan, so taking it neither pushes a bar past
+ * 100 nor counts towards adherence — it is recorded, not scored, and skipping it is not a miss.
  *
- * Stored strings come back through [Supplement.fromWire]. Anything unrecognised — an older build, or
- * a value another client wrote — simply does not score, rather than being guessed at.
+ * Stored strings are matched the way [Supplement.fromWire] matches — trimmed, case-insensitive.
+ * Anything unrecognised — an older build, or a value another client wrote — simply does not
+ * score, rather than being guessed at.
  */
 object SupplementInsightLogic {
 
@@ -21,25 +25,32 @@ object SupplementInsightLogic {
         logsByDate: Map<LocalDate, DailyLog>,
         today: LocalDate = LocalDate.now(),
         plan: List<Supplement> = Supplement.defaultPlan,
+        custom: List<UserSupplement> = emptyList(),
     ): SupplementInsights {
-        if (plan.isEmpty()) return SupplementInsights(hasPlan = false)
+        val entries = SupplementToggleSet.build(custom, plan)
+        if (entries.isEmpty()) return SupplementInsights(hasPlan = false)
+
+        val todayLogged = logsByDate[today]?.supplements.orEmpty()
+        val todayItems = entries.map { SupplementTodayItem(it.display, SupplementToggleSet.isLogged(it, todayLogged)) }
+        val todayTaken = todayItems.count { it.logged }
 
         val takenPerDay = WeekBuckets.weekDays(today).map { date ->
-            val logged = logsByDate[date]?.supplements.orEmpty().mapNotNull(Supplement::fromWire)
-            plan.count { it in logged }
+            SupplementToggleSet.takenCount(entries, logsByDate[date]?.supplements.orEmpty())
         }
 
         val suppTotal = takenPerDay.sum()
-        if (suppTotal == 0) return SupplementInsights()
+        if (suppTotal == 0) return SupplementInsights(planSize = entries.size, todayItems = todayItems)
 
         val daysLogged = takenPerDay.count { it > 0 }
         return SupplementInsights(
             hasData = true,
-            bars = takenPerDay.map { it * 100 / plan.size },
+            bars = takenPerDay.map { it * 100 / entries.size },
             daysLogged = daysLogged,
             suppTotal = suppTotal,
-            planSize = plan.size,
-            insight = insightFor(daysLogged, takenPerDay.count { it == plan.size }),
+            planSize = entries.size,
+            todayTaken = todayTaken,
+            todayItems = todayItems,
+            insight = insightFor(daysLogged, takenPerDay.count { it == entries.size }),
         )
     }
 

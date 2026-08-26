@@ -2,6 +2,7 @@ package com.genesyx.app.ui.insights
 
 import com.genesyx.app.domain.model.DailyLog
 import com.genesyx.app.domain.model.Supplement
+import com.genesyx.app.domain.model.UserSupplement
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -108,5 +109,35 @@ class SupplementInsightLogicTest {
         val r = SupplementInsightLogic.compute(mapOf(monday to log(*wholePlan)), today, plan = emptyList())
         assertFalse(r.hasPlan)
         assertFalse(r.hasData)
+    }
+
+    @Test
+    fun `today is reported by name, ticked from the same row the Nutrition card toggles`() {
+        val r = SupplementInsightLogic.compute(mapOf(today to log(Supplement.FOLATE, Supplement.ZINC)), today)
+        assertTrue(r.hasData)
+        assertEquals(2, r.todayTaken)
+        assertEquals(
+            listOf("Folate" to true, "Omega-3" to false, "Vitamin D" to false, "Zinc" to true),
+            r.todayItems.map { it.name to it.logged },
+        )
+    }
+
+    @Test
+    fun `her own supplement joins the denominator, so N of 4 becomes N of 5`() {
+        val custom = listOf(UserSupplement(name = "Magnesium"))
+        val logs = mapOf(today to DailyLog(supplements = setOf("Folic acid", "Magnesium")))
+        val r = SupplementInsightLogic.compute(logs, today, custom = custom)
+        assertEquals(5, r.planSize)
+        assertEquals(2, r.todayTaken)
+        assertEquals(40, r.bars.last()) // Sunday: 2 of 5
+        assertTrue(r.todayItems.any { it.name == "Magnesium" && it.logged })
+    }
+
+    @Test
+    fun `the empty week still carries today's chips so the card can show them once anything lands`() {
+        val r = SupplementInsightLogic.compute(emptyMap(), today)
+        assertFalse(r.hasData)
+        assertEquals(4, r.todayItems.size)
+        assertTrue(r.todayItems.none { it.logged })
     }
 }

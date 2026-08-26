@@ -452,11 +452,13 @@ private fun HydrationCard(state: HydrationInsights) {
     )
 }
 
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 private fun SupplementCard(state: SupplementInsights) {
     val colors = MaterialTheme.colorScheme
 
-    // Neither of these is a failure state, so neither reads like one.
+    // Neither of these is a failure state, so neither reads like one. The empty copy shows only
+    // when the week is genuinely empty — today included, since today is in the week.
     if (!state.hasPlan || !state.hasData) {
         InsightsCard {
             Text("Nutrition consistency", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
@@ -474,12 +476,42 @@ private fun SupplementCard(state: SupplementInsights) {
         BarsCard(
             title = "Nutrition consistency",
             trailing = "of ${state.planSize} a day",
+            // The Nutrition tab's own "N of M" — same repository, same toggle set.
+            subtitle = "Today · ${state.todayTaken} of ${state.planSize} logged",
             values = state.bars,
             labels = weekdayLabels,
             barHeight = 112.dp,
             brush = Brush.verticalGradient(listOf(ElectricLavender, PowderBlue)),
             insight = state.insight,
         )
+        Spacer(Modifier.height(12.dp))
+        androidx.compose.foundation.layout.FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            state.todayItems.forEach { item ->
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(if (item.logged) ElectricLavender.copy(alpha = 0.12f) else colors.surfaceVariant.copy(alpha = 0.4f))
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(
+                        Modifier
+                            .size(10.dp)
+                            .clip(CircleShape)
+                            .background(if (item.logged) ElectricLavender else colors.onSurfaceVariant.copy(alpha = 0.35f)),
+                    )
+                    Spacer(Modifier.size(8.dp))
+                    Text(
+                        if (item.logged) "${item.name} ✓" else item.name,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = if (item.logged) colors.onSurface else colors.onSurfaceVariant,
+                    )
+                }
+            }
+        }
         Spacer(Modifier.height(12.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             StreakTile("Days logged", state.daysLogged, "/7", Modifier.weight(1f))

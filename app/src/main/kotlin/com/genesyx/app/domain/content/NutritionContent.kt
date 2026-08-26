@@ -132,14 +132,15 @@ val nutritionPhaseDescription: Map<Phase, String> = mapOf(
  * because the stack reads D for Vitamin D, not V. [name] recomposes the dosage the display wants
  * from the two fields the model keeps apart.
  */
-data class SupplementPlanItem(val supplement: Supplement, val initial: String, val rationale: String) {
+data class SupplementPlanItem(val supplement: Supplement, val rationale: String) {
+    val initial: String get() = supplement.chipInitial
     val name: String
         get() = supplement.dosageNote?.let { "${supplement.displayName} ($it)" } ?: supplement.displayName
 }
 
 val supplementPlan = listOf(
-    SupplementPlanItem(Supplement.FOLATE, "F", "Supports egg quality and early cell development."),
-    SupplementPlanItem(Supplement.OMEGA_3, "O", "Hormone balance and reduced inflammation."),
-    SupplementPlanItem(Supplement.VITAMIN_D, "D", "Supports ovulation and overall wellbeing."),
-    SupplementPlanItem(Supplement.ZINC, "Z", "Supports the LH surge that triggers ovulation."),
+    SupplementPlanItem(Supplement.FOLATE, "Supports egg quality and early cell development."),
+    SupplementPlanItem(Supplement.OMEGA_3, "Hormone balance and reduced inflammation."),
+    SupplementPlanItem(Supplement.VITAMIN_D, "Supports ovulation and overall wellbeing."),
+    SupplementPlanItem(Supplement.ZINC, "Supports the LH surge that triggers ovulation."),
 )

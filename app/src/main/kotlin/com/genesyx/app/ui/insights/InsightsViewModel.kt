@@ -72,6 +72,9 @@ data class HydrationInsights(
     val insight: String = "Log your water for a few days and your hydration pattern will show up here.",
 )
 
+/** One chip on the consistency card's "today" row: a toggle-set entry and whether it is logged. */
+data class SupplementTodayItem(val name: String, val logged: Boolean)
+
 data class SupplementInsights(
     /** False only if her plan is empty — the card then invites her to set one rather than show 0/0. */
     val hasPlan: Boolean = true,
@@ -80,7 +83,11 @@ data class SupplementInsights(
     val bars: List<Int> = List(7) { 0 },
     val daysLogged: Int = 0,
     val suppTotal: Int = 0,
+    /** The toggle set's size — the bundled plan plus her own entries; the Nutrition card's "M". */
     val planSize: Int = Supplement.defaultPlan.size,
+    /** Today, from the same row the Nutrition card toggles — its "N". */
+    val todayTaken: Int = 0,
+    val todayItems: List<SupplementTodayItem> = emptyList(),
     val insight: String = "No supplements logged yet this week — even one, whenever you remember, is a gentle start.",
 )
 
@@ -189,9 +196,16 @@ class InsightsViewModel @Inject constructor(
                 initialValue = HydrationInsights(),
             )
 
+    /**
+     * Reads the one repository the Nutrition tab's chips write ([DailyLogRepository.logByDate])
+     * and the same custom entries that join its toggle set — there is no second query path that
+     * could disagree with the "N of M" she just saw there.
+     */
     val supplementInsights: StateFlow<SupplementInsights> =
-        dailyLogRepository.logByDate
-            .map { logs -> SupplementInsightLogic.compute(logs) }
+        combine(
+            dailyLogRepository.logByDate,
+            userSupplementRepository.supplements,
+        ) { logs, custom -> SupplementInsightLogic.compute(logs, custom = custom) }
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5_000),

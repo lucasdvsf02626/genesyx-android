@@ -23,21 +23,17 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.genesyx.app.ui.navigation.Screen
+import com.genesyx.app.ui.navigation.TabNavigation
+import com.genesyx.app.ui.navigation.navigateToTab
 import com.genesyx.app.ui.theme.ElectricLavender
 
-private data class BottomNavItem(
-    val screen: Screen,
-    val label: String,
-    val icon: ImageVector,
-    /** Where the tap goes. Differs from [screen].route where the route takes arguments. */
-    val navRoute: String = screen.route,
-)
+private data class BottomNavItem(val screen: Screen, val label: String, val icon: ImageVector)
 
 private val items = listOf(
     BottomNavItem(Screen.Home, "Home", Icons.Outlined.Home),
     BottomNavItem(Screen.Track, "Track", Icons.Outlined.CalendarMonth),
     BottomNavItem(Screen.PhDetail, "pH", Icons.Outlined.Science),
-    BottomNavItem(Screen.Nutrition, "Nutrition", Icons.Outlined.Eco, navRoute = Screen.Nutrition.create()),
+    BottomNavItem(Screen.Nutrition, "Nutrition", Icons.Outlined.Eco),
     BottomNavItem(Screen.Insights, "Insights", Icons.Outlined.BarChart),
     BottomNavItem(Screen.Learn, "Learn", Icons.AutoMirrored.Outlined.MenuBook),
     BottomNavItem(Screen.Profile, "Profile", Icons.Outlined.Person),
@@ -53,16 +49,19 @@ fun GenesyxBottomNav(navController: NavController) {
         tonalElevation = 0.dp,
     ) {
         items.forEach { item ->
-            val selected = currentRoute == item.screen.route
+            val selected = TabNavigation.isTabRoot(currentRoute, item.screen)
             NavigationBarItem(
                 selected = selected,
                 onClick = {
-                    if (!selected) {
-                        navController.navigate(item.navRoute) {
-                            popUpTo(Screen.Home.route) { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
+                    if (selected) {
+                        // Re-tapping the current tab never stacks a duplicate; it tells the screen
+                        // to scroll back to the top (the tab entry's SavedStateHandle is the channel).
+                        navController.currentBackStackEntry?.savedStateHandle?.let { handle ->
+                            handle[TabNavigation.RESELECT_KEY] =
+                                (handle.get<Int>(TabNavigation.RESELECT_KEY) ?: 0) + 1
                         }
+                    } else {
+                        navController.navigateToTab(item.screen)
                     }
                 },
                 icon = { Icon(item.icon, contentDescription = item.label) },

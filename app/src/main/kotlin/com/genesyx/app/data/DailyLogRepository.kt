@@ -13,6 +13,7 @@ import com.genesyx.app.domain.consent.HealthDataCollectionGate
 import com.genesyx.app.domain.model.DailyLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flatMapLatest
@@ -96,16 +97,20 @@ class DailyLogRepository @Inject constructor(
         }
     }
 
-    /** Push one log; on success mark SYNCED, on failure leave it PENDING and enqueue a retry. */
-    private suspend fun pushOrQueue(userId: String, date: LocalDate, log: DailyLog) {
+    /**
+     * Push one log; on success mark SYNCED, on failure leave it PENDING and enqueue a retry.
+     * Returns true when the server confirmed the write.
+     */
+    private suspend fun pushOrQueue(userId: String, date: LocalDate, log: DailyLog): Boolean =
         if (remote.upsertLog(userId, date, log) is DataResult.Error) {
             logger.w("DailyLog", "daily log $date push failed — queued for retry")
             scheduler.schedule()
+            false
         } else {
             dao.setStatus(userId, date, LogSyncStatus.SYNCED)
             logger.i("DailyLog", "synced daily log $date for $userId")
+            true
         }
-    }
 
     /** Drains all PENDING rows (called by [com.genesyx.app.data.sync.DailyLogSyncWorker]). */
     suspend fun syncPending(): Boolean {
@@ -162,6 +167,51 @@ class DailyLogRepository @Inject constructor(
      */
     fun logFoodGroups(ids: Set<String>, date: LocalDate = LocalDate.now()) =
         mutateRow(date) { current -> current.copy(foodGroups = current.foodGroups + ids) }
+
+    /**
+     * Add or remove one supplement for a day — the Nutrition tab's tap-to-toggle chips.
+     *
+     * Unlike the fire-and-forget mutators above this one *reports*: a chip that appears to save
+     * and then quietly reverts is the exact bug the profile screens had. The row is written to
+     * Room first (so the chip fills before the network is consulted — the optimistic half), then
+     * pushed; a failed push is queued and reported as [LogWriteResult.Queued], a withdrawn consent
+     * as [LogWriteResult.Refused], and a local write that throws as [LogWriteResult.Failed].
+     *
+     * Un-logging the last supplement of the day writes the row back with an **empty** list, and
+     * pushes that empty list — an explicit clear, never a skipped write. iOS learned this the hard
+     * way (ANDROID_PARITY.md §5): a client that skips "empty" writes lets the server's stale copy
+     * come straight back on the next pull.
+     *
+     * The work runs in the application scope, so a screen leaving mid-toggle cannot cancel it and
+     * strand a PENDING row with no retry scheduled; the caller only awaits the outcome.
+     */
+    suspend fun toggleSupplement(stored: String, date: LocalDate = LocalDate.now()): LogWriteResult =
+        scope.async {
+            if (!consent.isCollectionPermitted()) {
+                logger.w("DailyLog", "supplement toggle refused — health-data consent withdrawn")
+                return@async LogWriteResult.Refused
+            }
+            val userId = session.currentUserId()
+            val signedIn = userId != SessionRepository.LOCAL_USER_ID
+            val status = if (signedIn) LogSyncStatus.PENDING_UPSERT else LogSyncStatus.SYNCED
+            val next = try {
+                writeMutex.withLock {
+                    val current = dao.getByDate(userId, date)?.toDomain() ?: DailyLog()
+                    // Matching is trimmed and case-insensitive, like every reader of this column;
+                    // un-logging removes every stored spelling of the same supplement.
+                    val matches = current.supplements.filter { it.trim().equals(stored.trim(), ignoreCase = true) }
+                    val supplements =
+                        if (matches.isNotEmpty()) current.supplements - matches.toSet()
+                        else current.supplements + stored.trim()
+                    current.copy(supplements = supplements).also { dao.upsert(it.toEntity(userId, date, status)) }
+                }
+            } catch (e: Exception) {
+                logger.e("DailyLog", "supplement toggle failed to write locally", e)
+                return@async LogWriteResult.Failed(e.message)
+            }
+            if (!signedIn) return@async LogWriteResult.Saved
+            if (pushOrQueue(userId, date, next)) LogWriteResult.Saved else LogWriteResult.Queued
+        }.await()
 
     private val writeMutex = Mutex()
 
@@ -221,4 +271,19 @@ class DailyLogRepository @Inject constructor(
             DataResult.Loading -> Unit
         }
     }
+}
+
+/** Outcome of a reporting daily-log write — see [DailyLogRepository.toggleSupplement]. */
+sealed interface LogWriteResult {
+    /** Written locally and confirmed by the server (guests: on-device is the only store). */
+    data object Saved : LogWriteResult
+
+    /** Written locally; the push failed and a retry is queued. Honest "saved on this device". */
+    data object Queued : LogWriteResult
+
+    /** Nothing was written: health-data consent is withdrawn. */
+    data object Refused : LogWriteResult
+
+    /** Nothing was written: the local write itself threw. */
+    data class Failed(val message: String?) : LogWriteResult
 }

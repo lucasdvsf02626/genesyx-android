@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.genesyx.app.data.ConsentRepository
 import com.genesyx.app.data.CycleRepository
 import com.genesyx.app.data.DailyLogRepository
+import com.genesyx.app.data.LogWriteResult
 import com.genesyx.app.data.GenesyxProductRepository
 import com.genesyx.app.data.MealLogRepository
 import com.genesyx.app.data.PreferencesRepository
@@ -22,14 +23,22 @@ import com.genesyx.app.domain.hydration.HydrationUnit
 import com.genesyx.app.domain.model.GenesyxProduct
 import com.genesyx.app.domain.model.MealEntry
 import com.genesyx.app.domain.model.Phase
+import com.genesyx.app.domain.model.Supplement
+import com.genesyx.app.domain.model.SupplementPlanEntry
+import com.genesyx.app.domain.model.SupplementToggleSet
 import com.genesyx.app.domain.model.UserSupplement
 import com.genesyx.app.domain.streaks.StreakEngine
 import dagger.hilt.android.lifecycle.HiltViewModel
+import com.genesyx.app.ui.home.HYDRATION_CHALLENGE_TARGET
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -54,8 +63,10 @@ data class NutritionUiState(
     val daysOnGoal: Int = 0,
     /** Today's food-group tokens. The chips own this set. */
     val foodGroups: Set<String> = emptySet(),
-    /** How many of the suggested plan's items today's log already covers — the card's live line. */
-    val planTakenToday: Int = 0,
+    /** Today's stored supplement names, as written — the plan chips score against this. */
+    val loggedToday: Set<String> = emptySet(),
+    /** Progress toward the 7-day hydration challenge: consecutive days with water, capped at 7. */
+    val hydrationChallengeDays: Int = 0,
 )
 
 @HiltViewModel
@@ -89,6 +100,50 @@ class NutritionViewModel @Inject constructor(
 
     /** The user's own supplement entries — live from Room, synced in the background. */
     val userSupplements: StateFlow<List<UserSupplement>> = userSupplementRepository.supplements
+
+    /** The tap-to-toggle set on the plan card: the four essentials, then her own entries. */
+    val planEntries: StateFlow<List<SupplementPlanEntry>> =
+        userSupplementRepository.supplements
+            .map { SupplementToggleSet.build(it) }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, SupplementToggleSet.build(emptyList()))
+
+    private val _supplementEvents = MutableSharedFlow<SupplementSaveEvent>(extraBufferCapacity = 8)
+
+    /** Anything a chip tap has to say beyond the chip filling — refusal, queued, failed. */
+    val supplementEvents: SharedFlow<SupplementSaveEvent> = _supplementEvents.asSharedFlow()
+
+    /**
+     * Log or un-log [entry] for today. Room is written first (the chip fills from the emitted row
+     * before the network is consulted), then pushed; anything other than a clean save is reported
+     * through [supplementEvents] rather than left to look like one.
+     */
+    fun toggleSupplement(entry: SupplementPlanEntry) {
+        viewModelScope.launch {
+            when (val result = dailyLogRepository.toggleSupplement(entry.stored)) {
+                LogWriteResult.Saved -> Unit
+                LogWriteResult.Queued -> _supplementEvents.emit(SupplementSaveEvent.Queued(entry))
+                LogWriteResult.Refused -> _supplementEvents.emit(SupplementSaveEvent.Refused(entry))
+                is LogWriteResult.Failed -> _supplementEvents.emit(SupplementSaveEvent.Failed(entry, result.message))
+            }
+        }
+    }
+
+    /** Reminder times for the four bundled essentials (the plan sheet's bell), by supplement. */
+    val planReminders: StateFlow<Map<Supplement, Int>> =
+        supplementReminderRepository.reminders
+            .map { all ->
+                Supplement.defaultPlan.mapNotNull { s ->
+                    all[SupplementReminderRepository.planReminderId(s)]?.let { s to it }
+                }.toMap()
+            }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
+
+    /** Set or clear a daily reminder for one of the bundled essentials. Minutes null = off. */
+    fun setPlanReminder(supplement: Supplement, minutesOfDay: Int?) {
+        val id = SupplementReminderRepository.planReminderId(supplement)
+        if (minutesOfDay == null) supplementReminderRepository.clearReminder(id)
+        else supplementReminderRepository.setReminder(id, supplement.displayName, minutesOfDay)
+    }
 
     /** supplement id → daily reminder time (minutes-of-day); absent = no reminder set. */
     val supplementReminders: StateFlow<Map<String, Int>> = supplementReminderRepository.reminders
@@ -144,7 +199,9 @@ class NutritionViewModel @Inject constructor(
             // every other collector of logByDate shows at the same instant.
             val waterMl = logs[today]?.waterMl ?: 0
             val foodGroups = logs[today]?.foodGroups.orEmpty()
-            val planTakenToday = SupplementPlanProgress.takenToday(logs[today]?.supplements.orEmpty())
+            val loggedToday = logs[today]?.supplements.orEmpty()
+            // The same rolling 7-day challenge Home shows: water logged N days running, capped at 7.
+            val challengeDays = streaks.dailyHydration.coerceAtMost(HYDRATION_CHALLENGE_TARGET)
             val coaching = HydrationCoach.coach(waterMl, goalMl, LocalTime.now(), unit).message
             if (settings == null) {
                 NutritionUiState(
@@ -155,7 +212,8 @@ class NutritionViewModel @Inject constructor(
                     weeklyStreak = streaks.weeklyStreak,
                     daysOnGoal = streaks.daysOnGoal,
                     foodGroups = foodGroups,
-                    planTakenToday = planTakenToday,
+                    loggedToday = loggedToday,
+                    hydrationChallengeDays = challengeDays,
                 )
             } else {
                 val phase = CycleEngine.getCyclePhase(settings, today).phase
@@ -172,7 +230,8 @@ class NutritionViewModel @Inject constructor(
                     weeklyStreak = streaks.weeklyStreak,
                     daysOnGoal = streaks.daysOnGoal,
                     foodGroups = foodGroups,
-                    planTakenToday = planTakenToday,
+                    loggedToday = loggedToday,
+                    hydrationChallengeDays = challengeDays,
                 )
             }
         }.stateIn(
