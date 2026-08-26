@@ -6,6 +6,77 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ---
 
+## [Unreleased] — `food_groups` is live too — `1.4.2 (21)` (26 Aug 2026, night)
+
+**Code 20 is superseded — never upload it.** A release-gate investigation before the code-20 upload
+found that the one field 20 deliberately left unfixed, `food_groups`, had been left unfixed on a
+premise that is false. This entry corrects it.
+
+### Fixed — un-ticking the last food group never reached the server either
+
+Same defect as the supplements bug in 20, one field later: `food_groups` sat at its `emptyList()`
+default, the serializer dropped it, PostgREST's derived `columns=` never named it, the row was
+still marked `SYNCED`, and the next pull brought the groups she had just un-ticked straight back.
+
+Code 20 declined to force it on two grounds. Both were wrong.
+
+**"The column might not exist."** The evidence for that was `docs/schema.sql` — which is a dated
+Lovable extraction, not a live read, and is **not** the authority on server state. This repo
+deliberately holds no executable migrations (`docs/worklog/2026-08-13.md`, "Carried constraints");
+the shared-backend repo does, and it has
+`supabase/migrations/20260812_daily_logs_food_groups.sql`:
+
+```sql
+alter table public.daily_logs
+  add column if not exists food_groups text[] not null default '{}';
+```
+
+The applied-state audit (`TESTFLIGHT_B18.md`, pre-flight row 3) records it **applied to production
+13 Aug 2026** and read back from `information_schema.columns` as `ARRAY / NO / '{}'::text[]` —
+identical to `symptoms` and `supplements`, which is exactly what the migration's own verify block
+demanded. Two further corroborations in `HANDOFF.md` (one of which explicitly warns that the stale
+"verified MISSING" row in the same file is not the authority). Naming the column is therefore as
+safe as naming the two beside it.
+
+**"Android has no editor, so it can never clear it."** `ui/nutrition/FoodGroupSection.kt`'s chips
+are `.clickable { onToggle(group.raw) }` and call `DailyLogRepository.toggleFoodGroup`, from both
+the Nutrition tab and the Log form — since `edd8f2d`, 17 Aug 2026. The claim came from a stale KDoc
+on `upsertPreservingWater` still saying "only iOS can log them"; that comment is now corrected.
+
+The forced set is now five. `food_groups` is `text[] NOT NULL`, which is why the Kotlin type stays
+non-nullable: it sends `[]`, never `null`. `sexual_activity` remains the one field that must never
+be forced (`boolean NOT NULL DEFAULT false` — an explicit null fails the whole upsert).
+
+### Tests
+
+Two assertions **inverted** — both had the bug written down as a requirement, in `DailyLogDtoTest`
+and `DataContractTest`. That makes two inversions across the pair of fixes: `water_ml` in 20,
+`food_groups` in 21. The whole-body verbatim assertion was kept verbatim, not softened to a
+`contains`, and now reads:
+
+```json
+{"user_id":"user-a","date":"2026-08-10","symptoms":[],"water_ml":0,"supplements":[],"food_groups":[],"notes":null}
+```
+
+588 unit / 0 failures / 76 classes, 41 instrumented, release build green. Mutation-tested: removing
+the new annotation fails exactly four tests, then restored and re-run green.
+
+### Release build (26 Aug, 19:44) — code 21, the upload
+
+`versionCode` 20 → **21** (`versionName` 1.4.2), built from `3f724e3` after `:app:clean`. aapt2
+`com.genesyx.app / 21 / 1.4.2 / targetSdk 36`; upload-key SHA-1 `8D:EB…CC:73` verified on the AAB
+(`keytool`) and the APK (`apksigner`). Archived at `~/Documents/Genesyx Releases/1.4.2-code21/` —
+AAB SHA-256 `2f24e509…ec6b9d`, 17,187,693 bytes; `SHA256SUMS.txt` verifies.
+
+**Outstanding, and not closable from here:** the end-to-end round-trip on a real signed-in account
+is still unproven for both fields. `SignInLocally`/`SeedTestData` live in `androidTest`, which
+builds only against the debug variant, so they cannot seed a release APK, and the QA emulator
+session's non-UUID user id 400s every push by design. The payload shape is proven; the server
+acceptance is not. Walk it once on the Play-installed build — un-tick the last supplement **and**
+the last food group, force-stop, relaunch, pull.
+
+---
+
 ## [Unreleased] — the clear has to reach the column — `1.4.2 (20)` (26 Aug 2026, late evening)
 
 **Code 19 is superseded — never upload it.** A read-only QA pass on the code-19 build found a
@@ -37,7 +108,7 @@ Supabase client installs no custom serializer). The field-by-field reasoning now
 |---|---|---|
 | `symptoms`, `water_ml`, `supplements`, `notes` | yes | each has a real clear-to-default path in the UI, and each is in `docs/schema.sql` — naming it can never fail |
 | `mood`, `energy`, `sleep_minutes` | no | the form only ever *sets* these; with no deselect they cannot reach their `null` default |
-| `food_groups` | **no — same defect, left unfixed on purpose** | it is not in `docs/schema.sql`'s `CREATE TABLE`; the only evidence it is live is a worklog note. Naming a column that does not exist makes PostgREST reject the upsert and would break **every** daily-log push. Probe production, then force it |
+| `food_groups` | **no — same defect, left unfixed on purpose** | ~~it is not in `docs/schema.sql`'s `CREATE TABLE`~~ — **this reasoning was wrong and was reversed in 21 (above): `docs/schema.sql` is a dated snapshot, and the column has been live since 13 Aug 2026** |
 | `sexual_activity` | **never** | the column is `boolean NOT NULL DEFAULT false`; forcing the `null` default would send `"sexual_activity":null` and fail the whole row. Its clear is `false`, which already encodes on its own |
 
 **Why no test caught it:** `DailyLogRepositoryToggleTest` asserts the empty list reaches a *fake*
