@@ -2,11 +2,18 @@
 
 Project Name: Genesyx Android
 
-**`main` is at v1.4.0 (versionCode 14), and Play serves nothing newer than 1.3.0:** a live Play
+**`main` is at v1.4.2 (versionCode 16), and Play serves nothing newer than 1.3.0:** a live Play
 Console audit (2026-07-28) found Internal testing on **1.3.0 (11)** and Production on **1.2.0 (9)**
-— codes 12, 13 and 14 were never uploaded. Codes 12 and 13 are superseded; **14 is the identity to
-upload.** Freshly built and signature-verified 2026-08-19 (see "Where the code actually is").
-Read this first. Honest state, verified against the tree on **2026-08-19**.
+— codes 12, 13, 14, 15 and 16 were never uploaded. Codes 12–15 are superseded; **16 is the identity
+to upload** (`~/Documents/Genesyx Releases/1.4.2-code16/genesyx-1.4.2-code16.aab`). Built and
+signature-verified 2026-08-26 (see "Where the code actually is").
+Read this first. Honest state, verified against the tree on **2026-08-26**.
+
+> **🔴 DEADLINE: Google Play requires targetSdk 36 in PRODUCTION by 2026-08-31.** Production still
+> serves **1.2.0 (9), which targets API 35** — that is the non-compliant build Play names. An
+> Internal-testing upload does **not** clear it; only a Production publish does. After 31 Aug, app
+> updates are blocked until it is fixed. A "Request more time" button exists on Policy status →
+> Issue details if the date cannot be met.
 
 > **⚠️ If you read an older copy of this file, four things it told you are now FALSE:**
 > 1. **pH is NOT local-only.** pH readings sync to Supabase. Never restore "stored on this device"
@@ -14,10 +21,10 @@ Read this first. Honest state, verified against the tree on **2026-08-19**.
 > 2. **pH is VAGINAL pH now, not urine pH.** Two-band model (Healthy 3.8–4.5 / Elevated > 4.5),
 >    pre-migration readings shown as "urine (legacy)". Ranges are **client-approved (28 Jul
 >    2026)**: input 3.8–7.0, step 0.1, default 4.2 — no longer provisional.
-> 3. **`main` is at versionCode 14, versionName "1.4.0"**, targeting Android 16 (SDK 36), Room
->    **v9** (migrations 6→7→8→9 each have an instrumented test). The archived `1.2.1-code10`,
->    `1.3.0-code11` and `1.3.1-code12` builds are all **superseded — never upload them** (code12's
->    waitlist flow is broken — see CHANGELOG 1.3.2).
+> 3. **`main` is at versionCode 16, versionName "1.4.2"**, targeting Android 16 (SDK 36), Room
+>    **v10** (migrations 6→7→8→9→10 each have an instrumented test). The archived `1.2.1-code10`,
+>    `1.3.0-code11`, `1.3.1-code12`, `1.3.2-code13` and `1.4.0-code14` builds are all **superseded —
+>    never upload them** (code12's waitlist flow is broken — see CHANGELOG 1.3.2).
 >    **The old "code-14 is blocked on a Supabase migration" warning is DEAD — do not act on it.**
 >    `user_supplements` and `genesyx_products` went live 13 Aug and were REST-verified 19 Aug;
 >    `daily_logs.sexual_activity` was REST-verified live 19 Aug. **Never run
@@ -28,10 +35,11 @@ Read this first. Honest state, verified against the tree on **2026-08-19**.
 >    was started 28 Jul but never completed and code 13 is now superseded by 14; the corrected
 >    Health apps + Data Safety console drafts are saved but **not sent for review**.
 
-## 🔖 STOPPED HERE — resume from this (2026-08-19)
+## 🔖 STOPPED HERE — resume from this (2026-08-26)
 
-**The 1.4.0 (versionCode 14) release artifact is built and signature-verified, but NOT yet on
-Play** — Internal testing still serves 1.3.0 (11). The code-14 Supabase gate is **CLOSED**:
+**The 1.4.2 (versionCode 16) release artifact is built and signature-verified, but NOT yet on
+Play** — Internal testing still serves 1.3.0 (11), Production 1.2.0 (9). The upload was attempted
+26 Aug and did not complete; nothing on Play changed. The Supabase gate is **CLOSED**:
 `user_supplements` and `genesyx_products` went live 13 Aug and `daily_logs.sexual_activity` was
 REST-verified live 19 Aug, so nothing backend-side blocks the upload. Landed since 1.3.0: the
 vaginal-pH range approval (28 Jul), the cross-screen consistency batch, ml/cups toggle, pH
@@ -40,11 +48,28 @@ Genesyx range, private intimacy logging, meal logging (Room v9), and the opt-in 
 The `join_waitlist` SECURITY DEFINER RPC is deployed to production Supabase and REST-verified
 (trim/lowercase, duplicate no-op, table unreadable/unwritable to clients).
 
+**Later on 26 Aug: PR #20 merged to `main` (`b5a98c6`) — SFM-27 + SFM-28.** The Nutrition bottom
+tab is fixed (root cause below), the plan card logs supplements inline with tappable chips, the
+plan is a bottom sheet with an add-your-own form and reminder bells, the Track → Nutrition tracker
+and the Insights "Nutrition consistency" card read the same repository as the chips. **`main` is
+now AHEAD of the code-16 AAB** — that artifact was built before PR #20 and does not contain it.
+Verification record (what was proven on the emulator, and what was not) is in `CHANGELOG.md`;
+the manual script is `QA_CHECKLIST_ANDROID.md`.
+
 **Session-by-session history lives in `CHANGELOG.md`.** Read it before anything else.
 **Product state lives in `APP_INVENTORY.md`** (repo root).
 
 **Next actions, in order:**
-1. **Upload code 14 to Internal testing**, then smoke-test the Play-installed build on-device:
+0. **⏰ API-36 deadline work (31 Aug) runs in parallel and outranks everything.** Production must
+   publish a targetSdk-36 build. The Health apps declaration and Data Safety form are still
+   **drafts, not submitted** — they gate the Production publish, and their review time, not the
+   upload, is the long pole. Submit them first or request more time.
+0b. **Decide the release identity for the PR #20 work.** The existing code-16 AAB predates it.
+   Either upload that AAB as-is (Nutrition fixes ship next) or rebuild from `main`; a rebuild is
+   still code 16 **only if** 16 has never reached Play — check the Console, don't guess. Then run
+   `QA_CHECKLIST_ANDROID.md` §5.9/§10 (Supabase rows, offline queue, consent snackbar) against a
+   real account — those rows were not verifiable on the emulator.
+1. **Upload code 16 to Internal testing**, then smoke-test the Play-installed build on-device:
    Google Sign-In (needs the release SHA-1 registered), change password (incl. wrong current
    password), waitlist join (incl. duplicate), guest pH reading → sign-in → reading appears; plus
    the 1.3.0 checks — vaginal pH two-band display, "urine (legacy)" markers, Home deep links, a
@@ -64,11 +89,12 @@ The `join_waitlist` SECURITY DEFINER RPC is deployed to production Supabase and 
 
 | | |
 |---|---|
-| `main` | versionCode **14**, versionName **"1.4.0"**, compile/targetSdk **36**, Room **v9** |
-| Working branch | none |
-| Unit tests | **483 passing, 0 failures** (`./gradlew :app:testDebugUnitTest`, 19 Aug) |
-| Release build | `:app:bundleRelease` + `:app:assembleRelease` GREEN (2026-08-19), R8/minify clean; AAB + APK signed with upload key SHA-1 `8D:EB…CC:73` (aapt2 reports `14 / 1.4.0 / SDK 36`) |
-| Play status | Internal testing **1.3.0 (11)**, Production **1.2.0 (9)** (Console audit 28 Jul); code-14 upload pending |
+| `main` | versionCode **16**, versionName **"1.4.2"**, compile/targetSdk **36**, minSdk **26**, Room **v10** |
+| Working branch | none. `HEAD` = `b5a98c6` (PR #20 merged 26 Aug: SFM-27/28 Nutrition work). **The code-16 release artifact predates PR #20** — see Next actions 0b before uploading or rebuilding |
+| Unit tests | **560 passing, 0 failures, 0 skipped** (`./gradlew :app:testDebugUnitTest`, 26 Aug post-PR #20); instrumented `NutritionTabNavigationTest` green on the Pixel 8 / API 36 emulator |
+| Release build | GREEN (2026-08-26), R8/minify clean; AAB + APK signed with upload key SHA-1 `8D:EB…CC:73`, SHA-256 `C3:D5:1F:4B…A4:46:C1:7D` (aapt2 reports `com.genesyx.app / 16 / 1.4.2 / target 36`). Artifact confirmed to contain both post-tag pH commits, not just the tagged one. |
+| Artifact | `~/Documents/Genesyx Releases/1.4.2-code16/genesyx-1.4.2-code16.aab` — SHA-256 `6fe8a6d8…9452`, 17,067,362 bytes; `SHA256SUMS.txt` verifies |
+| Play status | Internal testing **1.3.0 (11)**, Production **1.2.0 (9) — targets API 35, the build Play flags**; code-16 upload pending |
 
 `FeatureFlags` on `main`: `PH_TRACKING = true`, `PUSH_NOTIFICATIONS = true` (local reminders),
 `ADMIN_CLIENTS = false`, `PARTNER_INVITES = false`.
@@ -82,6 +108,41 @@ The `join_waitlist` SECURITY DEFINER RPC is deployed to production Supabase and 
 - **1.3.0:** Android 16 target; **Vaginal pH migration** — two-band model, Room v4→v5
   (`measurement_type`, legacy rows stamped `urine`), Supabase production migration applied 22 Jul,
   neutral `PhCopy` insight copy with banned-phrase guards.
+- **26 Aug 2026 (PR #20, unreleased):** Nutrition tab fix (SFM-27); inline supplement logging via
+  tappable plan chips + reporting `toggleSupplement`; Supplement Plan bottom sheet (essentials with
+  reminder bells, add-your-own form, custom entries get bells too); Track → Nutrition tracker as
+  iOS's read-only summary; Insights "Nutrition consistency" on the shared toggle set.
+
+## Nutrition & supplements — rules that must survive (26 Aug 2026)
+
+- **Cross-tab links go through `navigateToTab()`** (`ui/navigation/TabNavigation.kt`), never a
+  plain `navigate(Screen.Learn.route)`. SFM-27's cause: Nutrition's "See all articles" pushed the
+  Learn *tab root* on top of Nutrition; the next tab switch saved that chain under Nutrition and
+  every later Nutrition tap restored it with Learn on top — the tab looked dead for the life of the
+  process. It was **not** a route mismatch (`nutrition?plan={plan}` matches `nutrition`). Re-tapping
+  the selected tab bumps `TabNavigation.RESELECT_KEY` in the entry's `SavedStateHandle` → scroll to
+  top. `TabNavigationTest` + `NutritionTabNavigationTest` pin this.
+- **`SupplementToggleSet` (`domain/model`) is the one definition of "the set and its counts"** —
+  the four bundled essentials (a constant; `genesyx_products` is intentionally empty, never seed it)
+  plus her `user_supplements`, deduped against plan wire/display names. The plan card, the Track
+  tracker (`NutritionTrackerLogic`) and Insights (`SupplementInsightLogic`) all score through it, so
+  "N of M" is the same N and M everywhere; adding an entry makes it "N of 5". `Supplement.fromWire`
+  matches trimmed + case-insensitive — do not reintroduce an exact-match reader.
+- **`DailyLogRepository.toggleSupplement()` reports** (`LogWriteResult`: Saved / Queued / Refused /
+  Failed) and the screen shows a snackbar for anything but Saved. Un-logging the last item writes
+  and pushes an **empty list** — never skip an "empty" write (ANDROID_PARITY.md §5). The other
+  daily-log mutators are still fire-and-forget; if you make one report, use the same shape.
+- Plan-item reminders live in `SupplementReminderRepository` under `plan:<supplement.id>`;
+  `reconcile()` keeps those ids on purpose. Custom entries use their own id — one reminder per
+  entry, shown in both the sheet and the tab's "Your supplements" card.
+- Track → Nutrition is a **pushed screen with Back**, not a modal sheet — Android's equivalent of
+  iOS's sheet (ANDROID_PARITY.md: don't port literally). All six tracker rows open a screen.
+- **`ANDROID_PARITY.md` lives in the iOS repo** (`~/genesxy_apple.V1.02/`), not here.
+- On-device QA without a Supabase account: `adb shell am instrument -w -e class
+  com.genesyx.app.SignInLocally com.genesyx.app.test/com.genesyx.app.HiltTestRunner` (a `@SeedOnly`
+  utility, never run by gradle) puts the installed app into a local signed-in state; pair with
+  `SeedTestData`. Gradle's `connectedAndroidTest` **uninstalls the app afterwards** (data gone) unless
+  `-Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true`.
 
 ## The offline queue (daily logs) — Room schema v9
 
