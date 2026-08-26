@@ -49,7 +49,10 @@ is uploaded first — the owner's call, checked against the Play Console, not gu
   (name + dose range, benefit line, a **bell** that sets a daily local reminder — stored under
   `plan:<id>` in `SupplementReminderRepository`, which `reconcile()` now keeps) and YOUR SUPPLEMENTS
   (list + Name / Dose / Time form, "+ Add your own supplement" disabled until Name is non-empty,
-  saves to `user_supplements`). Added entries **join the chips and the denominator**: "N of 5".
+  saves to `user_supplements`). Added entries **join the chips and the denominator**: "N of 5", and
+  each of her own rows carries **the same reminder bell** as the essentials (owner request, later
+  the same day) — keyed by the entry's id in `SupplementReminderRepository`, so it is the one
+  reminder the tab's "Your supplements" card already shows for that entry.
 - **`SupplementToggleSet`** (`domain/model`) — the one definition of "the set and its counts" for
   the plan card, the Track summary and Insights; custom entries dedupe against plan wire/display
   names. Replaces `SupplementPlanProgress`. `Supplement.fromWire` is now trimmed + case-insensitive
@@ -101,6 +104,7 @@ via `SignInLocally` and seeded with `SeedTestData`.
 | Add your own | Name "Magnesium", Dose "300 mg", Time Evening → Add → Got it | Listed "300 mg · Evening"; five chips; "3 of 5" → tap M → "4 of 5" |
 | Track tracker | Track → "Nutrition. 3 of 4 supplements today" row | Today's names "Vitamin D · Omega-3 · Zinc", week dots M:1 W:3, food groups empty state |
 | Insights | Insights → Nutrition consistency | "Today · 3 of 4 logged" → "of 5 a day" / "Today · 4 of 5 logged" after Magnesium |
+| Custom reminder bell | Plan sheet → bell on a "Your supplements" row → OK → bell again | "Reminder at 9:00 AM" under the entry, then cleared |
 | Unit suite | `./gradlew :app:testDebugUnitTest` | 560 tests, 0 failures, 0 skipped |
 | Instrumented | `NutritionTabNavigationTest` via `connectedDebugAndroidTest` | 1/1 green (3.1 s) |
 

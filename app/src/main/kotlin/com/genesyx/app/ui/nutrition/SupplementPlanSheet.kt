@@ -77,14 +77,18 @@ private const val DEFAULT_REMINDER_MINUTES = 9 * 60 // 09:00
  *
  * Top: the four bundled essentials, each with a bell for a daily reminder (a local notification,
  * kept device-side by [com.genesyx.app.data.SupplementReminderRepository]). Below: her own
- * supplements, with the add form. Anything added here joins the plan card's chips and its counts.
+ * supplements — each with the same bell, keyed by the entry's id — and the add form. Anything
+ * added here joins the plan card's chips and its counts.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SupplementPlanSheet(
     customSupplements: List<UserSupplement>,
     planReminders: Map<Supplement, Int>,
+    /** Her own entries' reminders: supplement id → minutes-of-day. */
+    customReminders: Map<String, Int>,
     onSetPlanReminder: (Supplement, Int?) -> Unit,
+    onSetCustomReminder: (UserSupplement, Int?) -> Unit,
     onAddSupplement: (UserSupplement) -> SupplementWriteResult,
     onDismiss: () -> Unit,
 ) {
@@ -92,11 +96,11 @@ fun SupplementPlanSheet(
     val context = LocalContext.current
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    fun pickTime(supplement: Supplement) {
-        val start = planReminders[supplement] ?: DEFAULT_REMINDER_MINUTES
+    fun pickTime(current: Int?, onPicked: (Int) -> Unit) {
+        val start = current ?: DEFAULT_REMINDER_MINUTES
         android.app.TimePickerDialog(
             context,
-            { _, h, m -> onSetPlanReminder(supplement, h * 60 + m) },
+            { _, h, m -> onPicked(h * 60 + m) },
             start / 60,
             start % 60,
             android.text.format.DateFormat.is24HourFormat(context),
@@ -137,20 +141,12 @@ fun SupplementPlanSheet(
                             )
                         }
                     }
-                    // The bell: off → pick a time; on → tap turns it off.
-                    IconButton(
-                        onClick = { if (minutes == null) pickTime(item.supplement) else onSetPlanReminder(item.supplement, null) },
-                    ) {
-                        Icon(
-                            if (minutes != null) Icons.Filled.Notifications else Icons.Outlined.NotificationsNone,
-                            contentDescription = if (minutes != null) {
-                                "Turn off the ${item.supplement.displayName} reminder"
-                            } else {
-                                "Set a daily reminder for ${item.supplement.displayName}"
-                            },
-                            tint = if (minutes != null) ElectricLavender else colors.onSurfaceVariant,
-                        )
-                    }
+                    ReminderBell(
+                        name = item.supplement.displayName,
+                        minutes = minutes,
+                        onTurnOn = { pickTime(minutes) { onSetPlanReminder(item.supplement, it) } },
+                        onTurnOff = { onSetPlanReminder(item.supplement, null) },
+                    )
                 }
             }
 
@@ -164,6 +160,7 @@ fun SupplementPlanSheet(
             )
             Spacer(Modifier.height(8.dp))
             customSupplements.forEachIndexed { i, entry ->
+                val minutes = customReminders[entry.id]
                 Row(Modifier.padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     SupplementAvatar(entry.name.take(1).uppercase(), supplementPlan.size + i)
                     Spacer(Modifier.size(12.dp))
@@ -173,7 +170,21 @@ fun SupplementPlanSheet(
                         if (detail.isNotEmpty()) {
                             Text(detail.joinToString(" · "), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
                         }
+                        if (minutes != null) {
+                            Text(
+                                "Reminder at ${formatMinutes(minutes)}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = ElectricLavender,
+                            )
+                        }
                     }
+                    // Same bell as the essentials — her own supplements are not second-class.
+                    ReminderBell(
+                        name = entry.name,
+                        minutes = minutes,
+                        onTurnOn = { pickTime(minutes) { onSetCustomReminder(entry, it) } },
+                        onTurnOff = { onSetCustomReminder(entry, null) },
+                    )
                 }
             }
 
@@ -183,6 +194,19 @@ fun SupplementPlanSheet(
             Spacer(Modifier.height(24.dp))
             GxPrimaryButton(text = "Got it", onClick = onDismiss)
         }
+    }
+}
+
+/** The bell: off → pick a time; on → tap turns it off. One control for plan and custom rows. */
+@Composable
+private fun ReminderBell(name: String, minutes: Int?, onTurnOn: () -> Unit, onTurnOff: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    IconButton(onClick = { if (minutes == null) onTurnOn() else onTurnOff() }) {
+        Icon(
+            if (minutes != null) Icons.Filled.Notifications else Icons.Outlined.NotificationsNone,
+            contentDescription = if (minutes != null) "Turn off the $name reminder" else "Set a daily reminder for $name",
+            tint = if (minutes != null) ElectricLavender else colors.onSurfaceVariant,
+        )
     }
 }
 

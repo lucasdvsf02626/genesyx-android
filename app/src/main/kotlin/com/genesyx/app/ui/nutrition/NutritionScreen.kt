@@ -99,6 +99,7 @@ fun NutritionScreen(
     val userSupplements by viewModel.userSupplements.collectAsState()
     val planEntries by viewModel.planEntries.collectAsState()
     val planReminders by viewModel.planReminders.collectAsState()
+    val supplementReminders by viewModel.supplementReminders.collectAsState()
     val todaysMeals by viewModel.todaysMeals.collectAsState()
     val catalogue by viewModel.catalogue.collectAsState()
     val glassMl by viewModel.glassMl.collectAsState()
@@ -196,7 +197,6 @@ fun NutritionScreen(
             // come before the things she READS (focus foods, articles).
             // pH moved out to its own bottom tab (client request, 12 Aug 2026).
             Spacer(Modifier.height(12.dp))
-            val supplementReminders by viewModel.supplementReminders.collectAsState()
             UserSupplementsCard(
                 supplements = userSupplements,
                 reminders = supplementReminders,
@@ -283,7 +283,9 @@ fun NutritionScreen(
         SupplementPlanSheet(
             customSupplements = userSupplements,
             planReminders = planReminders,
+            customReminders = supplementReminders,
             onSetPlanReminder = { supplement, minutes -> viewModel.setPlanReminder(supplement, minutes) },
+            onSetCustomReminder = { entry, minutes -> viewModel.setSupplementReminder(entry.id, entry.name, minutes) },
             onAddSupplement = { viewModel.saveSupplement(it) },
             onDismiss = { planOpen = false },
         )

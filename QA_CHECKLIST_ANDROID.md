@@ -88,6 +88,7 @@ process dies and the next launch reads from storage.
 | 5.8 | Kill the app, relaunch → Nutrition. | Magnesium chip still there and still logged. | |
 | 5.9 | (Supabase) `select name, dose, time_of_day from user_supplements where user_id = <you>`. | Row `Magnesium / 300 mg / evening`. `select supplements from daily_logs where date = today` → contains `Magnesium`. | |
 | 5.10 | Add a supplement named "Folic acid". | No fifth/sixth chip — it is the same as Folate; only the list entry appears. | |
+| 5.11 | Review Plan → tap the bell on **Magnesium** (your own entry) → pick 09:00 → OK. | Bell fills, "Reminder at 9:00 AM" under Magnesium. The "Your supplements" card on the tab shows the same reminder for Magnesium. Tap the bell again → off in both places. | |
 
 ## 6. Insights "Nutrition consistency" reflects Nutrition (SFM-28b)
 
