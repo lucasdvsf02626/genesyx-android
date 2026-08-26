@@ -129,7 +129,7 @@ those answers. Waitlist storage uses the `join_waitlist` RPC where Supabase is c
 | Hydration detail | `tracker/hydration` | Daily editor, goal, history and seven-day view |
 | Sleep detail | `tracker/sleep` | Weekly duration summary and editor |
 | Symptoms detail | `tracker/symptoms` | Four-week heatmap and dated history |
-| Nutrition detail | `tracker/nutrition` | Read-only summary: today's supplements + food groups by name, Mon–Sun dot strips for both, footer only when the week is empty |
+| Nutrition detail | `tracker/nutrition` | Today's supplements + food groups by name, a LOG SUPPLEMENTS checklist (essentials + her own, same toggle path as the Nutrition chips), a button into the shared supplement-plan sheet, Mon–Sun dot strips for both, footer only when the week is empty |
 | Learn search | `learn/search` | Search available articles |
 | Article | `learn/article/{slug}` | Article content, sources, related links and CTAs |
 | Reminder settings | `reminder_settings` | Master, kind, schedule and quiet-hours controls |

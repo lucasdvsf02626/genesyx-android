@@ -37,11 +37,14 @@ fun TrackerDetailScaffold(
     // Null hides the back arrow — used by the pH screen, which is a bottom tab rather than a
     // detail pushed on top of Track.
     onBack: (() -> Unit)?,
+    /** Optional snackbar slot — the Nutrition tracker reports refused/queued/failed saves here. */
+    snackbarHost: @Composable () -> Unit = {},
     content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
     Scaffold(
         containerColor = colors.background,
+        snackbarHost = snackbarHost,
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text(title) },

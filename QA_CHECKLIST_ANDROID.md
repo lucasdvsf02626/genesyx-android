@@ -42,8 +42,12 @@ process dies and the next launch reads from storage.
 |---|---|---|---|
 | 2.1 | Track → "Your trackers" → **Cycle**. | Cycle detail opens (Back arrow, bottom bar hidden). Back returns to Track. | |
 | 2.2 | **Vaginal pH** row. | pH screen (this one is a tab, so bottom bar stays). | |
-| 2.3 | **Nutrition** row. | Nutrition tracker: cards **TODAY / Supplements from today's log**, **TODAY / Food groups from today's log**, **SUPPLEMENTS THIS WEEK** (7 dots M–S with counts), **FOOD GROUPS THIS WEEK**. No "Log supplements" button. | |
-| 2.4 | With nothing logged this week, read the Nutrition tracker. | Both TODAY cards say "No entries yet — log today to start"; all 14 dots hollow with "–"; footer "No supplements logged yet this week — even one, whenever you remember, is a gentle start." | |
+| 2.3 | **Nutrition** row. | Nutrition tracker: **TODAY / Supplements from today's log**, then **LOG SUPPLEMENTS** (checkbox rows by name + dose: Folate, Omega-3, Vitamin D, Zinc, then "Your supplements"), **Supplement plan** button, **TODAY / Food groups from today's log**, **SUPPLEMENTS THIS WEEK** (7 dots M–S with counts), **FOOD GROUPS THIS WEEK**. | |
+| 2.3a | Tick **Zinc** in LOG SUPPLEMENTS. | Row checks immediately; status "1 of 4 logged today"; the TODAY card above reads "Zinc"; today's dot in SUPPLEMENTS THIS WEEK fills with "1". Nutrition tab's Z chip is filled too. | |
+| 2.3b | Un-tick Zinc. | Row clears; TODAY card back to "No entries yet — log today to start"; dot hollow. Kill + relaunch → still clear. | |
+| 2.3c | Tap **Supplement plan**. | The same sheet as Nutrition → Review Plan: GENESYX ESSENTIALS with bells, YOUR SUPPLEMENTS with Name / Dose / Time / "+ Add your own supplement". Add "Magnesium" → Got it → it appears under "Your supplements" in the checklist with its own checkbox; ticking it reads "1 of 5". | |
+| 2.3d | Back from the tracker. | Returns to Track with Track highlighted. | |
+| 2.4 | With nothing logged this week, read the Nutrition tracker. | Both TODAY cards say "No entries yet — log today to start"; LOG SUPPLEMENTS reads "None logged yet today"; all 14 dots hollow with "–"; footer "No supplements logged yet this week — even one, whenever you remember, is a gentle start." | |
 | 2.5 | **Symptoms**, **Sleep**, **Hydration** rows. | Each opens its own detail; none is a dead row. | |
 | 2.6 | Every row shows icon, title, one-line status, 7-dot strip, chevron. | Present on all six. | |
 

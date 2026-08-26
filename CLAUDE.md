@@ -2,7 +2,7 @@
 
 Project Name: Genesyx Android
 
-**`main` is at v1.4.2 (versionCode 18), and Play serves nothing newer than 1.3.0:** a live Play
+**`main` is at v1.4.2 (versionCode 19), and Play serves nothing newer than 1.3.0:** a live Play
 Console audit (2026-07-28) found Internal testing on **1.3.0 (11)** and Production on **1.2.0 (9)**.
 **18 is the identity to upload**
 (`~/Documents/Genesyx Releases/1.4.2-code18/genesyx-1.4.2-code18.aab`, SHA-256 `222fb746…9c5ae0`).
@@ -26,7 +26,7 @@ Read this first. Honest state, verified against the tree on **2026-08-26**.
 > 2. **pH is VAGINAL pH now, not urine pH.** Two-band model (Healthy 3.8–4.5 / Elevated > 4.5),
 >    pre-migration readings shown as "urine (legacy)". Ranges are **client-approved (28 Jul
 >    2026)**: input 3.8–7.0, step 0.1, default 4.2 — no longer provisional.
-> 3. **`main` is at versionCode 18, versionName "1.4.2"**, targeting Android 16 (SDK 36), Room
+> 3. **`main` is at versionCode 19, versionName "1.4.2"**, targeting Android 16 (SDK 36), Room
 >    **v10** (migrations 6→7→8→9→10 each have an instrumented test). The archived `1.2.1-code10`,
 >    `1.3.0-code11`, `1.3.1-code12`, `1.3.2-code13` and `1.4.0-code14` builds — and the
 >    **`1.4.2-code17` build** (Track → pH → Track navigation defect) — are all **superseded —
@@ -42,6 +42,14 @@ Read this first. Honest state, verified against the tree on **2026-08-26**.
 >    Health apps + Data Safety console drafts are saved but **not sent for review**.
 
 ## 🔖 STOPPED HERE — resume from this (2026-08-26)
+
+**Latest, 26 Aug 17:02 — the release candidate is `1.4.2 (19)`.** An owner review before the code-18
+upload found Track → Nutrition had become a read-only dead end for supplements (PR #20 took the
+brief's "§2 read-only summary" literally; the old screen had a "Log supplements" button). The
+tracker now carries a **LOG SUPPLEMENTS** checklist by name + dose (essentials, then her own) on the
+same `toggleSupplement()` path as the Nutrition chips, plus a **"Supplement plan"** button opening
+the shared sheet. Upload `1.4.2-code19/genesyx-1.4.2-code19.aab` (SHA-256 `a23886b5…baa18`). Code
+18 is superseded. Everything below this paragraph about 18 is history.
 
 **The release candidate is now 1.4.2 (versionCode 18) — built 16:05 from `9af9501`, and NOT yet on
 Play.** `9af9501` fixes the confirmed Track → pH → Track navigation regression: `tracker/ph` is a
@@ -129,12 +137,12 @@ the manual script is `QA_CHECKLIST_ANDROID.md`.
 
 | | |
 |---|---|
-| `main` | versionCode **18**, versionName **"1.4.2"**, compile/targetSdk **36**, minSdk **26**, Room **v10** |
+| `main` | versionCode **19**, versionName **"1.4.2"**, compile/targetSdk **36**, minSdk **26**, Room **v10** |
 | Working branch | none. The fix commit is `9af9501`; the code-18 artifact was built from exactly that tree (a docs-only commit sits on top) |
-| Unit tests | **569 passing, 0 failures, 0 skipped** (`./gradlew :app:testDebugUnitTest`, 26 Aug @ `9af9501`); instrumented **40/40** on the Pixel 8 / API 36 emulator, incl. the new `PhTabNavigationTest` (5) and the SFM-27 `NutritionTabNavigationTest` |
-| Release build | GREEN (2026-08-26 16:05, tree = `9af9501`), R8/minify clean; AAB + APK signed with upload key SHA-1 `8D:EB…CC:73`, SHA-256 `C3:D5:1F:4B…A4:46:C1:7D` (aapt2 reports `com.genesyx.app / 18 / 1.4.2 / target 36`). Contains PR #20, `67b224d`, `2ec3fc5`, and the Track → pH → Track fix |
-| Artifact | **`~/Documents/Genesyx Releases/1.4.2-code18/genesyx-1.4.2-code18.aab`** — SHA-256 `222fb746…9c5ae0`, 17,156,938 bytes; `SHA256SUMS.txt` verifies; `BUILD_NOTE.txt` beside it. **`1.4.2-code17/` is superseded** (consumed by the internal-testing release flow while carrying the navigation defect — never upload it); the whole `1.4.2-code16/` directory (four bundles, one filename) likewise |
-| Play status | Internal testing **1.3.0 (11)**, Production **1.2.0 (9) — targets API 35, the build Play flags**; code 17 was accepted into the internal release flow but superseded before rollout; code-18 upload pending |
+| Unit tests | **570 passing, 0 failures, 0 skipped** (`./gradlew :app:testDebugUnitTest`, 26 Aug 17:00); instrumented `NutritionTabNavigationTest`, `PhTabNavigationTest`, `TrackNutritionLoggingTest` green on the Pixel 8 / API 36 emulator |
+| Release build | GREEN (2026-08-26 17:02), R8/minify clean; AAB + APK signed with upload key SHA-1 `8D:EB…CC:73` (aapt2 reports `com.genesyx.app / 19 / 1.4.2 / target 36`). Contains everything in 18 plus the Track → Nutrition supplement checklist + plan-sheet entry |
+| Artifact | **`~/Documents/Genesyx Releases/1.4.2-code19/genesyx-1.4.2-code19.aab`** — SHA-256 `a23886b5…baa18`, 17,186,919 bytes; `SHA256SUMS.txt` verifies; `BUILD_NOTE.txt` beside it. `1.4.2-code18/` (read-only tracker) and `1.4.2-code17/` (Track → pH bug; reached Play) are superseded — never upload from them |
+| Play status | Internal testing **1.3.0 (11)**, Production **1.2.0 (9) — targets API 35, the build Play flags**; code-19 upload pending (17 reached the Play release flow with the Track → pH defect — see `9af9501`) |
 
 `FeatureFlags` on `main`: `PH_TRACKING = true`, `PUSH_NOTIFICATIONS = true` (local reminders),
 `ADMIN_CLIENTS = false`, `PARTNER_INVITES = false`.

@@ -6,6 +6,50 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ---
 
+## [Unreleased] — Track → Nutrition logs supplements again — `1.4.2 (19)` (26 Aug 2026, evening)
+
+### Fixed — the Track → Nutrition tracker was a dead-end summary
+
+Owner review before the code-18 upload: from Track → Nutrition she could *see* today's supplements
+and the week's dots but could not log anything or reach the plan. That was PR #20 following the
+brief's "§2 — read-only summary" wording literally; the pre-PR #20 screen had a "Log supplements"
+button (opened the Log screen). Confirmed on the emulator: nothing tappable top to bottom.
+
+The tracker now carries the logging surface itself, between the two TODAY cards:
+
+- **"LOG SUPPLEMENTS"** — one row per entry **by name with its dose**, a checkbox each: the four
+  essentials, then **"Your supplements"** (her own entries; an honest "None added yet — add your own
+  from the supplement plan below" when there are none). Ticking a row calls the same
+  `DailyLogRepository.toggleSupplement()` as the Nutrition tab's chips — one repository, one result
+  contract — so today's card, the week dot, the Nutrition card and Insights all move at once, and
+  refused / queued / failed saves surface in a snackbar (Retry on Failed). Status line is the
+  shared "N of M logged today".
+- **"Supplement plan"** button (+ "Review the essentials, set reminders, add your own") opens the
+  **same `SupplementPlanSheet`** the Nutrition tab opens, in place — Back still returns to Track.
+  `NutritionDetailViewModel` gains `UserSupplementRepository` + `SupplementReminderRepository` for
+  the sheet's list, bells and add form; `TrackerDetailScaffold` gains a `snackbarHost` slot.
+- Summary cards and week strips unchanged.
+
+### Tests
+- `NutritionInsightsSharedRepositoryTest` +1: the tracker's checklist toggle is read back by the
+  tracker's own today card, the Nutrition tab and Insights over one repository.
+- `TrackNutritionLoggingTest` (instrumented, real NavHost + bar): Track → Nutrition row → the four
+  names present → tick Zinc → today's card names it → "Supplement plan" opens the sheet ("+ Add your
+  own supplement") → un-tick → Back lands on Track. Green on emulator-5554 (2.5 s).
+- Unit suite 570 tests. One pre-existing test (`PreferencesRepositoryTest.a glass below the floor is
+  clamped`, from 12 Aug) timed out once while the emulator was booting alongside; passes alone.
+
+### Release build (26 Aug, 17:02) — code 19, the upload
+`versionCode` 18 → **19** (`versionName` 1.4.2). `:app:testDebugUnitTest` 570/0/0, then
+`:app:bundleRelease :app:assembleRelease` from a clean tree. Checked against the built artifact:
+aapt2 `com.genesyx.app / 19 / 1.4.2 / targetSdk 36`; upload-key SHA-1 `8D:EB…CC:73` (`apksigner` V2
+on the APK, `keytool` on the AAB); R8 mapping retains `NutritionDetailViewModel` /
+`SupplementToggleSet`. Archived at `~/Documents/Genesyx Releases/1.4.2-code19/` — AAB SHA-256
+`a23886b5…baa18` (17,186,919 bytes), `SHA256SUMS.txt` verifies, `BUILD_NOTE.txt` beside it. Code
+18 is superseded (read-only tracker); never upload it.
+
+---
+
 ## [Unreleased] — Track → pH → Track navigation fix; release candidate becomes `1.4.2 (18)` (26 Aug 2026, 16:05)
 
 **The bug (release-blocking, confirmed on the code-17 build before fixing):** Track → "Vaginal pH"

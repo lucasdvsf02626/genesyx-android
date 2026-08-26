@@ -119,7 +119,7 @@ class NutritionInsightsSharedRepositoryTest {
         val repo = repository(scope, HealthDataCollectionGate { true })
         val nutrition = nutritionViewModel(repo)
         val insights = insightsViewModel(repo)
-        val tracker = NutritionDetailViewModel(repo)
+        val tracker = NutritionDetailViewModel(repo, userSupplements, reminders)
         // WhileSubscribed flows need a collector to be live, exactly as a visible screen is.
         backgroundScope.launch { nutrition.uiState.collect {} }
         backgroundScope.launch { insights.supplementInsights.collect {} }
@@ -193,6 +193,30 @@ class NutritionInsightsSharedRepositoryTest {
         assertTrue(events.single().text.contains("consent", ignoreCase = true))
         assertEquals(emptySet<String>(), nutrition.uiState.value.loggedToday)
         assertEquals(0, insights.supplementInsights.value.todayTaken)
+        scope.cancel()
+    }
+
+    @Test
+    fun `the Track tracker's checklist logs through the same repository the Nutrition tab reads`() = runTest(mainDispatcher.dispatcher.scheduler) {
+        val scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler))
+        val repo = repository(scope, HealthDataCollectionGate { true })
+        val tracker = NutritionDetailViewModel(repo, userSupplements, reminders)
+        val nutrition = nutritionViewModel(repo)
+        val insights = insightsViewModel(repo)
+        backgroundScope.launch { tracker.uiState.collect {} }
+        backgroundScope.launch { tracker.loggedToday.collect {} }
+        backgroundScope.launch { nutrition.uiState.collect {} }
+        backgroundScope.launch { insights.supplementInsights.collect {} }
+        runCurrent()
+
+        assertEquals(listOf("Folate", "Omega-3", "Vitamin D", "Zinc"), tracker.planEntries.value.map { it.display })
+        tracker.toggleSupplement(tracker.planEntries.value.first { it.display == "Zinc" })
+        advanceUntilIdle()
+
+        assertEquals(setOf("Zinc"), tracker.loggedToday.value)
+        assertEquals(listOf("Zinc"), tracker.uiState.value.todaySupplements)
+        assertEquals(setOf("Zinc"), nutrition.uiState.value.loggedToday)
+        assertEquals(1, insights.supplementInsights.value.todayTaken)
         scope.cancel()
     }
 }
