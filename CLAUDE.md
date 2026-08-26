@@ -2,12 +2,16 @@
 
 Project Name: Genesyx Android
 
-**`main` is at v1.4.2 (versionCode 17), and Play serves nothing newer than 1.3.0:** a live Play
-Console audit (2026-07-28) found Internal testing on **1.3.0 (11)** and Production on **1.2.0 (9)**
-— codes 12–17 were never uploaded. Codes 12–16 are superseded; **17 is the identity to upload**
-(`~/Documents/Genesyx Releases/1.4.2-code17/genesyx-1.4.2-code17.aab`, SHA-256 `6f3a23a9…656df`).
-Built and signature-verified 2026-08-26 14:08 (see "Where the code actually is"). 16 was skipped on
-purpose: four different bundles carried the `code16` filename on 26 Aug — never upload any of them.
+**`main` is at v1.4.2 (versionCode 18), and Play serves nothing newer than 1.3.0:** a live Play
+Console audit (2026-07-28) found Internal testing on **1.3.0 (11)** and Production on **1.2.0 (9)**.
+**18 is the identity to upload**
+(`~/Documents/Genesyx Releases/1.4.2-code18/genesyx-1.4.2-code18.aab`, SHA-256 `222fb746…9c5ae0`).
+Built and signature-verified 2026-08-26 16:05 from `9af9501` (see "Where the code actually is").
+**Code 17 is superseded — never upload it:** it was consumed by the internal-testing release flow
+and carries the confirmed Track → pH → Track navigation defect (the pH tab was plain-pushed from
+Track/Home, so the next Track tap restored pH on top — fixed in `9af9501`). Codes 12–16 remain
+superseded; 16 was skipped on purpose: four different bundles carried the `code16` filename on
+26 Aug — never upload any of them.
 Read this first. Honest state, verified against the tree on **2026-08-26**.
 
 > **🔴 DEADLINE: Google Play requires targetSdk 36 in PRODUCTION by 2026-08-31.** Production still
@@ -22,9 +26,10 @@ Read this first. Honest state, verified against the tree on **2026-08-26**.
 > 2. **pH is VAGINAL pH now, not urine pH.** Two-band model (Healthy 3.8–4.5 / Elevated > 4.5),
 >    pre-migration readings shown as "urine (legacy)". Ranges are **client-approved (28 Jul
 >    2026)**: input 3.8–7.0, step 0.1, default 4.2 — no longer provisional.
-> 3. **`main` is at versionCode 17, versionName "1.4.2"**, targeting Android 16 (SDK 36), Room
+> 3. **`main` is at versionCode 18, versionName "1.4.2"**, targeting Android 16 (SDK 36), Room
 >    **v10** (migrations 6→7→8→9→10 each have an instrumented test). The archived `1.2.1-code10`,
->    `1.3.0-code11`, `1.3.1-code12`, `1.3.2-code13` and `1.4.0-code14` builds are all **superseded —
+>    `1.3.0-code11`, `1.3.1-code12`, `1.3.2-code13` and `1.4.0-code14` builds — and the
+>    **`1.4.2-code17` build** (Track → pH → Track navigation defect) — are all **superseded —
 >    never upload them** (code12's waitlist flow is broken — see CHANGELOG 1.3.2).
 >    **The old "code-14 is blocked on a Supabase migration" warning is DEAD — do not act on it.**
 >    `user_supplements` and `genesyx_products` went live 13 Aug and were REST-verified 19 Aug;
@@ -38,9 +43,16 @@ Read this first. Honest state, verified against the tree on **2026-08-26**.
 
 ## 🔖 STOPPED HERE — resume from this (2026-08-26)
 
-**The release candidate is now 1.4.2 (versionCode 17) — `84ebbc7`, built 14:08 from the same
-tree — and it is NOT yet on Play.** Everything below about "code 16" is history: 16 was rebuilt in
-place four times on 26 Aug and then abandoned for a clean identity (see `1.4.2-code17/BUILD_NOTE.txt`).
+**The release candidate is now 1.4.2 (versionCode 18) — built 16:05 from `9af9501`, and NOT yet on
+Play.** `9af9501` fixes the confirmed Track → pH → Track navigation regression: `tracker/ph` is a
+bottom-tab root, but Track's pH row and Home's pH card plain-pushed it, so the next Track tap
+restored pH on top and the tab looked dead. All pH entries now switch tabs via `navigateToTab` /
+`TabNavigation.tabForRoute`. Unit 569/569, instrumented 40/40 (incl. the new 5-test
+`PhTabNavigationTest`), release build green, code-18 artifacts archived under
+`~/Documents/Genesyx Releases/1.4.2-code18/`. **The code-17 AAB is superseded — never upload it.**
+Everything below about "code 16"/"code 17" is history: 16 was rebuilt in place four times on 26 Aug
+and then abandoned for a clean identity (see `1.4.2-code17/BUILD_NOTE.txt`); 17 was consumed by the
+internal-testing release flow while carrying the navigation bug.
 **The 1.4.2 (versionCode 16) release artifact was built and signature-verified, but never reached
 Play** — Internal testing still serves 1.3.0 (11), Production 1.2.0 (9). The upload was attempted
 26 Aug and did not complete; nothing on Play changed. The Supabase gate is **CLOSED**:
@@ -94,12 +106,14 @@ the manual script is `QA_CHECKLIST_ANDROID.md`.
    offline queue, consent snackbar) against a real account on the Play-installed build — those rows
    were not verifiable on the emulator. Add two: adding a supplement with health-data consent OFF
    must show the refusal and keep the form filled; and a cloud restore must come back signed out.
-1. **Upload the code-17 AAB to Internal testing** (`1.4.2-code17/genesyx-1.4.2-code17.aab`, SHA-256 `6f3a23a9…656df`) — verify the hash first, then smoke-test the
+1. **Upload the code-18 AAB to Internal testing** (`1.4.2-code18/genesyx-1.4.2-code18.aab`, SHA-256 `222fb746…9c5ae0`) — verify the hash first, then smoke-test the
    Play-installed build on-device:
    Google Sign-In (needs the release SHA-1 registered), change password (incl. wrong current
    password), waitlist join (incl. duplicate), guest pH reading → sign-in → reading appears; plus
    the 1.3.0 checks — vaginal pH two-band display, "urine (legacy)" markers, Home deep links, a
-   reminder firing — and the new opt-in intimacy reminder.
+   reminder firing — and the new opt-in intimacy reminder. **Add the navigation walk: Track →
+   Vaginal pH → Track tab must return to Track** (the code-17 defect; pinned in code by
+   `PhTabNavigationTest`, but walk it once on the Play-installed build).
 2. **Send the corrected Play console drafts for review** — the Health apps declaration and Data
    Safety form (pH sync + waitlist email declared) are saved as drafts only. Resolve the Play
    URL-validator 429 warning on the deletion/privacy routes.
@@ -115,12 +129,12 @@ the manual script is `QA_CHECKLIST_ANDROID.md`.
 
 | | |
 |---|---|
-| `main` | versionCode **17**, versionName **"1.4.2"**, compile/targetSdk **36**, minSdk **26**, Room **v10** |
-| Working branch | none. `HEAD` = `84ebbc7` (the 16 → 17 bump on top of `2ec3fc5`). The code-17 artifact was built from exactly this tree |
-| Unit tests | **566 passing, 0 failures, 0 skipped** (`./gradlew :app:testDebugUnitTest`, 26 Aug @ `2ec3fc5`; count parsed from the JUnit XML); instrumented `NutritionTabNavigationTest` green on the Pixel 8 / API 36 emulator |
-| Release build | GREEN (2026-08-26 14:04, tree = `2ec3fc5` + the 17 bump = `84ebbc7`), R8/minify clean; AAB + APK signed with upload key SHA-1 `8D:EB…CC:73`, SHA-256 `C3:D5:1F:4B…A4:46:C1:7D` (aapt2 reports `com.genesyx.app / 17 / 1.4.2 / target 36`). Contains PR #20, `67b224d` (consent gate + Auto Backup) and `2ec3fc5` (Track-row toggle set) |
-| Artifact | **`~/Documents/Genesyx Releases/1.4.2-code17/genesyx-1.4.2-code17.aab`** — SHA-256 `6f3a23a9…656df`, 17,160,086 bytes; `SHA256SUMS.txt` verifies; `BUILD_NOTE.txt` + `PLAY_SUBMISSION_PACK_code17.md` beside it. The whole `1.4.2-code16/` directory (four bundles, one filename) is superseded — never upload from it |
-| Play status | Internal testing **1.3.0 (11)**, Production **1.2.0 (9) — targets API 35, the build Play flags**; code-17 upload pending |
+| `main` | versionCode **18**, versionName **"1.4.2"**, compile/targetSdk **36**, minSdk **26**, Room **v10** |
+| Working branch | none. The fix commit is `9af9501`; the code-18 artifact was built from exactly that tree (a docs-only commit sits on top) |
+| Unit tests | **569 passing, 0 failures, 0 skipped** (`./gradlew :app:testDebugUnitTest`, 26 Aug @ `9af9501`); instrumented **40/40** on the Pixel 8 / API 36 emulator, incl. the new `PhTabNavigationTest` (5) and the SFM-27 `NutritionTabNavigationTest` |
+| Release build | GREEN (2026-08-26 16:05, tree = `9af9501`), R8/minify clean; AAB + APK signed with upload key SHA-1 `8D:EB…CC:73`, SHA-256 `C3:D5:1F:4B…A4:46:C1:7D` (aapt2 reports `com.genesyx.app / 18 / 1.4.2 / target 36`). Contains PR #20, `67b224d`, `2ec3fc5`, and the Track → pH → Track fix |
+| Artifact | **`~/Documents/Genesyx Releases/1.4.2-code18/genesyx-1.4.2-code18.aab`** — SHA-256 `222fb746…9c5ae0`, 17,156,938 bytes; `SHA256SUMS.txt` verifies; `BUILD_NOTE.txt` beside it. **`1.4.2-code17/` is superseded** (consumed by the internal-testing release flow while carrying the navigation defect — never upload it); the whole `1.4.2-code16/` directory (four bundles, one filename) likewise |
+| Play status | Internal testing **1.3.0 (11)**, Production **1.2.0 (9) — targets API 35, the build Play flags**; code 17 was accepted into the internal release flow but superseded before rollout; code-18 upload pending |
 
 `FeatureFlags` on `main`: `PH_TRACKING = true`, `PUSH_NOTIFICATIONS = true` (local reminders),
 `ADMIN_CLIENTS = false`, `PARTNER_INVITES = false`.
@@ -147,7 +161,9 @@ the manual script is `QA_CHECKLIST_ANDROID.md`.
   every later Nutrition tap restored it with Learn on top — the tab looked dead for the life of the
   process. It was **not** a route mismatch (`nutrition?plan={plan}` matches `nutrition`). Re-tapping
   the selected tab bumps `TabNavigation.RESELECT_KEY` in the entry's `SavedStateHandle` → scroll to
-  top. `TabNavigationTest` + `NutritionTabNavigationTest` pin this.
+  top. Same mechanism bit twice: `tracker/ph` was plain-pushed from Track/Home (fixed 26 Aug,
+  `9af9501`) — links whose target might be a tab route through `TabNavigation.tabForRoute` →
+  `navigateToTab`. `TabNavigationTest` + `NutritionTabNavigationTest` + `PhTabNavigationTest` pin this.
 - **`SupplementToggleSet` (`domain/model`) is the one definition of "the set and its counts"** —
   the four bundled essentials (a constant; `genesyx_products` is intentionally empty, never seed it)
   plus her `user_supplements`, deduped against plan wire/display names. The plan card, the Track

@@ -6,6 +6,46 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ---
 
+## [Unreleased] — Track → pH → Track navigation fix; release candidate becomes `1.4.2 (18)` (26 Aug 2026, 16:05)
+
+**The bug (release-blocking, confirmed on the code-17 build before fixing):** Track → "Vaginal pH"
+opened the pH screen (`tracker/ph`), but tapping **Track** in the bottom bar did nothing — pH stayed
+visible with the pH tab highlighted; Android Back revealed Track, then Home. Root cause: `tracker/ph`
+is a bottom-tab root (client-requested pH tab, 12 Aug), but Track's row (`TrackScreen.onNavigate`)
+and Home's pH nudge card (`openTrackerDetail`) plain-pushed it: `home → track → tracker/ph`. The next
+Track tap ran the shared tab switch (`popUpTo(Home) { saveState = true }` + `launchSingleTop` +
+`restoreState`), which saved and restored that whole chain with pH on top — the SFM-27 mechanism, one
+route over.
+
+**The fix (`9af9501`):** every link that targets a tab root now goes through `navigateToTab`:
+- `TabNavigation.tabForRoute(route)` — new pure lookup: the owning tab, `null` for pushed
+  destinations (path match, so `nutrition?plan={plan}` still resolves).
+- Track's row handler routes via `tabForRoute` → tabs switch, everything else stays a plain push —
+  Cycle/Nutrition/Symptoms/Sleep/Hydration keep their pushed-detail behaviour (Back returns to Track).
+- Home's pH nudge card calls `navigateToTab(Screen.PhDetail)`; `openTrackerDetail` now serves
+  Hydration only.
+- Insights → pH uses the same helper (was an inline copy of the options; behaviour identical).
+
+**Deliberate behaviour note:** Back from the pH *tab* lands on Home (its parent in the graph),
+matching Insights → pH and the article-CTA → pH paths. Pinned by
+`PhTabNavigationTest.back_from_the_ph_tab_lands_on_home`.
+
+**Tests:** `TabNavigationTest` +3 (`tabForRoute` contract — resolves all seven tabs incl. patterns,
+rejects pushed detail routes). New `PhTabNavigationTest` (5 instrumented, real NavHost + bottom bar):
+Track→pH→Track; Home→pH→Track (no `track` entry beneath pH); Insights→pH→Track; no duplicate pH roots
+across repeated switches + reselect; the five detail rows still push and return; Back-from-pH lands
+Home. Unit suite **569/569**; instrumented **40/40** on emulator-5554 (the pre-existing
+`CycleSettingsDialogTest` flake did not appear).
+
+**Release:** `versionCode` 17 → 18 (`versionName` stays "1.4.2"). Code 17 was consumed by the Play
+internal-testing release flow, so Play requires a new, higher code — and code 17 carries this
+confirmed defect, so it is **superseded: never upload `1.4.2-code17/`**. Code-18 artifacts archived
+in `~/Documents/Genesyx Releases/1.4.2-code18/` (AAB SHA-256 `222fb746…9c5ae0`, 17,156,938 bytes;
+upload-key SHA-256 `C3:D5…C1:7D` on both files; aapt2 `com.genesyx.app / 18 / 1.4.2 / target 36`;
+`SHA256SUMS.txt` verifies). No Play upload, no Console changes.
+
+---
+
 ## [Unreleased] — release candidate becomes `1.4.2 (17)` (26 Aug 2026, 14:08)
 
 `84ebbc7` bumps `versionCode` 16 → 17 and nothing else. The AAB/APK in
