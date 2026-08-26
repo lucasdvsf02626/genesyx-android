@@ -43,7 +43,7 @@ android {
         applicationId = "com.genesyx.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 16
+        versionCode = 17
         versionName = "1.4.2"
 
         testInstrumentationRunner = "com.genesyx.app.HiltTestRunner"
