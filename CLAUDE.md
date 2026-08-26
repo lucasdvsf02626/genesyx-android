@@ -89,12 +89,12 @@ the manual script is `QA_CHECKLIST_ANDROID.md`.
    publish a targetSdk-36 build. The Health apps declaration and Data Safety form are still
    **drafts, not submitted** — they gate the Production publish, and their review time, not the
    upload, is the long pole. Submit them first or request more time.
-0b. **DONE 26 Aug 13:59 — code 16 rebuilt from `2ec3fc5` (= `67b224d` + the Track-row fix), carrying PR #20 plus the consent-gate and
+0b. **DONE — superseded by the 17 bump (`84ebbc7`, 14:08). History: 26 Aug 13:59 — code 16 rebuilt from `2ec3fc5` (= `67b224d` + the Track-row fix), carrying PR #20 plus the consent-gate and
    Auto-Backup changes.** Still to do: run `QA_CHECKLIST_ANDROID.md` §5.9/§10 (Supabase rows,
    offline queue, consent snackbar) against a real account on the Play-installed build — those rows
    were not verifiable on the emulator. Add two: adding a supplement with health-data consent OFF
    must show the refusal and keep the form filled; and a cloud restore must come back signed out.
-1. **Upload the 12:12 code-16 AAB to Internal testing** — verify the hash first, then smoke-test the
+1. **Upload the code-17 AAB to Internal testing** (`1.4.2-code17/genesyx-1.4.2-code17.aab`, SHA-256 `6f3a23a9…656df`) — verify the hash first, then smoke-test the
    Play-installed build on-device:
    Google Sign-In (needs the release SHA-1 registered), change password (incl. wrong current
    password), waitlist join (incl. duplicate), guest pH reading → sign-in → reading appears; plus
