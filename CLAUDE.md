@@ -2,11 +2,12 @@
 
 Project Name: Genesyx Android
 
-**`main` is at v1.4.2 (versionCode 16), and Play serves nothing newer than 1.3.0:** a live Play
+**`main` is at v1.4.2 (versionCode 17), and Play serves nothing newer than 1.3.0:** a live Play
 Console audit (2026-07-28) found Internal testing on **1.3.0 (11)** and Production on **1.2.0 (9)**
-— codes 12, 13, 14, 15 and 16 were never uploaded. Codes 12–15 are superseded; **16 is the identity
-to upload** (`~/Documents/Genesyx Releases/1.4.2-code16/genesyx-1.4.2-code16.aab`). Built and
-signature-verified 2026-08-26 (see "Where the code actually is").
+— codes 12–17 were never uploaded. Codes 12–16 are superseded; **17 is the identity to upload**
+(`~/Documents/Genesyx Releases/1.4.2-code17/genesyx-1.4.2-code17.aab`, SHA-256 `6f3a23a9…656df`).
+Built and signature-verified 2026-08-26 14:08 (see "Where the code actually is"). 16 was skipped on
+purpose: four different bundles carried the `code16` filename on 26 Aug — never upload any of them.
 Read this first. Honest state, verified against the tree on **2026-08-26**.
 
 > **🔴 DEADLINE: Google Play requires targetSdk 36 in PRODUCTION by 2026-08-31.** Production still
@@ -21,7 +22,7 @@ Read this first. Honest state, verified against the tree on **2026-08-26**.
 > 2. **pH is VAGINAL pH now, not urine pH.** Two-band model (Healthy 3.8–4.5 / Elevated > 4.5),
 >    pre-migration readings shown as "urine (legacy)". Ranges are **client-approved (28 Jul
 >    2026)**: input 3.8–7.0, step 0.1, default 4.2 — no longer provisional.
-> 3. **`main` is at versionCode 16, versionName "1.4.2"**, targeting Android 16 (SDK 36), Room
+> 3. **`main` is at versionCode 17, versionName "1.4.2"**, targeting Android 16 (SDK 36), Room
 >    **v10** (migrations 6→7→8→9→10 each have an instrumented test). The archived `1.2.1-code10`,
 >    `1.3.0-code11`, `1.3.1-code12`, `1.3.2-code13` and `1.4.0-code14` builds are all **superseded —
 >    never upload them** (code12's waitlist flow is broken — see CHANGELOG 1.3.2).
@@ -37,7 +38,10 @@ Read this first. Honest state, verified against the tree on **2026-08-26**.
 
 ## 🔖 STOPPED HERE — resume from this (2026-08-26)
 
-**The 1.4.2 (versionCode 16) release artifact is built and signature-verified, but NOT yet on
+**The release candidate is now 1.4.2 (versionCode 17) — `84ebbc7`, built 14:08 from the same
+tree — and it is NOT yet on Play.** Everything below about "code 16" is history: 16 was rebuilt in
+place four times on 26 Aug and then abandoned for a clean identity (see `1.4.2-code17/BUILD_NOTE.txt`).
+**The 1.4.2 (versionCode 16) release artifact was built and signature-verified, but never reached
 Play** — Internal testing still serves 1.3.0 (11), Production 1.2.0 (9). The upload was attempted
 26 Aug and did not complete; nothing on Play changed. The Supabase gate is **CLOSED**:
 `user_supplements` and `genesyx_products` went live 13 Aug and `daily_logs.sexual_activity` was
@@ -111,12 +115,12 @@ the manual script is `QA_CHECKLIST_ANDROID.md`.
 
 | | |
 |---|---|
-| `main` | versionCode **16**, versionName **"1.4.2"**, compile/targetSdk **36**, minSdk **26**, Room **v10** |
-| Working branch | none. `HEAD` = `2ec3fc5` on `main` (PR #20 merged as `b5a98c6`; `67b224d` consent gate + Auto Backup; `2ec3fc5` Track-row toggle-set fix). The code-16 artifact is built from `2ec3fc5` |
+| `main` | versionCode **17**, versionName **"1.4.2"**, compile/targetSdk **36**, minSdk **26**, Room **v10** |
+| Working branch | none. `HEAD` = `84ebbc7` (the 16 → 17 bump on top of `2ec3fc5`). The code-17 artifact was built from exactly this tree |
 | Unit tests | **566 passing, 0 failures, 0 skipped** (`./gradlew :app:testDebugUnitTest`, 26 Aug @ `2ec3fc5`; count parsed from the JUnit XML); instrumented `NutritionTabNavigationTest` green on the Pixel 8 / API 36 emulator |
-| Release build | GREEN (2026-08-26 13:59, from `2ec3fc5`), R8/minify clean; AAB + APK signed with upload key SHA-1 `8D:EB…CC:73`, SHA-256 `C3:D5:1F:4B…A4:46:C1:7D` (aapt2 reports `com.genesyx.app / 16 / 1.4.2 / target 36`). Verified in the artifact: `SupplementToggleSet` present (PR #20), the consent-refusal string present (§5.1), and five `<exclude>` elements in each of the two backup rule sets with `device-transfer` empty (§5.2). |
-| Artifact | `~/Documents/Genesyx Releases/1.4.2-code16/genesyx-1.4.2-code16.aab` — SHA-256 `dfee0b51…5ceb0`, 17,160,089 bytes; `SHA256SUMS.txt` verifies; `BUILD_NOTE.txt` records the source commit (`2ec3fc5`). **Three earlier bundles held this same filename today** and are parked in `superseded/` (`…pre-2ec3fc5.*` from `67b224d` = `3ba7d6e1…`, `…pre-consent-gate.*` from `1aae2d4`, `…pre-pr20.*` from `2615ab2`) — never upload any of them; check the hash, not the name |
-| Play status | Internal testing **1.3.0 (11)**, Production **1.2.0 (9) — targets API 35, the build Play flags**; code-16 upload pending |
+| Release build | GREEN (2026-08-26 14:04, tree = `2ec3fc5` + the 17 bump = `84ebbc7`), R8/minify clean; AAB + APK signed with upload key SHA-1 `8D:EB…CC:73`, SHA-256 `C3:D5:1F:4B…A4:46:C1:7D` (aapt2 reports `com.genesyx.app / 17 / 1.4.2 / target 36`). Contains PR #20, `67b224d` (consent gate + Auto Backup) and `2ec3fc5` (Track-row toggle set) |
+| Artifact | **`~/Documents/Genesyx Releases/1.4.2-code17/genesyx-1.4.2-code17.aab`** — SHA-256 `6f3a23a9…656df`, 17,160,086 bytes; `SHA256SUMS.txt` verifies; `BUILD_NOTE.txt` + `PLAY_SUBMISSION_PACK_code17.md` beside it. The whole `1.4.2-code16/` directory (four bundles, one filename) is superseded — never upload from it |
+| Play status | Internal testing **1.3.0 (11)**, Production **1.2.0 (9) — targets API 35, the build Play flags**; code-17 upload pending |
 
 `FeatureFlags` on `main`: `PH_TRACKING = true`, `PUSH_NOTIFICATIONS = true` (local reminders),
 `ADMIN_CLIENTS = false`, `PARTNER_INVITES = false`.

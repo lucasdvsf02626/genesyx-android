@@ -6,6 +6,24 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ---
 
+## [Unreleased] — release candidate becomes `1.4.2 (17)` (26 Aug 2026, 14:08)
+
+`84ebbc7` bumps `versionCode` 16 → 17 and nothing else. The AAB/APK in
+`~/Documents/Genesyx Releases/1.4.2-code17/` were built at 14:04 from exactly this tree
+(`2ec3fc5` + the bump): aapt2 `com.genesyx.app / 17 / 1.4.2 / targetSdk 36`; upload-key SHA-1
+`8D:EB…CC:73` on both files (`keytool` on the AAB, `apksigner` V2 on the APK); archived AAB is
+byte-identical to `app/build/outputs/bundle/release/app-release.aab` (SHA-256 `6f3a23a9…656df`,
+17,160,086 bytes); `SHA256SUMS.txt` verifies.
+
+**Why 17, when 16 never reached Play:** four different bundles carried the filename
+`genesyx-1.4.2-code16.aab` on 26 Aug (00:03, 11:54, 12:12, 13:59), which had already produced one
+wrong-artifact scare. A clean identity in its own directory removes the footgun; Play does not need
+contiguous codes. The Play Console was **not** consulted — nothing in the repo can say whether a 16
+bundle was uploaded, and 17 is safe either way. Every earlier "16 is the identity to upload" line in
+this file is history.
+
+---
+
 ## [Unreleased] — consent gate covers supplements; Auto Backup scoped explicitly — `1.4.2 (16)` rebuilt (26 Aug 2026, later)
 
 Play-submission prep: making the code say plainly what the Data Safety and Health apps declarations
