@@ -85,6 +85,28 @@ object). Instrumented: `NutritionTabNavigationTest` green on the Pixel 8 API 36 
 `SignInLocally` (a `@SeedOnly` manual utility) puts the installed app into a local signed-in state
 for on-device QA. Manual checklist: `QA_CHECKLIST_ANDROID.md`.
 
+### Verification record — what was actually checked on 26 Aug 2026
+
+Branch `lucasvsf026/sfm-27-28-nutrition-tab-inline-supplement-logging`, commit `c948ec5`
+(+ this changelog note). Debug build installed on the Pixel 8 / API 36 emulator, signed in locally
+via `SignInLocally` and seeded with `SeedTestData`.
+
+| What | How | Result |
+|---|---|---|
+| SFM-27 root cause | Emulator: from Learn, tap Nutrition → no change; BACK → Nutrition underneath, BACK → Home. Fresh process → Home → Nutrition → works | Cross-tab push + `restoreState`, not a route mismatch |
+| SFM-27 fix | Nutrition → "See all articles" → Learn → Track → Nutrition, ×3 | Lands on "Your nutrition focus", 0 "Back" nodes, tab highlighted |
+| Re-tap scroll-to-top | Scroll Nutrition down, tap Nutrition tab | Header back at top; back stack holds one Nutrition entry |
+| Chip logging | Tap Zinc → "4 of 4 logged today"; tap Folate → "3 of 4" | Live, no dialog, chips fill/unfill from the stored row |
+| Plan sheet | Review Plan | Essentials (name + dose, benefit, bell) and Your supplements form; Add disabled until Name set |
+| Add your own | Name "Magnesium", Dose "300 mg", Time Evening → Add → Got it | Listed "300 mg · Evening"; five chips; "3 of 5" → tap M → "4 of 5" |
+| Track tracker | Track → "Nutrition. 3 of 4 supplements today" row | Today's names "Vitamin D · Omega-3 · Zinc", week dots M:1 W:3, food groups empty state |
+| Insights | Insights → Nutrition consistency | "Today · 3 of 4 logged" → "of 5 a day" / "Today · 4 of 5 logged" after Magnesium |
+| Unit suite | `./gradlew :app:testDebugUnitTest` | 560 tests, 0 failures, 0 skipped |
+| Instrumented | `NutritionTabNavigationTest` via `connectedDebugAndroidTest` | 1/1 green (3.1 s) |
+
+Not verified today (needs a real account / network): the Supabase rows behind 5.9 and 10.x in
+`QA_CHECKLIST_ANDROID.md` (offline queue drain, consent-withdrawn snackbar, reminder firing).
+
 ### Not touched, on purpose
 
 - Track rows are pushed screens, not modal bottom sheets (all six already open something).
