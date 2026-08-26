@@ -111,6 +111,16 @@ via `SignInLocally` and seeded with `SeedTestData`.
 Not verified today (needs a real account / network): the Supabase rows behind 5.9 and 10.x in
 `QA_CHECKLIST_ANDROID.md` (offline queue drain, consent-withdrawn snackbar, reminder firing).
 
+### Release build (26 Aug, 11:53)
+
+Code 16 **rebuilt from `main` (`1aae2d4`)** so the upload identity contains this work — 16 never
+reached Play, so no bump. `:app:bundleRelease` + `:app:assembleRelease` green; aapt2
+`com.genesyx.app / 16 / 1.4.2 / target 36`; upload-key SHA-1 `8D:EB…CC:73` on both files; R8
+mapping shows `SupplementToggleSet` retained (PR #20 is in). Archived at
+`~/Documents/Genesyx Releases/1.4.2-code16/` — AAB SHA-256 `117370ae…2ff13` (17,154,680 bytes),
+`SHA256SUMS.txt` verifies. The earlier same-day build is kept as `*.pre-pr20.*` and must not be
+uploaded.
+
 ### Not touched, on purpose
 
 - Track rows are pushed screens, not modal bottom sheets (all six already open something).

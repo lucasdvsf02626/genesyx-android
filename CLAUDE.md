@@ -51,8 +51,10 @@ The `join_waitlist` SECURITY DEFINER RPC is deployed to production Supabase and 
 **Later on 26 Aug: PR #20 merged to `main` (`b5a98c6`) — SFM-27 + SFM-28.** The Nutrition bottom
 tab is fixed (root cause below), the plan card logs supplements inline with tappable chips, the
 plan is a bottom sheet with an add-your-own form and reminder bells, the Track → Nutrition tracker
-and the Insights "Nutrition consistency" card read the same repository as the chips. **`main` is
-now AHEAD of the code-16 AAB** — that artifact was built before PR #20 and does not contain it.
+and the Insights "Nutrition consistency" card read the same repository as the chips. **The code-16
+AAB was then REBUILT from `main` (`1aae2d4`) at 11:53 and now contains PR #20** — owner's call,
+since 16 never reached Play. The pre-PR #20 build is kept beside it as `*.pre-pr20.*`; never upload
+that one.
 Verification record (what was proven on the emulator, and what was not) is in `CHANGELOG.md`;
 the manual script is `QA_CHECKLIST_ANDROID.md`.
 
@@ -64,11 +66,9 @@ the manual script is `QA_CHECKLIST_ANDROID.md`.
    publish a targetSdk-36 build. The Health apps declaration and Data Safety form are still
    **drafts, not submitted** — they gate the Production publish, and their review time, not the
    upload, is the long pole. Submit them first or request more time.
-0b. **Decide the release identity for the PR #20 work.** The existing code-16 AAB predates it.
-   Either upload that AAB as-is (Nutrition fixes ship next) or rebuild from `main`; a rebuild is
-   still code 16 **only if** 16 has never reached Play — check the Console, don't guess. Then run
+0b. **DONE 26 Aug 11:53 — code 16 rebuilt from `main` with PR #20.** Still to do: run
    `QA_CHECKLIST_ANDROID.md` §5.9/§10 (Supabase rows, offline queue, consent snackbar) against a
-   real account — those rows were not verifiable on the emulator.
+   real account on the Play-installed build — those rows were not verifiable on the emulator.
 1. **Upload code 16 to Internal testing**, then smoke-test the Play-installed build on-device:
    Google Sign-In (needs the release SHA-1 registered), change password (incl. wrong current
    password), waitlist join (incl. duplicate), guest pH reading → sign-in → reading appears; plus
@@ -90,10 +90,10 @@ the manual script is `QA_CHECKLIST_ANDROID.md`.
 | | |
 |---|---|
 | `main` | versionCode **16**, versionName **"1.4.2"**, compile/targetSdk **36**, minSdk **26**, Room **v10** |
-| Working branch | none. `HEAD` = `b5a98c6` (PR #20 merged 26 Aug: SFM-27/28 Nutrition work). **The code-16 release artifact predates PR #20** — see Next actions 0b before uploading or rebuilding |
+| Working branch | none. `HEAD` = `1aae2d4` (PR #20 merged 26 Aug as `b5a98c6`, then CLAUDE.md). The code-16 artifact is rebuilt from this commit |
 | Unit tests | **560 passing, 0 failures, 0 skipped** (`./gradlew :app:testDebugUnitTest`, 26 Aug post-PR #20); instrumented `NutritionTabNavigationTest` green on the Pixel 8 / API 36 emulator |
-| Release build | GREEN (2026-08-26), R8/minify clean; AAB + APK signed with upload key SHA-1 `8D:EB…CC:73`, SHA-256 `C3:D5:1F:4B…A4:46:C1:7D` (aapt2 reports `com.genesyx.app / 16 / 1.4.2 / target 36`). Artifact confirmed to contain both post-tag pH commits, not just the tagged one. |
-| Artifact | `~/Documents/Genesyx Releases/1.4.2-code16/genesyx-1.4.2-code16.aab` — SHA-256 `6fe8a6d8…9452`, 17,067,362 bytes; `SHA256SUMS.txt` verifies |
+| Release build | GREEN (2026-08-26 11:53, from `1aae2d4`), R8/minify clean; AAB + APK signed with upload key SHA-1 `8D:EB…CC:73`, SHA-256 `C3:D5:1F:4B…A4:46:C1:7D` (aapt2 reports `com.genesyx.app / 16 / 1.4.2 / target 36`). R8 mapping confirms PR #20 classes (`SupplementToggleSet` retained, `TabNavigation` inlined). |
+| Artifact | `~/Documents/Genesyx Releases/1.4.2-code16/genesyx-1.4.2-code16.aab` — SHA-256 `117370ae…2ff13`, 17,154,680 bytes; `SHA256SUMS.txt` verifies; `BUILD_NOTE.txt` records the source commit. The superseded pre-PR #20 build (`6fe8a6d8…9452`) sits beside it as `genesyx-1.4.2-code16.pre-pr20.aab` — **do not upload it** |
 | Play status | Internal testing **1.3.0 (11)**, Production **1.2.0 (9) — targets API 35, the build Play flags**; code-16 upload pending |
 
 `FeatureFlags` on `main`: `PH_TRACKING = true`, `PUSH_NOTIFICATIONS = true` (local reminders),
