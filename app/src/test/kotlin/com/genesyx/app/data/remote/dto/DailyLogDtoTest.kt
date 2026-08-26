@@ -11,9 +11,10 @@ import org.junit.Test
 /**
  * Wire-format guard for `daily_logs`, in two halves that pull against each other.
  *
- * **Half one — fields that must stay OFF the wire.** The release plan lets the client ship BEFORE a
- * column exists only because an unset value is omitted from the payload; PostgREST rejects an upsert
- * naming an unknown column, which would break every daily-log push.
+ * **Half one — what must stay OFF the wire.** `sexual_activity` is `boolean NOT NULL DEFAULT false`,
+ * so an unset value has to be omitted rather than sent as an explicit null, which would fail the
+ * whole upsert. It is the only field left in this half; `food_groups` was here until 26 Aug 2026,
+ * on a mistaken reading of `docs/schema.sql` — the column is live and it now belongs in half two.
  *
  * **Half two — fields that must stay ON the wire even when empty.** PostgREST builds `columns=` from
  * the JSON body, so a field dropped for equalling its default is a column that never gets written.
@@ -61,12 +62,16 @@ class DailyLogDtoTest {
         assertTrue(decoded.sexualActivity == null)
     }
 
+    /**
+     * Was the opposite assertion until 26 Aug 2026, on the belief that the column might not exist.
+     * It does — applied to production 13 Aug 2026, `text[] NOT NULL DEFAULT '{}'`. Un-ticking the
+     * last food group is a clear like any other and has to reach the column.
+     */
     @Test
-    fun `a day with no meals recorded keeps food groups off the wire`() {
-        assertFalse(json.encodeToString(dto()).contains("food_groups"))
+    fun `un-ticking the last food group sends an explicit empty list`() {
+        assertTrue(json.encodeToString(dto()).contains("\"food_groups\":[]"))
     }
 
-    /** Android cannot log meals yet, but it must not blank the ones iOS wrote when it pushes a row. */
     @Test
     fun `food groups carried from the server are sent back`() {
         val encoded = json.encodeToString(dto(foodGroups = listOf("vegetables", "protein")))
@@ -147,10 +152,10 @@ class DailyLogDtoTest {
     }
 
     /**
-     * The whole contract in one assertion. A row cleared of everything still names exactly the
-     * clearable columns plus its identity — and still does NOT name the two compatibility-sensitive
-     * ones, `food_groups` and `sexual_activity`. If this set changes, someone has either
-     * reintroduced the silent-clear bug or started naming a column that may not exist server-side.
+     * The whole contract in one assertion. A row cleared of everything names exactly the five
+     * clearable columns plus its identity — and still does NOT name `sexual_activity`, the one
+     * field that must never be forced. If this set changes, someone has either reintroduced the
+     * silent-clear bug or started sending an explicit null into a `NOT NULL` column.
      */
     @Test
     fun `a fully cleared row names exactly the clearable columns and no risky ones`() {
@@ -158,7 +163,7 @@ class DailyLogDtoTest {
             dto().copy(supplements = emptyList(), symptoms = emptyList(), waterMl = 0, notes = null),
         )
         assertEquals(
-            setOf("user_id", "date", "symptoms", "water_ml", "supplements", "notes"),
+            setOf("user_id", "date", "symptoms", "water_ml", "supplements", "food_groups", "notes"),
             keys,
         )
     }
@@ -178,7 +183,7 @@ class DailyLogDtoTest {
         )
         assertEquals(
             """{"user_id":"user-a","date":"2026-08-10","symptoms":[],"water_ml":0,""" +
-                """"supplements":[],"notes":null}""",
+                """"supplements":[],"food_groups":[],"notes":null}""",
             encoded,
         )
     }

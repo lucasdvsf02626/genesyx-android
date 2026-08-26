@@ -21,10 +21,14 @@ import kotlinx.serialization.Serializable
  *
  * | field | forced? | why |
  * |---|---|---|
- * | `symptoms`, `water_ml`, `supplements`, `notes` | yes | all four can be cleared back to their default by the UI, and all four are columns that exist on the server (see `docs/schema.sql`), so naming them can never fail |
+ * | `symptoms`, `water_ml`, `supplements`, `notes`, `food_groups` | yes | each can be cleared back to its default by the UI, and each is a column that exists on the server, so naming it can never fail |
  * | `mood`, `energy`, `sleep_minutes` | no | the form only ever *sets* these — there is no deselect, so they cannot reach their `null` default after having a value |
- * | `food_groups` | no — see below | |
  * | `sexual_activity` | **never** — see below | |
+ *
+ * `docs/schema.sql` is a dated Lovable extraction, not a live read, and it is **not** the authority
+ * on what exists server-side: this repo deliberately holds no executable migrations (see
+ * `docs/worklog/2026-08-13.md`, "Carried constraints"). The shared-backend repo does. Check there,
+ * and check the applied-state audit, before concluding a column is missing.
  */
 @Serializable
 data class DailyLogDto(
@@ -44,18 +48,19 @@ data class DailyLogDto(
      */
     @EncodeDefault(EncodeDefault.Mode.ALWAYS) val supplements: List<String> = emptyList(),
     /**
-     * Omitted from the wire while empty (encodeDefaults is off), so the server's `'{}'` default
-     * applies and a log with no meals recorded still syncs — including against a server that
-     * predates the column.
+     * Clearable, exactly like [supplements]: the Nutrition tab's chips and the Log form both call
+     * `DailyLogRepository.toggleFoodGroup`, and un-ticking the last group leaves an empty set.
      *
-     * **This field has the same clear-never-syncs defect as [supplements]** — the Nutrition chips
-     * can un-tick the last food group — but it is deliberately left unforced for now. Unlike the
-     * four forced fields above, `food_groups` is *not* in `docs/schema.sql`'s `CREATE TABLE`; the
-     * evidence that it is live is a worklog note (`docs/worklog/2026-08-13.md`), not the schema.
-     * Naming a column that does not exist makes PostgREST reject the upsert, which would break
-     * **every** daily-log push — a far worse failure than the clear bug it would fix. Force it only
-     * once the column is confirmed live against production, and flip the test below with it.
+     * Forced on 26 Aug 2026, after 1.4.2 (20) shipped it unforced on a mistaken premise. The claim
+     * was that the column might not exist, because it is absent from `docs/schema.sql`. That file is
+     * a dated snapshot, not a live read. The column **does** exist: it was applied to production on
+     * 13 Aug 2026 from the shared-backend repo's `20260812_daily_logs_food_groups.sql`, and read
+     * back from `information_schema.columns` as `text[] NOT NULL DEFAULT '{}'` — the same shape as
+     * `symptoms` and `supplements`. Naming it is therefore as safe as naming those two.
+     *
+     * `NOT NULL` is why the Kotlin type stays non-nullable: this must send `[]`, never `null`.
      */
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
     @SerialName("food_groups") val foodGroups: List<String> = emptyList(),
     /** Clearable: blanking the notes field yields null, which must blank the column server-side. */
     @EncodeDefault(EncodeDefault.Mode.ALWAYS) val notes: String? = null,

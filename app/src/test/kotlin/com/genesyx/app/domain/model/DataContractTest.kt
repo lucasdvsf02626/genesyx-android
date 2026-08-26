@@ -94,21 +94,23 @@ class DataContractTest {
      * Two different rules share this payload, and the difference is whether the user can *clear*
      * the field.
      *
-     * `food_groups` and `sexual_activity` stay off the wire while unset, so the client can ship
-     * against a server that predates either column.
+     * `sexual_activity` stays off the wire while unset: the column is `NOT NULL DEFAULT false`, so
+     * an explicit null would fail the whole upsert. It is the only field that still does.
      *
      * A clearable field is the opposite case: PostgREST builds `columns=` from the body, so omitting
      * it means the column is never written and the stale server value returns on the next pull.
      * `water_ml` used to be asserted absent at zero here — that was the silent-clear bug written
-     * down as a requirement, and removing her last glass never synced because of it. It now carries
-     * `@EncodeDefault`, like `supplements`, `symptoms` and `notes`. See `DailyLogDtoTest`.
+     * down as a requirement, and removing her last glass never synced because of it. `food_groups`
+     * was asserted absent for a further release on the belief that the column might not exist; it
+     * has been live since 13 Aug 2026. Both now carry `@EncodeDefault`. See `DailyLogDtoTest`.
      */
     @Test
-    fun `daily log wire names are snake_case, omitting only the columns that may not exist`() {
+    fun `daily log wire names are snake_case, omitting only the column that must not be nulled`() {
         val json = Json { ignoreUnknownKeys = true }
         val empty = DailyLogDto(userId = "u", date = "2026-08-17")
         val encoded = json.encodeToString(empty)
-        assertFalse(encoded.contains("food_groups"))
+        // A day with no groups ticked is "she cleared them", and must reach the column.
+        assertTrue(encoded.contains("\"food_groups\":[]"))
         assertFalse(encoded.contains("sexual_activity"))
         // A zero pour is a real value — "she removed her last glass" — and must reach the column.
         assertTrue(encoded.contains("\"water_ml\":0"))

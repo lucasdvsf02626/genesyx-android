@@ -143,10 +143,11 @@ class DailyLogRepository @Inject constructor(
      * so the stored row's water wins over the form's snapshot, never the other way round. This is
      * what stopped "My logs says 1.8 L while the tracker says 0.5 L".
      *
-     * Food groups are held the same way for the same reason, one client further out: only iOS can
-     * log them, so a sync can drop new ones into the row while this form sits open and the form's
-     * snapshot would otherwise write them straight back out. Drop this term when Android gains a
-     * food-group editor — at that point the form owns the field and must be allowed to clear it.
+     * Food groups are held the same way for the same reason. Android gained its own editor on
+     * 17 Aug 2026 (`edd8f2d`), but it did not move ownership here: the chips — on the Nutrition tab
+     * and on this very form — write straight through [toggleFoodGroup], so this form's snapshot is
+     * always the stale copy. Keep the term. (An earlier version of this comment said "only iOS can
+     * log them" and told you to drop the term once Android had an editor; both halves are wrong now.)
      */
     fun upsertPreservingWater(date: LocalDate, log: DailyLog) =
         mutateRow(date) { stored -> log.copy(waterMl = stored.waterMl, foodGroups = stored.foodGroups) }
