@@ -59,6 +59,13 @@ refusal is visible; `delete` stays ungated on purpose), and `backup_rules.xml` /
 `data_extraction_rules.xml` state the Auto Backup scope explicitly instead of leaving it to the
 platform default — health stores out of cloud backup, `device-transfer` deliberately intact.
 
+**Then, 26 Aug 13:59 — `2ec3fc5`, and the code-16 AAB rebuilt a FOURTH time from it.** Testing
+Track → Nutrition on the emulator showed the Track row saying "1 of 4" while the Nutrition card
+said "1 of 6" (two custom entries) — `TrackerSummaryLogic` scored the plan alone. It now scores the
+shared `SupplementToggleSet`. `2ec3fc5` descends from `67b224d`, so this artifact carries
+everything above. **This is the AAB to upload.** The 12:12 build is parked in `superseded/` as
+`*.pre-2ec3fc5.*`.
+
 > **🔴 THREE bundles have held the name `genesyx-1.4.2-code16.aab` in one day.** Only the **12:12**
 > one (SHA-256 `3ba7d6e1…9a480`, from `67b224d`) is the upload. The other two are parked in
 > `~/Documents/Genesyx Releases/1.4.2-code16/superseded/` and must never be uploaded. **Check
@@ -78,7 +85,7 @@ the manual script is `QA_CHECKLIST_ANDROID.md`.
    publish a targetSdk-36 build. The Health apps declaration and Data Safety form are still
    **drafts, not submitted** — they gate the Production publish, and their review time, not the
    upload, is the long pole. Submit them first or request more time.
-0b. **DONE 26 Aug 12:12 — code 16 rebuilt from `67b224d`, carrying PR #20 plus the consent-gate and
+0b. **DONE 26 Aug 13:59 — code 16 rebuilt from `2ec3fc5` (= `67b224d` + the Track-row fix), carrying PR #20 plus the consent-gate and
    Auto-Backup changes.** Still to do: run `QA_CHECKLIST_ANDROID.md` §5.9/§10 (Supabase rows,
    offline queue, consent snackbar) against a real account on the Play-installed build — those rows
    were not verifiable on the emulator. Add two: adding a supplement with health-data consent OFF
@@ -105,10 +112,10 @@ the manual script is `QA_CHECKLIST_ANDROID.md`.
 | | |
 |---|---|
 | `main` | versionCode **16**, versionName **"1.4.2"**, compile/targetSdk **36**, minSdk **26**, Room **v10** |
-| Working branch | none. `HEAD` = `67b224d` on `main` (PR #20 merged as `b5a98c6`, then the consent-gate + Auto-Backup commit). The code-16 artifact is built from `67b224d` |
-| Unit tests | **565 passing, 0 failures, 0 skipped** (`./gradlew :app:testDebugUnitTest`, 26 Aug @ `67b224d`; count parsed from the JUnit XML, since the task reports UP-TO-DATE on a re-run); instrumented `NutritionTabNavigationTest` green on the Pixel 8 / API 36 emulator |
-| Release build | GREEN (2026-08-26 12:12, from `67b224d`), R8/minify clean; AAB + APK signed with upload key SHA-1 `8D:EB…CC:73`, SHA-256 `C3:D5:1F:4B…A4:46:C1:7D` (aapt2 reports `com.genesyx.app / 16 / 1.4.2 / target 36`). Verified in the artifact: `SupplementToggleSet` present (PR #20), the consent-refusal string present (§5.1), and five `<exclude>` elements in each of the two backup rule sets with `device-transfer` empty (§5.2). |
-| Artifact | `~/Documents/Genesyx Releases/1.4.2-code16/genesyx-1.4.2-code16.aab` — SHA-256 `3ba7d6e1…9a480`, 17,158,664 bytes; `SHA256SUMS.txt` verifies; `BUILD_NOTE.txt` records the source commit and the verification. **Two earlier bundles held this same filename today** and are parked in `superseded/` (`…pre-consent-gate.*` from `1aae2d4`, `…pre-pr20.*` from `2615ab2`) — never upload either; check the hash, not the name |
+| Working branch | none. `HEAD` = `2ec3fc5` on `main` (PR #20 merged as `b5a98c6`; `67b224d` consent gate + Auto Backup; `2ec3fc5` Track-row toggle-set fix). The code-16 artifact is built from `2ec3fc5` |
+| Unit tests | **566 passing, 0 failures, 0 skipped** (`./gradlew :app:testDebugUnitTest`, 26 Aug @ `2ec3fc5`; count parsed from the JUnit XML); instrumented `NutritionTabNavigationTest` green on the Pixel 8 / API 36 emulator |
+| Release build | GREEN (2026-08-26 13:59, from `2ec3fc5`), R8/minify clean; AAB + APK signed with upload key SHA-1 `8D:EB…CC:73`, SHA-256 `C3:D5:1F:4B…A4:46:C1:7D` (aapt2 reports `com.genesyx.app / 16 / 1.4.2 / target 36`). Verified in the artifact: `SupplementToggleSet` present (PR #20), the consent-refusal string present (§5.1), and five `<exclude>` elements in each of the two backup rule sets with `device-transfer` empty (§5.2). |
+| Artifact | `~/Documents/Genesyx Releases/1.4.2-code16/genesyx-1.4.2-code16.aab` — SHA-256 `dfee0b51…5ceb0`, 17,160,089 bytes; `SHA256SUMS.txt` verifies; `BUILD_NOTE.txt` records the source commit (`2ec3fc5`). **Three earlier bundles held this same filename today** and are parked in `superseded/` (`…pre-2ec3fc5.*` from `67b224d` = `3ba7d6e1…`, `…pre-consent-gate.*` from `1aae2d4`, `…pre-pr20.*` from `2615ab2`) — never upload any of them; check the hash, not the name |
 | Play status | Internal testing **1.3.0 (11)**, Production **1.2.0 (9) — targets API 35, the build Play flags**; code-16 upload pending |
 
 `FeatureFlags` on `main`: `PH_TRACKING = true`, `PUSH_NOTIFICATIONS = true` (local reminders),

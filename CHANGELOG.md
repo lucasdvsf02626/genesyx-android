@@ -79,7 +79,17 @@ DAO's `pending()` is never called), guest adoption refuses, and — the delibera
 A green build alone does not prove a raw XML resource is well-formed for its schema, so both rule
 files were read back out of the compiled artifact rather than trusted from source.
 
-### Release build (26 Aug, 12:12) — code 16, third and final
+### Release build (26 Aug, 13:59) — code 16, fourth; supersedes the 12:12 build
+
+Rebuilt from `2ec3fc5` (= `67b224d` + the Track-row toggle-set fix found while testing Track →
+Nutrition on the emulator). Same checks as the 12:12 build: aapt2 `com.genesyx.app / 16 / 1.4.2 /
+targetSdk 36`; upload-key SHA-1 `8D:EB…CC:73` on AAB and APK; R8 mapping retains
+`SupplementToggleSet` and `TrackerSummaryLogic`. Archived as
+`~/Documents/Genesyx Releases/1.4.2-code16/genesyx-1.4.2-code16.aab` — SHA-256 `dfee0b51…5ceb0`
+(17,160,089 bytes), `SHA256SUMS.txt` verifies, `BUILD_NOTE.txt` names the commit. The 12:12 build
+(`3ba7d6e1…`) is parked in `superseded/` as `*.pre-2ec3fc5.*`. **Upload by hash, not by name.**
+
+### Release build (26 Aug, 12:12) — code 16, third (superseded at 13:59)
 
 `:app:testDebugUnitTest` then `:app:bundleRelease :app:assembleRelease` from a clean tree at
 `67b224d`. Everything below was checked against the built artifact, not the source:
