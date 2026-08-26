@@ -84,6 +84,7 @@ import com.genesyx.app.ui.components.PastDatePickerDialog
 import com.genesyx.app.ui.components.hydrationStatusLabel
 import com.genesyx.app.ui.components.tintOnWhite
 import com.genesyx.app.ui.navigation.Screen
+import com.genesyx.app.ui.navigation.navigateToTab
 import com.genesyx.app.ui.theme.BabyLavender
 import com.genesyx.app.ui.theme.ElectricBlue
 import com.genesyx.app.ui.theme.ElectricLavender
@@ -114,7 +115,9 @@ fun HomeScreen(
         consentActive = consentActive,
         onNavigate = { navController.navigate(it) },
         onOpenHydration = { openTrackerDetail(Screen.HydrationDetail.route) },
-        onOpenPh = { openTrackerDetail(Screen.PhDetail.route) },
+        // pH is a bottom-tab root: switch to it. openTrackerDetail's plain push would stack the
+        // pH tab on Track, and the next Track tap would restore that chain with pH on top.
+        onOpenPh = { navController.navigateToTab(Screen.PhDetail) },
         onSaveCycle = { viewModel.saveCycleSettings(it) },
         onCelebrate = { viewModel.celebrateMilestones() },
         onOpenArticle = { slug ->

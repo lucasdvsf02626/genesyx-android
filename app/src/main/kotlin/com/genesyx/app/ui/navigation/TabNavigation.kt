@@ -24,6 +24,16 @@ object TabNavigation {
 
     /** True when [destinationRoute] (a `NavDestination.route` pattern) is [tab]'s own root. */
     fun isTabRoot(destinationRoute: String?, tab: Screen): Boolean = destinationRoute == tab.route
+
+    /**
+     * The tab that owns [route], or null when [route] is an ordinary pushed destination. Matches
+     * on the path, so a tab pattern carrying optional arguments (`nutrition?plan={plan}`) still
+     * resolves. `tracker/ph` is a tab root: any in-screen link that plain-pushes it stacks the pH
+     * tab on top of the current tab, and the next tab switch saves/restores that whole chain —
+     * the Track → pH → Track regression, same mechanism as SFM-27.
+     */
+    fun tabForRoute(route: String): Screen? =
+        Screen.bottomTabs.firstOrNull { routeFor(it) == route.substringBefore("?") }
 }
 
 /** Select [tab] the way the bottom bar does. Use this for any link that targets another tab. */

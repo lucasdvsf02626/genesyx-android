@@ -79,6 +79,8 @@ import com.genesyx.app.ui.components.PhReadingRow
 import com.genesyx.app.ui.learn.HowThisWorksLink
 import com.genesyx.app.ui.components.tintOnWhite
 import com.genesyx.app.ui.navigation.Screen
+import com.genesyx.app.ui.navigation.TabNavigation
+import com.genesyx.app.ui.navigation.navigateToTab
 import com.genesyx.app.ui.theme.BabyLavender
 import com.genesyx.app.ui.theme.CalendarFertile
 import com.genesyx.app.ui.theme.ElectricBlue
@@ -115,7 +117,14 @@ fun TrackScreen(
         summaries = summaries,
         hydrationUnit = hydrationUnit,
         consentActive = consentActive,
-        onNavigate = { navController.navigate(it) },
+        onNavigate = { route ->
+            // A row can target a bottom-tab root (`tracker/ph` is the pH tab). Plain-pushing that
+            // leaves pH stacked on Track, and the next Track tab tap saves and restores the whole
+            // chain with pH on top — the tab looks dead (the SFM-27 mechanism). Tab targets switch
+            // tabs; every other row stays an ordinary detail push.
+            TabNavigation.tabForRoute(route)?.let { navController.navigateToTab(it) }
+                ?: navController.navigate(route)
+        },
         onSaveCycle = { viewModel.saveCycleSettings(it) },
     )
 }

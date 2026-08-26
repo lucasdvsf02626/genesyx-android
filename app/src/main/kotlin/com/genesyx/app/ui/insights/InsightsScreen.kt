@@ -56,6 +56,7 @@ import com.genesyx.app.ui.components.ScreenHeader
 import com.genesyx.app.ui.components.tintOnWhite
 import com.genesyx.app.ui.learn.HowThisWorksLink
 import com.genesyx.app.ui.navigation.Screen
+import com.genesyx.app.ui.navigation.navigateToTab
 import com.genesyx.app.ui.theme.BabyLavender
 import com.genesyx.app.ui.theme.ElectricBlue
 import com.genesyx.app.ui.theme.ElectricLavender
@@ -114,11 +115,7 @@ fun InsightsScreen(
             Spacer(Modifier.height(12.dp))
             if (com.genesyx.app.core.FeatureFlags.PH_TRACKING) {
                 PhInsightsSection(ph) {
-                    navController.navigate(Screen.PhDetail.route) {
-                        popUpTo(Screen.Home.route) { saveState = true }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
+                    navController.navigateToTab(Screen.PhDetail)
                 }
             }
 

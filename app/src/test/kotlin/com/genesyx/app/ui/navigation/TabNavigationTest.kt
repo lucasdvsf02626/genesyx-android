@@ -2,6 +2,7 @@ package com.genesyx.app.ui.navigation
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -58,5 +59,38 @@ class TabNavigationTest {
         Screen.bottomTabs.forEach { assertFalse(it.route in Screen.noBottomNavRoutes) }
         assertTrue(Screen.NutritionDetail.route in Screen.noBottomNavRoutes)
         assertTrue(Screen.ArticleDetail.route in Screen.noBottomNavRoutes)
+    }
+
+    @Test
+    fun `tabForRoute resolves every tab's own route, including the pH tab`() {
+        Screen.bottomTabs.forEach { tab ->
+            assertEquals(tab, TabNavigation.tabForRoute(TabNavigation.routeFor(tab)))
+        }
+        // The route at the heart of the Track → pH → Track regression: `tracker/ph` is a tab.
+        assertEquals(Screen.PhDetail, TabNavigation.tabForRoute(Screen.PhDetail.route))
+        assertEquals(Screen.PhDetail, TabNavigation.tabForRoute("tracker/ph"))
+    }
+
+    @Test
+    fun `tabForRoute resolves tab patterns that carry optional arguments`() {
+        // Nutrition's registered pattern is `nutrition?plan={plan}`; matching is on the path.
+        assertEquals(Screen.Nutrition, TabNavigation.tabForRoute(Screen.Nutrition.route))
+        assertEquals(Screen.Nutrition, TabNavigation.tabForRoute("nutrition?plan=1"))
+    }
+
+    @Test
+    fun `tabForRoute rejects pushed destinations, so Track's detail rows keep their push behaviour`() {
+        // Every other "Your trackers" row must keep opening as an immersive detail on top of
+        // Track — only the pH row switches tabs.
+        listOf(
+            Screen.CycleDetail,
+            Screen.NutritionDetail,
+            Screen.SymptomsDetail,
+            Screen.SleepDetail,
+            Screen.HydrationDetail,
+            Screen.Log,
+            Screen.LogHistory,
+            Screen.ArticleDetail,
+        ).forEach { screen -> assertNull(screen.route, TabNavigation.tabForRoute(screen.route)) }
     }
 }
