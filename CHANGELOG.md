@@ -6,6 +6,51 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ---
 
+## [Unreleased] — "See your insights" was a dead button (1 Sep 2026)
+
+### Fixed — an article CTA that pointed at the tab it was opened from did nothing
+
+Reported from the device: in Learn, the **"See your insights"** button at the foot of an article did
+not react. It was not a dead click target. `ArticleDetailScreen` hand-rolled its own tab-switch
+options — `popUpTo(Home) { saveState = true }` + `restoreState = true` — instead of going through
+`navigateToTab`. Where the article had been opened *from* the tab its CTA points at, those two
+options cancel each other out: `saveState` saves the `insights → article` chain the tap is standing
+in, keyed (by `NavController`) to the tab root at its bottom, and `restoreState` restores that exact
+chain in the same call. The article came back on top of Insights and the screen never changed.
+
+The article in the report is `reading-your-trends`, which is `AppGuide.INSIGHTS` — the Insights tab's
+own "how this works" link — so the tab-then-CTA path is the ordinary way to read it. The pH tab's
+signpost (`guide-understanding-vaginal-ph` → "Open the pH tracker") had the same shape, as did any
+article opened from Nutrition or Track whose CTA points back there.
+
+Third sighting of the SFM-27 mechanism (after Nutrition → Learn and Track → pH → Track), so the fix
+went into the shared helper rather than the screen:
+
+- **`navigateToTab` now pops when the tab it is asked for is the one directly beneath the caller** —
+  the whole navigation, no save, nothing to spring back. From a pushed screen over *another* tab it
+  pops to that tab's root first, so a bar-less article is never left inside a saved tab chain
+  (that is how a tab comes to look dead). From a tab root — the bottom bar's case — nothing changes:
+  the switch still saves and restores tab state.
+- **`ArticleDetailScreen` routes CTAs through `TabNavigation.tabForRoute` → `navigateToTab`**, per
+  the rule in CLAUDE.md. `OPEN_LOG` and `OPEN_ARTICLE` keep their plain push.
+
+### Tests
+- `ArticleCtaRouteTest` (new, unit): each tab-bound CTA type resolves to its tab, so the screen takes
+  the `navigateToTab` path at all; `OPEN_LOG` / `OPEN_ARTICLE` stay pushes; `reading-your-trends`
+  still carries the reported button; every tab signpost article with a tab CTA resolves.
+- `ArticleCtaTabNavigationTest` (new, instrumented, real NavHost + bar): Insights → its guide article
+  → "See your insights" lands on the Insights root with the article off the back stack, and the tab
+  stays article-free afterwards; the same CTA from Learn switches tabs and leaves nothing behind;
+  an article read from Home is not restored onto the Home tab later; Back is unchanged.
+- **Not yet run: this session had no Android SDK and no emulator** (the container cannot reach
+  `dl.google.com`), so the change is code-verified against the `NavController` save/restore
+  implementation, not device-verified. CI runs the unit suite and `assembleDebug`;
+  `ArticleCtaTabNavigationTest` needs `connectedAndroidTest` on the Pixel 8 / API 36 emulator, and
+  the walk in `QA_CHECKLIST_ANDROID.md` should add: Insights → "Reading your trends…" →
+  "See your insights" → the Insights dashboard.
+
+---
+
 ## [Unreleased] — Track → Nutrition logs supplements again — `1.4.2 (19)` (26 Aug 2026, evening)
 
 ### Fixed — the Track → Nutrition tracker was a dead-end summary

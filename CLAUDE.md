@@ -169,9 +169,16 @@ the manual script is `QA_CHECKLIST_ANDROID.md`.
   every later Nutrition tap restored it with Learn on top — the tab looked dead for the life of the
   process. It was **not** a route mismatch (`nutrition?plan={plan}` matches `nutrition`). Re-tapping
   the selected tab bumps `TabNavigation.RESELECT_KEY` in the entry's `SavedStateHandle` → scroll to
-  top. Same mechanism bit twice: `tracker/ph` was plain-pushed from Track/Home (fixed 26 Aug,
-  `9af9501`) — links whose target might be a tab route through `TabNavigation.tabForRoute` →
-  `navigateToTab`. `TabNavigationTest` + `NutritionTabNavigationTest` + `PhTabNavigationTest` pin this.
+  top. Same mechanism bit three times: `tracker/ph` was plain-pushed from Track/Home (fixed 26 Aug,
+  `9af9501`), and the Learn article CTA hand-rolled the tab-switch options (fixed 1 Sep) — links
+  whose target might be a tab route through `TabNavigation.tabForRoute` → `navigateToTab`.
+  **`navigateToTab` pops when the tab asked for is the one directly beneath the caller**, and pops
+  to that root first when the link points elsewhere: `saveState` + `restoreState` fired from a
+  screen pushed onto the target tab saves the chain it is standing in and restores it in the same
+  call, so nothing on screen changes — the "See your insights" dead button (`reading-your-trends`
+  is the Insights tab's own guide article). Never leave a bar-hiding screen inside a saved tab
+  chain. `TabNavigationTest` + `NutritionTabNavigationTest` + `PhTabNavigationTest` +
+  `ArticleCtaRouteTest` + `ArticleCtaTabNavigationTest` pin this.
 - **`SupplementToggleSet` (`domain/model`) is the one definition of "the set and its counts"** —
   the four bundled essentials (a constant; `genesyx_products` is intentionally empty, never seed it)
   plus her `user_supplements`, deduped against plan wire/display names. The plan card, the Track

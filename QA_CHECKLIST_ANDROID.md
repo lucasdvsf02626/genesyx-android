@@ -35,6 +35,10 @@ process dies and the next launch reads from storage.
 | 1.9 | Repeat 1.8 three times in a row without killing the app. | Same result every time (the old bug stuck for the life of the process). | |
 | 1.10 | On Nutrition, scroll halfway down, then tap the **Nutrition** tab again. | Page scrolls smoothly back to the top. Nothing is pushed; Back from here exits to Home/previous tab, not to a second Nutrition. | |
 | 1.11 | Learn → open any article → Back. Then tap Nutrition. | Nutrition root, no article on top. | |
+| 1.12 | **The dead-button path:** Insights → scroll to "Reading your trends without over-reading them →" → open it → tap **See your insights**. | The Insights dashboard, no Back arrow, Insights highlighted. (It used to sit there doing nothing.) | |
+| 1.13 | Repeat 1.12, then tap **Learn**, then **Insights**. | Insights dashboard both times — never the article restored on top. | |
+| 1.14 | pH → "Read: Understanding your vaginal pH →" → tap **Open the pH tracker**. | The pH tab. Same shape as 1.12. | |
+| 1.15 | Learn → open any article with a tab button (e.g. "See your insights") → tap it → tap **Learn**. | The button lands on that tab; Learn returns to the hub list, not to the article. | |
 
 ## 2. Track — every tracker row opens its screen
 

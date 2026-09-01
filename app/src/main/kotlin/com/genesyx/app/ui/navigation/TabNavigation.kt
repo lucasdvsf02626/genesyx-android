@@ -38,9 +38,34 @@ object TabNavigation {
 
 /** Select [tab] the way the bottom bar does. Use this for any link that targets another tab. */
 fun NavController.navigateToTab(tab: Screen) {
+    // Fired from a screen pushed onto a tab root — an article, say — the first move is back down to
+    // that root: the chain we are standing in must never be saved. Saved under the tab this link
+    // points at, `restoreState` brings it straight back and nothing on screen changes: that is the
+    // "See your insights" dead button, tapped in `reading-your-trends`, which is the Insights tab's
+    // own "how this works" article (the pH tab's, `guide-understanding-vaginal-ph`, was dead the
+    // same way, as was any article opened from the tab its CTA points back at). Saved under
+    // any other tab, it is restored later with a bar-less article on top — how a tab comes to look
+    // dead (SFM-27).
+    val beneath = tabRootBeneath()
+    if (beneath != null && popBackStack(beneath.route, inclusive = false) && beneath == tab) {
+        // The link pointed at the tab we were sitting on: the pop was the whole navigation.
+        return
+    }
     navigate(TabNavigation.routeFor(tab)) {
         popUpTo(Screen.Home.route) { saveState = true }
         launchSingleTop = true
         restoreState = true
     }
+}
+
+/**
+ * The tab whose root this screen was pushed onto, or null when we are on a tab root ourselves (the
+ * bottom bar's case — there the switch must save the tab's state, not pop it away) or on something
+ * deeper than one push.
+ */
+private fun NavController.tabRootBeneath(): Screen? {
+    val here = currentDestination?.route ?: return null
+    if (TabNavigation.tabForRoute(here) != null) return null
+    val beneath = previousBackStackEntry?.destination?.route ?: return null
+    return TabNavigation.tabForRoute(beneath)
 }
