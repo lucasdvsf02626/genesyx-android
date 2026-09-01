@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogProperties
 import com.genesyx.app.R
 import com.genesyx.app.ui.theme.ElectricLavender
 
@@ -21,15 +22,22 @@ import com.genesyx.app.ui.theme.ElectricLavender
  * answered anywhere (ConsentRepository.needsDecision). Distinct from HealthDataConsentDialog: that
  * one describes a state she already chose; this one asks the question. "Not now" records nothing —
  * declining to answer is not a withdrawal, but collection stays off until she allows it.
+ *
+ * Only the two buttons close it. An outside tap or Back is NOT an answer to a consent question —
+ * on code 22 a stray tap dismissed the ask and left collection silently off (smoke finding,
+ * CHANGELOG 1 Sep 2026). [onAllow] deliberately does not close the dialog either: it records the
+ * grant, and the caller's `needsDecision` flipping false is what removes the dialog — so a grant
+ * that failed to record leaves the question on screen instead of vanishing unanswered.
  */
 @Composable
 fun ConsentDecisionDialog(
     onAllow: () -> Unit,
-    onDismiss: () -> Unit,
+    onNotNow: () -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { /* only Allow / Not now close the ask */ },
+        properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false),
         shape = RoundedCornerShape(20.dp),
         containerColor = colors.surface,
         title = {
@@ -55,7 +63,7 @@ fun ConsentDecisionDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = { onAllow(); onDismiss() }) {
+            TextButton(onClick = onAllow) {
                 Text(
                     stringResource(R.string.consent_ask_allow),
                     color = ElectricLavender,
@@ -64,7 +72,7 @@ fun ConsentDecisionDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(onClick = onNotNow) {
                 Text(stringResource(R.string.consent_ask_not_now), color = colors.onSurfaceVariant)
             }
         },

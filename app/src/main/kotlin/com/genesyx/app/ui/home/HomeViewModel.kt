@@ -2,6 +2,7 @@ package com.genesyx.app.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.genesyx.app.auth.AuthRepository
 import com.genesyx.app.data.ConsentRepository
 import com.genesyx.app.data.CycleRepository
 import com.genesyx.app.data.DailyLogRepository
@@ -109,6 +110,7 @@ class HomeViewModel @Inject constructor(
     private val phRepository: PhRepository,
     private val streakRepository: StreakRepository,
     private val consentRepository: ConsentRepository,
+    private val authRepository: AuthRepository,
 ) : ViewModel() {
 
     /** Gates the cycle editor's Save — the repository refuses the write while consent is withdrawn. */
@@ -117,7 +119,16 @@ class HomeViewModel @Inject constructor(
     /** True when the account has no consent answer anywhere — Home asks instead of assuming. */
     val consentDecisionNeeded: StateFlow<Boolean> = consentRepository.needsDecision
 
-    fun grantHealthDataConsent() = viewModelScope.launch { consentRepository.grant() }
+    /**
+     * Records the grant, then re-runs the sign-in data sync that was consent-refused while the
+     * question stood open — without it her server data only appeared after the NEXT sign-in.
+     * The resync is internally guarded (signed-in, permitted, single-flight), so a grant that
+     * failed to record triggers nothing.
+     */
+    fun grantHealthDataConsent() = viewModelScope.launch {
+        consentRepository.grant()
+        authRepository.resyncAfterConsentGranted()
+    }
 
     /** The non-streak, non-log inputs, paired up because combine is only typed to five flows. */
     private data class SessionAndLearn(

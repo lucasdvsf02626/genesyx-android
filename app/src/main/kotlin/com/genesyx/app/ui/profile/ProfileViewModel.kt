@@ -65,7 +65,11 @@ class ProfileViewModel @Inject constructor(
      */
     val consentActive: StateFlow<Boolean> = consentRepository.isActive
 
-    fun grantHealthDataConsent() = viewModelScope.launch { consentRepository.grant() }
+    /** Grant + the same skipped-refresh recovery as Home's first-time ask (guarded, single-flight). */
+    fun grantHealthDataConsent() = viewModelScope.launch {
+        consentRepository.grant()
+        authRepository.resyncAfterConsentGranted()
+    }
     fun withdrawHealthDataConsent() = viewModelScope.launch { consentRepository.withdraw() }
 
     // Health Profile row → the same cycle settings the Track screen edits.

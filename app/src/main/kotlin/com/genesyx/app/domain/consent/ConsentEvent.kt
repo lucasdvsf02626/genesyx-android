@@ -26,3 +26,13 @@ enum class ConsentAction(val wire: String) {
             entries.firstOrNull { it.wire == value } ?: GRANTED
     }
 }
+
+/**
+ * The consent-copy version stamped onto every pushed event (`consent_events.version` is
+ * NOT NULL). MIRRORS iOS `ConsentPolicy.currentVersion` (GenesyxCore/Consent/Consent.swift) —
+ * the two platforms show materially the same disclosure, so they share one version string, and
+ * a copy change that bumps it on one platform must bump it on both.
+ */
+object ConsentPolicy {
+    const val WIRE_VERSION = "2026-08-18.v2"
+}

@@ -4,6 +4,7 @@ import com.genesyx.app.core.di.ApplicationScope
 import com.genesyx.app.core.log.Logger
 import com.genesyx.app.core.result.DataResult
 import com.genesyx.app.data.local.dao.ConsentEventDao
+import com.genesyx.app.data.local.datastore.GenesyxPreferencesDataStore
 import com.genesyx.app.data.local.entity.ConsentEventEntity
 import com.genesyx.app.data.local.entity.toDomain
 import com.genesyx.app.data.remote.ConsentRemoteDataSource
@@ -13,11 +14,10 @@ import com.genesyx.app.domain.consent.ConsentAction
 import com.genesyx.app.domain.consent.HealthDataCollectionGate
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -49,6 +49,7 @@ class ConsentRepository @Inject constructor(
     private val dao: ConsentEventDao,
     private val remote: ConsentRemoteDataSource,
     private val session: SessionRepository,
+    private val store: GenesyxPreferencesDataStore,
     private val logger: Logger,
     @ApplicationScope scope: CoroutineScope,
 ) : HealthDataCollectionGate {
@@ -58,14 +59,20 @@ class ConsentRepository @Inject constructor(
      * account. The UI must ask rather than assume permitted (the empty-trail default exists for
      * installs that were never offered the screen, not for accounts the server has confirmed never
      * answered). Cleared the moment any event is recorded.
+     *
+     * PERSISTED (DataStore), keyed by the uid it applies to: an in-memory flag forgot "undecided"
+     * across process death — which read as permitted — and a bare boolean could be inherited by
+     * the next account on the device. Sign-out/deletion wipe it with the rest of the prefs file.
      */
-    private val _needsDecision = MutableStateFlow(false)
-    val needsDecision: StateFlow<Boolean> = _needsDecision.asStateFlow()
+    val needsDecision: StateFlow<Boolean> =
+        combine(session.userId, store.consentDecisionNeededUid) { uid, neededUid ->
+            uid != null && uid == neededUid
+        }.stateIn(scope, SharingStarted.Eagerly, false)
 
     /** Drives the UI — the Profile row's state and the withdrawn banner. */
     val isActive: StateFlow<Boolean> =
-        combine(session.userId, _needsDecision) { uid, pending ->
-            (uid ?: SessionRepository.LOCAL_USER_ID) to (pending && uid != null)
+        combine(session.userId, store.consentDecisionNeededUid) { uid, neededUid ->
+            (uid ?: SessionRepository.LOCAL_USER_ID) to (uid != null && uid == neededUid)
         }
             .flatMapLatest { (uid, pending) ->
                 dao.observeTrailByInsertion(uid).map { it.newest().permits(pending) }
@@ -78,7 +85,8 @@ class ConsentRepository @Inject constructor(
      */
     override suspend fun isCollectionPermitted(): Boolean {
         val uid = session.awaitUserId()
-        val pending = _needsDecision.value && uid != SessionRepository.LOCAL_USER_ID
+        val pending = uid != SessionRepository.LOCAL_USER_ID &&
+            store.consentDecisionNeededUid.first() == uid
         return dao.trailByInsertion(uid).newest().permits(pending)
     }
 
@@ -89,9 +97,10 @@ class ConsentRepository @Inject constructor(
      * withdrawal she'd recorded was silently reversed).
      *
      * Merge rules: adopt server events missing locally (oldest first, so insertion order keeps
-     * tracking chronology); push local events the server lacks (append-only both sides, so an
-     * upsert-by-id replay is a no-op, never a rewrite); the newest event by timestamp wins either
-     * way. A failed pull changes nothing — the local answer stands until the server can be asked.
+     * tracking chronology); push local events the server lacks (plain INSERT — the table is
+     * append-only with no UPDATE policy, and a replayed id collides harmlessly); the newest event
+     * by timestamp wins either way. A failed pull changes nothing — the local answer stands until
+     * the server can be asked.
      */
     suspend fun refresh(userId: String): Boolean {
         if (userId == SessionRepository.LOCAL_USER_ID) return true
@@ -113,11 +122,13 @@ class ConsentRepository @Inject constructor(
         }
         val remoteIds = remoteTrail.map { it.id }.toSet()
         for (event in local.filter { it.id !in remoteIds }) {
-            if (remote.upsert(event.toDto()) !is DataResult.Success) {
+            if (remote.insert(event.toDto()) !is DataResult.Success) {
                 logger.w("Consent", "trail push deferred — will retry next sign-in")
             }
         }
-        _needsDecision.value = remoteTrail.isEmpty() && local.isEmpty()
+        store.setConsentDecisionNeededUid(
+            userId.takeIf { remoteTrail.isEmpty() && local.isEmpty() },
+        )
         return true
     }
 
@@ -154,12 +165,13 @@ class ConsentRepository @Inject constructor(
             recordedAt = LocalDateTime.now(),
         )
         dao.insert(event)
-        // Any answer ends the ask — she has decided.
-        _needsDecision.value = false
+        // Any answer ends the ask — she has decided. Cleared immediately, before the push, so a
+        // crash mid-push cannot leave her being re-asked a question she answered.
+        store.setConsentDecisionNeededUid(null)
         logger.i("Consent", "recorded ${action.wire}")
         // Best-effort push; a miss is re-sent by the next sign-in's refresh (append-only, by id).
         if (userId != SessionRepository.LOCAL_USER_ID &&
-            remote.upsert(event.toDto()) !is DataResult.Success
+            remote.insert(event.toDto()) !is DataResult.Success
         ) {
             logger.w("Consent", "event push deferred — will retry next sign-in")
         }

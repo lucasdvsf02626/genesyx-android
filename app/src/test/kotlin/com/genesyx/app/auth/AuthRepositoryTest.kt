@@ -260,6 +260,50 @@ class AuthRepositoryTest {
         coVerify(exactly = 0) { session.signInNow(any(), any(), any()) }
     }
 
+    // ── Code-23: granting consent re-runs the sign-in sync that was consent-refused. ──────────
+
+    @Test
+    fun `granting consent re-runs the skipped health-data sync exactly once`() = runTest {
+        coEvery { session.awaitUserId() } returns "uid-123"
+        coEvery { consentRepo.isCollectionPermitted() } returns true
+        val appScope = CoroutineScope(UnconfinedTestDispatcher(testScheduler))
+
+        repo(appScope).resyncAfterConsentGranted()
+
+        coVerify(exactly = 1) { dailyLogRepo.refresh("uid-123") }
+        coVerify(exactly = 1) { phRepo.refresh("uid-123") }
+        coVerify(exactly = 1) { userSupplementRepo.refresh("uid-123") }
+        coVerify(exactly = 1) { cycleRepo.refresh("uid-123") }
+        coVerify(exactly = 1) { quizAnswersRepo.refresh("uid-123") }
+        coVerify(exactly = 1) { profileRepo.refresh("uid-123") }
+        appScope.cancel()
+    }
+
+    @Test
+    fun `no resync when collection is still not permitted — a failed grant must trigger nothing`() = runTest {
+        coEvery { session.awaitUserId() } returns "uid-123"
+        coEvery { consentRepo.isCollectionPermitted() } returns false
+        val appScope = CoroutineScope(UnconfinedTestDispatcher(testScheduler))
+
+        repo(appScope).resyncAfterConsentGranted()
+
+        coVerify(exactly = 0) { dailyLogRepo.refresh(any()) }
+        coVerify(exactly = 0) { phRepo.refresh(any()) }
+        appScope.cancel()
+    }
+
+    @Test
+    fun `no resync for a guest — there is no server data to pull`() = runTest {
+        coEvery { session.awaitUserId() } returns com.genesyx.app.data.SessionRepository.LOCAL_USER_ID
+        val appScope = CoroutineScope(UnconfinedTestDispatcher(testScheduler))
+
+        repo(appScope).resyncAfterConsentGranted()
+
+        coVerify(exactly = 0) { dailyLogRepo.refresh(any()) }
+        coVerify(exactly = 0) { consentRepo.isCollectionPermitted() }
+        appScope.cancel()
+    }
+
     @Test
     fun `signOut clears local session and data even when the remote sign-out fails`() = runTest {
         // Offline: the remote call fails, but "Log out" must still log the user out locally —

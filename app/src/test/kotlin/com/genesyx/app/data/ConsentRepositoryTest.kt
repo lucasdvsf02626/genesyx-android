@@ -1,12 +1,17 @@
 package com.genesyx.app.data
 
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.emptyPreferences
 import com.genesyx.app.core.log.Logger
 import com.genesyx.app.core.result.DataResult
 import com.genesyx.app.data.local.dao.ConsentEventDao
+import com.genesyx.app.data.local.datastore.GenesyxPreferencesDataStore
 import com.genesyx.app.data.local.entity.ConsentEventEntity
 import com.genesyx.app.data.remote.ConsentRemoteDataSource
 import com.genesyx.app.data.remote.dto.ConsentEventDto
 import com.genesyx.app.domain.consent.ConsentAction
+import com.genesyx.app.domain.consent.ConsentPolicy
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -59,7 +64,7 @@ class ConsentRepositoryTest {
             rows.map { trail(userId).sortedWith(compareBy({ it.recordedAt }, { it.id })) }
     }
 
-    /** In-memory server trail. Append-only like the real table; upsert-by-id replays are no-ops. */
+    /** In-memory server trail. Append-only + INSERT semantics: a replayed id collides → success. */
     private class FakeConsentRemote(
         initial: List<ConsentEventDto> = emptyList(),
         var failList: Boolean = false,
@@ -70,21 +75,37 @@ class ConsentRepositoryTest {
             if (failList) DataResult.Error(RuntimeException("offline"))
             else DataResult.Success(rows.filter { it.userId == userId })
 
-        override suspend fun upsert(event: ConsentEventDto): DataResult<Unit> {
+        override suspend fun insert(event: ConsentEventDto): DataResult<Unit> {
             if (rows.none { it.id == event.id }) rows.add(event)
-            return DataResult.Success(Unit)
+            return DataResult.Success(Unit) // duplicate id = replay = success, like the real source
+        }
+    }
+
+    /** A real [DataStore] over memory, so the persisted needsDecision has true DataStore semantics. */
+    private class InMemoryPreferences : DataStore<Preferences> {
+        private val state = MutableStateFlow(emptyPreferences())
+        override val data: Flow<Preferences> get() = state
+        override suspend fun updateData(transform: suspend (t: Preferences) -> Preferences): Preferences {
+            val next = transform(state.value).toPreferences()
+            state.value = next
+            return next
         }
     }
 
     private val dao = FakeConsentDao()
+    private val store = GenesyxPreferencesDataStore(InMemoryPreferences())
     private val logger = mockk<Logger>(relaxed = true)
 
-    private fun repo(scope: CoroutineScope, remote: ConsentRemoteDataSource = FakeConsentRemote()): ConsentRepository {
+    private fun repo(
+        scope: CoroutineScope,
+        remote: ConsentRemoteDataSource = FakeConsentRemote(),
+        userId: String = "user-a",
+    ): ConsentRepository {
         val session = mockk<SessionRepository>()
-        every { session.userId } returns MutableStateFlow<String?>("user-a")
-        every { session.currentUserId() } returns "user-a"
-        coEvery { session.awaitUserId() } returns "user-a"
-        return ConsentRepository(dao, remote, session, logger, scope)
+        every { session.userId } returns MutableStateFlow<String?>(userId)
+        every { session.currentUserId() } returns userId
+        coEvery { session.awaitUserId() } returns userId
+        return ConsentRepository(dao, remote, session, store, logger, scope)
     }
 
     @Test
@@ -161,8 +182,8 @@ class ConsentRepositoryTest {
         val scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler))
         val remote = FakeConsentRemote(
             listOf(
-                ConsentEventDto("e1", "user-a", ConsentAction.GRANTED.wire, "2026-07-01T10:00:00"),
-                ConsentEventDto("e2", "user-a", ConsentAction.WITHDRAWN.wire, "2026-08-01T09:30:00"),
+                ConsentEventDto("e1", "user-a", ConsentPolicy.WIRE_VERSION, ConsentAction.GRANTED.wire, "2026-07-01T10:00:00"),
+                ConsentEventDto("e2", "user-a", ConsentPolicy.WIRE_VERSION, ConsentAction.WITHDRAWN.wire, "2026-08-01T09:30:00"),
             ),
         )
         val consent = repo(scope, remote)
@@ -220,13 +241,69 @@ class ConsentRepositoryTest {
         scope.cancel()
     }
 
+    // ── Code-23: the undecided state is persisted, user-scoped, and cleared by any answer. ─────
+
+    @Test
+    fun `an unresolved decision survives repository recreation`() = runTest {
+        // Process death used to forget "undecided" (in-memory flag) — which read as permitted.
+        val scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler))
+        repo(scope, FakeConsentRemote()).refresh("user-a") // no answer anywhere → ask owed
+
+        // A fresh repository over the same store IS the restarted process.
+        val reborn = repo(scope, FakeConsentRemote(failList = true))
+
+        assertTrue(reborn.needsDecision.value)
+        assertFalse(reborn.isCollectionPermitted())
+        scope.cancel()
+    }
+
+    @Test
+    fun `the persisted ask is scoped to the account that owes it`() = runTest {
+        val scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler))
+        repo(scope, FakeConsentRemote()).refresh("user-a")
+
+        // A different account on the same device inherits nothing: never-asked default applies.
+        val other = repo(scope, FakeConsentRemote(failList = true), userId = "user-b")
+
+        assertFalse(other.needsDecision.value)
+        assertTrue(other.isCollectionPermitted())
+        scope.cancel()
+    }
+
+    @Test
+    fun `withdrawing also ends the ask — an answer is an answer`() = runTest {
+        val scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler))
+        val consent = repo(scope, FakeConsentRemote())
+        consent.refresh("user-a")
+        assertTrue(consent.needsDecision.value)
+
+        consent.withdraw()
+
+        assertFalse(consent.needsDecision.value)
+        assertFalse(consent.isCollectionPermitted()) // off because WITHDRAWN, not because undecided
+        scope.cancel()
+    }
+
+    @Test
+    fun `teardown's prefs clear wipes the persisted ask with the rest of local state`() = runTest {
+        // Sign-out / deletion run GenesyxPreferencesDataStore.clearAll() — the ask must not
+        // survive into whoever uses the device next.
+        val scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler))
+        repo(scope, FakeConsentRemote()).refresh("user-a")
+
+        store.clearAll()
+
+        assertFalse(repo(scope, FakeConsentRemote(failList = true)).needsDecision.value)
+        scope.cancel()
+    }
+
     @Test
     fun `the newest event wins across the merge even when the server's is older`() = runTest {
         // She granted on this device today; the server holds an old withdrawal from another phone.
         // The merged trail must still read GRANTED — insertion order alone would get this wrong.
         val scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler))
         val remote = FakeConsentRemote(
-            listOf(ConsentEventDto("old", "user-a", ConsentAction.WITHDRAWN.wire, "2026-01-01T08:00:00")),
+            listOf(ConsentEventDto("old", "user-a", ConsentPolicy.WIRE_VERSION, ConsentAction.WITHDRAWN.wire, "2026-01-01T08:00:00")),
         )
         val consent = repo(scope, remote)
         consent.grant() // local, recordedAt = now

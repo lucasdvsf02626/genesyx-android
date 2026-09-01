@@ -28,7 +28,7 @@ class StubConsentRemoteDataSource @Inject constructor() : ConsentRemoteDataSourc
     override suspend fun list(userId: String): DataResult<List<ConsentEventDto>> =
         DataResult.Error(IllegalStateException("No remote consent trail in local mode"))
 
-    override suspend fun upsert(event: ConsentEventDto): DataResult<Unit> =
+    override suspend fun insert(event: ConsentEventDto): DataResult<Unit> =
         DataResult.Success(Unit)
 }
 

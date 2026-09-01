@@ -6,6 +6,59 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ---
 
+## [Unreleased] — consent sync matches the live schema — `1.4.2 (23)` (1 Sep 2026, night)
+
+Fixes the smoke-test finding below. **Code 22 stays on Internal testing until this is uploaded;
+its archives are untouched.** Artifacts at `~/Documents/Genesyx Releases/1.4.2-code23/`
+(`genesyx-1.4.2-code23.aab`, SHA-256 `a9142e99…6eee80`; upload key SHA-1 `8D:EB…CC:73`).
+
+### Fixed — consent events now speak the server's language
+
+The live `consent_events` table (owned by iOS's `20260818_consent_events.sql`) uses
+`occurred_at` and a NOT NULL `version`; code 22 sent `recorded_at` and no version, so every
+push 400d and each fresh sign-in re-asked the consent question with all health-data pulls
+skipped. The DTO now serialises `occurred_at` + `version` — the version is
+`ConsentPolicy.WIRE_VERSION = "2026-08-18.v2"`, read from iOS's `ConsentPolicy.currentVersion`
+so both platforms stamp one shared consent-copy version (bump them in lockstep). Pushes are
+plain **INSERTs** (the table has no UPDATE policy; upsert's conflict branch is refused) and a
+duplicate-key 409/23505 on the device-minted id reads as a replayed success — every other
+failure still surfaces. The Room entity keeps its `recordedAt` name; only the wire changed.
+
+### Fixed — the undecided-consent state survives process death and is user-scoped
+
+`needsDecision` was an in-memory flag, so a restart forgot "undecided" (which read as
+permitted). It is now persisted in DataStore as the uid that owes an answer — a different
+account on the device inherits nothing, any recorded answer clears it immediately, and the
+sign-out/deletion teardown wipes it with the rest of the prefs file.
+
+### Fixed — the consent ask can only be answered
+
+`ConsentDecisionDialog` no longer dismisses on an outside tap or Back (a stray tap used to
+count as "Not now"). "Not now" is the explicit postpone and records nothing; "Allow" records
+the grant and the dialog leaves only when the recorded grant flips `needsDecision` — a grant
+that failed to record keeps the question on screen.
+
+### Added — granting consent re-runs the skipped sign-in sync
+
+When a sign-in found no consent answer, every health-data refresh was correctly skipped — but
+then her server data only appeared after the NEXT sign-in. Granting (from the ask or Profile)
+now re-runs the exact post-sign-in adopt-and-pull sequence via
+`AuthRepository.resyncAfterConsentGranted()` — guarded to signed-in accounts with collection
+actually permitted, and single-flight so a double tap cannot stack concurrent pulls.
+
+### Gate (this tree, 1 Sep 2026)
+
+`git diff --check` clean · **649 unit / 0 failures** (+14: DTO wire shape incl. no
+`recorded_at`, insert-replay tolerance incl. schema/RLS/transport failures staying failures,
+persisted/scoped/cleared needsDecision, resync guards) · `lintVitalRelease` pass ·
+`connectedDebugAndroidTest` **44/44** (+3 `ConsentDecisionDialogTest`; the known
+`DailyLogRepositoryTest` pull-vs-push flake tripped one interim run and passed the full one) ·
+signed `bundleRelease` + `assembleRelease` green, aapt2 confirms `23 / 1.4.2 / target 36`.
+**Not yet verified against production** — the signed build still needs one live
+sign-in → ask → Allow → data-appears walk before upload.
+
+---
+
 ## Smoke test of the code-22 release build — `1.4.2 (22)` (1 Sep 2026, evening)
 
 **Code 22 was uploaded to Play Internal testing earlier today**, then the release APK from

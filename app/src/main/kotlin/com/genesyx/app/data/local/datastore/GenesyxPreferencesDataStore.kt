@@ -55,6 +55,7 @@ class GenesyxPreferencesDataStore @Inject constructor(
         val QUIZ_ANSWERS = stringPreferencesKey("quiz_answers")
         val QUIZ_ANSWERS_OWED = booleanPreferencesKey("quiz_answers_owed")
         val CYCLE_SETTINGS_OWED = booleanPreferencesKey("cycle_settings_owed")
+        val CONSENT_DECISION_NEEDED_UID = stringPreferencesKey("consent_decision_needed_uid")
         val SUPPLEMENT_REMINDERS = stringPreferencesKey("supplement_reminders")
         val SIGNED_IN = booleanPreferencesKey("signed_in")
         val USER_ID = stringPreferencesKey("user_id")
@@ -119,6 +120,15 @@ class GenesyxPreferencesDataStore @Inject constructor(
      *  taking is still owed after a relaunch, and refresh must push it before pulling. */
     val cycleSettingsOwed: Flow<Boolean> = dataStore.data.map { it[Keys.CYCLE_SETTINGS_OWED] ?: false }
 
+    /**
+     * The user id whose health-data consent question is UNANSWERED anywhere (a sign-in's server
+     * pull confirmed no trail exists), or null when no ask is owed. Stored as the uid, not a
+     * boolean, so the state can never be inherited by a different account on the same device —
+     * and persisted at all because an in-memory flag forgot "undecided" across process death,
+     * which read as permitted (code-22 smoke finding, CHANGELOG 1 Sep 2026).
+     */
+    val consentDecisionNeededUid: Flow<String?> = dataStore.data.map { it[Keys.CONSENT_DECISION_NEEDED_UID] }
+
     /** Per-supplement daily reminder times (supplement id → minutes-of-day), device-local. Not
      *  synced — a reminder schedule is a phone setting, not shared health data. */
     val supplementReminders: Flow<Map<String, Int>> = dataStore.data.map { p ->
@@ -176,6 +186,12 @@ class GenesyxPreferencesDataStore @Inject constructor(
 
     suspend fun setCycleSettingsOwed(owed: Boolean) =
         dataStore.edit { it[Keys.CYCLE_SETTINGS_OWED] = owed }.let {}
+
+    /** Null clears the ask. Sign-out/deletion need no special handling — [clearAll] wipes it. */
+    suspend fun setConsentDecisionNeededUid(uid: String?) = dataStore.edit {
+        if (uid == null) it.remove(Keys.CONSENT_DECISION_NEEDED_UID)
+        else it[Keys.CONSENT_DECISION_NEEDED_UID] = uid
+    }.let {}
 
     /** Sign-out clears the local copy only — the server `quiz_answers` row is the owner's and stays. */
     suspend fun clearQuizAnswers() = dataStore.edit {

@@ -195,24 +195,7 @@ class AuthRepository @Inject constructor(
                     // withdrawal recorded on the server (that was the defect — a wiped device
                     // silently reversed it).
                     consentRepository.refresh(user.id)
-                    profileRepository.refresh(user.id)
-                    // Adopt-before-pull, store by store: adopted rows/settings must exist before
-                    // the refresh that would otherwise pull the server copy over nothing — or, for
-                    // daily logs, before a later clearAllTables wipes the guest bucket unread.
-                    cycleRepository.adoptGuestSettings(user.id)
-                    cycleRepository.refresh(user.id)
-                    dailyLogRepository.adoptGuestLogs(user.id)
-                    dailyLogRepository.refresh(user.id)
-                    // Adopt guest pH readings BEFORE the pull: adopted rows are PENDING_UPSERT, and
-                    // refresh's merge never overwrites unsynced local rows, so they survive the pull
-                    // and its trailing syncPending() pushes them.
-                    phRepository.adoptGuestReadings(user.id)
-                    phRepository.refresh(user.id)
-                    // Same adopt-before-pull dance for the user's own supplements.
-                    userSupplementRepository.adoptGuestEntries(user.id)
-                    userSupplementRepository.refresh(user.id)
-                    // Quiz answers: server wins if present, else the guest's local answers are adopted.
-                    quizAnswersRepository.refresh(user.id)
+                    syncHealthStores(user.id)
                 }
                 DataResult.Success(Unit)
             }
@@ -222,4 +205,54 @@ class AuthRepository @Inject constructor(
             }
             DataResult.Loading -> DataResult.Loading
         }
+
+    /**
+     * The post-sign-in adopt-and-pull sequence, one store after another. Also re-run by
+     * [resyncAfterConsentGranted]: when the sign-in found no consent answer anywhere, every
+     * refresh below was consent-refused for that session, and her data only appeared after the
+     * next sign-in. Each step is idempotent (adoptions check for existing rows; refreshes merge),
+     * so a repeat run is safe.
+     */
+    private suspend fun syncHealthStores(userId: String) {
+        profileRepository.refresh(userId)
+        // Adopt-before-pull, store by store: adopted rows/settings must exist before
+        // the refresh that would otherwise pull the server copy over nothing — or, for
+        // daily logs, before a later clearAllTables wipes the guest bucket unread.
+        cycleRepository.adoptGuestSettings(userId)
+        cycleRepository.refresh(userId)
+        dailyLogRepository.adoptGuestLogs(userId)
+        dailyLogRepository.refresh(userId)
+        // Adopt guest pH readings BEFORE the pull: adopted rows are PENDING_UPSERT, and
+        // refresh's merge never overwrites unsynced local rows, so they survive the pull
+        // and its trailing syncPending() pushes them.
+        phRepository.adoptGuestReadings(userId)
+        phRepository.refresh(userId)
+        // Same adopt-before-pull dance for the user's own supplements.
+        userSupplementRepository.adoptGuestEntries(userId)
+        userSupplementRepository.refresh(userId)
+        // Quiz answers: server wins if present, else the guest's local answers are adopted.
+        quizAnswersRepository.refresh(userId)
+    }
+
+    /**
+     * Re-runs the sign-in sync after she GRANTS consent from the first-time ask. Guarded:
+     * signed-in real accounts only, only when collection is actually permitted now (a failed
+     * grant, "Not now" or a withdrawal must not trigger it), and single-flight so a double tap
+     * cannot stack two concurrent pulls over each other.
+     */
+    fun resyncAfterConsentGranted() {
+        if (!resyncInFlight.compareAndSet(false, true)) return
+        appScope.launch {
+            try {
+                val userId = session.awaitUserId()
+                if (userId == SessionRepository.LOCAL_USER_ID) return@launch
+                if (!consentRepository.isCollectionPermitted()) return@launch
+                syncHealthStores(userId)
+            } finally {
+                resyncInFlight.set(false)
+            }
+        }
+    }
+
+    private val resyncInFlight = java.util.concurrent.atomic.AtomicBoolean(false)
 }

@@ -105,12 +105,14 @@ fun HomeScreen(
     val consentActive by viewModel.consentActive.collectAsState()
     val consentDecisionNeeded by viewModel.consentDecisionNeeded.collectAsState()
     // "Not now" is per-visit: she can put the question off, but an unanswered account is asked
-    // again next time rather than silently defaulted to permitted.
-    var consentAskDismissed by remember { mutableStateOf(false) }
-    if (consentDecisionNeeded && !consentAskDismissed) {
+    // again next time rather than silently defaulted to permitted. Allow does NOT set this —
+    // the dialog leaves when the recorded grant flips consentDecisionNeeded false, so a grant
+    // that failed to record keeps the question on screen.
+    var consentAskPostponed by remember { mutableStateOf(false) }
+    if (consentDecisionNeeded && !consentAskPostponed) {
         ConsentDecisionDialog(
             onAllow = { viewModel.grantHealthDataConsent() },
-            onDismiss = { consentAskDismissed = true },
+            onNotNow = { consentAskPostponed = true },
         )
     }
     // "Select Track, then open the detail": the tab switch makes Track the surface underneath, so

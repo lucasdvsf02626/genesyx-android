@@ -47,8 +47,12 @@ interface ConsentRemoteDataSource {
     /** The account's full consent trail, oldest first. */
     suspend fun list(userId: String): DataResult<List<ConsentEventDto>>
 
-    /** Insert one event (conflict on id is a no-op — the trail is append-only on both sides). */
-    suspend fun upsert(event: ConsentEventDto): DataResult<Unit>
+    /**
+     * INSERT one event — not upsert: the table has no UPDATE policy (append-only by RLS), so an
+     * upsert's conflict branch is refused rather than merged (per iOS `RemoteModels.swift`).
+     * A duplicate-key rejection means a replayed push and reports Success — the row is there.
+     */
+    suspend fun insert(event: ConsentEventDto): DataResult<Unit>
 }
 
 interface GenesyxProductRemoteDataSource {
