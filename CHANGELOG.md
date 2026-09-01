@@ -6,11 +6,29 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ---
 
-## [Unreleased] — consent sync matches the live schema — `1.4.2 (23)` (1 Sep 2026, night)
+## `1.4.2 (23)` — consent sync matches the live schema — UPLOADED to Internal testing (1 Sep 2026, night)
 
-Fixes the smoke-test finding below. **Code 22 stays on Internal testing until this is uploaded;
-its archives are untouched.** Artifacts at `~/Documents/Genesyx Releases/1.4.2-code23/`
-(`genesyx-1.4.2-code23.aab`, SHA-256 `a9142e99…6eee80`; upload key SHA-1 `8D:EB…CC:73`).
+Fixes the smoke-test finding below. **Uploaded to Play Internal testing 1 Sep 2026 (night),
+superseding code 22 there** — the AAB was hash- and signature-verified immediately before the
+upload (SHA-256 `a9142e99…6eee80` per `SHA256SUMS.txt`, upload key SHA-1 `8D:EB…CC:73`, aapt2
+identity 23 / 1.4.2 / minSdk 26 / target 36). Artifacts at
+`~/Documents/Genesyx Releases/1.4.2-code23/`; the code-22 archives are untouched, and **code 22
+is superseded — never upload it again** (its consent pushes 400 against the live schema).
+
+**Where we are after this upload:**
+- Play: Internal testing ← **23 (1.4.2)** (this build); Production still **1.2.0 (9), API 35 —
+  the compliance clock is the open risk**: the Health apps declaration and Data Safety form are
+  still unsent drafts, and only a Production publish clears the targetSdk-36 requirement
+  (deadline passed 31 Aug — request more time if not already done).
+- Verified live on this build: the full consent loop (ask once, non-dismissible, grant lands in
+  `consent_events`, no re-ask after re-sign-in, pulls restore data), clear-sync, deletion to
+  zero server counts.
+- Still open (ops): `genesyx://reset-password` on the Supabase Auth redirect allow-list (the
+  in-app reset can't complete until it exists); custom SMTP for the 2-emails/hour auth throttle;
+  `app_config` deployment decision for the version gate (gate is inert and fail-open until then).
+- Still open (QA on a physical tester device): Google Sign-In via the Play-track build, the
+  reset email end-to-end once the allow-list entry exists, and the remaining
+  `QA_CHECKLIST_ANDROID.md` on-device rows.
 
 ### Fixed — consent events now speak the server's language
 
