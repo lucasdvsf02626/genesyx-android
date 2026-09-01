@@ -50,6 +50,8 @@ import com.genesyx.app.ui.components.Eyebrow
 import com.genesyx.app.ui.components.GxBackButton
 import com.genesyx.app.ui.components.GxPrimaryButton
 import com.genesyx.app.ui.navigation.Screen
+import com.genesyx.app.ui.navigation.TabNavigation
+import com.genesyx.app.ui.navigation.navigateToTab
 
 @Composable
 fun ArticleDetailScreen(
@@ -128,14 +130,15 @@ fun ArticleDetailScreen(
                 Spacer(Modifier.height(8.dp))
                 CtaCard(cta) {
                     val route = cta.route()
-                    navController.navigate(route) {
-                        // A CTA into a tab must reuse that tab, not stack a second copy behind us.
-                        // Match on the path: a tab route may carry optional arguments (Nutrition).
-                        if (Screen.bottomTabs.any { it.route.substringBefore("?") == route.substringBefore("?") }) {
-                            popUpTo(Screen.Home.route) { saveState = true }
-                            restoreState = true
-                        }
-                        launchSingleTop = true
+                    // A CTA into a tab is a tab switch, so it goes through the one place that knows
+                    // how to make one. Hand-rolled options here were the "See your insights" bug:
+                    // `saveState` + `restoreState` saved the `insights → article` chain we were
+                    // standing in and restored it immediately, so the article stayed on screen.
+                    val tab = TabNavigation.tabForRoute(route)
+                    if (tab != null) {
+                        navController.navigateToTab(tab)
+                    } else {
+                        navController.navigate(route) { launchSingleTop = true }
                     }
                 }
             }
@@ -182,8 +185,13 @@ fun ArticleDetailScreen(
     }
 }
 
-/** In-app destination for a CTA. Deep links (`genesyx://…`) arrive with the notification work. */
-private fun ArticleCta.route(): String = when (type) {
+/**
+ * In-app destination for a CTA. Deep links (`genesyx://…`) arrive with the notification work.
+ *
+ * Internal, not private: `ArticleCtaRouteTest` checks that the tab-bound CTAs still resolve through
+ * [TabNavigation.tabForRoute], which is what routes them via `navigateToTab` above.
+ */
+internal fun ArticleCta.route(): String = when (type) {
     CtaType.OPEN_LOG -> Screen.Log.create()
     CtaType.OPEN_TRACK -> Screen.Track.route
     CtaType.OPEN_PH -> Screen.PhDetail.route
