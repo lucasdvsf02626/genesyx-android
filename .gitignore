@@ -31,3 +31,6 @@ keystore.properties
 # Local audit work logs — carry the unfixed-gap inventory; the repo is public. Keep local.
 /CHANGES.md
 /CHANGES_ANDROID.md
+
+# graft's local graph cache — regenerable, not committed (run `graft build`).
+/graft/
