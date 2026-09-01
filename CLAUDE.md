@@ -325,5 +325,12 @@ goal is **user-set** (`GOAL_RANGE_ML = 1000..5000`, default 2400, step 200); `da
 - In-app "Privacy & Data" row opens `AppLinks.PRIVACY_POLICY_URL` via `ACTION_VIEW`.
 - **KNOWN FLAKE (pre-existing):** `CycleSettingsDialogTest.an_untouched_dialog_cannot_save` —
   Compose UI timing flake in instrumented runs; passes in isolation.
+- **KNOWN FLAKE (pre-existing):** `DailyLogRepositoryTest.a_pull_must_not_overwrite_an_unsynced_local_edit`
+  — intermittent (diagnosed 1 Sep 2026, ~1 in 3 on the API 37 emulator): `upsert` *launches* its
+  push on the repo scope, and when that in-flight push lands between `refresh`'s pull and its
+  unsynced-row guard, the row flips SYNCED just in time to be overwritten by the stale pull. A
+  test-interleaving artifact (and a narrow, pre-existing production window where local briefly
+  shows the stale copy until the next pull — the server still gets the edit). Passes on rerun;
+  do NOT weaken the assertion — the proper fix is serialising `pushOrQueue` with `refresh`.
 - Stale comment worth fixing sometime: `StreakEngineTest`'s class doc says "5-of-7 weekly streak"
   but `WEEK_COMPLETE_DAYS` is 4. The code is right; the comment is wrong.
