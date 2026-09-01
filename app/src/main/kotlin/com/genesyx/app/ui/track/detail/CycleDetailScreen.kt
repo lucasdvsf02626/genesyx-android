@@ -14,6 +14,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -34,9 +35,13 @@ import com.genesyx.app.ui.components.CycleSettingsDialog
 import com.genesyx.app.ui.components.Eyebrow
 import com.genesyx.app.ui.components.GxPrimaryButton
 import com.genesyx.app.ui.insights.OvulationLogic
+import com.genesyx.app.ui.profile.SaveState
+import com.genesyx.app.ui.profile.toSaveState
 import com.genesyx.app.ui.theme.ElectricLavender
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -50,7 +55,19 @@ class CycleDetailViewModel @Inject constructor(
 ) : ViewModel() {
     val settings: StateFlow<CycleSettings?> = cycleRepository.settings
     val consentActive: StateFlow<Boolean> = consentRepository.isActive
-    fun save(settings: CycleSettings) = viewModelScope.launch { cycleRepository.upsert(settings) }
+
+    private val _cycleSave = MutableStateFlow(SaveState())
+    val cycleSave: StateFlow<SaveState> = _cycleSave.asStateFlow()
+
+    /** Saves and reports (same shape as ProfileViewModel) — a refused or failed save must not
+     *  close the dialog looking exactly like a good one. */
+    fun save(settings: CycleSettings) {
+        if (_cycleSave.value.saving) return
+        _cycleSave.value = SaveState(saving = true)
+        viewModelScope.launch { _cycleSave.value = cycleRepository.upsert(settings).toSaveState() }
+    }
+
+    fun resetCycleSave() { _cycleSave.value = SaveState() }
 }
 
 private val dayMonth: DateTimeFormatter = DateTimeFormatter.ofPattern("d MMM", Locale.UK)
@@ -133,11 +150,17 @@ fun CycleDetailScreen(
     }
 
     if (editing) {
+        val cycleSave by viewModel.cycleSave.collectAsState()
+        LaunchedEffect(Unit) { viewModel.resetCycleSave() }
+        // Close only on a confirmed save — a refused or failed one shows its error in place.
+        LaunchedEffect(cycleSave.saved) { if (cycleSave.saved) editing = false }
         CycleSettingsDialog(
             current = settings,
             consentActive = consentActive,
-            onDismiss = { editing = false },
-            onSave = { viewModel.save(it); editing = false },
+            saving = cycleSave.saving,
+            error = cycleSave.error,
+            onDismiss = { if (!cycleSave.saving) editing = false },
+            onSave = { viewModel.save(it) },
         )
     }
 }

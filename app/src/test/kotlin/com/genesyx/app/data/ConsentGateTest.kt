@@ -55,6 +55,8 @@ class ConsentGateTest {
     private val withdrawn = HealthDataCollectionGate { false }
     private val logger = mockk<Logger>(relaxed = true)
 
+    private fun relaxedStore(): GenesyxPreferencesDataStore = mockk(relaxed = true)
+
     private fun signedInSession(): SessionRepository = mockk<SessionRepository>().also {
         every { it.userId } returns MutableStateFlow<String?>("user-a")
         every { it.currentUserId() } returns "user-a"
@@ -174,6 +176,24 @@ class ConsentGateTest {
         scope.cancel()
     }
 
+    /** Same leak the supplement drain closes: PENDING rows must not upload after a withdrawal. */
+    @Test
+    fun `a queued daily log is not uploaded after a withdrawal`() = runTest {
+        val dao = mockk<DailyLogDao>(relaxed = true)
+        val remote = mockk<DailyLogRemoteDataSource>(relaxed = true)
+        every { dao.observeAll(any()) } returns flowOf(emptyList())
+        val scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler))
+
+        val drained = DailyLogRepository(
+            dao, remote, signedInSession(), mockk<DailyLogSyncScheduler>(relaxed = true), logger, scope, withdrawn,
+        ).syncPending()
+
+        assertEquals(true, drained) // success, so WorkManager retires the job instead of retrying
+        coVerify(exactly = 0) { dao.pending() }
+        coVerify(exactly = 0) { remote.upsertLog(any(), any(), any()) }
+        scope.cancel()
+    }
+
     @Test
     fun `daily logs are not pulled back down while consent is withdrawn`() = runTest {
         val dao = mockk<DailyLogDao>(relaxed = true)
@@ -198,7 +218,7 @@ class ConsentGateTest {
         every { dao.observe(any()) } returns flowOf(null)
         val scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler))
 
-        CycleRepository(dao, remote, signedInSession(), logger, scope, withdrawn)
+        CycleRepository(dao, remote, signedInSession(), relaxedStore(), logger, scope, withdrawn)
             .upsert(CycleSettings(LocalDate.of(2026, 1, 1), 28, 5))
 
         coVerify(exactly = 0) { dao.upsert(any()) }
@@ -213,7 +233,7 @@ class ConsentGateTest {
         every { dao.observe(any()) } returns flowOf(null)
         val scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler))
 
-        CycleRepository(dao, remote, signedInSession(), logger, scope, withdrawn).refresh()
+        CycleRepository(dao, remote, signedInSession(), relaxedStore(), logger, scope, withdrawn).refresh()
 
         coVerify(exactly = 0) { remote.getCycleSettings(any()) }
         coVerify(exactly = 0) { dao.upsert(any()) }

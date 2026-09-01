@@ -1,6 +1,7 @@
 package com.genesyx.app.data.remote
 
 import com.genesyx.app.core.result.DataResult
+import com.genesyx.app.data.remote.dto.ConsentEventDto
 import com.genesyx.app.data.remote.dto.GenesyxProductDto
 import com.genesyx.app.data.remote.dto.PhReadingDto
 import com.genesyx.app.data.remote.dto.UserSupplementDto
@@ -18,6 +19,18 @@ import javax.inject.Singleton
  * BuildConfig carries creds (AppConfig.hasSupabase).
  * TODO(supabase): implement Postgrest calls per docs/DATA_LAYER.md (RLS scopes by auth.uid()).
  */
+
+@Singleton
+class StubConsentRemoteDataSource @Inject constructor() : ConsentRemoteDataSource {
+    // Deliberately an Error, not Success(empty): a "successfully empty" server trail is what tells
+    // ConsentRepository.refresh to re-prompt for a decision, and local mode has no server to have
+    // asked. An Error makes refresh keep the local answer and prompt no one.
+    override suspend fun list(userId: String): DataResult<List<ConsentEventDto>> =
+        DataResult.Error(IllegalStateException("No remote consent trail in local mode"))
+
+    override suspend fun upsert(event: ConsentEventDto): DataResult<Unit> =
+        DataResult.Success(Unit)
+}
 
 @Singleton
 class StubCycleRemoteDataSource @Inject constructor() : CycleRemoteDataSource {
@@ -93,6 +106,13 @@ class StubQuizAnswersRemoteDataSource @Inject constructor() : QuizAnswersRemoteD
 
     override suspend fun upsert(userId: String, answers: Map<String, String>): DataResult<Unit> =
         DataResult.Success(Unit)
+}
+
+@Singleton
+class StubAppConfigRemoteDataSource @Inject constructor() : AppConfigRemoteDataSource {
+    // No remote in local mode; an Error makes the minimum-version gate fail open (allow launch).
+    override suspend fun getValue(key: String): DataResult<String?> =
+        DataResult.Error(IllegalStateException("No app_config remote in local mode"))
 }
 
 @Singleton

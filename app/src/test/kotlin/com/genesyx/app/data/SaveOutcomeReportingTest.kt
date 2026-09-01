@@ -55,7 +55,8 @@ class SaveOutcomeReportingTest {
         consent: HealthDataCollectionGate,
     ): CycleRepository {
         every { dao.observe(any()) } returns flowOf(null)
-        return CycleRepository(dao, remote, session(), logger, scope, consent)
+        val store = mockk<com.genesyx.app.data.local.datastore.GenesyxPreferencesDataStore>(relaxed = true)
+        return CycleRepository(dao, remote, session(), store, logger, scope, consent)
     }
 
     @Test

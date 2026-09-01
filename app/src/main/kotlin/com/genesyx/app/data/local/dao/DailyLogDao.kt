@@ -29,4 +29,16 @@ interface DailyLogDao {
 
     @Query("UPDATE daily_logs SET syncStatus = :status WHERE userId = :userId AND date = :date")
     suspend fun setStatus(userId: String, date: LocalDate, status: LogSyncStatus)
+
+    /**
+     * Re-keys the guest bucket's logs onto the account at sign-in, marked PENDING_UPSERT so the
+     * ordinary queue pushes them. The PK is (userId, date), so a date the account already holds
+     * locally is skipped rather than collided with — in practice sign-out's clearAllTables means
+     * there rarely is one. Returns the number of rows adopted.
+     */
+    @Query(
+        "UPDATE daily_logs SET userId = :userId, syncStatus = 'PENDING_UPSERT' " +
+            "WHERE userId = :guestId AND date NOT IN (SELECT date FROM daily_logs WHERE userId = :userId)",
+    )
+    suspend fun adoptGuestRows(guestId: String, userId: String): Int
 }

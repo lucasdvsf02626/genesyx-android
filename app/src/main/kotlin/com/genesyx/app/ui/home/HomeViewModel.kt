@@ -30,9 +30,13 @@ import com.genesyx.app.domain.streaks.Milestone
 import com.genesyx.app.domain.streaks.StreakEngine
 import com.genesyx.app.domain.streaks.StreakState
 import com.genesyx.app.domain.time.WeekBuckets
+import com.genesyx.app.ui.profile.SaveState
+import com.genesyx.app.ui.profile.toSaveState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -104,11 +108,16 @@ class HomeViewModel @Inject constructor(
     private val preferencesRepository: PreferencesRepository,
     private val phRepository: PhRepository,
     private val streakRepository: StreakRepository,
-    consentRepository: ConsentRepository,
+    private val consentRepository: ConsentRepository,
 ) : ViewModel() {
 
     /** Gates the cycle editor's Save — the repository refuses the write while consent is withdrawn. */
     val consentActive: StateFlow<Boolean> = consentRepository.isActive
+
+    /** True when the account has no consent answer anywhere — Home asks instead of assuming. */
+    val consentDecisionNeeded: StateFlow<Boolean> = consentRepository.needsDecision
+
+    fun grantHealthDataConsent() = viewModelScope.launch { consentRepository.grant() }
 
     /** The non-streak, non-log inputs, paired up because combine is only typed to five flows. */
     private data class SessionAndLearn(
@@ -168,7 +177,18 @@ class HomeViewModel @Inject constructor(
             ),
         )
 
-    fun saveCycleSettings(settings: CycleSettings) = viewModelScope.launch { cycleRepository.upsert(settings) }
+    private val _cycleSave = MutableStateFlow(SaveState())
+    val cycleSave: StateFlow<SaveState> = _cycleSave.asStateFlow()
+
+    /** Saves and reports (same shape as ProfileViewModel) — a refused or failed save must not
+     *  close the dialog looking exactly like a good one. */
+    fun saveCycleSettings(settings: CycleSettings) {
+        if (_cycleSave.value.saving) return
+        _cycleSave.value = SaveState(saving = true)
+        viewModelScope.launch { _cycleSave.value = cycleRepository.upsert(settings).toSaveState() }
+    }
+
+    fun resetCycleSave() { _cycleSave.value = SaveState() }
 
     /**
      * Marks every currently-earned milestone celebrated (per [StreakRepository.markCelebrated]'s

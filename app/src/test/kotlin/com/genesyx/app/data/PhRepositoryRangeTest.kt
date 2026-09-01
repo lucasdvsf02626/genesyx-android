@@ -5,6 +5,7 @@ import com.genesyx.app.core.result.DataResult
 import com.genesyx.app.data.local.dao.PhReadingDao
 import com.genesyx.app.data.remote.PhRemoteDataSource
 import com.genesyx.app.data.sync.PhSyncScheduler
+import com.genesyx.app.domain.model.PhMeasurement
 import com.genesyx.app.domain.model.PhReading
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -89,6 +90,30 @@ class PhRepositoryRangeTest {
         val scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler))
         repo(scope).create(reading(4.2))
         coVerify(exactly = 1) { dao.upsert(match { it.measurementType == "vaginal" }) }
+        scope.cancel()
+    }
+
+    // A legacy urine row predates the vaginal switch and sits on a different scale, so it is never
+    // re-validated against the vaginal range — otherwise even a notes-only edit of 7.5 is refused.
+
+    @Test
+    fun `a legacy urine reading above the vaginal range is never re-validated on edit`() = runTest {
+        val scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler))
+        val legacy = reading(7.5).copy(measurementType = PhMeasurement.URINE)
+        val result = repo(scope).update(legacy)
+        assertTrue(result is PhWriteResult.Accepted)
+        coVerify(exactly = 1) {
+            dao.upsert(match { it.phValue == 7.5 && it.measurementType == PhMeasurement.URINE })
+        }
+        scope.cancel()
+    }
+
+    @Test
+    fun `a vaginal reading above the range is still rejected`() = runTest {
+        val scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler))
+        val result = repo(scope).update(reading(7.5)) // vaginal by default
+        assertEquals(PhWriteResult.OutOfRange(7.5), result)
+        coVerify(exactly = 0) { dao.upsert(any()) }
         scope.cancel()
     }
 }

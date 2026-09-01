@@ -80,6 +80,7 @@ import com.genesyx.app.ui.learn.HowThisWorksLink
 import com.genesyx.app.ui.components.tintOnWhite
 import com.genesyx.app.ui.navigation.Screen
 import com.genesyx.app.ui.navigation.TabNavigation
+import com.genesyx.app.ui.profile.SaveState
 import com.genesyx.app.ui.navigation.navigateToTab
 import com.genesyx.app.ui.theme.BabyLavender
 import com.genesyx.app.ui.theme.CalendarFertile
@@ -111,12 +112,15 @@ fun TrackScreen(
     val summaries by viewModel.trackerSummaries.collectAsState()
     val hydrationUnit by viewModel.hydrationUnit.collectAsState()
     val consentActive by viewModel.consentActive.collectAsState()
+    val cycleSave by viewModel.cycleSave.collectAsState()
     TrackContent(
         settings = settings,
         logDays = logDays,
         summaries = summaries,
         hydrationUnit = hydrationUnit,
         consentActive = consentActive,
+        cycleSave = cycleSave,
+        onResetCycleSave = { viewModel.resetCycleSave() },
         onNavigate = { route ->
             // A row can target a bottom-tab root (`tracker/ph` is the pH tab). Plain-pushing that
             // leaves pH stacked on Track, and the next Track tab tap saves and restores the whole
@@ -136,6 +140,8 @@ fun TrackContent(
     hydrationUnit: HydrationUnit = HydrationUnit.ML,
     summaries: TrackerSummaries = emptyTrackerSummaries(),
     consentActive: Boolean = true,
+    cycleSave: SaveState = SaveState(),
+    onResetCycleSave: () -> Unit = {},
     onNavigate: (String) -> Unit,
     onSaveCycle: (CycleSettings) -> Unit,
 ) {
@@ -364,14 +370,16 @@ fun TrackContent(
 
     // ── Dialogs
     if (showCycleDialog) {
+        LaunchedEffect(Unit) { onResetCycleSave() }
+        // Close only on a confirmed save — a refused or failed one shows its error in place.
+        LaunchedEffect(cycleSave.saved) { if (cycleSave.saved) showCycleDialog = false }
         CycleSettingsDialog(
             current = settings,
             consentActive = consentActive,
-            onDismiss = { showCycleDialog = false },
-            onSave = {
-                onSaveCycle(it)
-                showCycleDialog = false
-            },
+            saving = cycleSave.saving,
+            error = cycleSave.error,
+            onDismiss = { if (!cycleSave.saving) showCycleDialog = false },
+            onSave = { onSaveCycle(it) },
         )
     }
 

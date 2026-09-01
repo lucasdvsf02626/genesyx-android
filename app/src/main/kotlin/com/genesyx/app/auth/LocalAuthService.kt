@@ -44,6 +44,13 @@ class LocalAuthService @Inject constructor() : AuthService {
     override suspend fun resetPassword(email: String): DataResult<Unit> =
         DataResult.Error(IllegalStateException("Password reset needs the online service"), "Password reset isn't available offline")
 
+    // A recovery link can only have come from the real provider; local mode can't honour it.
+    override suspend fun importRecoverySession(url: String): DataResult<AuthSession> =
+        DataResult.Error(IllegalStateException("Password recovery needs the online service"))
+
+    override suspend fun setNewPassword(newPassword: String): DataResult<Unit> =
+        DataResult.Error(IllegalStateException("Password recovery needs the online service"))
+
     private fun localSession(email: String, displayName: String?): DataResult<AuthSession> {
         val name = displayName?.takeIf { it.isNotBlank() } ?: email.substringBefore("@")
         return DataResult.Success(

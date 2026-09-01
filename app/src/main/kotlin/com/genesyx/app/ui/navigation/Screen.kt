@@ -33,6 +33,9 @@ sealed class Screen(val route: String) {
     data object LogHistory : Screen("log_history")
     data object Pregnancy : Screen("pregnancy")
     data object Auth : Screen("auth")
+
+    // Deep link only: genesyx://reset-password (the Supabase recovery email's redirect target).
+    data object ResetPassword : Screen("reset_password")
     data object Clients : Screen("clients")
     data object ReminderSettings : Screen("reminder_settings")
 
@@ -84,6 +87,7 @@ sealed class Screen(val route: String) {
             LogHistory.route,
             Pregnancy.route,
             Auth.route,
+            ResetPassword.route,
             Invite.route,
             Clients.route,
             ReminderSettings.route,

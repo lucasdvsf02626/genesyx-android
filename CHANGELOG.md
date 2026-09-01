@@ -6,6 +6,127 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ---
 
+## [Unreleased] — launch-readiness pass: legacy-pH correctness, logging hygiene, minimum-version gate — `1.4.2 (22)` (1 Sep 2026)
+
+Release-preparation audit over the tree below, then the authorised bump. Two health-data
+defects fixed, one defensive feature added, and the full release gate re-run green. File-by-file
+breakdown in `CHANGES_ANDROID.md` (repo root). Unit suite 623 → **635, all green**; connected
+41/41; lint-vital, debug and signed release builds all pass.
+
+### Fixed — legacy urine pH rows are no longer re-validated against the vaginal range
+
+`PhRepository` range-checked every edit against the vaginal 3.8–7.0 window regardless of the
+row's `measurementType`, so even a notes-only edit to a legacy urine row (a different scale,
+predating the vaginal-only slider) could be refused. Urine rows now skip the check entirely —
+only vaginal readings are range-checked — and the class doc records the rule. Two tests added
+to `PhRepositoryRangeTest`.
+
+### Fixed — pH values and user UUIDs no longer reach release Logcat
+
+`AndroidLogger.w` was not debug-gated, and several repositories interpolated the raw `userId` —
+one logged the failing pH **value** itself — into lines that survive into release builds.
+Failure logs now carry event names and aggregate counts only ("rejected an out-of-range vaginal
+pH value (allowed 3.8..7.0)"), the rejected value is deliberately never logged, and the
+DEV-gated detail path is unchanged. No tokens, emails, IDs or health values are written to
+release Logcat.
+
+### Added — minimum-version gate (fail-open)
+
+At startup the app anonymously reads `app_config.min_supported_build` (explicit columns,
+`limit 1`) and compares it numerically against `BuildConfig.VERSION_CODE`. Below it, a
+non-dismissible `UpdateRequiredScreen` offers the exact production Play listing with an HTTPS
+browser fallback. A missing table, missing row, network failure or malformed value all
+**fail open** — the app launches normally, because a gate that blocks launch while its own
+backend is absent is worse than no gate. Decision logic is unit-tested for
+below/equal/above/missing/malformed/error (10 tests). **Ops: the `app_config` table is
+deliberately NOT deployed yet — the gate is inert until it is, and it must not be populated
+without deciding a real minimum first.**
+
+### Changed — versionCode 21 → 22 (authorised); versionName stays 1.4.2
+
+Play Console confirmed 21 exists and is Active (uploaded 26 Aug 2026), so 22 is the next upload
+identity — as the entry below predicted. The only repo change for it is the one-line
+`versionCode` bump in `app/build.gradle.kts`. Full gate re-run on the 22 tree:
+`git diff --check` clean; **635 unit tests / 0 failures**; `lintVitalRelease` pass;
+`connectedDebugAndroidTest` **41 / 0 / 0 / 0** (the `DailyLogRepositoryTest` timing flake did
+not recur — no rerun, no test weakened); signed `bundleRelease` + `assembleRelease` pass.
+AAB/APK archived as `genesyx-1.4.2-code22-launchready.{aab,apk}` with SHA256SUMS under
+`~/Documents/Genesyx Releases/1.4.2-code22/`; the code-21 archives are untouched. Signing
+certificate unchanged. **Note:** the machine's only AVD reports API 37, not 36 — the same
+emulator every prior instrumented run used, and API 37 ≥ targetSdk 36.
+
+### Deferred — recorded, deliberately not in this upload
+
+Poison-row dead-lettering for the sync queues (needs a Room migration on a live app) and
+incremental pull cursors (server `updated_at` monotonicity unverified from here). Both sit in
+`CHANGES_ANDROID.md` with the rest of the audit state, alongside the outstanding owner items
+(the Supabase redirect allow-list entry for `genesyx://reset-password`, the `app_config`
+deployment, and a physical-device smoke test of the new gate).
+
+---
+
+## [Unreleased] — post-launch-audit patch: recovery, error kinds, teardown, consent sync, cycle queue (1 Sep 2026)
+
+Five audit findings fixed in one pass, on top of the `1.4.2 (21)` tree. **The versionCode has NOT
+been bumped — 21 is the already-built release-candidate identity, so the next upload from this
+tree must be 22.** File-by-file breakdown per task in `CHANGES.md` (repo root). Unit suite
+588 → **623, all green**; debug, androidTest and release variants all compile.
+
+### Added — password reset now completes in-app (P0)
+
+`resetPasswordForEmail` sends `redirectUrl = genesyx://reset-password` (the exact URL iOS uses, so
+one Supabase allow-list entry covers both platforms), the manifest registers the deep link, and a
+new `ResetPasswordScreen` imports the recovery session (`parseSessionFromUrl` → `retrieveUser` →
+`importSession` — supabase-kt's own `handleDeeplinks` throws on an expired-link fragment, so the
+link shape is checked first via `RecoveryLink.carriesSession`) and asks for the new password.
+Expired/used links get honest copy and a "Request a new link" path. "Forgot password?" now carries
+a 60 s cooldown (300 s once the server says rate-limited) — under the 2-emails/hour auth throttle,
+the old "Please try again" with a hot button invited burning the whole budget.
+**Ops: `genesyx://reset-password` must be on Supabase Auth → Redirect URLs or `redirect_to` is
+silently dropped.**
+
+### Changed — auth failures are mapped once, in the service layer (P1 #4/#5)
+
+`AuthErrorKind` (RATE_LIMITED / OFFLINE / INVALID_CREDENTIALS / EMAIL_NOT_CONFIRMED / UNKNOWN) is
+attached to every failed auth call; no `t.message` reaches a composable any more (the delete
+dialog used to render raw Postgrest text, and a confirmation-gated sign-up leaked a developer
+string). Re-auth failures in change-password/change-email only say "Current password is incorrect"
+on an answered rejection — a throttled or offline re-auth keeps its own copy. All new copy in
+`strings.xml`, British English.
+
+### Fixed — account deletion teardown (P1 #9/#10)
+
+A deletion retry that finds the account already gone (errcode 28000 "no authenticated user", or
+401 from the dead refresh token) now reads as success, so the local wipe — previously unreachable
+on that path forever — finally runs. The wipe itself is one awaited, sequential
+`AuthRepository.wipeLocalState()` shared with sign-out: cancel reminder + supplement + sync-drain
+workers (the drain schedulers gained `cancel()`), clear Room, then clear the ENTIRE
+`genesyx_prefs` DataStore — focus mode, derived cycle phase, hydration goal, article history and
+every `notif_*` key used to survive deletion and be inherited by the device's next user.
+
+### Fixed — consent follows the account, not the install (P1 #8)
+
+`consent_events` now syncs: pull-merge-push on sign-in (append-only both ways, newest event by
+real timestamp wins), running FIRST in the post-sign-in sequence. A reinstall can no longer
+silently reverse a withdrawal recorded on the server. When a completed pull confirms no answer
+exists anywhere, Home asks (new `ConsentDecisionDialog`) instead of assuming permitted; "Not now"
+records nothing. The daily-log drain is consent-gated like pH/supplements (it was the one drain
+that kept uploading after a withdrawal). **Ops: assumes server table
+`consent_events(id uuid PK, user_id uuid, action text, recorded_at timestamptz)` with owner RLS —
+verify before release.**
+
+### Fixed — cycle settings can no longer lose an offline edit; guest data follows her in (P1 #6/#7)
+
+Cycle settings now carry the owed-write contract (DataStore flag, like quiz answers): a save whose
+push failed is re-sent by the next refresh BEFORE the pull, and a failed re-send aborts the pull
+instead of stamping the stale server copy over her edit. Chosen over a Room syncStatus column to
+avoid a v10→v11 migration on a live app. Guest daily logs and guest cycle settings are adopted
+onto the account at sign-in (before the refresh/clear that used to lose them), riding the ordinary
+push queue. The three callers that discarded `SaveOutcome` (Home, Track, Cycle detail) now surface
+it — the dialog closes only on a confirmed save.
+
+---
+
 ## [Unreleased] — `food_groups` is live too — `1.4.2 (21)` (26 Aug 2026, night)
 
 **Code 20 is superseded — never upload it.** A release-gate investigation before the code-20 upload

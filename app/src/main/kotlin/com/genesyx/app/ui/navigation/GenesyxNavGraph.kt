@@ -26,6 +26,7 @@ import com.genesyx.app.ui.onboarding.WaitlistScreen
 import com.genesyx.app.ui.screens.AuthScreen
 import com.genesyx.app.ui.screens.InviteScreen
 import com.genesyx.app.ui.screens.LogScreen
+import com.genesyx.app.ui.screens.ResetPasswordScreen
 import com.genesyx.app.ui.nutrition.NutritionScreen
 import com.genesyx.app.ui.settings.ReminderSettingsScreen
 import com.genesyx.app.ui.track.detail.CycleDetailScreen
@@ -239,6 +240,29 @@ fun GenesyxNavGraph(
                     }
                 },
                 onBack = { navController.popBackStack() },
+            )
+        }
+
+        // ── Password-recovery deep link: genesyx://reset-password (the Supabase recovery email's
+        // redirect target; see auth/RecoveryLink.kt). The screen imports the session the link
+        // carries, then asks for the new password.
+        composable(
+            Screen.ResetPassword.route,
+            deepLinks = listOf(navDeepLink { uriPattern = "genesyx://reset-password" }),
+        ) {
+            ResetPasswordScreen(
+                onDone = {
+                    // She is signed in — same stack clear as AuthScreen's onSignedIn.
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                },
+                onRequestNewLink = {
+                    // Back to the gate, where "Forgot password?" lives.
+                    navController.navigate(Screen.Auth.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                },
             )
         }
 

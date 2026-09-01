@@ -45,12 +45,18 @@ import androidx.lifecycle.viewModelScope
 import android.content.Context
 import android.content.res.Configuration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.credentials.exceptions.GetCredentialException
 import androidx.credentials.exceptions.GetCredentialProviderConfigurationException
 import androidx.credentials.exceptions.NoCredentialException
 import com.genesyx.app.BuildConfig
+import androidx.annotation.StringRes
+import com.genesyx.app.R
+import com.genesyx.app.auth.AuthErrorKind
 import com.genesyx.app.auth.AuthRepository
+import com.genesyx.app.auth.authErrorKind
+import com.genesyx.app.auth.messageRes
 import com.genesyx.app.auth.GoogleCredentialClient
 import com.genesyx.app.core.result.DataResult
 import com.genesyx.app.ui.components.BrandLockup
@@ -65,11 +71,17 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/** Transient auth screen state (async in-flight + last error + password-reset notice). */
+/**
+ * Transient auth screen state (async in-flight + last error + password-reset notice).
+ * [error] carries only curated ViewModel copy (the Google paths); server failures arrive as
+ * [errorKind] and are resolved to resources in the composable — never `t.message`.
+ */
 data class AuthUiState(
     val loading: Boolean = false,
     val error: String? = null,
+    val errorKind: AuthErrorKind? = null,
     val resetNotice: String? = null,
+    @StringRes val resetNoticeRes: Int? = null,
 )
 
 @HiltViewModel
@@ -81,6 +93,28 @@ class AuthViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(AuthUiState())
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
+
+    /**
+     * Seconds until "Forgot password?" can be tapped again. Every attempt arms it — success or
+     * failure — because each tap consumes one of the very few hourly auth emails Supabase will
+     * send; the old "Please try again" copy with a hot button invited burning the rest.
+     */
+    private val _resetCooldown = MutableStateFlow(0)
+    val resetCooldown: StateFlow<Int> = _resetCooldown.asStateFlow()
+    private var cooldownJob: kotlinx.coroutines.Job? = null
+
+    private fun startResetCooldown(seconds: Int) {
+        cooldownJob?.cancel()
+        cooldownJob = viewModelScope.launch {
+            var remaining = seconds
+            while (remaining > 0) {
+                _resetCooldown.value = remaining
+                kotlinx.coroutines.delay(1_000)
+                remaining--
+            }
+            _resetCooldown.value = 0
+        }
+    }
 
     /** Google sign-in is only usable when a Web client ID was compiled in (see BuildConfig). */
     val isGoogleConfigured: Boolean = BuildConfig.GOOGLE_WEB_CLIENT_ID.isNotBlank()
@@ -159,6 +193,12 @@ class AuthViewModel @Inject constructor(
         const val RESET_FAILED = "We couldn't send the reset email. Please try again."
         const val RESET_EMAIL_REQUIRED = "Enter your email first, then tap Forgot password"
 
+        /** Post-attempt lockout on "Forgot password?" — each tap costs a scarce auth email. */
+        const val RESET_COOLDOWN_SECONDS = 60
+
+        /** Longer lockout once the server has actually said "too many" — see sendPasswordReset. */
+        const val RESET_RATE_LIMITED_COOLDOWN_SECONDS = 300
+
         /**
          * Pure mapping from a Credential Manager failure to a user message, extracted so the
          * (message-sniffing) logic is unit-testable without constructing exceptions. Credential
@@ -205,7 +245,7 @@ class AuthViewModel @Inject constructor(
                     onSuccess()
                 }
                 is DataResult.Error ->
-                    _uiState.value = AuthUiState(error = result.message ?: "Something went wrong. Please try again.")
+                    _uiState.value = AuthUiState(errorKind = result.authErrorKind())
                 DataResult.Loading -> Unit
             }
         }
@@ -216,15 +256,32 @@ class AuthViewModel @Inject constructor(
      * what she typed — not from a session. Asking for the email is not a way past the gate.
      */
     fun sendPasswordReset(email: String) {
-        if (_uiState.value.loading) return
+        if (_uiState.value.loading || _resetCooldown.value > 0) return
         _uiState.value = AuthUiState(loading = true)
         viewModelScope.launch {
             when (val result = authRepository.sendPasswordReset(email)) {
-                is DataResult.Success ->
+                is DataResult.Success -> {
                     _uiState.value = AuthUiState(resetNotice = RESET_SENT)
+                    startResetCooldown(RESET_COOLDOWN_SECONDS)
+                }
                 is DataResult.Error -> {
                     logger.e("Auth", "password-reset failed", result.throwable)
-                    _uiState.value = AuthUiState(resetNotice = RESET_FAILED)
+                    when (result.authErrorKind()) {
+                        // The throttle answered: honest copy, and a long enough lockout that
+                        // retrying can actually succeed (2 auth emails/hour server-side).
+                        AuthErrorKind.RATE_LIMITED -> {
+                            _uiState.value = AuthUiState(resetNoticeRes = R.string.auth_error_rate_limited)
+                            startResetCooldown(RESET_RATE_LIMITED_COOLDOWN_SECONDS)
+                        }
+                        AuthErrorKind.OFFLINE -> {
+                            _uiState.value = AuthUiState(resetNoticeRes = R.string.auth_error_offline)
+                            startResetCooldown(RESET_COOLDOWN_SECONDS)
+                        }
+                        else -> {
+                            _uiState.value = AuthUiState(resetNotice = RESET_FAILED)
+                            startResetCooldown(RESET_COOLDOWN_SECONDS)
+                        }
+                    }
                 }
                 DataResult.Loading -> Unit
             }
@@ -243,6 +300,7 @@ fun AuthScreen(
     viewModel: AuthViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val resetCooldown by viewModel.resetCooldown.collectAsState()
     val context = LocalContext.current
     AuthContent(
         uiState = uiState,
@@ -251,6 +309,7 @@ fun AuthScreen(
         onForgotPassword = viewModel::sendPasswordReset,
         onClearError = viewModel::clearError,
         onBack = onBack,
+        resetCooldownSeconds = resetCooldown,
     )
 }
 
@@ -262,6 +321,7 @@ fun AuthContent(
     onBack: () -> Unit,
     onGoogleSignIn: () -> Unit = {},
     onForgotPassword: (email: String) -> Unit = {},
+    resetCooldownSeconds: Int = 0,
 ) {
     val colors = MaterialTheme.colorScheme
     var signupMode by remember { mutableStateOf(false) }
@@ -271,6 +331,9 @@ fun AuthContent(
     var localError by remember { mutableStateOf<String?>(null) }
 
     val shownError = localError ?: uiState.error
+        ?: uiState.errorKind?.let { stringResource(it.messageRes()) }
+    val shownResetNotice = uiState.resetNotice
+        ?: uiState.resetNoticeRes?.let { stringResource(it) }
 
     fun clearErrors() {
         localError = null
@@ -345,20 +408,25 @@ fun AuthContent(
                 // behind the very session she cannot obtain.
                 if (!signupMode) {
                     Spacer(Modifier.height(8.dp))
+                    val coolingDown = resetCooldownSeconds > 0
                     Text(
-                        "Forgot password?",
+                        if (coolingDown) {
+                            stringResource(R.string.auth_reset_cooldown, resetCooldownSeconds)
+                        } else {
+                            "Forgot password?"
+                        },
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold,
-                        color = ElectricLavender,
+                        color = if (coolingDown) colors.onSurfaceVariant else ElectricLavender,
                         textAlign = TextAlign.End,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable(enabled = !uiState.loading) { requestReset() },
+                            .clickable(enabled = !uiState.loading && !coolingDown) { requestReset() },
                     )
-                    if (uiState.resetNotice != null) {
+                    if (shownResetNotice != null) {
                         Spacer(Modifier.height(4.dp))
                         Text(
-                            uiState.resetNotice,
+                            shownResetNotice,
                             style = MaterialTheme.typography.bodyMedium,
                             color = colors.onSurfaceVariant,
                             modifier = Modifier.fillMaxWidth(),

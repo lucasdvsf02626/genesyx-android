@@ -107,7 +107,7 @@ class UserSupplementRepository @Inject constructor(
             updatedAt = now,
         )
         dao.upsert(entity)
-        logger.i("UserSupp", "saved supplement ${entity.id} locally for $userId")
+        logger.i("UserSupp", "saved supplement ${entity.id} locally")
         // The push stays on the app scope: the row is already safe in Room, and the sheet closing
         // must not cancel the upload mid-flight and strand it without a queued retry.
         if (signedIn) scope.launch { pushOrQueue(entity) }

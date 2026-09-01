@@ -65,4 +65,15 @@ class SyncStatusRepository @Inject constructor(
         phScheduler.schedule()
         supplementScheduler.schedule()
     }
+
+    /**
+     * Sign-out / account deletion: cancel every queued drain. Left enqueued they wake against a
+     * dead session, and MainActivity's foreground self-heal would keep re-arming them anyway —
+     * cancelling here plus an empty queue (Room is wiped in the same teardown) ends the cycle.
+     */
+    fun cancelDrains() {
+        dailyLogScheduler.cancel()
+        phScheduler.cancel()
+        supplementScheduler.cancel()
+    }
 }

@@ -108,12 +108,19 @@ class DailyLogRepository @Inject constructor(
             false
         } else {
             dao.setStatus(userId, date, LogSyncStatus.SYNCED)
-            logger.i("DailyLog", "synced daily log $date for $userId")
+            logger.i("DailyLog", "synced daily log $date")
             true
         }
 
     /** Drains all PENDING rows (called by [com.genesyx.app.data.sync.DailyLogSyncWorker]). */
     suspend fun syncPending(): Boolean {
+        // A queue drained after a withdrawal uploads the very logs she just stopped us collecting.
+        // Report success so WorkManager stops asking rather than retrying forever — same gate as
+        // the pH and supplement drains (this one was missing it).
+        if (!consent.isCollectionPermitted()) {
+            logger.w("DailyLog", "sync refused — health-data consent withdrawn")
+            return true
+        }
         var allSynced = true
         for (entity in dao.pending()) {
             if (remote.upsertLog(entity.userId, entity.date, entity.toDomain()) is DataResult.Success) {
@@ -240,6 +247,29 @@ class DailyLogRepository @Inject constructor(
     }
 
     /**
+     * Adopts the guest bucket's logs into [userId]'s account on sign-in, marked PENDING_UPSERT so
+     * the ordinary queue pushes them (same dance as pH readings and supplements). Runs BEFORE
+     * [refresh]: adopted rows are unsynced, and refresh's merge never overwrites unsynced rows, so
+     * they survive the pull and its trailing syncPending() pushes them. Without this, logs written
+     * before signing in vanished from view the moment a session existed and were wiped by the next
+     * sign-out's clearAllTables. Returns the count.
+     */
+    suspend fun adoptGuestLogs(userId: String): Int {
+        if (userId == SessionRepository.LOCAL_USER_ID) return 0
+        // Adoption marks rows PENDING_UPSERT, so it is an upload in slow motion — gate it.
+        if (!consent.isCollectionPermitted()) {
+            logger.w("DailyLog", "guest adoption refused — health-data consent withdrawn")
+            return 0
+        }
+        val adopted = dao.adoptGuestRows(SessionRepository.LOCAL_USER_ID, userId)
+        if (adopted > 0) {
+            logger.i("DailyLog", "adopted $adopted guest daily log(s) into account")
+            scheduler.schedule() // push survives even if the sign-in refresh fails
+        }
+        return adopted
+    }
+
+    /**
      * Read-through: pull the user's logs into the local cache (called after sign-in).
      *
      * A row with unsynced local changes is SKIPPED, never overwritten. That single rule is what makes
@@ -264,7 +294,7 @@ class DailyLogRepository @Inject constructor(
                     dao.upsert(log.toEntity(userId, date))
                 }
                 if (result.data.isNotEmpty()) {
-                    logger.i("DailyLog", "cached ${result.data.size} daily logs for $userId ($kept local edits kept)")
+                    logger.i("DailyLog", "cached ${result.data.size} daily logs ($kept local edits kept)")
                 }
                 syncPending()
             }

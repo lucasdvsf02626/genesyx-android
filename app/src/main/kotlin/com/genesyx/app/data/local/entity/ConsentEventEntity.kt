@@ -8,7 +8,8 @@ import com.genesyx.app.domain.consent.ConsentEvent
 import java.time.LocalDateTime
 
 /**
- * Room mirror of one consent event. Local-only for now (no Supabase table), scoped by [userId] like
+ * Room mirror of one consent event, synced with the Supabase `consent_events` table on sign-in
+ * (ConsentRepository.refresh — pull-merge-push, append-only both ways) and scoped by [userId] like
  * every other table so accounts stay isolated on a shared device.
  *
  * There is deliberately no sync-status column and no "current state" column: the row is a fact that

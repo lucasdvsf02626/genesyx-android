@@ -41,4 +41,18 @@ class FakeDailyLogDao : DailyLogDao {
         val key = userId to date
         rows.value[key]?.let { rows.value = rows.value + (key to it.copy(syncStatus = status)) }
     }
+
+    override suspend fun adoptGuestRows(guestId: String, userId: String): Int {
+        // Mirrors the SQL: re-key guest rows to the account, PENDING_UPSERT, skipping dates the
+        // account already holds.
+        val takenDates = rows.value.values.filter { it.userId == userId }.map { it.date }.toSet()
+        val adoptable = rows.value.values.filter { it.userId == guestId && it.date !in takenDates }
+        var next = rows.value
+        for (row in adoptable) {
+            next = next - (guestId to row.date) +
+                ((userId to row.date) to row.copy(userId = userId, syncStatus = LogSyncStatus.PENDING_UPSERT))
+        }
+        rows.value = next
+        return adoptable.size
+    }
 }

@@ -2,15 +2,22 @@ package com.genesyx.app.data
 
 import com.genesyx.app.core.di.ApplicationScope
 import com.genesyx.app.core.log.Logger
+import com.genesyx.app.core.result.DataResult
 import com.genesyx.app.data.local.dao.ConsentEventDao
 import com.genesyx.app.data.local.entity.ConsentEventEntity
 import com.genesyx.app.data.local.entity.toDomain
+import com.genesyx.app.data.remote.ConsentRemoteDataSource
+import com.genesyx.app.data.remote.dto.toDto
+import com.genesyx.app.data.remote.dto.toEntity
 import com.genesyx.app.domain.consent.ConsentAction
 import com.genesyx.app.domain.consent.HealthDataCollectionGate
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -32,30 +39,87 @@ import javax.inject.Singleton
  *
  * An empty trail reads as permitted. That is deliberate and matches iOS: every install that
  * upgrades into this version has never been offered a consent screen, and defaulting them to
- * refused would silently stop tracking for everyone at once.
+ * refused would silently stop tracking for everyone at once. The one exception: when a sign-in's
+ * server pull confirms the account has no answer ANYWHERE, [needsDecision] turns on and the UI
+ * asks instead of assuming — an answered prompt is better evidence than a default.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @Singleton
 class ConsentRepository @Inject constructor(
     private val dao: ConsentEventDao,
+    private val remote: ConsentRemoteDataSource,
     private val session: SessionRepository,
     private val logger: Logger,
     @ApplicationScope scope: CoroutineScope,
 ) : HealthDataCollectionGate {
 
+    /**
+     * True when a completed server pull found no consent answer anywhere — locally or on the
+     * account. The UI must ask rather than assume permitted (the empty-trail default exists for
+     * installs that were never offered the screen, not for accounts the server has confirmed never
+     * answered). Cleared the moment any event is recorded.
+     */
+    private val _needsDecision = MutableStateFlow(false)
+    val needsDecision: StateFlow<Boolean> = _needsDecision.asStateFlow()
+
     /** Drives the UI — the Profile row's state and the withdrawn banner. */
     val isActive: StateFlow<Boolean> =
-        session.userId
-            .flatMapLatest { uid -> dao.observeLatest(uid ?: SessionRepository.LOCAL_USER_ID) }
-            .map { it.permits() }
+        combine(session.userId, _needsDecision) { uid, pending ->
+            (uid ?: SessionRepository.LOCAL_USER_ID) to (pending && uid != null)
+        }
+            .flatMapLatest { (uid, pending) ->
+                dao.observeTrailByInsertion(uid).map { it.newest().permits(pending) }
+            }
             .stateIn(scope, SharingStarted.Eagerly, true)
 
     /**
      * The authoritative check. Reads the trail rather than [isActive] so it cannot be answered by a
      * seed value during the window between process start and Room's first emission.
      */
-    override suspend fun isCollectionPermitted(): Boolean =
-        dao.latest(session.awaitUserId()).permits()
+    override suspend fun isCollectionPermitted(): Boolean {
+        val uid = session.awaitUserId()
+        val pending = _needsDecision.value && uid != SessionRepository.LOCAL_USER_ID
+        return dao.trailByInsertion(uid).newest().permits(pending)
+    }
+
+    /**
+     * Sign-in: merge the account's server trail with the local one BEFORE any health-data pull or
+     * push runs under a consent she may have revoked on another device (or before a reinstall —
+     * the defect this fixes: a wiped device had an empty trail, which read as permitted, and the
+     * withdrawal she'd recorded was silently reversed).
+     *
+     * Merge rules: adopt server events missing locally (oldest first, so insertion order keeps
+     * tracking chronology); push local events the server lacks (append-only both sides, so an
+     * upsert-by-id replay is a no-op, never a rewrite); the newest event by timestamp wins either
+     * way. A failed pull changes nothing — the local answer stands until the server can be asked.
+     */
+    suspend fun refresh(userId: String): Boolean {
+        if (userId == SessionRepository.LOCAL_USER_ID) return true
+        val remoteTrail = when (val r = remote.list(userId)) {
+            is DataResult.Success -> r.data
+            else -> {
+                logger.w("Consent", "trail pull failed — keeping the local answer")
+                return false
+            }
+        }
+        val local = dao.trailByInsertion(userId)
+        val localIds = local.map { it.id }.toSet()
+        val toAdopt = remoteTrail.filter { it.id !in localIds }
+            .map { it.toEntity() }
+            .sortedBy { it.recordedAt }
+        if (toAdopt.isNotEmpty()) {
+            dao.insertAll(toAdopt)
+            logger.i("Consent", "adopted ${toAdopt.size} server consent event(s)")
+        }
+        val remoteIds = remoteTrail.map { it.id }.toSet()
+        for (event in local.filter { it.id !in remoteIds }) {
+            if (remote.upsert(event.toDto()) !is DataResult.Success) {
+                logger.w("Consent", "trail push deferred — will retry next sign-in")
+            }
+        }
+        _needsDecision.value = remoteTrail.isEmpty() && local.isEmpty()
+        return true
+    }
 
     suspend fun grant() = append(ConsentAction.GRANTED)
 
@@ -78,23 +142,40 @@ class ConsentRepository @Inject constructor(
         if (dao.latest(userId) != null) return
         val guest = dao.latest(SessionRepository.LOCAL_USER_ID)?.toDomain() ?: return
         append(guest.action, userId)
-        logger.i("Consent", "carried the guest's ${guest.action.wire} decision onto $userId")
+        logger.i("Consent", "carried the guest's ${guest.action.wire} decision onto the signed-in account")
     }
 
     private suspend fun append(action: ConsentAction, forUserId: String? = null) {
         val userId = forUserId ?: session.awaitUserId()
-        dao.insert(
-            ConsentEventEntity(
-                id = UUID.randomUUID().toString(),
-                userId = userId,
-                action = action.wire,
-                recordedAt = LocalDateTime.now(),
-            ),
+        val event = ConsentEventEntity(
+            id = UUID.randomUUID().toString(),
+            userId = userId,
+            action = action.wire,
+            recordedAt = LocalDateTime.now(),
         )
-        logger.i("Consent", "recorded ${action.wire} for $userId")
+        dao.insert(event)
+        // Any answer ends the ask — she has decided.
+        _needsDecision.value = false
+        logger.i("Consent", "recorded ${action.wire}")
+        // Best-effort push; a miss is re-sent by the next sign-in's refresh (append-only, by id).
+        if (userId != SessionRepository.LOCAL_USER_ID &&
+            remote.upsert(event.toDto()) !is DataResult.Success
+        ) {
+            logger.w("Consent", "event push deferred — will retry next sign-in")
+        }
     }
 
-    /** No event yet means no answer, which is permitted — see the class doc. */
-    private fun ConsentEventEntity?.permits(): Boolean =
-        this == null || toDomain().action == ConsentAction.GRANTED
+    /**
+     * The event that decides the current state: newest by real timestamp (compared as
+     * [LocalDateTime], not ISO text — `toString()` drops zero seconds and mis-sorts), insertion
+     * order breaking ties. Post-sync the trail is a merge of two devices, so rowid alone is no
+     * longer chronology.
+     */
+    private fun List<ConsentEventEntity>.newest(): ConsentEventEntity? =
+        withIndex().maxWithOrNull(compareBy({ it.value.recordedAt }, { it.index }))?.value
+
+    /** No event yet means no answer, which is permitted — unless the server confirmed there is no
+     *  answer anywhere, in which case we ask instead of assuming (see [needsDecision]). */
+    private fun ConsentEventEntity?.permits(decisionPending: Boolean): Boolean =
+        if (this == null) !decisionPending else toDomain().action == ConsentAction.GRANTED
 }

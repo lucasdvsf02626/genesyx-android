@@ -13,6 +13,7 @@ import com.genesyx.app.data.remote.dto.toDto
 import com.genesyx.app.data.remote.dto.toEntity
 import com.genesyx.app.data.sync.PhSyncScheduler
 import com.genesyx.app.domain.consent.HealthDataCollectionGate
+import com.genesyx.app.domain.model.PhMeasurement
 import com.genesyx.app.domain.model.PhReading
 import com.genesyx.app.domain.ph.PhStatus
 import kotlinx.coroutines.CoroutineScope
@@ -77,8 +78,12 @@ class PhRepository @Inject constructor(
         // Enforce the trackable vaginal-pH range in the data layer (defense-in-depth beyond the UI
         // slider). Out-of-range values are rejected, never persisted. Boundaries are inclusive.
         val value = reading.phValue.round1()
-        if (value < PhStatus.MIN || value > PhStatus.MAX) {
-            logger.w("Ph", "rejected out-of-range pH $value (allowed ${PhStatus.MIN}..${PhStatus.MAX})")
+        // Only vaginal readings are range-checked. A legacy urine row predates the vaginal switch
+        // and sits on a different scale, so re-validating it against the vaginal range would refuse
+        // even a notes-only edit — legacy urine rows are never re-validated (see the class doc).
+        // The rejected value itself is health data and is deliberately not logged.
+        if (reading.measurementType != PhMeasurement.URINE && (value < PhStatus.MIN || value > PhStatus.MAX)) {
+            logger.w("Ph", "rejected an out-of-range vaginal pH value (allowed ${PhStatus.MIN}..${PhStatus.MAX})")
             return@async PhWriteResult.OutOfRange(value)
         }
         if (!consent.isCollectionPermitted()) {
@@ -95,7 +100,7 @@ class PhRepository @Inject constructor(
             updatedAt = LocalDateTime.now(),
         )
         dao.upsert(entity)
-        logger.i("Ph", "saved pH reading ${entity.id} locally for $userId")
+        logger.i("Ph", "saved pH reading ${entity.id} locally")
         // The push stays on the app scope: the row is already safe in Room, and the dialog closing
         // must not cancel the upload mid-flight and strand it without a queued retry.
         if (signedIn) scope.launch { pushOrQueue(entity) }

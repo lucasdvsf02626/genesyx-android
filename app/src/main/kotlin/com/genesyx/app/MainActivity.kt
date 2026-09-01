@@ -18,6 +18,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.genesyx.app.data.AppUpdateGate
 import com.genesyx.app.data.NotificationSettingsRepository
 import com.genesyx.app.data.PreferencesRepository
 import com.genesyx.app.data.SyncStatusRepository
@@ -28,6 +29,7 @@ import com.genesyx.app.ui.AppViewModel
 import com.genesyx.app.ui.components.GenesyxBottomNav
 import com.genesyx.app.ui.navigation.GenesyxNavGraph
 import com.genesyx.app.ui.navigation.Screen
+import com.genesyx.app.ui.screens.UpdateRequiredScreen
 import com.genesyx.app.ui.theme.GenesyxTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -42,6 +44,7 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var reminderScheduler: ReminderScheduler
     @Inject lateinit var syncStatusRepository: SyncStatusRepository
     @Inject lateinit var preferencesRepository: PreferencesRepository
+    @Inject lateinit var appUpdateGate: AppUpdateGate
 
     // Hoisted out of setContent so a notification tap arriving while the app is already foregrounded
     // (onNewIntent) can route through the live NavController instead of spawning a second graph.
@@ -54,9 +57,13 @@ class MainActivity : ComponentActivity() {
         // straight to Home instead of being forced back through onboarding on cold start.
         splash.setKeepOnScreenCondition { appViewModel.startRoute.value == null }
         enableEdgeToEdge()
+        // Minimum-version gate: one anonymous check per process. Fail-open — only a confirmed,
+        // well-formed minimum above this build replaces the UI with the update screen.
+        appUpdateGate.check(BuildConfig.VERSION_CODE)
         setContent {
             val themeMode by appViewModel.themeMode.collectAsState()
             val startRoute by appViewModel.startRoute.collectAsState()
+            val updateRequired by appUpdateGate.updateRequired.collectAsState()
             val darkTheme = when (themeMode) {
                 ThemeMode.DARK -> true
                 ThemeMode.LIGHT -> false
@@ -64,7 +71,10 @@ class MainActivity : ComponentActivity() {
             }
             GenesyxTheme(darkTheme = darkTheme) {
                 val route = startRoute
-                if (route != null) {
+                if (updateRequired) {
+                    // Rendered INSTEAD of the nav graph: no route behind it, so nothing to dismiss.
+                    UpdateRequiredScreen()
+                } else if (route != null) {
                     val nav = rememberNavController()
                     navController = nav
                     val backStackEntry by nav.currentBackStackEntryAsState()

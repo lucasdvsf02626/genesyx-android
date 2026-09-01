@@ -1,6 +1,7 @@
 package com.genesyx.app.data.remote
 
 import com.genesyx.app.core.result.DataResult
+import com.genesyx.app.data.remote.dto.ConsentEventDto
 import com.genesyx.app.data.remote.dto.GenesyxProductDto
 import com.genesyx.app.data.remote.dto.PhReadingDto
 import com.genesyx.app.data.remote.dto.UserSupplementDto
@@ -42,6 +43,14 @@ interface UserSupplementRemoteDataSource {
     suspend fun upsert(entry: UserSupplementDto): DataResult<Unit>
 }
 
+interface ConsentRemoteDataSource {
+    /** The account's full consent trail, oldest first. */
+    suspend fun list(userId: String): DataResult<List<ConsentEventDto>>
+
+    /** Insert one event (conflict on id is a no-op — the trail is append-only on both sides). */
+    suspend fun upsert(event: ConsentEventDto): DataResult<Unit>
+}
+
 interface GenesyxProductRemoteDataSource {
     /** Active catalogue rows. RLS grants SELECT to signed-in users only — guests get an error,
      *  which callers render the same as an empty catalogue ("coming soon"). */
@@ -74,6 +83,15 @@ interface QuizAnswersRemoteDataSource {
 interface WaitlistRemoteDataSource {
     /** Store a waitlist signup. Pre-auth (anon) — the table's RLS allows insert-only. */
     suspend fun join(email: String): DataResult<Unit>
+}
+
+interface AppConfigRemoteDataSource {
+    /**
+     * The `app_config` value for [key], or null when the row does not exist. Read anonymously at
+     * startup; the table may not exist yet, so every failure must surface as [DataResult.Error]
+     * and the caller fails open (the launch is allowed).
+     */
+    suspend fun getValue(key: String): DataResult<String?>
 }
 
 interface ClientRemoteDataSource {

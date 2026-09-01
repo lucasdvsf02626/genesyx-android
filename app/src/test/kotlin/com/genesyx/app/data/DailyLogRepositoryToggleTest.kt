@@ -174,4 +174,45 @@ class DailyLogRepositoryToggleTest {
         assertEquals(emptySet<String>(), h.repo.logByDate.value[today]?.supplements)
         h.scope.cancel()
     }
+
+    // ── Guest adoption (audit P1 #7): logs written before sign-in must follow her in. ──────────
+
+    @Test
+    fun `guest daily logs are adopted onto the account, marked pending, and queued for push`() = runTest {
+        val h = harness()
+        h.dao.upsert(DailyLog(waterMl = 500).toEntity(SessionRepository.LOCAL_USER_ID, today))
+
+        val adopted = h.repo.adoptGuestLogs("user-a")
+
+        assertEquals(1, adopted)
+        val row = h.dao.row("user-a", today)!!
+        assertEquals(500, row.waterMl)
+        assertEquals("adopted rows ride the ordinary queue", LogSyncStatus.PENDING_UPSERT, row.syncStatus)
+        verify { h.scheduler.schedule() }
+        h.scope.cancel()
+    }
+
+    @Test
+    fun `a date the account already holds locally is not collided with`() = runTest {
+        val h = harness()
+        h.dao.upsert(DailyLog(waterMl = 999).toEntity("user-a", today))
+        h.dao.upsert(DailyLog(waterMl = 500).toEntity(SessionRepository.LOCAL_USER_ID, today))
+
+        val adopted = h.repo.adoptGuestLogs("user-a")
+
+        assertEquals(0, adopted)
+        assertEquals(999, h.dao.row("user-a", today)!!.waterMl)
+        h.scope.cancel()
+    }
+
+    @Test
+    fun `guest adoption is refused while consent is withdrawn`() = runTest {
+        // Adoption marks rows PENDING_UPSERT — an upload in slow motion — so the gate applies.
+        val h = harness(gate = HealthDataCollectionGate { false })
+        h.dao.upsert(DailyLog(waterMl = 500).toEntity(SessionRepository.LOCAL_USER_ID, today))
+
+        assertEquals(0, h.repo.adoptGuestLogs("user-a"))
+        assertEquals(null, h.dao.row("user-a", today))
+        h.scope.cancel()
+    }
 }

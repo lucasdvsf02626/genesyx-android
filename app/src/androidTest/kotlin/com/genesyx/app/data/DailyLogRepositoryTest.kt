@@ -88,6 +88,7 @@ class DailyLogRepositoryTest {
         var scheduled = 0
         override fun schedule() { scheduled++ }
         override fun syncNow() { scheduled++ }
+        override fun cancel() {}
     }
 
     private object SilentLogger : Logger {

@@ -1,8 +1,12 @@
 package com.genesyx.app.ui.profile
 
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.genesyx.app.R
+import com.genesyx.app.auth.AuthErrorKind
 import com.genesyx.app.auth.AuthRepository
+import com.genesyx.app.auth.authErrorKind
 import com.genesyx.app.core.result.DataResult
 import com.genesyx.app.core.result.SaveOutcome
 import com.genesyx.app.data.ConsentRepository
@@ -108,8 +112,10 @@ class ProfileViewModel @Inject constructor(
 
     private val _deleting = MutableStateFlow(false)
     val deleting: StateFlow<Boolean> = _deleting.asStateFlow()
-    private val _deleteError = MutableStateFlow<String?>(null)
-    val deleteError: StateFlow<String?> = _deleteError.asStateFlow()
+
+    /** Resource id, not text: raw server messages must never reach the dialog (audit P1 #4). */
+    private val _deleteError = MutableStateFlow<Int?>(null)
+    val deleteError: StateFlow<Int?> = _deleteError.asStateFlow()
     private val _deleted = MutableStateFlow(false)
     val deleted: StateFlow<Boolean> = _deleted.asStateFlow()
     private val _signedOut = MutableStateFlow(false)
@@ -169,7 +175,7 @@ class ProfileViewModel @Inject constructor(
             when (result) {
                 is DataResult.Success -> _deleted.value = true
                 is DataResult.Error ->
-                    _deleteError.value = result.message ?: "Couldn't delete your account. Please try again."
+                    _deleteError.value = result.toErrorRes(R.string.profile_error_delete_failed)
                 DataResult.Loading -> Unit
             }
         }
@@ -179,8 +185,8 @@ class ProfileViewModel @Inject constructor(
 
     private val _pwChanging = MutableStateFlow(false)
     val pwChanging: StateFlow<Boolean> = _pwChanging.asStateFlow()
-    private val _pwError = MutableStateFlow<String?>(null)
-    val pwError: StateFlow<String?> = _pwError.asStateFlow()
+    private val _pwError = MutableStateFlow<Int?>(null)
+    val pwError: StateFlow<Int?> = _pwError.asStateFlow()
     private val _pwChanged = MutableStateFlow(false)
     val pwChanged: StateFlow<Boolean> = _pwChanged.asStateFlow()
 
@@ -195,7 +201,10 @@ class ProfileViewModel @Inject constructor(
             when (result) {
                 is DataResult.Success -> _pwChanged.value = true
                 is DataResult.Error ->
-                    _pwError.value = result.message ?: "Couldn't change your password. Please try again."
+                    _pwError.value = result.toErrorRes(
+                        fallback = R.string.profile_error_change_password_failed,
+                        wrongPassword = R.string.profile_error_wrong_current_password,
+                    )
                 DataResult.Loading -> Unit
             }
         }
@@ -209,8 +218,8 @@ class ProfileViewModel @Inject constructor(
 
     private val _emailChanging = MutableStateFlow(false)
     val emailChanging: StateFlow<Boolean> = _emailChanging.asStateFlow()
-    private val _emailError = MutableStateFlow<String?>(null)
-    val emailError: StateFlow<String?> = _emailError.asStateFlow()
+    private val _emailError = MutableStateFlow<Int?>(null)
+    val emailError: StateFlow<Int?> = _emailError.asStateFlow()
     private val _emailChangeRequested = MutableStateFlow(false)
     val emailChangeRequested: StateFlow<Boolean> = _emailChangeRequested.asStateFlow()
 
@@ -229,7 +238,10 @@ class ProfileViewModel @Inject constructor(
             when (result) {
                 is DataResult.Success -> _emailChangeRequested.value = true
                 is DataResult.Error ->
-                    _emailError.value = result.message ?: "Couldn't change your email. Please try again."
+                    _emailError.value = result.toErrorRes(
+                        fallback = R.string.profile_error_change_email_failed,
+                        wrongPassword = R.string.profile_error_wrong_current_password,
+                    )
                 DataResult.Loading -> Unit
             }
         }
@@ -239,6 +251,22 @@ class ProfileViewModel @Inject constructor(
     fun resetEmailState() {
         _emailError.value = null
         _emailChangeRequested.value = false
+    }
+
+    /**
+     * Kind → copy for the auth dialogs. [wrongPassword] is the context-specific label for an
+     * answered credential rejection (these flows re-verify the *current* password); the service
+     * layer guarantees a throttled or offline re-auth never arrives as INVALID_CREDENTIALS.
+     */
+    @StringRes
+    private fun DataResult.Error.toErrorRes(
+        @StringRes fallback: Int,
+        @StringRes wrongPassword: Int? = null,
+    ): Int = when (authErrorKind()) {
+        AuthErrorKind.RATE_LIMITED -> R.string.auth_error_rate_limited
+        AuthErrorKind.OFFLINE -> R.string.auth_error_offline
+        AuthErrorKind.INVALID_CREDENTIALS -> wrongPassword ?: fallback
+        else -> fallback
     }
 
     fun sendInvite(email: String) = partnerRepository.sendInvite(email)

@@ -80,9 +80,15 @@ class SupplementReminderRepository @Inject constructor(
 
     /** Sign-out / account deletion: cancel and forget every reminder. */
     fun clearAll() {
-        scope.launch {
-            scheduler.cancelAll()
-            store.clearSupplementReminders()
-        }
+        scope.launch { clearAllNow() }
+    }
+
+    /**
+     * [clearAll] the caller can sequence against — the teardown must not report success while the
+     * cancels are still in flight (process death in that window left chains alive).
+     */
+    suspend fun clearAllNow() {
+        scheduler.cancelAll()
+        store.clearSupplementReminders()
     }
 }

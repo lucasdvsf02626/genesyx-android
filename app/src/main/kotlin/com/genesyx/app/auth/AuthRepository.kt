@@ -12,8 +12,10 @@ import com.genesyx.app.data.ProfileRepository
 import com.genesyx.app.data.QuizAnswersRepository
 import com.genesyx.app.data.SessionRepository
 import com.genesyx.app.data.SupplementReminderRepository
+import com.genesyx.app.data.SyncStatusRepository
 import com.genesyx.app.data.UserSupplementRepository
 import com.genesyx.app.data.local.GenesyxDatabase
+import com.genesyx.app.data.local.datastore.GenesyxPreferencesDataStore
 import com.genesyx.app.notifications.ReminderScheduler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.StateFlow
@@ -40,6 +42,8 @@ class AuthRepository @Inject constructor(
     private val userSupplementRepository: UserSupplementRepository,
     private val quizAnswersRepository: QuizAnswersRepository,
     private val supplementReminderRepository: SupplementReminderRepository,
+    private val syncStatusRepository: SyncStatusRepository,
+    private val preferences: GenesyxPreferencesDataStore,
     private val database: GenesyxDatabase,
     private val reminderScheduler: ReminderScheduler,
     private val dispatchers: DispatcherProvider,
@@ -86,14 +90,7 @@ class AuthRepository @Inject constructor(
         if (remote is DataResult.Error) {
             logger.w("Auth", "remote sign-out failed; clearing local session anyway")
         }
-        // Reminders deep-link into the gated dashboard, so they must never outlive the session.
-        reminderScheduler.cancelAll()
-        withContext(dispatchers.io) { database.clearAllTables() }
-        // Quiz answers live in DataStore, not Room, so clearAllTables doesn't reach them — drop the
-        // local copy explicitly so the next account can't inherit them (the server row stays).
-        quizAnswersRepository.clearLocal()
-        supplementReminderRepository.clearAll()
-        session.signOut()
+        wipeLocalState()
         return DataResult.Success(Unit)
     }
 
@@ -116,6 +113,21 @@ class AuthRepository @Inject constructor(
     }
 
     /**
+     * Finish a password-recovery deep link: import the session it carries and persist it exactly
+     * like a sign-in (the link is the proof of ownership). On success she is signed in and the
+     * usual post-sign-in adoption + refreshes run.
+     */
+    suspend fun completeRecovery(url: String): DataResult<Unit> =
+        persist(authService.importRecoverySession(url), "password-recovery")
+
+    /** Set a new password on the recovery session ([completeRecovery] must have succeeded). */
+    suspend fun setNewPassword(newPassword: String): DataResult<Unit> {
+        val result = authService.setNewPassword(newPassword)
+        if (result is DataResult.Error) logger.e("Auth", "recovery password update failed", result.throwable)
+        return result
+    }
+
+    /**
      * Start an email change via the remote provider. Success means "confirmation email sent" — the
      * persisted session deliberately keeps the old address until Supabase confirms the new one.
      */
@@ -129,14 +141,7 @@ class AuthRepository @Inject constructor(
     suspend fun deleteAccount(): DataResult<Unit> =
         when (val result = authService.deleteAccount()) {
             is DataResult.Success -> {
-                reminderScheduler.cancelAll()
-                withContext(dispatchers.io) { database.clearAllTables() }
-                quizAnswersRepository.clearLocal()
-                // Supplement reminders live in DataStore on their own scheduler, so neither
-                // clearAllTables nor reminderScheduler reaches them. Left behind, they keep firing
-                // notifications naming her supplements after the account is gone.
-                supplementReminderRepository.clearAll()
-                session.signOut()
+                wipeLocalState()
                 DataResult.Success(Unit)
             }
             is DataResult.Error -> {
@@ -145,6 +150,26 @@ class AuthRepository @Inject constructor(
             }
             DataResult.Loading -> DataResult.Loading
         }
+
+    /**
+     * The one local teardown, shared by sign-out and deletion. Sequential and AWAITED — the caller
+     * reports success only after every store is empty; the old fire-and-forget launches let the UI
+     * navigate away while quiz answers, reminder times and the signed-in flag were still on disk.
+     *
+     * Order: cancel everything that could wake and rewrite (reminder chains name her supplements
+     * in their inputData; sync drains would push against a dead session), then Room, then the
+     * whole prefs file — session mirror, quiz answers, reminder times, focus mode, cycle phase,
+     * hydration goal, article history, notification pacing. Nothing here may be inherited by the
+     * device's next user, and clearing DataStore last means a crash mid-wipe still reads signed-in
+     * and retries rather than stranding half-cleared state behind a signed-out flag.
+     */
+    private suspend fun wipeLocalState() {
+        reminderScheduler.cancelAll()
+        supplementReminderRepository.clearAllNow()
+        syncStatusRepository.cancelDrains()
+        withContext(dispatchers.io) { database.clearAllTables() }
+        preferences.clearAll()
+    }
 
     private suspend fun persist(
         result: DataResult<AuthSession>,
@@ -165,8 +190,18 @@ class AuthRepository @Inject constructor(
                 // Sync in the background so sign-in returns immediately and isn't blocked (or broken)
                 // by a slow or failing per-table refresh. Room drives the UI reactively as each lands.
                 appScope.launch {
+                    // Consent FIRST: the pulls and drains below run under whatever answer the
+                    // account holds, and a reinstall's empty local trail must not outvote a
+                    // withdrawal recorded on the server (that was the defect — a wiped device
+                    // silently reversed it).
+                    consentRepository.refresh(user.id)
                     profileRepository.refresh(user.id)
+                    // Adopt-before-pull, store by store: adopted rows/settings must exist before
+                    // the refresh that would otherwise pull the server copy over nothing — or, for
+                    // daily logs, before a later clearAllTables wipes the guest bucket unread.
+                    cycleRepository.adoptGuestSettings(user.id)
                     cycleRepository.refresh(user.id)
+                    dailyLogRepository.adoptGuestLogs(user.id)
                     dailyLogRepository.refresh(user.id)
                     // Adopt guest pH readings BEFORE the pull: adopted rows are PENDING_UPSERT, and
                     // refresh's merge never overwrites unsynced local rows, so they survive the pull

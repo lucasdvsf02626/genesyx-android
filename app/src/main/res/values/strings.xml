@@ -9,6 +9,45 @@
     <string name="nav_insights">Insights</string>
     <string name="nav_profile">Profile</string>
 
+    <!-- First-time health-data consent ask (shown only when no answer exists anywhere) -->
+    <string name="consent_ask_title">Allow health data collection?</string>
+    <string name="consent_ask_body">Genesyx saves your cycle, daily logs, pH readings and tracking preferences to your account so it can show your phases, streaks and insights across your devices.</string>
+    <string name="consent_ask_note">You can change this at any time in Profile. Until you allow it, new health entries won\'t be saved or synced.</string>
+    <string name="consent_ask_allow">Allow</string>
+    <string name="consent_ask_not_now">Not now</string>
+
+    <!-- Auth error kinds (AuthErrorKind → copy; raw server text never reaches the UI) -->
+    <string name="auth_error_rate_limited">Too many attempts right now. Please wait a few minutes and try again.</string>
+    <string name="auth_error_offline">Couldn\'t reach the server. Check your connection and try again.</string>
+    <string name="auth_error_invalid_credentials">Email or password is incorrect.</string>
+    <string name="auth_error_email_not_confirmed">Your email address hasn\'t been confirmed yet. Check your inbox for the confirmation link.</string>
+    <string name="auth_error_unknown">Something went wrong. Please try again.</string>
+    <string name="profile_error_wrong_current_password">Current password is incorrect</string>
+    <string name="profile_error_change_password_failed">Couldn\'t change your password. Please try again.</string>
+    <string name="profile_error_change_email_failed">Couldn\'t change your email. Please try again.</string>
+    <string name="profile_error_delete_failed">Couldn\'t delete your account. Please try again.</string>
+
+    <!-- Password recovery (deep-linked "set a new password" screen + reset cooldown) -->
+    <string name="reset_title">Set a new password</string>
+    <string name="reset_subtitle">Choose a new password of at least 8 characters.</string>
+    <string name="reset_verifying">Verifying your link…</string>
+    <string name="reset_new_password">New password</string>
+    <string name="reset_confirm_password">Confirm password</string>
+    <string name="reset_submit">Save new password</string>
+    <string name="reset_saving">Please wait…</string>
+    <string name="reset_link_invalid">This reset link has expired or has already been used.</string>
+    <string name="reset_request_new">Request a new link</string>
+    <string name="reset_error_short">Password must be at least 8 characters</string>
+    <string name="reset_error_long">Password is too long</string>
+    <string name="reset_error_mismatch">Passwords don\'t match</string>
+    <string name="reset_error_failed">We couldn\'t update your password. Please try again.</string>
+    <string name="auth_reset_cooldown">You can request another link in %1$d s</string>
+
+    <!-- Minimum-version gate (full-screen, non-dismissible; shown only when the backend retires this build) -->
+    <string name="update_required_title">Update required</string>
+    <string name="update_required_body">This version of Genesyx is no longer supported. Please update to continue.</string>
+    <string name="update_required_button">Update on Google Play</string>
+
     <!-- Notification channels (user-visible in system settings) -->
     <string name="channel_tracking_name">Tracking reminders</string>
     <string name="channel_tracking_desc">Gentle nudges to log how your day went.</string>

@@ -41,6 +41,15 @@
                 <data android:scheme="genesyx" android:host="invite" />
             </intent-filter>
 
+            <!-- Password-recovery deep link: genesyx://reset-password. The Supabase recovery
+                 email's redirect_to target (same URL as iOS — one shared allow-list entry). -->
+            <intent-filter android:autoVerify="false">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="genesyx" android:host="reset-password" />
+            </intent-filter>
+
             <!-- Web App Link parity: https://genesis-cycle-guide.lovable.app/invite/{code} -->
             <intent-filter android:autoVerify="false">
                 <action android:name="android.intent.action.VIEW" />

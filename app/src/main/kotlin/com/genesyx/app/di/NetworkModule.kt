@@ -5,13 +5,18 @@ import com.genesyx.app.auth.AuthService
 import com.genesyx.app.auth.LocalAuthService
 import com.genesyx.app.auth.SupabaseAuthService
 import com.genesyx.app.core.config.AppConfig
+import com.genesyx.app.data.remote.AppConfigRemoteDataSource
+import com.genesyx.app.data.remote.ConsentRemoteDataSource
 import com.genesyx.app.data.remote.CycleRemoteDataSource
 import com.genesyx.app.data.remote.DailyLogRemoteDataSource
 import com.genesyx.app.data.remote.PhRemoteDataSource
 import com.genesyx.app.data.remote.ProfileRemoteDataSource
+import com.genesyx.app.data.remote.StubAppConfigRemoteDataSource
+import com.genesyx.app.data.remote.StubConsentRemoteDataSource
 import com.genesyx.app.data.remote.StubCycleRemoteDataSource
 import com.genesyx.app.data.remote.StubDailyLogRemoteDataSource
 import com.genesyx.app.data.remote.StubPhRemoteDataSource
+import com.genesyx.app.data.remote.SupabaseConsentRemoteDataSource
 import com.genesyx.app.data.remote.SupabaseCycleRemoteDataSource
 import com.genesyx.app.data.remote.SupabaseDailyLogRemoteDataSource
 import com.genesyx.app.data.remote.SupabasePhRemoteDataSource
@@ -23,6 +28,7 @@ import com.genesyx.app.data.remote.QuizAnswersRemoteDataSource
 import com.genesyx.app.data.remote.StubQuizAnswersRemoteDataSource
 import com.genesyx.app.data.remote.SupabaseQuizAnswersRemoteDataSource
 import com.genesyx.app.data.remote.StubWaitlistRemoteDataSource
+import com.genesyx.app.data.remote.SupabaseAppConfigRemoteDataSource
 import com.genesyx.app.data.remote.SupabaseGenesyxProductRemoteDataSource
 import com.genesyx.app.data.remote.SupabaseProfileRemoteDataSource
 import com.genesyx.app.data.remote.SupabaseUserSupplementRemoteDataSource
@@ -83,6 +89,15 @@ object NetworkModule {
         supabaseImpl: Provider<SupabaseProfileRemoteDataSource>,
         stub: Provider<StubProfileRemoteDataSource>,
     ): ProfileRemoteDataSource = if (config.hasSupabase) supabaseImpl.get() else stub.get()
+
+    /** Consent-trail remote source: real Supabase when configured, else local-first stub. */
+    @Provides
+    @Singleton
+    fun provideConsentRemoteDataSource(
+        config: AppConfig,
+        supabaseImpl: Provider<SupabaseConsentRemoteDataSource>,
+        stub: Provider<StubConsentRemoteDataSource>,
+    ): ConsentRemoteDataSource = if (config.hasSupabase) supabaseImpl.get() else stub.get()
 
     /** Cycle-settings remote source: real Supabase when configured, else local-first stub. */
     @Provides
@@ -146,4 +161,14 @@ object NetworkModule {
         supabaseImpl: Provider<SupabaseGenesyxProductRemoteDataSource>,
         stub: Provider<StubGenesyxProductRemoteDataSource>,
     ): GenesyxProductRemoteDataSource = if (config.hasSupabase) supabaseImpl.get() else stub.get()
+
+    /** App-config remote source (minimum-version gate): real Supabase when configured, else a stub
+     *  that errors so the gate fails open in local mode. */
+    @Provides
+    @Singleton
+    fun provideAppConfigRemoteDataSource(
+        config: AppConfig,
+        supabaseImpl: Provider<SupabaseAppConfigRemoteDataSource>,
+        stub: Provider<StubAppConfigRemoteDataSource>,
+    ): AppConfigRemoteDataSource = if (config.hasSupabase) supabaseImpl.get() else stub.get()
 }

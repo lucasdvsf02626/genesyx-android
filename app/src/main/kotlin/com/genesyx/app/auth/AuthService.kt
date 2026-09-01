@@ -49,4 +49,17 @@ interface AuthService {
      * signed-out path: there is no session to read an address from. Must never establish a session.
      */
     suspend fun resetPassword(email: String): DataResult<Unit>
+
+    /**
+     * Import the session carried by a recovery deep link ([RecoveryLink]) so the reset can finish
+     * in-app. Unlike [resetPassword] this DOES establish a session — the emailed link is the proof
+     * of ownership. Callers must pre-check [RecoveryLink.carriesSession].
+     */
+    suspend fun importRecoverySession(url: String): DataResult<AuthSession>
+
+    /**
+     * Set a new password on the current (recovery) session. No current-password re-auth: the
+     * recovery link already proved ownership, and she is here precisely because she can't type it.
+     */
+    suspend fun setNewPassword(newPassword: String): DataResult<Unit>
 }

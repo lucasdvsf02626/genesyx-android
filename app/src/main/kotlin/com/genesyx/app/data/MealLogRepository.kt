@@ -46,7 +46,7 @@ class MealLogRepository @Inject constructor(
         scope.launch {
             val userId = session.currentUserId()
             dao.upsert(entry.copy(description = description).toEntity(userId))
-            logger.i("MealLog", "logged meal ${entry.id} for $userId")
+            logger.i("MealLog", "logged meal ${entry.id}")
         }
         return true
     }

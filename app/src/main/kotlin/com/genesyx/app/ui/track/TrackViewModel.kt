@@ -13,9 +13,13 @@ import com.genesyx.app.domain.model.CycleSettings
 import com.genesyx.app.domain.model.DailyLog
 import com.genesyx.app.domain.model.PhReading
 import com.genesyx.app.domain.model.LogDay
+import com.genesyx.app.ui.profile.SaveState
+import com.genesyx.app.ui.profile.toSaveState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -85,5 +89,16 @@ class TrackViewModel @Inject constructor(
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
-    fun saveCycleSettings(settings: CycleSettings) = viewModelScope.launch { cycleRepository.upsert(settings) }
+    private val _cycleSave = MutableStateFlow(SaveState())
+    val cycleSave: StateFlow<SaveState> = _cycleSave.asStateFlow()
+
+    /** Saves and reports (same shape as ProfileViewModel) — a refused or failed save must not
+     *  close the dialog looking exactly like a good one. */
+    fun saveCycleSettings(settings: CycleSettings) {
+        if (_cycleSave.value.saving) return
+        _cycleSave.value = SaveState(saving = true)
+        viewModelScope.launch { _cycleSave.value = cycleRepository.upsert(settings).toSaveState() }
+    }
+
+    fun resetCycleSave() { _cycleSave.value = SaveState() }
 }

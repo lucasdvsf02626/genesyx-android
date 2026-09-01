@@ -11,6 +11,10 @@ interface CycleSettingsDao {
     @Query("SELECT * FROM cycle_settings WHERE userId = :userId LIMIT 1")
     fun observe(userId: String): Flow<CycleSettingsEntity?>
 
+    /** The row read once — for the owed-push drain and guest adoption, which must not race a flow. */
+    @Query("SELECT * FROM cycle_settings WHERE userId = :userId LIMIT 1")
+    suspend fun get(userId: String): CycleSettingsEntity?
+
     @Upsert
     suspend fun upsert(entity: CycleSettingsEntity)
 

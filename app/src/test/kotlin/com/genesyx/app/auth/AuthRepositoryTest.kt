@@ -36,6 +36,8 @@ class AuthRepositoryTest {
     private val consentRepo = mockk<com.genesyx.app.data.ConsentRepository>(relaxed = true)
     private val quizAnswersRepo = mockk<com.genesyx.app.data.QuizAnswersRepository>(relaxed = true)
     private val supplementReminderRepo = mockk<com.genesyx.app.data.SupplementReminderRepository>(relaxed = true)
+    private val syncStatusRepo = mockk<com.genesyx.app.data.SyncStatusRepository>(relaxed = true)
+    private val preferences = mockk<com.genesyx.app.data.local.datastore.GenesyxPreferencesDataStore>(relaxed = true)
     private val database = mockk<GenesyxDatabase>(relaxed = true)
     private val reminderScheduler = mockk<com.genesyx.app.notifications.ReminderScheduler>(relaxed = true)
     private val logger = mockk<Logger>(relaxed = true)
@@ -49,7 +51,8 @@ class AuthRepositoryTest {
         }
         return AuthRepository(
             authService, session, consentRepo, profileRepo, cycleRepo, dailyLogRepo, phRepo, userSupplementRepo,
-            quizAnswersRepo, supplementReminderRepo, database, reminderScheduler, dispatchers, scope, logger,
+            quizAnswersRepo, supplementReminderRepo, syncStatusRepo, preferences, database, reminderScheduler,
+            dispatchers, scope, logger,
         )
     }
 
@@ -60,10 +63,10 @@ class AuthRepositoryTest {
         val result = repo(backgroundScope).deleteAccount()
 
         assertTrue(result is DataResult.Success)
-        coVerifyOrder {                              // server delete BEFORE wipe BEFORE sign-out
+        coVerifyOrder {                              // server delete BEFORE wipe BEFORE prefs clear
             authService.deleteAccount()
             database.clearAllTables()
-            session.signOut()
+            preferences.clearAll()
         }
     }
 
@@ -71,12 +74,25 @@ class AuthRepositoryTest {
     fun `deleteAccount clears supplement reminders too`() = runTest {
         // They live in DataStore on their own scheduler, so clearAllTables and reminderScheduler
         // both miss them. Left behind, they keep firing notifications naming her supplements long
-        // after the account is gone.
+        // after the account is gone. Awaited (clearAllNow), not launched — the UI reports success
+        // only after the cancels have run.
         coEvery { authService.deleteAccount() } returns DataResult.Success(Unit)
 
         repo(backgroundScope).deleteAccount()
 
-        verify { supplementReminderRepo.clearAll() }
+        coVerify { supplementReminderRepo.clearAllNow() }
+    }
+
+    @Test
+    fun `deleteAccount cancels the sync drains and clears the whole prefs file`() = runTest {
+        // Left enqueued, the drains wake against a dead session; left populated, focus mode, cycle
+        // phase and notification pacing are inherited by whoever uses the device next.
+        coEvery { authService.deleteAccount() } returns DataResult.Success(Unit)
+
+        repo(backgroundScope).deleteAccount()
+
+        verify { syncStatusRepo.cancelDrains() }
+        coVerify { preferences.clearAll() }
     }
 
     @Test
@@ -87,7 +103,29 @@ class AuthRepositoryTest {
 
         assertTrue(result is DataResult.Error)
         verify(exactly = 0) { database.clearAllTables() }   // data-safety invariant
-        verify(exactly = 0) { session.signOut() }
+        coVerify(exactly = 0) { preferences.clearAll() }
+    }
+
+    @Test
+    fun `a deletion retry that finds the account already gone finally runs the wipe`() = runTest {
+        // The dropped-response scenario: the server committed the delete but the reply was lost, so
+        // the first attempt surfaces as Error and nothing local may be touched. On retry the
+        // service recognises "no authenticated user" and reports Success — and the wipe, which was
+        // unreachable on this path before, must now run to completion.
+        coEvery { authService.deleteAccount() } returns DataResult.Error(RuntimeException("timeout"))
+        val repository = repo(backgroundScope)
+
+        assertTrue(repository.deleteAccount() is DataResult.Error)
+        verify(exactly = 0) { database.clearAllTables() }
+
+        coEvery { authService.deleteAccount() } returns DataResult.Success(Unit)
+
+        assertTrue(repository.deleteAccount() is DataResult.Success)
+        coVerifyOrder {
+            database.clearAllTables()
+            preferences.clearAll()
+        }
+        verify { syncStatusRepo.cancelDrains() }
     }
 
     @Test
@@ -192,7 +230,7 @@ class AuthRepositoryTest {
         coVerifyOrder {
             authService.signOut()
             database.clearAllTables()
-            session.signOut()
+            preferences.clearAll()
         }
     }
 
@@ -232,6 +270,6 @@ class AuthRepositoryTest {
 
         assertTrue(result is DataResult.Success)
         coVerify { database.clearAllTables() }
-        verify { session.signOut() }
+        coVerify { preferences.clearAll() }
     }
 }

@@ -42,6 +42,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -75,7 +76,9 @@ import com.genesyx.app.domain.ph.PhCopy
 import com.genesyx.app.domain.streaks.Milestone
 import com.genesyx.app.domain.content.AppGuide
 import com.genesyx.app.ui.components.HydrationChallengeCard
+import com.genesyx.app.ui.components.ConsentDecisionDialog
 import com.genesyx.app.ui.components.CycleSettingsDialog
+import com.genesyx.app.ui.profile.SaveState
 import com.genesyx.app.ui.components.Eyebrow
 import com.genesyx.app.ui.components.GxPrimaryButton
 import com.genesyx.app.ui.learn.HowThisWorksLink
@@ -100,6 +103,16 @@ fun HomeScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val consentActive by viewModel.consentActive.collectAsState()
+    val consentDecisionNeeded by viewModel.consentDecisionNeeded.collectAsState()
+    // "Not now" is per-visit: she can put the question off, but an unanswered account is asked
+    // again next time rather than silently defaulted to permitted.
+    var consentAskDismissed by remember { mutableStateOf(false) }
+    if (consentDecisionNeeded && !consentAskDismissed) {
+        ConsentDecisionDialog(
+            onAllow = { viewModel.grantHealthDataConsent() },
+            onDismiss = { consentAskDismissed = true },
+        )
+    }
     // "Select Track, then open the detail": the tab switch makes Track the surface underneath, so
     // Back from the detail lands on Track rather than Home.
     fun openTrackerDetail(route: String) {
@@ -110,9 +123,12 @@ fun HomeScreen(
         }
         navController.navigate(route)
     }
+    val cycleSave by viewModel.cycleSave.collectAsState()
     HomeContent(
         state = state,
         consentActive = consentActive,
+        cycleSave = cycleSave,
+        onResetCycleSave = { viewModel.resetCycleSave() },
         onNavigate = { navController.navigate(it) },
         onOpenHydration = { openTrackerDetail(Screen.HydrationDetail.route) },
         // pH is a bottom-tab root: switch to it. openTrackerDetail's plain push would stack the
@@ -132,6 +148,8 @@ fun HomeScreen(
 fun HomeContent(
     state: HomeUiState,
     consentActive: Boolean = true,
+    cycleSave: SaveState = SaveState(),
+    onResetCycleSave: () -> Unit = {},
     onNavigate: (String) -> Unit,
     onOpenHydration: () -> Unit = {},
     onOpenPh: () -> Unit = {},
@@ -311,11 +329,19 @@ fun HomeContent(
         // `cycleSeed` exists only for the first-run card, which hands over a date the user just
         // picked. Every other entry point reads the live state so the dialog never opens on a
         // snapshot that a later Room emission has already superseded.
+        LaunchedEffect(Unit) { onResetCycleSave() }
+        // Close only on a confirmed save — a refused or failed one shows its error in place
+        // instead of closing exactly like a good save (the "saves, then reverts" symptom).
+        LaunchedEffect(cycleSave.saved) {
+            if (cycleSave.saved) { cycleSeed = null; showCycleDialog = false }
+        }
         CycleSettingsDialog(
             current = cycleSeed ?: state.settings,
             consentActive = consentActive,
-            onDismiss = { cycleSeed = null; showCycleDialog = false },
-            onSave = { onSaveCycle(it); cycleSeed = null; showCycleDialog = false },
+            saving = cycleSave.saving,
+            error = cycleSave.error,
+            onDismiss = { if (!cycleSave.saving) { cycleSeed = null; showCycleDialog = false } },
+            onSave = { onSaveCycle(it) },
         )
     }
 

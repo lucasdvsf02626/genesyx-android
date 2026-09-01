@@ -24,3 +24,10 @@ keystore.properties
 /.codex/
 /graphify-out/
 /supabase/.temp/
+
+# CodeGraph local index
+.codegraph/
+
+# Local audit work logs — carry the unfixed-gap inventory; the repo is public. Keep local.
+/CHANGES.md
+/CHANGES_ANDROID.md

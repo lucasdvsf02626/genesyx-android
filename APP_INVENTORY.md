@@ -159,7 +159,7 @@ One date-keyed `DailyLog` may contain:
 The Log route accepts a date. Non-future Track days can add or edit that exact record. A first-load
 guard prevents asynchronous database state from being overwritten by a blank editor.
 
-The shared `isMeaningful()` contract counts water, mood, energy, symptoms, sleep, supplements or a
+The shared `isMeaningful()` chi ontract counts water, mood, energy, symptoms, sleep, supplements or a
 note. Private intimacy is intentionally excluded to preserve the existing Android tracking-vector and
 streak contract.
 

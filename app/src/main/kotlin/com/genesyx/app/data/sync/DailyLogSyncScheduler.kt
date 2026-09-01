@@ -21,6 +21,9 @@ interface DailyLogSyncScheduler {
 
     /** User-initiated retry ("Sync now"): re-enqueue so a stuck drain's constraint re-evaluates. */
     fun syncNow()
+
+    /** Sign-out / account deletion: a queued drain must not wake against a dead session. */
+    fun cancel()
 }
 
 @Singleton
@@ -37,6 +40,10 @@ class WorkManagerDailyLogSyncScheduler @Inject constructor(
         // failed validation) waits forever under KEEP. Replacing is safe — the drain is idempotent,
         // it just re-pushes whatever is still PENDING.
         enqueue(ExistingWorkPolicy.REPLACE)
+    }
+
+    override fun cancel() {
+        WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
     }
 
     private fun enqueue(policy: ExistingWorkPolicy) {

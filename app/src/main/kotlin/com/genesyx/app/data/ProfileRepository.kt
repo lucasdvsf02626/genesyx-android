@@ -49,7 +49,7 @@ class ProfileRepository @Inject constructor(
                 // A blank column means the row has no answer, not that her name should be blanked.
                 entity.displayName?.takeIf { it.isNotBlank() }
                     ?.let { session.adoptRemoteDisplayName(it) }
-                logger.i("Profile", "cached profile for $userId (theme=${entity.theme})")
+                logger.i("Profile", "cached profile (theme=${entity.theme})")
                 DataResult.Success(entity)
             }
             is DataResult.Error -> {

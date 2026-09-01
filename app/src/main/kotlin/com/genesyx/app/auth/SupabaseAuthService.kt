@@ -4,10 +4,12 @@ import com.genesyx.app.core.log.Logger
 import com.genesyx.app.core.result.DataResult
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.parseSessionFromUrl
 import io.github.jan.supabase.auth.providers.Google
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.providers.builtin.IDToken
 import io.github.jan.supabase.auth.user.UserSession
+import io.github.jan.supabase.exceptions.RestException
 import io.github.jan.supabase.postgrest.postgrest
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -54,7 +56,7 @@ class SupabaseAuthService @Inject constructor(
             DataResult.Success(Unit)
         } catch (t: Throwable) {
             logger.e("Auth", "sign-out failed", t)
-            DataResult.Error(t, t.message)
+            DataResult.Error(t.asAuthError(), t.message)
         }
 
     override suspend fun currentSession(): AuthSession? =
@@ -71,8 +73,18 @@ class SupabaseAuthService @Inject constructor(
             runCatching { client.auth.signOut() } // session is now invalid — best-effort cleanup
             DataResult.Success(Unit)
         } catch (t: Throwable) {
-            logger.e("Auth", "delete-account failed", t)
-            DataResult.Error(t, t.message)
+            if (accountAlreadyGone(t)) {
+                // A retry after a dropped response: the server committed the delete, the reply was
+                // lost, and this attempt found no account to delete. That IS the deletion — report
+                // success so the local wipe (previously unreachable on this path) finally runs.
+                logger.w("Auth", "delete-account retry found the account already gone — treating as deleted", t)
+                runCatching { client.auth.signOut() }
+                runCatching { client.auth.clearSession() } // the persisted token blob must go regardless
+                DataResult.Success(Unit)
+            } else {
+                logger.e("Auth", "delete-account failed", t)
+                DataResult.Error(t.asAuthError(), t.message)
+            }
         }
 
     /**
@@ -91,28 +103,59 @@ class SupabaseAuthService @Inject constructor(
                     this.password = currentPassword
                 }
             } catch (t: Throwable) {
+                // Only an answered rejection may be blamed on the typed password; a throttled or
+                // unreachable re-auth keeps its own kind (the old copy mislabelled both).
                 logger.e("Auth", "change-password re-auth failed", t)
-                return DataResult.Error(t, "Current password is incorrect")
+                return DataResult.Error(t.asReAuthError(), t.message)
             }
             client.auth.updateUser { password = newPassword }
             DataResult.Success(Unit)
         } catch (t: Throwable) {
             logger.e("Auth", "change-password failed", t)
-            DataResult.Error(t, t.message)
+            DataResult.Error(t.asAuthError(), t.message)
         }
     }
 
     /**
-     * Sends the recovery email. No `redirectUrl` — same as iOS. The link lands on whatever the
-     * Supabase project's Site URL is; there is no in-app recovery handler yet.
+     * Sends the recovery email, pointing the link back into the app ([RecoveryLink.REDIRECT_URL],
+     * same URL as iOS — one shared allow-list entry). MainActivity's `genesyx://reset-password`
+     * intent-filter receives it and [importRecoverySession] finishes the job.
      */
     override suspend fun resetPassword(email: String): DataResult<Unit> =
         try {
-            client.auth.resetPasswordForEmail(email)
+            client.auth.resetPasswordForEmail(email, redirectUrl = RecoveryLink.REDIRECT_URL)
             DataResult.Success(Unit)
         } catch (t: Throwable) {
             logger.e("Auth", "password-reset failed", t)
-            DataResult.Error(t, t.message)
+            DataResult.Error(t.asAuthError(), t.message)
+        }
+
+    /**
+     * supabase-kt's session-from-URL handling, taken apart so failures are catchable: the library's
+     * own `handleDeeplinks` throws synchronously on an error fragment (expired/used link) and
+     * swallows a failed user fetch inside its own scope. Parse → fetch the user → import, and any
+     * failure comes back as an Error the screen can show honestly.
+     */
+    override suspend fun importRecoverySession(url: String): DataResult<AuthSession> =
+        try {
+            val partial = client.auth.parseSessionFromUrl(url)
+            val user = client.auth.retrieveUser(partial.accessToken)
+            val session = partial.copy(user = user)
+            client.auth.importSession(session)
+            DataResult.Success(session.toAuthSession())
+        } catch (t: Throwable) {
+            logger.e("Auth", "recovery-session import failed", t)
+            DataResult.Error(t.asAuthError(), t.message)
+        }
+
+    /** Password update on the recovery session — the emailed link already re-authenticated her. */
+    override suspend fun setNewPassword(newPassword: String): DataResult<Unit> =
+        try {
+            client.auth.updateUser { password = newPassword }
+            DataResult.Success(Unit)
+        } catch (t: Throwable) {
+            logger.e("Auth", "recovery password update failed", t)
+            DataResult.Error(t.asAuthError(), t.message)
         }
 
     /** Same shape as [changePassword]: re-auth, then ask Supabase to start the email change. */
@@ -126,14 +169,15 @@ class SupabaseAuthService @Inject constructor(
                     this.password = currentPassword
                 }
             } catch (t: Throwable) {
+                // Same rule as changePassword: transport/429 must not read as a wrong password.
                 logger.e("Auth", "change-email re-auth failed", t)
-                return DataResult.Error(t, "Current password is incorrect")
+                return DataResult.Error(t.asReAuthError(), t.message)
             }
             client.auth.updateUser { this.email = newEmail }
             DataResult.Success(Unit)
         } catch (t: Throwable) {
             logger.e("Auth", "change-email failed", t)
-            DataResult.Error(t, t.message)
+            DataResult.Error(t.asAuthError(), t.message)
         }
     }
 
@@ -165,7 +209,11 @@ class SupabaseAuthService @Inject constructor(
             attempt()
 
             val session = client.auth.currentSessionOrNull()
-                ?: throw IllegalStateException("No active session — email confirmation may be required.")
+                // An attempt that succeeded but minted no session is confirmation-gated sign-up.
+                ?: throw AuthError(
+                    AuthErrorKind.EMAIL_NOT_CONFIRMED,
+                    IllegalStateException("No active session — email confirmation may be required."),
+                )
             if (session.accessToken == previousToken) {
                 throw IllegalStateException("$op did not establish a new session.")
             }
@@ -175,8 +223,24 @@ class SupabaseAuthService @Inject constructor(
             DataResult.Success(session.toAuthSession())
         } catch (t: Throwable) {
             logger.e("Auth", "$op failed", t)
-            DataResult.Error(t, t.message)
+            DataResult.Error(t.asAuthError(), t.message)
         }
+
+    /** Wrap once with the mapped kind; an [AuthError] passes through untouched. */
+    private fun Throwable.asAuthError(): AuthError =
+        this as? AuthError ?: AuthError(authErrorKindOf(this), this)
+
+    /**
+     * Re-auth failures only: an *answered rejection* of the password grant means the typed current
+     * password is wrong; anything the server never judged (offline, throttled) keeps its own kind
+     * so the dialog can't mislabel it "Current password is incorrect".
+     */
+    private fun Throwable.asReAuthError(): AuthError {
+        val kind = authErrorKindOf(this)
+        val rejected = kind == AuthErrorKind.INVALID_CREDENTIALS ||
+            (kind == AuthErrorKind.UNKNOWN && this is RestException && statusCode in setOf(400, 401, 403, 422))
+        return AuthError(if (rejected) AuthErrorKind.INVALID_CREDENTIALS else kind, this)
+    }
 
     private fun UserSession.toAuthSession(): AuthSession {
         val u = user
@@ -190,4 +254,16 @@ class SupabaseAuthService @Inject constructor(
             accessToken = accessToken,
         )
     }
+}
+
+/**
+ * True when a failed `delete_current_user` retry means the account no longer exists server-side:
+ * the RPC raises `no authenticated user` (errcode 28000) when `auth.uid()` resolves to nothing,
+ * and a 401 is the refreshed-token path (the auth user's refresh tokens died with the row).
+ * Top-level so it is unit-testable without a SupabaseClient — see AccountAlreadyGoneTest.
+ */
+internal fun accountAlreadyGone(t: Throwable): Boolean {
+    val rest = t as? RestException
+    val text = listOfNotNull(t.message, rest?.error, rest?.description).joinToString(" ").lowercase()
+    return "no authenticated user" in text || "28000" in text || rest?.statusCode == 401
 }

@@ -46,6 +46,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -329,7 +330,7 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel = hi
         LaunchedEffect(Unit) { viewModel.resetPasswordState() }
         ChangePasswordDialog(
             changing = pwChanging,
-            remoteError = pwError,
+            remoteError = pwError?.let { stringResource(it) },
             changed = pwChanged,
             onSubmit = { current, new -> viewModel.changePassword(current, new) },
             onDismiss = { if (!pwChanging) pwOpen = false },
@@ -343,7 +344,7 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel = hi
         ChangeEmailDialog(
             currentEmail = email,
             changing = emailChanging,
-            remoteError = emailError,
+            remoteError = emailError?.let { stringResource(it) },
             requested = emailRequested,
             onSubmit = { password, new -> viewModel.changeEmail(password, new) },
             onDismiss = { if (!emailChanging) emailOpen = false },
@@ -463,7 +464,7 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel = hi
                     )
                     if (deleteError != null) {
                         Spacer(Modifier.height(12.dp))
-                        Text(deleteError!!, style = MaterialTheme.typography.bodyMedium, color = colors.error)
+                        Text(stringResource(deleteError!!), style = MaterialTheme.typography.bodyMedium, color = colors.error)
                     }
                 }
             },

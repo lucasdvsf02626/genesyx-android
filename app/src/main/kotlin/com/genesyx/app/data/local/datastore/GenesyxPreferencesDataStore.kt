@@ -54,6 +54,7 @@ class GenesyxPreferencesDataStore @Inject constructor(
         val LAST_SEEN_PHASE_EPOCH_DAY = longPreferencesKey("last_seen_phase_epoch_day")
         val QUIZ_ANSWERS = stringPreferencesKey("quiz_answers")
         val QUIZ_ANSWERS_OWED = booleanPreferencesKey("quiz_answers_owed")
+        val CYCLE_SETTINGS_OWED = booleanPreferencesKey("cycle_settings_owed")
         val SUPPLEMENT_REMINDERS = stringPreferencesKey("supplement_reminders")
         val SIGNED_IN = booleanPreferencesKey("signed_in")
         val USER_ID = stringPreferencesKey("user_id")
@@ -114,6 +115,10 @@ class GenesyxPreferencesDataStore @Inject constructor(
      *  because an edit made offline is still owed after a relaunch. */
     val quizAnswersOwed: Flow<Boolean> = dataStore.data.map { it[Keys.QUIZ_ANSWERS_OWED] ?: false }
 
+    /** Same owed-write contract for the cycle-settings row: a save the server has not confirmed
+     *  taking is still owed after a relaunch, and refresh must push it before pulling. */
+    val cycleSettingsOwed: Flow<Boolean> = dataStore.data.map { it[Keys.CYCLE_SETTINGS_OWED] ?: false }
+
     /** Per-supplement daily reminder times (supplement id → minutes-of-day), device-local. Not
      *  synced — a reminder schedule is a phone setting, not shared health data. */
     val supplementReminders: Flow<Map<String, Int>> = dataStore.data.map { p ->
@@ -169,6 +174,9 @@ class GenesyxPreferencesDataStore @Inject constructor(
     suspend fun setQuizAnswersOwed(owed: Boolean) =
         dataStore.edit { it[Keys.QUIZ_ANSWERS_OWED] = owed }.let {}
 
+    suspend fun setCycleSettingsOwed(owed: Boolean) =
+        dataStore.edit { it[Keys.CYCLE_SETTINGS_OWED] = owed }.let {}
+
     /** Sign-out clears the local copy only — the server `quiz_answers` row is the owner's and stays. */
     suspend fun clearQuizAnswers() = dataStore.edit {
         it.remove(Keys.QUIZ_ANSWERS)
@@ -203,6 +211,8 @@ class GenesyxPreferencesDataStore @Inject constructor(
             // launch during sign-out, and if that never lands the flag survives into the next
             // session — where the drain would push account A's tracking answers into account B's row.
             it[Keys.QUIZ_ANSWERS_OWED] = false
+            // Same reasoning for the cycle-settings debt.
+            it[Keys.CYCLE_SETTINGS_OWED] = false
         }
     }
 
@@ -223,5 +233,16 @@ class GenesyxPreferencesDataStore @Inject constructor(
             // An owed push must not outlive the session, or it fires against whoever signs in next.
             it.remove(Keys.PENDING_NAME_PUSH)
         }
+    }
+
+    /**
+     * Account teardown (sign-out / deletion): every key in the file goes — the session mirror, but
+     * also focus mode, cycle phase, hydration goal, article history and the notification pacing
+     * counters, none of which may be inherited by the device's next user. This file is the app's
+     * only DataStore ("genesyx_prefs" — NotificationSettingsRepository shares it), so one clear
+     * covers both repositories. First-open and onboarding re-seed themselves on the next launch.
+     */
+    suspend fun clearAll() {
+        dataStore.edit { it.clear() }
     }
 }

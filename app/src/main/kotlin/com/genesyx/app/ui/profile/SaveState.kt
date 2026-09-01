@@ -18,8 +18,9 @@ data class SaveState(
 
 /**
  * The local write landed in every failure case here — these repositories write to Room first — so
- * the copy must not imply the edit was lost. It also must not promise a retry: cycle settings have
- * no sync queue, so "we'll send it later" would be untrue.
+ * the copy must not imply the edit was lost. Cycle settings now carry an owed-push flag that the
+ * next sign-in refresh drains, but there is no prompt background retry, so the copy still asks her
+ * to try again rather than promising "we'll send it later" on a schedule that doesn't exist.
  */
 private const val UNREACHABLE =
     "Saved on this device, but we couldn't reach the server. Try again when you're back online."
