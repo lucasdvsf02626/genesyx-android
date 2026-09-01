@@ -54,8 +54,17 @@ persisted/scoped/cleared needsDecision, resync guards) · `lintVitalRelease` pas
 `connectedDebugAndroidTest` **44/44** (+3 `ConsentDecisionDialogTest`; the known
 `DailyLogRepositoryTest` pull-vs-push flake tripped one interim run and passed the full one) ·
 signed `bundleRelease` + `assembleRelease` green, aapt2 confirms `23 / 1.4.2 / target 36`.
-**Not yet verified against production** — the signed build still needs one live
-sign-in → ask → Allow → data-appears walk before upload.
+
+### Verified against production (1 Sep 2026, ~22:10 — signed APK, emulator, throwaway account)
+
+The full consent loop was walked live on the signed code-23 build: sign-up → the ask appeared
+on Home; an outside tap and Back both left it standing; **Allow** recorded and pushed —
+`consent_events` read back by SQL as `version "2026-08-18.v2", action "granted"` (the code-22
+push 400d here); the dialog closed itself once the grant landed; a supplement logged and
+pushed; sign-out → sign-in **adopted the server trail (no re-ask), ran every pull unrefused,
+and restored the logged supplement from the server**; in-app deletion left every server count
+at zero — consent_events included, so the updated `delete_current_user` covers it. The
+code-22 loop (re-ask every sign-in, pulls skipped) is confirmed gone.
 
 ---
 
