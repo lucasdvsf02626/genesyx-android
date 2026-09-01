@@ -6,6 +6,53 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ---
 
+## Smoke test of the code-22 release build — `1.4.2 (22)` (1 Sep 2026, evening)
+
+**Code 22 was uploaded to Play Internal testing earlier today**, then the release APK from
+`~/Documents/Genesyx Releases/1.4.2-code22/` (hash-verified, same code Play re-signs) was
+smoke-tested on the Pixel 8 / API 37 emulator with a real throwaway account against production
+Supabase. The account was created, exercised, and deleted through the app; the full server-side
+walk is recorded in the git-excluded `CHANGES.md` at the repo root ("Smoke test on the release
+APK"), where working notes live because this repository is public.
+
+### Verified working on the release build ✅
+
+- **Launch** clean (R8/PROD), and the new minimum-version gate correctly **fails open** while
+  `app_config` is undeployed.
+- **Expired reset link** (`genesyx://reset-password#error=otp_expired…`) opens the new
+  "Set a new password" screen with honest copy and a working "Request a new link" path — the exact
+  fragment that crashes supabase-kt's own handler.
+- **Sign-up → sign-in round trip**: `handle_new_user` still auto-creates the profile after the
+  server-side RPC hardening; the typed display name survives a sign-out/sign-in.
+- **Track → pH → Track** returns to Track (the code-17 defect stays fixed); pH shows the required
+  sync-disclosure copy.
+- **Clear-sync end-to-end (the codes 19–21 defect class)**: un-ticking the LAST logged supplement
+  reached production as an explicit empty list — the row read back by SQL as
+  `symptoms:[], water_ml:0, supplements:[], food_groups:[], notes:null`.
+- **Account deletion**: in-app flow → `delete_current_user` → service-role counts all zero
+  (auth user, daily_logs, profiles, ph_readings, quiz_answers, consent_events).
+
+### Found broken 🔴 — fix scheduled as `1.4.2 (23)`
+
+**Consent-event sync does not match the live `consent_events` schema.** The table (owned by the
+iOS repo's `20260818_consent_events.sql`) has columns
+`(id, user_id, version text NOT NULL, action, occurred_at)`; the Android DTO sends `recorded_at`
+and omits `version`, so every push is rejected by PostgREST ("Could not find the 'recorded_at'
+column"). Live effect on a fresh sign-in: the server trail reads empty → the first-time consent
+ask appears **and all health-data pulls are skipped for that session** — and because the answer
+never lands server-side, this repeats on every sign-in. Three smaller wrinkles to fix with it:
+`needsDecision` is in-memory only (a process restart forgets "undecided"), the ask dialog
+dismisses on an outside tap, and granting after sign-in does not re-run the skipped refreshes.
+Client-side fix for code 23: `recorded_at`→`occurred_at`, send `version` (match iOS's constant),
+and push with **insert + duplicate-key tolerance** instead of upsert — the table deliberately has
+no UPDATE policy, so an upsert's conflict branch is refused (per iOS `RemoteModels.swift`).
+
+**Not covered here** (needs a physical tester device / ops items): Google Sign-In, the reset
+email end-to-end (the `genesyx://reset-password` Supabase allow-list entry is still not added),
+and a true Play-track install.
+
+---
+
 ## [Unreleased] — launch-readiness pass: legacy-pH correctness, logging hygiene, minimum-version gate — `1.4.2 (22)` (1 Sep 2026)
 
 Release-preparation audit over the tree below, then the authorised bump. Two health-data
