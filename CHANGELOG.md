@@ -6,6 +6,29 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ---
 
+## Docs-only — state audit + stale-doc refresh (2 Sep 2026)
+
+No code change; no release identity consumed. A where-are-we audit against the tree, the
+changelog and the graft graph (refreshed this session — 2,825 nodes, zero drift against the
+committed cards) found the launch path is entirely ops/compliance, and four docs contradicting
+the tree. Fixed:
+
+- **`LAUNCH_WEEK.md` rewritten as the current launch task list** (path to Production, 2 Sep
+  state): 3 blockers (submit the Play drafts + request more time, privacy-policy wording,
+  owner approval → promote), the before-promotion set (physical-device QA incl. the Play
+  re-sign key on the OAuth client, console verification pass, crash-reporting and `app_config`
+  decisions), post-launch follow-ups, and a done-ledger retiring the July v1.1-era checklist.
+- **`CLAUDE.md`** — two stale claims corrected: the cycle-settings offline gap is CLOSED
+  (owed-push queue, `CycleSettingsSyncTest`), and guest data now IS adopted on sign-in
+  (`AuthRepository.syncHealthStores` — pH, daily logs, cycle settings, supplements, consent).
+- **`APP_INVENTORY.md`** — stale-snapshot banner (body describes the 12 Aug / code-14 tree;
+  points at the current truth sources).
+- **`to_do_list_android.md`** — status banner: 7 of the 12 "left to build" items from 12 Aug
+  are done (backend migrations, Tracking-Preferences editor, quiz-answer sync, per-supplement
+  reminders, food groups); the open remainder is content/decision work.
+
+---
+
 ## Operations verification — Android production password reset is live (1 Sep 2026, late night)
 
 Closed the two password-reset operations/QA items left open by the code-23 upload. The shared

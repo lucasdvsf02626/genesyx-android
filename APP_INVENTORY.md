@@ -3,6 +3,16 @@ grok# Genesyx Android — Repository and App Inventory
 **Purpose:** the code-backed map of the current Genesyx Android checkout: app surfaces, tracked
 data, derived logic, persistence and sync, notifications, backend gates, privacy and verification.
 
+> **⚠️ SNAPSHOT STALE (noted 2026-09-02).** The body of this inventory describes the tree as of
+> **12 August 2026 (1.4.0 / code 14, Room v9)**. The repo has moved a lot since: `main` is at
+> **1.4.2 (23)** — live on Play Internal testing since 1 Sep — Room **v10**, 649 unit / 44
+> instrumented tests, with the consent (Article 9) system, in-app password reset, clear-sync
+> fixes, guest-data adoption on sign-in, the minimum-version gate, and the Nutrition/supplements
+> rework all landed after this snapshot. **For current state read `CLAUDE.md` (STOPPED HERE box)
+> and the top of `CHANGELOG.md`; for the launch task list read `LAUNCH_WEEK.md`.** The sections
+> below remain useful as an architecture map, but do not treat their identities, versions or
+> feature absences as current.
+
 This inventory was refreshed from the repository on **12 August 2026**. It describes the inspected
 source, not a promise that every source feature is deployed to Supabase or published through Play.
 

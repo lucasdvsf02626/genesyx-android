@@ -284,14 +284,19 @@ offline writes safe; it is covered by `a_pull_must_not_overwrite_an_unsynced_loc
 writes are never queued (no server target under RLS) — written `SYNCED`. Verified on-device
 2026-07-13.
 
-Known remaining offline gap: **cycle settings** have no retry queue — a failed remote push is only
-logged, and a later refresh can overwrite a never-pushed offline edit (`data/CycleRepository.kt`).
+~~Known remaining offline gap: cycle settings have no retry queue~~ **CLOSED by the 1 Sep
+launch-readiness patch:** cycle settings now carry an owed-push flag (`cycle_settings_owed`),
+`CycleRepository.refresh` is push-before-pull and a failed owed push aborts the pull
+(`CycleSettingsSyncTest` pins it).
 
 ## pH sync is live — do not get this wrong
 
 `FeatureFlags.PH_TRACKING = true`; pH is **not local-only**. `PhRepository` write-throughs to the
 Supabase `ph_readings` table, with a WorkManager retry queue (`data/sync/PhSyncWorker.kt`) and
-pull-merge on sign-in. Guests (`LOCAL_USER_ID`) stay on-device (and do not migrate on sign-in).
+pull-merge on sign-in. Guests (`LOCAL_USER_ID`) stay on-device while signed out; **since the
+1 Sep launch-readiness patch, guest rows ARE adopted into the account on sign-in**
+(`AuthRepository.syncHealthStores` → `adoptGuestReadings`, alongside daily logs, cycle
+settings, supplements and the consent decision).
 
 - The pH card copy (`ui/components/PhTrackerCard.kt`) says *"pH entries sync to your Genesyx
   account."* **Keep it** — the sync must be disclosed, not buried.
