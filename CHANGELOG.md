@@ -6,6 +6,35 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `
 
 ---
 
+## Operations verification — Android production password reset is live (1 Sep 2026, late night)
+
+Closed the two password-reset operations/QA items left open by the code-23 upload. The shared
+Supabase Auth redirect allow-list contains the exact callback `genesyx://reset-password`, and
+custom SMTP is now enabled through the verified Resend domain `send.genesyx.co.uk` (sender
+`Genesyx <no-reply@send.genesyx.co.uk>`). The Resend credential is restricted to sending from
+that domain. No SMTP credential, recovery token or password is recorded in this repository.
+
+### Verified against production — signed code-23 Android APK ✅
+
+Installed the exact signed `1.4.2 (23)` release APK from the archive on the Pixel 8 / API 37
+emulator and exercised a real production account:
+
+- A production recovery request delivered through the new custom SMTP path to Gmail; Resend
+  reported the message delivered and Gmail showed the expected Genesyx sender/domain.
+- The email's live callback resolved to `genesyx://reset-password` and Android routed it to
+  `com.genesyx.app/.MainActivity`.
+- The app imported the live recovery session and displayed the enabled **Set a new password**
+  form — not the expired-link fallback.
+- The password was changed through the app. On success, the app returned to the authenticated
+  Home screen for the same production account.
+
+**Android result:** the code-23 password-reset email/deep-link/completion path is green. No Android
+code change was needed. The earlier open items “add the reset redirect”, “configure custom SMTP”
+and “reset email end-to-end” are closed; Play Console declarations/promotion and physical-device
+Google Sign-In remain separate release operations.
+
+---
+
 ## `1.4.2 (23)` — consent sync matches the live schema — UPLOADED to Internal testing (1 Sep 2026, night)
 
 Fixes the smoke-test finding below. **Uploaded to Play Internal testing 1 Sep 2026 (night),
