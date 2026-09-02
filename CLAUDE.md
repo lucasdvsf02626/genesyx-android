@@ -42,17 +42,23 @@ Read this first. Honest state, verified against the tree on **2026-08-26**.
 >    was started 28 Jul but never completed and code 13 is now superseded by 14; the corrected
 >    Health apps + Data Safety console drafts are saved but **not sent for review**.
 
-## 🔖 STOPPED HERE — resume from this (2026-09-01)
+## 🔖 STOPPED HERE — resume from this (2026-09-02)
 
-> **⚠️ Everything below this box about codes 16–21 is HISTORY.** As of 1 Sep 2026 (night):
-> **Play Internal testing serves `1.4.2 (23)`** — uploaded that night; codes 21 and 22 are
+> **⚠️ Everything below this box about codes 16–21 is HISTORY.** As of 2 Sep 2026:
+> **Play Internal testing serves `1.4.2 (23)`** — uploaded 1 Sep (night); codes 21 and 22 are
 > superseded (22's consent pushes 400 against the live `consent_events` schema — never upload
-> either again). `main` is pushed at the code-23 tree; the launch-readiness audit patch,
-> the code-22 smoke findings and the code-23 consent-sync fix are all in `CHANGELOG.md`
-> (read its top three entries — they are the real "where we are"). Production is still
-> **1.2.0 (9) / API 35** with the declaration drafts unsent — that remains the open
-> compliance risk. Working audit notes live in the git-excluded `CHANGES.md` /
-> `CHANGES_ANDROID.md` at the repo root.
+> either again). **Password-reset ops are CLOSED** (1 Sep, late night): the
+> `genesyx://reset-password` redirect allow-list entry and custom SMTP via Resend
+> (`send.genesyx.co.uk`) are live, and the full reset flow was walked green on the signed
+> code-23 APK against a production account — no Android code change was needed. `main` is
+> pushed at `19e9af6` (that ops entry); the launch-readiness audit patch, the code-22 smoke
+> findings and the code-23 consent-sync fix are all in `CHANGELOG.md` (read its top entries —
+> they are the real "where we are"). Production is still **1.2.0 (9) / API 35** with the
+> declaration drafts unsent — that remains the open compliance risk (API-36 deadline passed
+> 31 Aug). Still open besides that: physical-device QA (Google Sign-In on the Play-track
+> build, remaining `QA_CHECKLIST_ANDROID.md` rows) and the `app_config` deployment decision
+> (version gate inert/fail-open until then). Working audit notes live in the git-excluded
+> `CHANGES.md` / `CHANGES_ANDROID.md` at the repo root.
 
 ## Historical — state as of 2026-08-26 (superseded by the box above)
 
